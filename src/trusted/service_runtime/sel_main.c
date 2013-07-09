@@ -54,6 +54,7 @@
 #include "native_client/src/trusted/service_runtime/sel_qualify.h"
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
+#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 
 
 static void (*g_enable_outer_sandbox_func)(void) =
@@ -746,6 +747,8 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
+  LindPythonInit();
+
   /*
    * Print out a marker for scripts to use to mark the start of app
    * output.
@@ -828,6 +831,9 @@ int NaClSelLdrMain(int argc, char **argv) {
    * addr space is still valid.  otherwise we'd have to kill threads
    * before we clean up the address space.
    */
+
+  LindPythonFinalize();
+
   NaClExit(ret_code);
 
  done:
@@ -860,6 +866,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if (handle_signals) NaClSignalHandlerFini();
   NaClAllModulesFini();
+
+  LindPythonFinalize();
 
   NaClExit(ret_code);
 

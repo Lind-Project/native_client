@@ -31,7 +31,6 @@ env.Command(target=env.File(GENERATED + '/nacl_syscall_handlers.c'),
                     ],
             )
 
-
 # ----------------------------------------------------------
 # TODO(robertm): this library is too big and needs to be split up
 #                for easier unit testing
@@ -71,6 +70,7 @@ ldr_inputs = [
     'sys_list_mappings.c',
     'thread_suspension_common.c',
     'thread_suspension_unwind.c',
+    'lind_syscalls.c',
 ]
 
 if env.Bit('build_x86_32'):

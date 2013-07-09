@@ -34,6 +34,8 @@ Dir('src/third_party_mod/gtest').addRepository(
 import gc
 gc.disable()
 
+import distutils.sysconfig
+
 # REPORT
 CMD_COUNTER = {}
 ENV_COUNTER = {}
@@ -2323,6 +2325,8 @@ def MakeUnixLikeEnv():
                   ['__STDC_FORMAT_MACROS', '1'],
                   ],
   )
+  
+  unix_like_env.Append(CPPPATH=[distutils.sysconfig.get_python_inc()], LIBS=['python2.7'])
 
   if not unix_like_env.Bit('clang'):
     unix_like_env.Append(CCFLAGS=['--param', 'ssp-buffer-size=4'])
