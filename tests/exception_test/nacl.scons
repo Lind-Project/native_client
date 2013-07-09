@@ -1,0 +1,77 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+test_args = {'sel_ldr_flags': ['-e', '-E', 'OUTSIDE_BROWSER=1'],
+             'declares_exit_status': True,
+             'using_nacl_signal_handler': env.Bit('host_linux')}
+if env.Bit('target_arm') and env.UsingEmulator():
+  test_args['sel_ldr_flags'].extend(['-E', 'UNDER_QEMU_ARM=1'])
+
+# To keep PNaCl enthusiasts happy, we support a pure-bitcode version
+# of the test, but it is less strict.  The non-PNaCl version uses
+# assembly code and can check for exact values of the reported
+# instruction pointer and stack pointer.
+
+if env.Bit('target_arm') and (not env.Bit('bitcode') or
+                              not env.Bit('pnacl_generate_pexe')):
+ helper_files = ['crash_at_known_address_arm.S',
+                 'handler_wrapper_arm.S']
+ if env.Bit('bitcode'):
+   env.AddBiasForPNaCl()
+   env.PNaClForceNative()
+elif env.Bit('bitcode'):
+ helper_files = []
+elif env.Bit('target_x86'):
+  helper_files = ['crash_at_known_address_x86.S',
+                  'direction_flag_x86.S',
+                  'handler_wrapper_x86.S']
+else:
+  raise Exception('Unexpected platform')
+exception_test = env.ComponentProgram(
+    env.ProgramNameForNmf('exception_test'),
+    ['exception_test.c'] + helper_files,
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}', '${TESTRUNNER_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'exception_test.out', exception_test, **test_args)
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'exception_tests'], 'run_exception_test')
+
+
+exception_crash_test = env.ComponentProgram(
+    'exception_crash_test', ['exception_crash_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'imc_syscalls'])
+
+for subtest in ('test_bad_handler',
+                'test_stack_outside_sandbox',
+                'test_stack_in_rwdata',
+                'test_stack_in_rodata',
+                'test_stack_in_code',
+                'test_crash_in_syscall'):
+  node = env.CommandSelLdrTestNacl(
+      'exception_%s.out' % subtest,
+      exception_crash_test, [subtest], **test_args)
+  # test_bad_handler hangs in ARM QEMU.
+  subtest_is_broken = (subtest == 'test_bad_handler' and
+                       env.Bit('target_arm') and env.UsingEmulator())
+  env.AddNodeToTestSuite(
+      node, ['small_tests', 'exception_tests'],
+      'run_exception_%s' % subtest,
+      is_broken=subtest_is_broken)
+
+
+exceptions_disabled_test = env.ComponentProgram(
+    'exceptions_disabled_test',
+    ['exceptions_disabled_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'exceptions_disabled_test.out',
+    exceptions_disabled_test, [],
+    declares_exit_status=True)
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'exception_tests'],
+    'run_exceptions_disabled_test')
