@@ -747,7 +747,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  LindPythonInit();
+  if(!LindPythonInit()) {
+      fflush(NULL);
+      exit(1);
+  }
 
   /*
    * Print out a marker for scripts to use to mark the start of app
@@ -867,7 +870,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (handle_signals) NaClSignalHandlerFini();
   NaClAllModulesFini();
 
-  LindPythonFinalize();
+  if(!LindPythonFinalize()) {
+      fflush(NULL);
+      exit(1);
+  }
 
   NaClExit(ret_code);
 
