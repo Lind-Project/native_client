@@ -15,6 +15,7 @@
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
+#include "native_client/src/shared/platform/lind_stat.h"
 
 #if NACL_LINUX || NACL_OSX
 # include "native_client/src/shared/platform/posix/nacl_host_desc_types.h"
@@ -48,9 +49,9 @@ typedef int64_t nacl_off64_t;
  * compatible w/ nacl_off64_t above.
  */
 #if NACL_LINUX
-typedef struct stat64 nacl_host_stat_t;
+typedef struct lind_stat nacl_host_stat_t;
 #elif NACL_OSX
-typedef struct stat nacl_host_stat_t;
+typedef struct lind_stat nacl_host_stat_t;
 #elif NACL_WINDOWS
 typedef struct _stati64 nacl_host_stat_t;
 #elif defined __native_client__

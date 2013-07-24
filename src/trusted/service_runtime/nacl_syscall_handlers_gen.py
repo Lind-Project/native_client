@@ -118,7 +118,7 @@ SYSCALL_LIST = [
     ('NACL_sys_getdents', 'NaClSysGetdents',
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_brk', 'NaClSysBrk', ['uintptr_t new_break']),
-    ('NACL_sys_mmap', 'NaClCommonSysMmapLind',
+    ('NACL_sys_mmap', 'NaClSysMmap',
      ['void *start', 'size_t length', 'int prot',
       'int flags', 'int d', 'nacl_abi_off_t *offp']),
     ('NACL_sys_mprotect', 'NaClSysMprotect',
@@ -197,7 +197,6 @@ SYSCALL_LIST = [
     ('NACL_sys_exception_clear_flag', 'NaClSysExceptionClearFlag', []),
     ('NACL_sys_test_infoleak', 'NaClSysTestInfoLeak', []),
     ('NACL_sys_test_crash', 'NaClSysTestCrash', ['int crash_type']),
-    ('NACL_sys_lind_syscall', 'NaClSysLindSyscall', ['uint32_t callNum', 'uint32_t inNum', 'void *inArgs', 'uint32_t outNum', 'void *outArgs']),
     ]
 
 

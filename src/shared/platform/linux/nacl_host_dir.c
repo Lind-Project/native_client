@@ -32,6 +32,7 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 
@@ -151,7 +152,7 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
   }
 
   NaClLog(3, "NaClHostDirOpen: invoking open(%s)\n", path);
-  fd = open(path, O_RDONLY);
+  fd = lind_open(O_RDONLY, 0, path);
   NaClLog(3, "NaClHostDirOpen: got DIR* %d\n", fd);
   if (-1 == fd) {
     NaClLog(LOG_ERROR,
@@ -162,11 +163,11 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
   if (-1 == fstat(fd, &stbuf)) {
     NaClLog(LOG_ERROR,
             "NaClHostDirOpen: fstat failed?!?  errno %d\n", errno);
-    (void) close(fd);
+    (void) lind_close(fd);
     return -NaClXlateErrno(errno);
   }
   if (!S_ISDIR(stbuf.st_mode)) {
-    (void) close(fd);
+    (void) lind_close(fd);
     return -NACL_ABI_ENOTDIR;
   }
   rv = NaClHostDirCtor(d, fd);
@@ -247,9 +248,9 @@ static ssize_t NaClStreamDirents(struct NaClHostDir *d,
     entry_size = NaClCopyDirent(d, buf, len);
     if (0 == entry_size) {
       CHECK(d->cur_byte == d->nbytes);
-      retval = getdents(d->fd,
-                        (struct dirent *) d->dirent_buf,
-                        sizeof d->dirent_buf);
+      retval = lind_getdents(d->fd,
+                        sizeof d->dirent_buf,
+                        (char* )(struct dirent *) d->dirent_buf);
       if (-1 == retval) {
         if (xferred > 0) {
           /* next time through, we'll pick up the error again */
@@ -319,7 +320,7 @@ int NaClHostDirClose(struct NaClHostDir *d) {
     NaClLog(LOG_FATAL, "NaClHostDirClose: 'this' is NULL\n");
   }
   NaClLog(3, "NaClHostDirClose(%d)\n", d->fd);
-  retval = close(d->fd);
+  retval = lind_close(d->fd);
   d->fd = -1;
   NaClMutexDtor(&d->mu);
   return (-1 == retval) ? -NaClXlateErrno(errno) : retval;

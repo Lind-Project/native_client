@@ -93,6 +93,7 @@ platform_inputs += [
     'nacl_time_common.c',
     'platform_init.c',
     'refcount_base.cc',
+    'lind_platform.c',
     ]
 
 env.DualLibrary('platform', platform_inputs)

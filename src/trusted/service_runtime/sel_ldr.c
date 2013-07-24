@@ -788,7 +788,7 @@ static void NaClProcessRedirControl(struct NaClApp *nap) {
       /*
        * Environment not set or redirect failed -- handle default inheritance.
        */
-      NaClAddHostDescriptor(nap, DUP(g_nacl_redir_control[ix].d),
+      NaClAddHostDescriptor(nap, g_nacl_redir_control[ix].d,
                             g_nacl_redir_control[ix].nacl_flags, (int) ix);
     }
   }

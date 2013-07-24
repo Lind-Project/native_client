@@ -405,6 +405,11 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
+  if(!LindPythonInit()) {
+      fflush(NULL);
+      exit(1);
+  }
+
   if (debug_mode_ignore_validator == 1)
     fprintf(stderr, "DEBUG MODE ENABLED (ignore validator)\n");
   else if (debug_mode_ignore_validator > 1)
@@ -745,11 +750,6 @@ int NaClSelLdrMain(int argc, char **argv) {
       gprintf((struct Gio *) &gout, "printing post-IRT NaClApp details\n");
       NaClAppPrintDetails(nap, (struct Gio *) &gout);
     }
-  }
-
-  if(!LindPythonInit()) {
-      fflush(NULL);
-      exit(1);
   }
 
   /*
