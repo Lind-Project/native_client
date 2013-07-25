@@ -15,6 +15,8 @@
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 
+#include "native_client/src/include/portability.h"
+
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
@@ -110,7 +112,7 @@ cleanup:
 
 void DumpArg(const LindArg *arg)
 {
-    printf("%d:%lX:%lu\n", arg->type, arg->ptr, arg->len);
+    printf("%"NACL_PRId64":%"NACL_PRIu64":%"NACL_PRIu64"\n", (uint64_t)arg->type, arg->ptr, arg->len);
 }
 
 int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
@@ -180,7 +182,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     for(i=0; i<inNum; ++i) {
         switch(inArgSys[i].type) {
         case AT_INT:
-            NaClLog(3, "Int argument: %ld, %lu\n", *(int64_t*)&inArgSys[i].ptr, inArgSys[i].len);
+            NaClLog(3, "Int argument: %"NACL_PRId64", %"NACL_PRIu64"\n", *(int64_t*)&inArgSys[i].ptr, inArgSys[i].len);
             PyList_Append(callArgs, PyInt_FromLong(*(int64_t*)&inArgSys[i].ptr));
             break;
         case AT_STRING:

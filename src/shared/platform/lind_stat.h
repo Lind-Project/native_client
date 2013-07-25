@@ -38,10 +38,19 @@ struct lind_stat
     struct lind_timespec st_atim;        /* Time of last access.  */
     struct lind_timespec st_mtim;        /* Time of last modification.  */
     struct lind_timespec st_ctim;        /* Time of last status change.  */
+#ifdef st_atime
+#undef st_atime
+#endif
 # define st_atime st_atim.tv_sec    /* Backward compatibility.  */
+#ifdef st_mtime
+#undef st_mtime
+#endif
 # define st_mtime st_mtim.tv_sec
+#ifdef st_ctime
+#undef st_ctime
+#endif
 # define st_ctime st_ctim.tv_sec
-    int64_t __unused[3];
+    int64_t ___unused[3]; //double underscore is not enough for OSX
 };
 
 struct lind_statfs

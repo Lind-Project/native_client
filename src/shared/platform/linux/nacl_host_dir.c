@@ -143,7 +143,7 @@ int NaClHostDirCtor(struct NaClHostDir  *d,
 int NaClHostDirOpen(struct NaClHostDir  *d,
                     char                *path) {
   int         fd;
-  struct stat stbuf;
+  nacl_host_stat_t stbuf;
   int         rv;
 
   NaClLog(3, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s)\n", (uintptr_t) d, path);
@@ -160,7 +160,7 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
     return -NaClXlateErrno(errno);
   }
   /* check that it is really a directory */
-  if (-1 == fstat(fd, &stbuf)) {
+  if (-1 == lind_fxstat(fd, 1, &stbuf)) {
     NaClLog(LOG_ERROR,
             "NaClHostDirOpen: fstat failed?!?  errno %d\n", errno);
     (void) lind_close(fd);
