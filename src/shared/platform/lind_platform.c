@@ -249,7 +249,8 @@ cleanup:
         GOTO_ERROR_IF_NULL(callArgs); \
         response = CallPythonFunc(context, "LindSyscall", callArgs); \
         ParseResponse(response, &_isError, &_code, &_data, &_len); \
-        retval = _isError?-_code:_code; \
+        errno = _isError?_code:0; \
+        retval = _isError?-1:_code; \
         UNREFERENCED_PARAMETER(_offset);
 
 #define LIND_API_PART3 \
@@ -279,6 +280,27 @@ cleanup:
             } \
         } \
         _offset += ((int*)_data)[(current)];
+
+#define DUMP_DATA(x) printf(#x" = 0x%"NACL_PRIX64"\n", (uint64_t)(x));
+
+#define DUMP_STAT(x) \
+        DUMP_DATA((x)->st_dev); \
+        DUMP_DATA((x)->st_ino); \
+        DUMP_DATA((x)->st_nlink); \
+        DUMP_DATA((x)->st_mode); \
+        DUMP_DATA(S_ISREG((x)->st_mode)); \
+        DUMP_DATA(S_ISDIR((x)->st_mode)); \
+        DUMP_DATA(S_ISCHR((x)->st_mode)); \
+        DUMP_DATA(S_ISBLK((x)->st_mode)); \
+        DUMP_DATA(S_ISFIFO((x)->st_mode)); \
+        DUMP_DATA(S_ISLNK((x)->st_mode)); \
+        DUMP_DATA(S_ISSOCK((x)->st_mode)); \
+        DUMP_DATA((x)->st_uid); \
+        DUMP_DATA((x)->st_gid); \
+        DUMP_DATA((x)->st_rdev); \
+        DUMP_DATA((x)->st_size); \
+        DUMP_DATA((x)->st_blksize); \
+        DUMP_DATA((x)->st_blocks)
 
 int lind_pread(int fd, void* buf, int count, off_t offset)
 {
@@ -356,6 +378,7 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf)
     callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_xstat, version, path);
     LIND_API_PART2
     COPY_DATA(buf, sizeof(*buf))
+    DUMP_STAT(buf);
     LIND_API_PART3
 }
 
@@ -419,6 +442,7 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf)
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fxstat, fd, version);
     LIND_API_PART2
     COPY_DATA(buf, sizeof(*buf))
+    DUMP_STAT(buf);
     LIND_API_PART3
 }
 

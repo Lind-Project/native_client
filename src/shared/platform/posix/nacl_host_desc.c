@@ -303,6 +303,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
     (void) close(host_desc);
     return -NaClXlateErrno(errno);
   }
+#if 0
   if (!S_ISREG(stbuf.st_mode)) {
     NaClLog(LOG_INFO,
             "NaClHostDescOpen: file type 0x%x, not regular\n", stbuf.st_mode);
@@ -310,6 +311,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
     /* cannot access anything other than a real file */
     return -NACL_ABI_EPERM;
   }
+#endif
   return NaClHostDescCtor(d, host_desc, flags);
 }
 
