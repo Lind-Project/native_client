@@ -661,6 +661,23 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
 	touch $@
 
+.PHONY: updateglibc
+updateglibc:
+	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+	    BUILD_CC="gcc -O2 -g" \
+	    CC="$(GLIBC_CC) -m64" \
+	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+	    libc_cv_forced_unwind=yes \
+	    libc_cv_c_cleanup=yes \
+	    libc_cv_slibdir=/lib \
+	    --prefix= \
+	    --libdir=/lib \
+	    --host=x86_64-linux-gnu \
+	    --with-headers=$(LINUX_HEADERS) \
+	    --enable-kernel=2.6.18
+	$(MAKE) -C BUILD/build-glibc64
+	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+
 # Can be used to make a glibc archive separately from the main install tree.
 # Used, i.e., on buildbots.
 INST_GLIBC_PREFIX ?= $(PREFIX)

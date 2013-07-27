@@ -283,6 +283,7 @@ cleanup:
 
 #define DUMP_DATA(x) printf(#x" = 0x%"NACL_PRIX64"\n", (uint64_t)(x));
 
+#if 0
 #define DUMP_STAT(x) \
         DUMP_DATA((x)->st_dev); \
         DUMP_DATA((x)->st_ino); \
@@ -301,6 +302,9 @@ cleanup:
         DUMP_DATA((x)->st_size); \
         DUMP_DATA((x)->st_blksize); \
         DUMP_DATA((x)->st_blocks)
+#else
+#define DUMP_STAT(x)
+#endif
 
 int lind_pread(int fd, void* buf, int count, off_t offset)
 {
