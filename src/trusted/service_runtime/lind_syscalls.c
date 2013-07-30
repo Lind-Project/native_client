@@ -102,6 +102,9 @@ static int ParseResponse(PyObject* response, int* isError, int* code, char** dat
         }
     }
     NaClLog(3, "ParseResponse isError=%d, code=%d, len=%d\n", *isError, *code, *len);
+    if(*isError) {
+        NaClLog(3, "Error message: %s\n", *dataOrMessage);
+    }
     retval = 1;
     goto cleanup;
 error:
@@ -155,11 +158,10 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
     fd_set rs;
     fd_set ws;
     fd_set es;
-    int64_t fd_top;
-    int64_t max_fd = -1;
+    int64_t max_fd;
     int64_t max_hfd = -1;
     NaClLog(3, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
-    fd_top = *(int64_t*)&inArgs[0].ptr;
+    max_fd = *(int64_t*)&inArgs[0].ptr;
     if(inArgs[1].ptr) {
         rs = *(fd_set*)inArgs[1].ptr;
         inArgs[1].ptr=(uintptr_t)malloc(sizeof(fd_set));
@@ -187,22 +189,19 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
         }
         FD_ZERO((fd_set*)inArgs[3].ptr);
     }
-    *xchangedata = malloc(sizeof(int)*FD_SETSIZE);
+    *xchangedata = malloc(sizeof(int)*(FD_SETSIZE+1));
     if (NULL == *xchangedata) {
         retval = -NACL_ABI_ENOMEM;
         goto cleanup_es;
     }
     memset(*xchangedata, 0xFF, sizeof(int)*FD_SETSIZE);
-    mapdata = (int*)(*xchangedata);
+    mapdata = &((int*)(*xchangedata))[1];
     NaClFastMutexLock(&nap->desc_mu);
-    for(int i=0; i<FD_SETSIZE; ++i) {
+    for(int i=0; i<max_fd; ++i) {
         ndp = NULL;
         if((inArgs[1].ptr && FD_ISSET(i, &rs)) ||
                 (inArgs[2].ptr && FD_ISSET(i, &ws)) ||
                 (inArgs[3].ptr && FD_ISSET(i, &es))) {
-            if(i>max_fd) {
-                max_fd = i;
-            }
             ndp = (struct NaClDescIoDesc *)NaClGetDescMu(nap, i);
             if(ndp) {
                 if(ndp->hd->d<FD_SETSIZE) {
@@ -245,8 +244,9 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
             }
         }
     }
-    *(int64_t*)&inArgs[0].ptr = max_hfd+(fd_top-max_fd);
-    NaClLog(3, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", fd_top, (int64_t)inArgs[0].ptr);
+    *(int64_t*)&inArgs[0].ptr = max_hfd+1;
+    ((int*)(*xchangedata))[0] = max_hfd+1;
+    NaClLog(3, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", max_fd, (int64_t)inArgs[0].ptr);
     NaClFastMutexUnlock(&nap->desc_mu);
     goto finish;
 cleanup_xdata:
@@ -271,6 +271,7 @@ finish:
 int LindSelectPostprocess(struct NaClApp *nap, int iserror, int* code, char* data, int len, void* xchangedata)
 {
     int* mapdata;
+    int max_hfd;
     int retval = 0;
     fd_set rs;
     fd_set ws;
@@ -282,8 +283,9 @@ int LindSelectPostprocess(struct NaClApp *nap, int iserror, int* code, char* dat
     FD_ZERO(&rs);
     FD_ZERO(&ws);
     FD_ZERO(&es);
-    mapdata = (int*)xchangedata;
-    for(int i=0; i<FD_SETSIZE; ++i) {
+    max_hfd = ((int*)xchangedata)[0];
+    mapdata = &((int*)xchangedata)[1];
+    for(int i=0; i<max_hfd; ++i) {
         if(FD_ISSET(i, &((struct select_results*)data)->r)) {
             if(-1 != mapdata[i]) {
                 NaClLog(3, "%d in RS with nacl desc %d\n", i, mapdata[i]);
@@ -441,12 +443,18 @@ int LindSocketPairPostprocess(struct NaClApp *nap, int iserror, int* code, char*
     return retval;
 }
 
+struct poll_map
+{
+    int nacl_fd;
+    int lind_fd;
+};
+
 int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
 {
     int retval = 0;
     struct pollfd* pfds;
     struct pollfd* inpfds;
-    int* mapdata;
+    struct poll_map* mapdata;
     int nfds;
     struct NaClDescIoDesc* ndp;
     UNREFERENCED_PARAMETER(inNum);
@@ -460,13 +468,13 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, voi
         retval = -NACL_ABI_EINVAL;
         goto finish;
     }
-    *xchangedata = malloc(sizeof(int)*(nfds+1));
+    *xchangedata = malloc(sizeof(int)+sizeof(struct poll_map)*nfds);
     if (NULL == *xchangedata) {
       retval = -NACL_ABI_ENOMEM;
       goto finish;
     }
-    ((int*)(*xchangedata))[0] = nfds;
-    mapdata = &((int*)(*xchangedata))[1];
+    ((int*)(*xchangedata))[0] = nfds; //first sizeof(int) bytes contains # of fds
+    mapdata = (struct poll_map*)&((int*)(*xchangedata))[1]; //map data begins after sizeof(int) bytes
     pfds = malloc(sizeof(pfds)*nfds);
     if (NULL == pfds) {
       retval = -NACL_ABI_ENOMEM;
@@ -481,7 +489,8 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, voi
             goto cleanup_pfds;
         }
         pfds[i].fd = ndp->hd->d;
-        mapdata[ndp->hd->d] = inpfds[i].fd;
+        mapdata[i].nacl_fd = inpfds[i].fd;
+        mapdata[i].lind_fd = pfds[i].fd;
     }
     NaClFastMutexUnlock(&nap->desc_mu);
     inArgs[2].ptr = (uint64_t)(uintptr_t)pfds;
@@ -497,18 +506,22 @@ finish:
 int LindPollPostprocess(struct NaClApp *nap, int iserror, int* code, char* data, int len, void* xchangedata)
 {
     int retval = 0;
-    int* mapdata;
+    struct poll_map* mapdata;
     int nfds;
     struct pollfd* pfds;
     UNREFERENCED_PARAMETER(nap);
     UNREFERENCED_PARAMETER(iserror);
     UNREFERENCED_PARAMETER(code);
     UNREFERENCED_PARAMETER(len);
-    nfds = ((int*)xchangedata)[0];
-    mapdata = &((int*)xchangedata)[1];
+    nfds = ((int*)xchangedata)[0]; //first sizeof(int) bytes contains # of fds
+    mapdata = (struct poll_map*)&((int*)xchangedata)[1]; //map data begins after sizeof(int) bytes
     pfds = (struct pollfd*)data;
     for(int i=0; i<nfds; ++i) {
-        pfds[i].fd = mapdata[pfds[i].fd];
+        for(int i=0; i<nfds; ++i) {
+            if(pfds[i].fd == mapdata[i].lind_fd) {
+                pfds[i].fd = mapdata[i].nacl_fd;
+            }
+        }
     }
     return retval;
 }
@@ -758,7 +771,8 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         } else if (outNum > 1) {
             offset = 0;
             for(i=0; i<outNum; ++i) {
-                assert(((unsigned int)(((int*)_data)[i]))<outArgSys[i].len);
+                NaClLog(3, "Out#%d, len=%"NACL_PRIu32", maxlen=%"NACL_PRIu64"\n",i, (unsigned int)(((int*)_data)[i]), outArgSys[i].len);
+                assert(((unsigned int)(((int*)_data)[i]))<=outArgSys[i].len);
                 if(!NaClCopyOutToUser(nap, (uintptr_t)outArgSys[i].ptr, _data+sizeof(int)*outNum+offset, ((int*)_data)[i])) {
                     retval = -NACL_ABI_EFAULT;
                     goto cleanup;

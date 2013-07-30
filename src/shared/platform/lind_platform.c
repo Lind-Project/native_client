@@ -214,6 +214,9 @@ static int ParseResponse(PyObject* response, int* isError, int* code, char** dat
         }
     }
     NaClLog(3, "ParseResponse isError=%d, code=%d, len=%d\n", *isError, *code, *len);
+    if(*isError) {
+        NaClLog(3, "Error message: %s\n", *dataOrMessage);
+    }
     retval = 1;
     goto cleanup;
 error:
