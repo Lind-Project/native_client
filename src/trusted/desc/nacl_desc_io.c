@@ -44,7 +44,7 @@
  * for host-OS descriptors).
  */
 
-static struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
+struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
 
 static int NaClDescIoDescSubclassCtor(struct NaClDescIoDesc  *self,
                                       struct NaClHostDesc    *hd) {
@@ -351,7 +351,7 @@ static int NaClDescIoDescExternalize(struct NaClDesc           *vself,
   return 0;
 }
 
-static struct NaClDescVtbl const kNaClDescIoDescVtbl = {
+struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   {
     NaClDescIoDescDtor,
   },

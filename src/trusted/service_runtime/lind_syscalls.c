@@ -36,6 +36,8 @@ extern PyObject* context;
 
 typedef enum _LindArgType {AT_INT, AT_STRING, AT_STRING_OPTIONAL, AT_DATA, AT_DATA_OPTIONAL} LindArgType;
 
+struct NaClDescVtbl const kNaClDescIoDescVtbl;
+
 typedef struct _LindArg
 {
     LindArgType type;
@@ -152,7 +154,8 @@ int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void
 
 int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
 {
-    struct NaClDescIoDesc *ndp = NULL;
+    struct NaClDesc *ndp = NULL;
+    int hfd;
     int retval = 0;
     int* mapdata;
     fd_set rs;
@@ -202,45 +205,35 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
         if((inArgs[1].ptr && FD_ISSET(i, &rs)) ||
                 (inArgs[2].ptr && FD_ISSET(i, &ws)) ||
                 (inArgs[3].ptr && FD_ISSET(i, &es))) {
-            ndp = (struct NaClDescIoDesc *)NaClGetDescMu(nap, i);
-            if(ndp) {
-                if(ndp->hd->d<FD_SETSIZE) {
-                    if(ndp->hd->d > max_hfd) {
-                        max_hfd = ndp->hd->d;
+            ndp = NaClGetDescMu(nap, i);
+            if(ndp && ndp->base.vtbl == (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+                hfd = ((struct NaClDescIoDesc*)ndp)->hd->d;
+                if(hfd<FD_SETSIZE) {
+                    if(hfd > max_hfd) {
+                        max_hfd = hfd;
                     }
-                    mapdata[ndp->hd->d]=i;
+                    mapdata[hfd]=i;
                 } else {
-                    NaClLog(LOG_ERROR, "Host desc too large");
+                    NaClLog(LOG_ERROR, "Host desc too large: %d->%d\n", i, hfd);
                     retval = -NACL_ABI_EINVAL;
                     goto cleanup_xdata;
                 }
-            }
-        }
-        if(inArgs[1].ptr && FD_ISSET(i, &rs)) {
-            if(ndp) {
-                NaClLog(3, "%d in RS with host desc %d\n", i, ndp->hd->d);
-                FD_SET(ndp->hd->d, (fd_set*)inArgs[1].ptr);
             } else {
+                NaClLog(LOG_ERROR, "Invalid NaCl desc: %d\n", i);
                 retval = -NACL_ABI_EINVAL;
                 goto cleanup_xdata;
             }
-        }
-        if(inArgs[2].ptr && FD_ISSET(i, &ws)) {
-            if(ndp) {
-                NaClLog(3, "%d in WS with host desc %d\n", i, ndp->hd->d);
-                FD_SET(ndp->hd->d, (fd_set*)inArgs[2].ptr);
-            } else {
-                retval = -NACL_ABI_EINVAL;
-                goto cleanup_xdata;
+            if(inArgs[1].ptr && FD_ISSET(i, &rs)) {
+                NaClLog(3, "%d in RS with host desc %d\n", i, hfd);
+                FD_SET(hfd, (fd_set*)inArgs[1].ptr);
             }
-        }
-        if(inArgs[3].ptr && FD_ISSET(i, &es)) {
-            if(ndp) {
-                NaClLog(3, "%d in ES with host desc %d\n", i, ndp->hd->d);
-                FD_SET(ndp->hd->d, (fd_set*)inArgs[3].ptr);
-            } else {
-                retval = -NACL_ABI_EINVAL;
-                goto cleanup_xdata;
+            if(inArgs[2].ptr && FD_ISSET(i, &ws)) {
+                NaClLog(3, "%d in WS with host desc %d\n", i, hfd);
+                FD_SET(hfd, (fd_set*)inArgs[2].ptr);
+            }
+            if(inArgs[3].ptr && FD_ISSET(i, &es)) {
+                NaClLog(3, "%d in ES with host desc %d\n", i, hfd);
+                FD_SET(hfd, (fd_set*)inArgs[3].ptr);
             }
         }
     }
@@ -328,17 +321,17 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
 
 #define CONVERT_NACL_DESC_TO_LIND(x) \
     int retval = 0; \
-    struct NaClDescIoDesc * ndp; \
+    struct NaClDesc * ndp; \
     UNREFERENCED_PARAMETER(inNum); \
     UNREFERENCED_PARAMETER(xchangedata); \
     NaClFastMutexLock(&nap->desc_mu); \
-    ndp = (struct NaClDescIoDesc *)NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
+    ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
     NaClFastMutexUnlock(&nap->desc_mu); \
-    if(!ndp) { \
+    if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) { \
         retval = -NACL_ABI_EINVAL; \
         goto cleanup; \
     } \
-    *(int64_t*)&inArgs[(x)].ptr = ndp->hd->d; \
+    *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
 cleanup: \
     return retval
 
@@ -357,7 +350,7 @@ cleanup: \
 
 #define CONVERT_NACL_DESC_TO_LIND_AND_ALLOC_RET_DESC(x) \
     int retval = 0; \
-    struct NaClDescIoDesc * ndp; \
+    struct NaClDesc* ndp; \
     UNREFERENCED_PARAMETER(inNum); \
     *xchangedata = malloc(sizeof(struct NaClHostDesc)); \
     if (NULL == *xchangedata) { \
@@ -365,13 +358,13 @@ cleanup: \
       goto cleanup; \
     } \
     NaClFastMutexLock(&nap->desc_mu); \
-    ndp = (struct NaClDescIoDesc *)NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
+    ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
     NaClFastMutexUnlock(&nap->desc_mu); \
-    if(!ndp) { \
+    if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) { \
         retval = -NACL_ABI_EINVAL; \
         goto cleanup; \
     } \
-    *(int64_t*)&inArgs[(x)].ptr = ndp->hd->d; \
+    *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
 cleanup: \
     return retval
 
@@ -456,7 +449,7 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, voi
     struct pollfd* inpfds;
     struct poll_map* mapdata;
     int nfds;
-    struct NaClDescIoDesc* ndp;
+    struct NaClDesc* ndp;
     UNREFERENCED_PARAMETER(inNum);
     nfds = (int)inArgs[0].ptr;
     if(nfds <= 0) {
@@ -483,12 +476,12 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, voi
     NaClFastMutexLock(&nap->desc_mu);
     for(int i=0; i<nfds; ++i) {
         pfds[i] = inpfds[i];
-        ndp = (struct NaClDescIoDesc *)NaClGetDescMu(nap, inpfds[i].fd);
-        if(NULL == ndp) {
+        ndp = NaClGetDescMu(nap, inpfds[i].fd);
+        if(NULL == ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
             retval = -NACL_ABI_EINVAL;
             goto cleanup_pfds;
         }
-        pfds[i].fd = ndp->hd->d;
+        pfds[i].fd = ((struct NaClDescIoDesc*)ndp)->hd->d;
         mapdata[i].nacl_fd = inpfds[i].fd;
         mapdata[i].lind_fd = pfds[i].fd;
     }
