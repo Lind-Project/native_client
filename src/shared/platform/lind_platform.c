@@ -88,6 +88,7 @@ int LindPythonInit(void)
         return 1;
     }
     Py_SetProgramName("dummy");
+    PyEval_InitThreads();
     Py_InitializeEx(0);
     PySys_SetArgvEx(1, argv, 0);
 
@@ -104,14 +105,17 @@ int LindPythonInit(void)
             REPY_RELPATH"lind_server.py", "./dummy.nexe");
     result = PyObject_CallObject(repy_main_func, repy_main_args);
     GOTO_ERROR_IF_NULL(result);
+    PyOS_AfterFork();
     PyArg_ParseTuple(result, "OO", &code, &context);
     GOTO_ERROR_IF_NULL(code && context);
     result = PyEval_EvalCode((PyCodeObject*)code, context, context);
     GOTO_ERROR_IF_NULL(result);
+    PyEval_ReleaseLock();
     return 1;
 error:
     initialized = 0;
     PyErr_Print();
+    PyEval_ReleaseLock();
     return 0;
 }
 
@@ -151,6 +155,8 @@ int GetHostFdFromLindFd(int lindFd)
     int retval = -1;
     PyObject* pyLindFd = NULL;
     PyObject* pyHostFd = NULL;
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
     if(lindFd < 0) {
         goto cleanup;
     }
@@ -168,6 +174,7 @@ cleanup:
     Py_XDECREF(pyLindFd);
     Py_XDECREF(pyHostFd);
     NaClLog(3, "host_fd:%d for lind_fd:%d\n", retval, lindFd);
+    PyGILState_Release(gstate);
     return retval;
 }
 
@@ -241,7 +248,9 @@ cleanup:
         int _len = 0; \
         int _offset = 0; \
         PyObject* callArgs = NULL; \
-        PyObject* response = NULL;
+        PyObject* response = NULL; \
+        PyGILState_STATE gstate; \
+        gstate = PyGILState_Ensure();
 
 #define LIND_API_PART2 \
         if(!context) { \
@@ -263,6 +272,7 @@ cleanup:
         cleanup: \
             Py_XDECREF(callArgs); \
             Py_XDECREF(response); \
+            PyGILState_Release(gstate); \
             return retval;
 
 #define COPY_DATA(var, maxlen) \
@@ -653,11 +663,11 @@ int lind_shutdown (int sockfd, int how)
 int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds,
         struct timeval *timeout, struct select_results *result)
 {
-    LIND_API_PART1
     PyObject* readFdObj = NULL;
     PyObject* writeFdObj = NULL;
     PyObject* exceptFdObj = NULL;
     PyObject* timeValObj = NULL;
+    LIND_API_PART1
     if(readfds) {
         readFdObj = PyString_FromStringAndSize((char*)readfds, sizeof(fd_set));
     } else {

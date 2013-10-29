@@ -319,11 +319,17 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
   return 0;
 }
 
-#define CONVERT_NACL_DESC_TO_LIND(x) \
+#define CONVERT_NACL_DESC_TO_LIND_START \
     int retval = 0; \
     struct NaClDesc * ndp; \
     UNREFERENCED_PARAMETER(inNum); \
-    UNREFERENCED_PARAMETER(xchangedata); \
+    UNREFERENCED_PARAMETER(xchangedata)
+
+#define CONVERT_NACL_DESC_TO_LIND_END \
+cleanup: \
+    return retval
+
+#define CONVERT_NACL_DESC_TO_LIND(x) \
     NaClFastMutexLock(&nap->desc_mu); \
     ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
     NaClFastMutexUnlock(&nap->desc_mu); \
@@ -331,9 +337,8 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
         retval = -NACL_ABI_EINVAL; \
         goto cleanup; \
     } \
-    *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
-cleanup: \
-    return retval
+    *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d;
+
 
 #define ALLOC_RET_DESC() \
     int retval = 0; \
@@ -401,7 +406,79 @@ int LindAcceptPostprocess(struct NaClApp *nap, int iserror, int* code, char* dat
 
 int LindCommonPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
 {
+    CONVERT_NACL_DESC_TO_LIND_START;
     CONVERT_NACL_DESC_TO_LIND(0);
+    CONVERT_NACL_DESC_TO_LIND_END;
+}
+
+int LindEpollCreatePreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
+{
+    ALLOC_RET_DESC();
+}
+
+int LindEpollCreatePostprocess(struct NaClApp *nap, int iserror, int* code, char* data, int len, void* xchangedata)
+{
+    BUILD_AND_RETURN_NACL_DESC();
+}
+
+int LindEpollCtlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
+{
+    CONVERT_NACL_DESC_TO_LIND_START;
+    CONVERT_NACL_DESC_TO_LIND(0);
+    CONVERT_NACL_DESC_TO_LIND(2);
+    CONVERT_NACL_DESC_TO_LIND_END;
+}
+
+typedef union epoll_data
+{
+  void *ptr;
+  int fd;
+  uint32_t u32;
+  uint64_t u64;
+} epoll_data_t;
+
+struct epoll_event
+{
+  uint32_t events;
+  epoll_data_t data;
+};
+
+int LindEpollWaitPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
+{
+    CONVERT_NACL_DESC_TO_LIND_START;
+    CONVERT_NACL_DESC_TO_LIND(0);
+    CONVERT_NACL_DESC_TO_LIND_END;
+}
+
+int LindEpollWaitPostprocess(struct NaClApp *nap, int iserror, int* code, char* data, int len, void* xchangedata)
+{
+    int retval = 0;
+    int nfds;
+    struct epoll_event* pfds;
+    struct NaClDesc * ndp;
+    int hfd;
+    UNREFERENCED_PARAMETER(nap);
+    UNREFERENCED_PARAMETER(iserror);
+    UNREFERENCED_PARAMETER(code);
+    UNREFERENCED_PARAMETER(len);
+    UNREFERENCED_PARAMETER(xchangedata);
+    nfds=*code;
+    pfds = (struct epoll_event*)data;
+    for(int i=0; i<nfds; ++i) {
+        for(int j=0; j<1024; ++j) {
+            NaClFastMutexLock(&nap->desc_mu);
+            ndp = NaClGetDescMu(nap, j);
+            NaClFastMutexUnlock(&nap->desc_mu);
+            if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+                continue;
+            }
+            hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
+            if(pfds[i].data.fd == hfd) {
+                pfds[i].data.fd = j;
+            }
+        }
+    }
+    return retval;
 }
 
 int LindSocketPairPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
@@ -510,9 +587,9 @@ int LindPollPostprocess(struct NaClApp *nap, int iserror, int* code, char* data,
     mapdata = (struct poll_map*)&((int*)xchangedata)[1]; //map data begins after sizeof(int) bytes
     pfds = (struct pollfd*)data;
     for(int i=0; i<nfds; ++i) {
-        for(int i=0; i<nfds; ++i) {
-            if(pfds[i].fd == mapdata[i].lind_fd) {
-                pfds[i].fd = mapdata[i].nacl_fd;
+        for(int j=0; j<nfds; ++j) {
+            if(pfds[i].fd == mapdata[j].lind_fd) {
+                pfds[i].fd = mapdata[j].nacl_fd;
             }
         }
     }
@@ -530,7 +607,7 @@ int LindPollCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void* 
     return 0;
 }
 
-StubType stubs[56]  =   {{NULL, NULL, NULL}, // 0
+StubType stubs[]    =   {{NULL, NULL, NULL}, // 0
                          {NULL, NULL, NULL}, // 1 LIND_debug_noop
                          {NULL, NULL, NULL}, // 2 LIND_safe_fs_access
                          {NULL, NULL, NULL}, // 3 LIND_debug_trace
@@ -565,14 +642,14 @@ StubType stubs[56]  =   {{NULL, NULL, NULL}, // 0
                          {LindSocketPreprocess, LindSocketPostprocess, NULL}, // 32 LIND_safe_net_socket
                          {LindCommonPreprocess, NULL, NULL}, // 33 LIND_safe_net_bind
                          {LindCommonPreprocess, NULL, NULL}, // 34 LIND_safe_net_send
-                         {NULL, NULL, NULL}, // 35 LIND_safe_net_sendto
+                         {LindCommonPreprocess, NULL, NULL}, // 35 LIND_safe_net_sendto
                          {LindCommonPreprocess, NULL, NULL}, // 36 LIND_safe_net_recv
                          {LindCommonPreprocess, NULL, NULL}, // 37 LIND_safe_net_recvfrom
                          {LindCommonPreprocess, NULL, NULL}, // 38 LIND_safe_net_connect
                          {LindCommonPreprocess, NULL, NULL}, // 39 LIND_safe_net_listen
                          {LindAcceptPreprocess, LindAcceptPostprocess, NULL}, // 40 LIND_safe_net_accept
-                         {NULL, NULL, NULL}, // 41
-                         {NULL, NULL, NULL}, // 42
+                         {LindCommonPreprocess, NULL, NULL}, // 41 LIND_safe_net_getpeername
+                         {LindCommonPreprocess, NULL, NULL}, // 42 LIND_safe_net_getsockname
                          {LindCommonPreprocess, NULL, NULL}, // 43 LIND_safe_net_getsockopt
                          {LindCommonPreprocess, NULL, NULL}, // 44 LIND_safe_net_setsockopt
                          {LindCommonPreprocess, NULL, NULL}, // 45 LIND_safe_net_shutdown
@@ -585,7 +662,10 @@ StubType stubs[56]  =   {{NULL, NULL, NULL}, // 0
                          {NULL, NULL, NULL}, // 52
                          {NULL, NULL, NULL}, // 53
                          {NULL, NULL, NULL}, // 54
-                         {NULL, NULL, NULL},}; // 55
+                         {NULL, NULL, NULL}, // 55
+                         {LindEpollCreatePreprocess, LindEpollCreatePostprocess, NULL}, // 56 epoll_create
+                         {LindEpollCtlPreprocess, NULL, NULL}, // 57 epoll_ctl
+                         {LindEpollWaitPreprocess, LindEpollWaitPostprocess, NULL},}; // 58 epoll_wait
 
 static int NaClCopyZStr(struct NaClApp *nap,
                         char           *dst_buffer,
@@ -619,6 +699,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     PyObject* callArgs = NULL;
     PyObject* apiArg = NULL;
     PyObject* response = NULL;
+    PyGILState_STATE gstate;
     unsigned int i;
     int offset;
     int _code;
@@ -629,6 +710,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
 
     NaClLog(3, "Entered NaClSysLindSyscall callNum=%8u inNum=%8u outNum=%8u\n", callNum, inNum, outNum);
 
+    gstate = PyGILState_Ensure();
     if(inNum>MAX_INARGS || outNum>MAX_OUTARGS) {
         NaClLog(LOG_ERROR, "NaClSysLindSyscall: Number of in/out arguments too large\n");
         retval = -NACL_ABI_EINVAL;
@@ -785,5 +867,6 @@ error:
 cleanup:
     Py_XDECREF(apiArg);
     Py_XDECREF(response);
+    PyGILState_Release(gstate);
     return retval;
 }
