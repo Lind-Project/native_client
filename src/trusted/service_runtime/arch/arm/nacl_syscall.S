@@ -17,17 +17,6 @@
  * module jumps to the trampoline corresponding to the syscall and then here.
  * This code switches the execution contexts (registers and stack) from
  * untrusted to trusted.
- *
- * on stack:
- *
- * top
- * =====
- * r0 - alignment for NaClSyscallCSegHook
- * lr - return address
- * arg 1
- * arg 2
- * .....
- * arg N
  */
 
 DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSeg):
@@ -45,13 +34,13 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSeg):
   cmp r2, r3
   bne NaClSyscallThreadCaptureFault
 
-  push {lr}
+  /* Save address of trampoline for determining which syscall was called. */
+  str lr, [sp, #-0x18]
 
-  /* Adjust the stack pointer to account for values pushed by trusted code. */
-  add sp, sp, #0x18
   /* store thread state to the nacl_user entry */
   stmia r0, NACL_CALLEE_SAVE_LIST
   /* if r0 is NULL, we would have faulted here */
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegRegsSaved):
 
   /*
    * Store the untrusted fpscr state and load the trusted fpscr into r2.
@@ -67,6 +56,7 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSeg):
   fmxr fpscr, r2
 
   bl  NaClSyscallCSegHook
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegEnd):
 
   /* NOTREACHED */
 

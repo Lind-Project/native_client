@@ -12,6 +12,8 @@
 #include "native_client/src/include/portability_io.h"
 
 #include <windows.h>
+#include <direct.h>
+#include <io.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <share.h>
@@ -29,6 +31,7 @@
 
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/trusted/service_runtime/internal_errno.h"
+#include "native_client/src/trusted/service_runtime/sel_util-inl.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
@@ -250,107 +253,137 @@ static INLINE size_t size_min(size_t a, size_t b) {
  * VirtualProtect (used by mprotect) can be used to turn on write when
  * the initial mmap had read-only mappings.
  *
- * BUG(bsy,phosek): we may need to retain the file object to serve
- * as backing store, as well as possibly for detecting dirty pages
- * by diffing.  This can cause unnecessary paging activity, however,
- * so invoking VirtualQuery to see if the page transitioned from
- * PAGE_WRITECOPY to PAGE_READWRITE has occurred might be better.
- * Additionally, VirtualQuery suggests using VirtualLock and then
- * QueryWorkingSetEx to check the Shared bit in the working set
- * information -- however, VirtualLock would itself cause the page
- * to fault in, so it's not clear that the benefits are huge
- * (performance trade-off between more syscalls vs memcmp).
+ * BUG(phosek): Due to Windows XP limitation, in particular the missing
+ * PAGE_EXECUTE_WRITECOPY protection support for file mapping objects,
+ * we cannot mmap r/o file as private, read/write and later make it
+ * executable or vice versa mmap r/o file as private, read/execute and
+ * later make it writable. This is a platform difference, but since
+ * untrusted code is not allowed to mmap files as write/execute, this
+ * difference is invisible to application developers and will therefore
+ * likely remain unresolved as the solution would likely be very
+ * expensive. Furthemore, after dropping the support for Windows XP, this
+ * difference can be easily resolved by updating the flag mapping.
  */
-static void NaClflProtectAndDesiredAccessMap(int prot,
-                                             int is_private,
-                                             int accmode,
-                                             DWORD *out_flProtect,
-                                             DWORD *out_dwDesiredAccess,
-                                             char const **out_msg) {
-#define M(p,da,err) { p, da, err, #p, #da }
+void NaClflProtectAndDesiredAccessMap(int prot,
+                                      int is_private,
+                                      int accmode,
+                                      DWORD *out_flMappingProtect,
+                                      DWORD *out_flProtect,
+                                      DWORD *out_dwDesiredAccess,
+                                      char const **out_msg) {
+#define M(mp,p,da,err) { mp, p, da, err, #mp, #p, #da }
   static struct {
+    DWORD flMappingProtect;
     DWORD flProtect;
     DWORD dwDesiredAccess;
     char const *err;
+    char const *flMappingProtect_str;
     char const *flProtect_str;
     char const *dwDesiredAccess_str;
   } table[] = {
     /* RDONLY */
     /* shared */
     /* PROT_NONE */
-    M(0, 0, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_NOACCESS, FILE_MAP_READ, NULL),
     /* PROT_READ */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_READONLY, FILE_MAP_READ, NULL),
     /* PROT_WRITE */
-    M(0, 0, "file open for read only; no shared write allowed"),
+    M(0, 0, 0, "file open for read only; no shared write allowed"),
     /* PROT_READ | PROT_WRITE */
-    M(0, 0, "file open for read only; no shared read/write allowed"),
+    M(0, 0, 0, "file open for read only; no shared read/write allowed"),
     /* PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE, FILE_MAP_READ | FILE_MAP_EXECUTE,
+      NULL),
     /* PROT_READ | PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE_READ, FILE_MAP_READ | FILE_MAP_EXECUTE,
+      NULL),
     /* PROT_WRITE | PROT_EXEC */
-    M(0, 0, "file open for read only; no shared write/exec allowed"),
+    M(0, 0, 0, "file open for read only; no shared write/exec allowed"),
     /* PROT_READ | PROT_WRITE | PROT_EXEC */
-    M(0, 0, "file open for read only; no shared read/write/exec allowed"),
+    M(0, 0, 0, "file open for read only; no shared read/write/exec allowed"),
 
     /* is_private */
     /* PROT_NONE */
-    M(0, 0, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_NOACCESS, FILE_MAP_READ, NULL),
     /* PROT_READ */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_READONLY, FILE_MAP_READ, NULL),
     /* PROT_WRITE */
-    M(PAGE_EXECUTE_READ, FILE_MAP_COPY, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_WRITECOPY, FILE_MAP_COPY, NULL),
     /* PROT_READ | PROT_WRITE */
-    M(PAGE_EXECUTE_READ, FILE_MAP_COPY, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_WRITECOPY, FILE_MAP_COPY, NULL),
+
+    /*
+     * NB: PAGE_EXECUTE_WRITECOPY is not supported on Server 2003 or
+     * XP, which means that the mmap will fail.  The behavior of
+     * PAGE_EXECUTE_WRITECOPY is the same as PAGE_EXECUTE_READ, so we
+     * just use that (possibly for backward compatibility / eventual
+     * transition?).
+     *
+     * Even with PAGE_EXECUTE_WRITECOPY, the PROT_WRITE | PROT_EXEC
+     * case where we are asking for FILE_MAP_COPY | FILE_MAP_EXECUTE
+     * seems to always fail, with GetLastError() yielding 87
+     * (ERROR_INVALID_PARAMETER).  This may be due to antivirus.
+     */
 
     /* PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE,
+      FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE_READ,
+      FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
     /* PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE_WRITECOPY,
+      FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READ, FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READ, PAGE_EXECUTE_WRITECOPY,
+      FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
 
     /* RDWR */
     /* shared */
     /* PROT_NONE */
-    M(0, 0, NULL ),
+    M(PAGE_EXECUTE_READWRITE, PAGE_NOACCESS, FILE_MAP_READ, NULL),
     /* PROT_READ */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_READONLY, FILE_MAP_READ, NULL),
     /* PROT_WRITE */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_WRITE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_READWRITE, FILE_MAP_WRITE, NULL),
     /* PROT_READ | PROT_WRITE */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_WRITE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_READWRITE, FILE_MAP_WRITE, NULL),
 
     /* PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE,
+      FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_READ,
+      FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
     /* PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_READWRITE,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_READWRITE,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
 
     /* is_private */
     /* PROT_NONE */
-    M(0, 0, NULL ),
+    M(PAGE_EXECUTE_READWRITE, PAGE_NOACCESS, FILE_MAP_READ, NULL),
     /* PROT_READ */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_READONLY, FILE_MAP_READ, NULL),
     /* PROT_WRITE */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_COPY, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_WRITECOPY, FILE_MAP_COPY, NULL),
     /* PROT_READ | PROT_WRITE */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_COPY, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_WRITECOPY, FILE_MAP_COPY, NULL),
 
     /* PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_READ | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_READ,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
     /* PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
     /* PROT_READ | PROT_WRITE | PROT_EXEC */
-    M(PAGE_EXECUTE_READWRITE, FILE_MAP_COPY | FILE_MAP_EXECUTE, NULL),
+    M(PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY,
+      FILE_MAP_WRITE | FILE_MAP_EXECUTE, NULL),
   };
 #undef M
 
@@ -381,12 +414,70 @@ static void NaClflProtectAndDesiredAccessMap(int prot,
 
   CHECK(ix < NACL_ARRAY_SIZE(table));  /* compiler should elide this */
 
-  *out_flProtect = table[ix].flProtect;
-  *out_dwDesiredAccess = table[ix].dwDesiredAccess;
-  *out_msg = table[ix].err;
+  if (NULL != out_flMappingProtect) {
+    *out_flMappingProtect = table[ix].flMappingProtect;
+  }
+  if (NULL != out_flProtect) {
+    *out_flProtect = table[ix].flProtect;
+  }
+  if (NULL != out_dwDesiredAccess) {
+    *out_dwDesiredAccess = table[ix].dwDesiredAccess;
+  }
+  if (NULL != out_msg) {
+    *out_msg = table[ix].err;
+  }
 
-  NaClLog(3, "NaClflProtectAndDesiredAccessMap: %s %s\n",
-          table[ix].flProtect_str, table[ix].dwDesiredAccess_str);
+  NaClLog(3, "NaClflProtectAndDesiredAccessMap: %s %s %s\n",
+          table[ix].flMappingProtect_str,
+          table[ix].flProtect_str,
+          table[ix].dwDesiredAccess_str);
+}
+
+/*
+ * Returns flProtect flags for VirtualAlloc'd memory, file based
+ * mappings should always use NaClflProtectAndDesiredAccessMap.
+ */
+DWORD NaClflProtectMap(int prot) {
+#define M(p) { p, #p }
+  static struct {
+    DWORD flProtect;
+    char const *flProtect_str;
+  } table[] = {
+    /* PROT_NONE */
+    M(PAGE_NOACCESS),
+    /* PROT_READ */
+    M(PAGE_READONLY),
+    /* PROT_WRITE */
+    M(PAGE_READWRITE),
+    /* PROT_READ | PROT_WRITE */
+    M(PAGE_READWRITE),
+
+    /* PROT_EXEC */
+    M(PAGE_EXECUTE),
+    /* PROT_READ | PROT_EXEC */
+    M(PAGE_EXECUTE_READ),
+    /* PROT_WRITE | PROT_EXEC */
+    M(PAGE_EXECUTE_READWRITE),
+    /* PROT_READ | PROT_WRITE | PROT_EXEC */
+    M(PAGE_EXECUTE_READWRITE),
+  };
+#undef M
+
+  size_t ix;
+
+  NaClLog(3, "NaClflProtectMap(prot 0x%x)\n", prot);
+
+  NACL_COMPILE_TIME_ASSERT(NACL_ABI_PROT_NONE == 0);
+  NACL_COMPILE_TIME_ASSERT(NACL_ABI_PROT_READ == 1);
+  NACL_COMPILE_TIME_ASSERT(NACL_ABI_PROT_WRITE == 2);
+  NACL_COMPILE_TIME_ASSERT(NACL_ABI_PROT_EXEC == 4);
+
+  ix = (prot & NACL_ABI_PROT_MASK);
+  CHECK(ix < NACL_ARRAY_SIZE(table));  /* compiler should elide this */
+
+  NaClLog(3, "NaClflProtectMap: %s\n", table[ix].flProtect_str);
+
+  return table[ix].flProtect;
 }
 
 /*
@@ -394,13 +485,13 @@ static void NaClflProtectAndDesiredAccessMap(int prot,
  * NaClHostDescPosixTake or NaClHostDescPosixDup, the underlying file
  * handle may not have GENERIC_EXECUTE permission associated with it,
  * unlike the files open using NaClHostDescOpen.  This means that the
- * CreateFileMapping with flProtect that specifies PAGE_EXECUTE_* will
- * fail.  Since we don't know whether GENERIC_EXECUTE without doing a
- * query, we instead lazily determine the need by detecting the
- * CreateFileMapping error and retrying using a fallback flProtect
- * that does not have EXECUTE rights.  We record this in the
- * descriptor so that the next time we do not have to try with the
- * PAGE_EXECUTE_* and have it deterministically fail.
+ * CreateFileMapping with flMappingProtect that specifies PAGE_EXECUTE_*
+ * will fail. Since we don't know whether GENERIC_EXECUTE without doing
+ * a query, we instead lazily determine the need by detecting the
+ * CreateFileMapping error and retrying using a fallback
+ * flMappingProtect that does not have EXECUTE rights.  We record this
+ * in the descriptor so that the next time we do not have to try with
+ * the PAGE_EXECUTE_* and have it deterministically fail.
  *
  * This function is also used when mapping in anonymous memory.  We
  * assume that we never map anonymous executable memory -- mmap of
@@ -410,10 +501,14 @@ static void NaClflProtectAndDesiredAccessMap(int prot,
  */
 static DWORD NaClflProtectRemoveExecute(DWORD flProtect) {
   switch (flProtect) {
+    case PAGE_EXECUTE:
+      return PAGE_NOACCESS;
     case PAGE_EXECUTE_READ:
       return PAGE_READONLY;
     case PAGE_EXECUTE_READWRITE:
       return PAGE_READWRITE;
+    case PAGE_EXECUTE_WRITECOPY:
+      return PAGE_WRITECOPY;
   }
   return flProtect;
 }
@@ -435,8 +530,10 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   HANDLE    hFile;
   HANDLE    hMap;
   int       retry_fallback;
-  DWORD     flProtect;
+  DWORD     flMappingProtect;
   DWORD     dwDesiredAccess;
+  DWORD     flProtect;
+  DWORD     flOldProtect;
   char const *err_msg;
   DWORD     dwMaximumSizeHigh;
   DWORD     dwMaximumSizeLow;
@@ -492,44 +589,14 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   flProtect = 0;
   dwDesiredAccess = 0;
 
-  if (NULL == d) {
-    desc_flags = NACL_ABI_O_RDWR;
-  } else {
-    desc_flags = d->flags;
-  }
-
-  if (0 != (desc_flags & NACL_ABI_O_APPEND) &&
-      0 != (prot & NACL_ABI_PROT_WRITE)) {
-    return (uintptr_t) -NACL_ABI_EACCES;
-  }
-  if (NACL_ABI_O_WRONLY == (desc_flags & NACL_ABI_O_ACCMODE)) {
-    return (uintptr_t) -NACL_ABI_EACCES;
-  }
-  if (NACL_ABI_PROT_NONE == prot) {
-    flProtect = PAGE_NOACCESS;
-    flags |= NACL_ABI_MAP_ANONYMOUS;
-  } else {
-    NaClflProtectAndDesiredAccessMap(prot,
-                                     0 != (flags & NACL_ABI_MAP_PRIVATE),
-                                     (desc_flags & NACL_ABI_O_ACCMODE),
-                                     &flProtect,
-                                     &dwDesiredAccess,
-                                     &err_msg);
-    if (0 == flProtect) {
-      NaClLog(3, "NaClHostDescMap: %s\n", err_msg);
-      return (uintptr_t) -NACL_ABI_EACCES;
-    }
-    NaClLog(3, "flProtect 0x%x, dwDesiredAccess 0x%x\n",
-            flProtect, dwDesiredAccess);
-  }
-
   if (0 != (flags & NACL_ABI_MAP_ANONYMOUS)) {
     /*
      * anonymous memory must be free'able later via VirtualFree
      */
     NaClLog(3, "NaClHostDescMap: anonymous mapping\n");
 
-    flProtect = NaClflProtectRemoveExecute(flProtect);
+    flProtect = NaClflProtectMap(prot & (~PROT_EXEC));
+    NaClLog(3, "NaClHostDescMap: flProtect 0x%x\n", flProtect);
 
     for (chunk_offset = 0;
          chunk_offset < len;
@@ -559,16 +626,45 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     return (uintptr_t) start_addr;
   }
 
+  if (NULL == d) {
+    desc_flags = NACL_ABI_O_RDWR;
+  } else {
+    desc_flags = d->flags;
+  }
+
+  if (0 != (desc_flags & NACL_ABI_O_APPEND) &&
+      0 != (prot & NACL_ABI_PROT_WRITE)) {
+    return (uintptr_t) -NACL_ABI_EACCES;
+  }
+  if (NACL_ABI_O_WRONLY == (desc_flags & NACL_ABI_O_ACCMODE)) {
+    return (uintptr_t) -NACL_ABI_EACCES;
+  }
+  NaClflProtectAndDesiredAccessMap(prot,
+                                   0 != (flags & NACL_ABI_MAP_PRIVATE),
+                                   (desc_flags & NACL_ABI_O_ACCMODE),
+                                   &flMappingProtect,
+                                   &flProtect,
+                                   &dwDesiredAccess,
+                                   &err_msg);
+  if (0 == flProtect) {
+    NaClLog(3, "NaClHostDescMap: %s\n", err_msg);
+    return (uintptr_t) -NACL_ABI_EACCES;
+  }
+  NaClLog(3,
+          "NaClHostDescMap: flMappingProtect 0x%x,"
+          " dwDesiredAccess 0x%x, flProtect 0x%x\n",
+          flMappingProtect, dwDesiredAccess, flProtect);
+
   hFile = (HANDLE) _get_osfhandle(d->d);
   dwMaximumSizeLow = 0;
   dwMaximumSizeHigh = 0;
 
   /*
-   * Ensure consistency of the d->flProtect access.
+   * Ensure consistency of the d->flMappingProtect access.
    */
   NaClFastMutexLock(&d->mu);
-  if (0 != d->flProtect) {
-    flProtect = d->flProtect;
+  if (0 != d->flMappingProtect) {
+    flMappingProtect = d->flMappingProtect;
     retry_fallback = 0;
   } else {
     retry_fallback = 1;
@@ -583,7 +679,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
      */
     hMap = CreateFileMapping(hFile,
                              NULL,
-                             flProtect,
+                             flMappingProtect,
                              dwMaximumSizeHigh,
                              dwMaximumSizeLow,
                              NULL);
@@ -591,10 +687,24 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
       if (retry_fallback && 0 == (prot & NACL_ABI_PROT_EXEC)) {
         NaClLog(3,
                 "NaClHostDescMap: CreateFileMapping failed, retrying without"
-                " execute permission.  Original flProtect 0x%x\n", flProtect);
-        flProtect = NaClflProtectRemoveExecute(flProtect);
+                " execute permission.  Original flMappingProtect 0x%x\n",
+                flMappingProtect);
+        NaClflProtectAndDesiredAccessMap(prot & (~PROT_EXEC),
+                                         0 != (flags & NACL_ABI_MAP_PRIVATE),
+                                         (desc_flags & NACL_ABI_O_ACCMODE),
+                                         &flMappingProtect,
+                                         &flProtect,
+                                         &dwDesiredAccess,
+                                         &err_msg);
+        if (0 == flProtect) {
+          NaClLog(3, "NaClHostDescMap: %s\n", err_msg);
+          return (uintptr_t) -NACL_ABI_EACCES;
+        }
+        flMappingProtect = NaClflProtectRemoveExecute(flMappingProtect);
         NaClLog(3,
-                "NaClHostDescMap: fallback flProtect 0x%x\n", flProtect);
+                "NaClHostDescMap: fallback flMappingProtect 0x%x,"
+                " dwDesiredAccess 0x%x, flProtect 0x%x\n",
+                flMappingProtect, dwDesiredAccess, flProtect);
       } else {
         NaClLog(3,
                 "NaClHostDescMap: not retrying, since caller explicitly asked"
@@ -604,15 +714,15 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     } else {
       /*
        * Remember successful flProtect used.  Note that this just
-       * ensures reads of d->flProtect gets a consistent value; we
-       * have a potential race where two threads perform mmap and in
+       * ensures reads of d->flMappingProtect gets a consistent value;
+       * we have a potential race where two threads perform mmap and in
        * parallel determine the replacement flProtect value.  This is
        * okay, since those two threads should arrive at the same
        * replacement value.  This could be replaced with an atomic
        * word.
        */
       NaClFastMutexLock(&d->mu);
-      d->flProtect = flProtect;
+      d->flMappingProtect = flMappingProtect;
       NaClFastMutexUnlock(&d->mu);
     }
   } while (--retry_fallback >= 0);
@@ -644,16 +754,28 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     net_offset = offset + chunk_offset;
     net_offset_high = (uint32_t) (net_offset >> 32);
     net_offset_low = (uint32_t) net_offset;
+    NaClLog(4,
+            "NaClHostDescMap: MapViewOfFileEx(hMap=%d, dwDesiredAccess=0x%x,"
+            " net_offset_high = 0x%08x, net_offset_low = 0x%08x,"
+            " chunk_size = 0x%"NACL_PRIxS", chunk_addr = 0x%"NACL_PRIxPTR"\n",
+            hMap, dwDesiredAccess, net_offset_high, net_offset_low,
+            chunk_size, chunk_addr);
     map_result = (uintptr_t) MapViewOfFileEx(hMap,
                                              dwDesiredAccess,
                                              net_offset_high,
                                              net_offset_low,
                                              chunk_size,
                                              (void *) chunk_addr);
+    NaClLog(3,
+            "NaClHostDescMap: map_result %"NACL_PRIxPTR
+            ", chunk_addr %"NACL_PRIxPTR
+            ", addr + chunk_offset %"NACL_PRIxPTR"\n",
+            map_result, chunk_addr, (addr + chunk_offset));
     if ((addr + chunk_offset) != map_result) {
       DWORD err = GetLastError();
       NaClLog(LOG_INFO,
-              "MapViewOfFileEx failed at 0x%08x, got 0x%08x, err %x\n",
+              "MapViewOfFileEx failed at 0x%08"NACL_PRIxPTR
+              ", got 0x%08"NACL_PRIxPTR", err %x\n",
               addr + chunk_offset,
               map_result,
               err);
@@ -664,6 +786,17 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
       }
       retval = (uintptr_t) -NaClXlateSystemError(err);
       goto cleanup;
+    }
+    if (!VirtualProtect((void *) map_result,
+                        NaClRoundPage(chunk_size),
+                        flProtect,
+                        &flOldProtect)) {
+        DWORD err = GetLastError();
+        NaClLog(LOG_INFO,
+                "VirtualProtect failed at 0x%08x, err %x\n",
+                addr, err);
+        retval = (uintptr_t) -NaClXlateSystemError(err);
+        goto cleanup;
     }
   }
   retval = (uintptr_t) start_addr;
@@ -698,7 +831,7 @@ static void NaClHostDescCtorIntern(struct NaClHostDesc *hd,
 
   hd->d = posix_d;
   hd->flags = flags;
-  hd->flProtect = 0;
+  hd->flMappingProtect = 0;
   if (_fstat64(posix_d, &stbuf) != 0) {
     /* inherited non-fstat'able are IPC channels, e.g., for bootstrap channel */
     NaClLog(4,
@@ -802,7 +935,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
   }
 
   NaClLog(1,
-          "NaClHostDescOpen: CreateFileA(path=%s, desired_access=%d,"
+          "NaClHostDescOpen: CreateFileA(path=%s, desired_access=0x%x,"
           " share_mode=ALL, security_attributes=NULL, creation_disposition=%d,"
           " flags_and_attributes=%d, template_file=NULL)\n",
           path, dwDesiredAccess, dwCreationDisposition, dwFlagsAndAttributes);
@@ -1197,5 +1330,36 @@ int NaClHostDescStat(char const       *host_os_pathname,
     return -GetErrno();
   }
 
+  return 0;
+}
+
+int NaClHostDescMkdir(const char *path, int mode) {
+  UNREFERENCED_PARAMETER(mode);
+  if (_mkdir(path) != 0)
+    return -NaClXlateErrno(errno);
+  return 0;
+}
+
+int NaClHostDescRmdir(const char *path) {
+  if (_rmdir(path) != 0)
+    return -NaClXlateErrno(errno);
+  return 0;
+}
+
+int NaClHostDescChdir(const char *path) {
+  if (_chdir(path) != 0)
+    return -NaClXlateErrno(errno);
+  return 0;
+}
+
+int NaClHostDescGetcwd(char *path, size_t len) {
+  if (_getcwd(path, (int) len) == NULL)
+    return -NaClXlateErrno(errno);
+  return 0;
+}
+
+int NaClHostDescUnlink(const char *path) {
+  if (_unlink(path) != 0)
+    return -errno;
   return 0;
 }

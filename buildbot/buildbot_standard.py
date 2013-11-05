@@ -271,26 +271,6 @@ def BuildScript(status, context):
     with Step('build ncval-x86-64', status):
       SCons(context, platform='x86-64', parallel=True, args=['ncval'])
 
-    with Step('clobber dfa_validator', status):
-      Command(context, cmd=['rm', '-rf', 'dfa_validator'])
-    with Step('clone dfa_validator', status):
-      Command(context, cmd=[
-          'git', 'clone',
-          'git://github.com/mseaborn/x86-decoder.git', 'dfa_validator32'])
-      Command(context, cmd=[
-          'git', 'checkout', '1a5963fa48739c586d5bbd3d46d0a8a7f25112f2'],
-          cwd='dfa_validator32')
-      Command(context, cmd=[
-          'git', 'clone',
-          'git://github.com/mseaborn/x86-decoder.git', 'dfa_validator64'])
-      Command(context, cmd=[
-          'git', 'checkout', '6ffa36f44cafd2cdad37e1e27254c498030ff712'],
-          cwd='dfa_validator64')
-    with Step('build dfa_validator_32', status):
-      Command(context, cmd=['make'], cwd='dfa_validator32')
-    with Step('build dfa_validator_64', status):
-      Command(context, cmd=['make'], cwd='dfa_validator64')
-
     with Step('build ragel_validator-32', status):
       SCons(context, platform='x86-32', parallel=True, args=['ncval_new'])
     with Step('build ragel_validator-64', status):
@@ -310,15 +290,6 @@ def BuildScript(status, context):
         halt_on_fail=False):
       ValidatorTest(
           context, 'x86-64', 'scons-out/opt-linux-x86-64/staging/ncval')
-
-    with Step('validator_regression_test dfa x86-32', status,
-        halt_on_fail=False):
-      ValidatorTest(
-          context, 'x86-32', 'dfa_validator32/dfa_ncval', warn_only=True)
-    with Step('validator_regression_test dfa x86-64', status,
-        halt_on_fail=False):
-      ValidatorTest(
-          context, 'x86-64', 'dfa_validator64/dfa_ncval', warn_only=True)
 
     with Step('validator_regression_test ragel x86-32', status,
         halt_on_fail=False):
@@ -379,26 +350,6 @@ def BuildScript(status, context):
     SCons(context, mode=context['default_scons_mode'] + ['nacl_irt_test'],
           args=['medium_tests_irt'])
 
-  # TODO(eugenis): reenable this on clang/opt once the LLVM issue is fixed
-  # http://code.google.com/p/nativeclient/issues/detail?id=2473
-  bug2473 = (context['clang'] or context['asan']) and context['mode'] == 'opt'
-  if context.Mac() and context['arch'] != 'arm' and not bug2473:
-    # We don't run all tests on x86-64 Mac yet because it would slow
-    # down the bots too much.  We just run a small set of tests that
-    # have previously been fixed to pass, in order to prevent
-    # regressions.
-    # TODO(mseaborn): Remove this when we have bots dedicated to
-    # testing x86-64 Mac.
-    with Step('minimal x86-64 test', status, halt_on_fail=False):
-      SCons(context, parallel=True, platform='x86-64',
-            args=['exception_tests',
-                  'run_hello_world_test',
-                  'run_execute_data_test',
-                  'run_nacl_signal_test',
-                  'run_signal_frame_test',
-                  'run_signal_handler_test',
-                  'run_trusted_mmap_test'])
-
   ### END tests ###
 
   if not context['no_gyp']:
@@ -406,7 +357,7 @@ def BuildScript(status, context):
     gyp_defines_save = context.GetEnv('GYP_DEFINES')
     context.SetEnv('GYP_DEFINES',
                    ' '.join([gyp_defines_save, 'nacl_validator_ragel=0']))
-    with Step('gyp_compile_ragel', status):
+    with Step('gyp_compile_noragel', status):
       # Clobber GYP build to recompile necessary files with new preprocessor macro
       # definitions.  It is done because some build systems (such as GNU Make,
       # MSBuild etc.) do not consider compiler arguments as a dependency.

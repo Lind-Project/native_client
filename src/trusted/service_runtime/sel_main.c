@@ -484,7 +484,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING") != NULL) {
     state.enable_exception_handling = 1;
   }
-  if (state.enable_exception_handling || enable_debug_stub) {
+  /*
+   * TODO(mseaborn): Always enable the Mach exception handler on Mac
+   * OS X, and remove handle_signals and sel_ldr's "-S" option.
+   */
+  if (state.enable_exception_handling || enable_debug_stub ||
+      (handle_signals && NACL_OSX)) {
 #if NACL_WINDOWS
     state.attach_debug_exception_handler_func =
         NaClDebugExceptionHandlerStandaloneAttach;
@@ -498,9 +503,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 #else
 # error Unknown host OS
 #endif
-  }
-  if (NACL_LINUX) {
-    handle_signals = 1;
   }
 
   errcode = LOAD_OK;
@@ -539,19 +541,18 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  if (handle_signals) {
-    NaClSignalHandlerInit();
-  } else {
-    /*
-     * Patch the Windows exception dispatcher to be safe in the case
-     * of faults inside x86-64 sandboxed code.  The sandbox is not
-     * secure on 64-bit Windows without this.
-     */
+#if NACL_LINUX
+  NaClSignalHandlerInit();
+#endif
+  /*
+   * Patch the Windows exception dispatcher to be safe in the case of
+   * faults inside x86-64 sandboxed code.  The sandbox is not secure
+   * on 64-bit Windows without this.
+   */
 #if (NACL_WINDOWS && NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && \
      NACL_BUILD_SUBARCH == 64)
-    NaClPatchWindowsExceptionDispatcher();
+  NaClPatchWindowsExceptionDispatcher();
 #endif
-  }
   NaClSignalTestCrashOnStartup();
 
   /*
@@ -867,7 +868,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
   fflush(stdout);
 
-  if (handle_signals) NaClSignalHandlerFini();
+#if NACL_LINUX
+  NaClSignalHandlerFini();
+#endif
   NaClAllModulesFini();
 
   if(!LindPythonFinalize()) {

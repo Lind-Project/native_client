@@ -197,13 +197,13 @@
             }],
             ['OS=="linux" or OS=="mac" or OS=="FreeBSD"', {
               'sources': [
-                'posix/nacl_signal.c',
+                'posix/nacl_signal_stack.c',
                 'posix/sel_addrspace_posix.c',
                ],
             }],
             ['OS=="win"', {
               'sources': [
-                'win/nacl_signal.c',
+                'win/nacl_signal_stack.c',
                 'win/sel_addrspace_win.c',
                 'win/thread_suspension.c',
                 'win/vm_hole.c',
@@ -258,13 +258,18 @@
         ['target_arch == "ia32"', {
           'dependencies': [
             'arch/x86_32/service_runtime_x86_32.gyp:service_runtime_x86_32',
-            '<(DEPTH)/native_client/src/trusted/validator/x86/32/validator_x86_32.gyp:ncvalidate_x86_32',
+            '<(DEPTH)/native_client/src/trusted/validator_x86/validator_x86.gyp:nccopy_x86_32',
           ],
         }],
         ['target_arch == "x64"', {
           'dependencies': [
             'arch/x86_64/service_runtime_x86_64.gyp:service_runtime_x86_64',
-            '<(DEPTH)/native_client/src/trusted/validator/x86/64/validator_x86_64.gyp:ncvalidate_x86_64',
+            '<(DEPTH)/native_client/src/trusted/validator_x86/validator_x86.gyp:nccopy_x86_64',
+          ],
+        }],
+        ['OS=="linux" or OS=="FreeBSD"', {
+          'dependencies': [
+            'nacl_signal',
           ],
         }],
       ],
@@ -343,7 +348,7 @@
             '<(DEPTH)/native_client/src/trusted/manifest_name_service_proxy/manifest_name_service_proxy.gyp:manifest_proxy64',
             '<(DEPTH)/native_client/src/trusted/simple_service/simple_service.gyp:simple_service64',
             '<(DEPTH)/native_client/src/trusted/threading/threading.gyp:thread_interface64',
-            '<(DEPTH)/native_client/src/trusted/validator/x86/64/validator_x86_64.gyp:ncvalidate_x86_64',
+            '<(DEPTH)/native_client/src/trusted/validator_x86/validator_x86.gyp:nccopy_x86_64',
             '<(DEPTH)/native_client/src/trusted/validator/validator.gyp:validation_cache64',
             '<(DEPTH)/native_client/src/trusted/validator/validator.gyp:validators64',
             'arch/x86/service_runtime_x86.gyp:service_runtime_x86_common64',
@@ -409,5 +414,32 @@
         },
       ],
     }],
-  ]
+    ['OS=="linux" or OS=="FreeBSD"', {
+      'targets': [
+        {
+          # This has to be an independent target in order to benefit from
+          # specific flags.
+          'target_name': 'nacl_signal',
+          'type': 'static_library',
+          'conditions': [
+            ['target_arch=="ia32"', {
+              # nacl_signal.c needs to be compiled without the stack
+              # protector on i386.
+              # See https://code.google.com/p/nativeclient/issues/detail?id=3581.
+              'cflags!': [
+                '-fstack-protector',
+                '-fstack-protector-all',
+              ],
+              'cflags': [
+                '-fno-stack-protector',
+              ],
+            }],
+          ],
+          'sources': [
+            'linux/nacl_signal.c',
+          ],
+        },
+      ],
+    }],
+  ],
 }

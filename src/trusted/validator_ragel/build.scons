@@ -182,10 +182,12 @@ if ragel_involved:
     include_dir = rl_instruction_file.dir.get_abspath()
     assert include_dir == byte_machines.dir.get_abspath()
 
-    rl_file = env.File('%s_x86_%s.rl' % (automaton, bits))
+    # Don't use env.File because filename is written "as is" in XML file.
+    # We want relative path there, not an absolute one!
+    rl_file = 'src/trusted/validator_ragel/%s_x86_%s.rl' % (automaton, bits)
 
     (xml_file,) = env.AutoDepsCommand(
-        '%s_x86_%s.xml' % (automaton, bits),
+        '%s/%s_x86_%s.xml' % (gen_dir, automaton, bits),
         [ragel_binary,
          '-x',
          '-LL',
@@ -344,7 +346,9 @@ if ragel_involved:
     # Files which directly affect the validator behavior.
     protected_files = [
       'gen/validator_x86_32.c',
+      'gen/validator_x86_32.xml',
       'gen/validator_x86_64.c',
+      'gen/validator_x86_64.xml',
       'validator_internal.h',
       'decoder.h',
       'decoding.h',

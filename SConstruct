@@ -1139,7 +1139,10 @@ def GetValidator(env, validator):
     elif env.Bit('build_mips32'):
       validator = 'mips-ncval-core'
     else:
-      validator = 'ncval'
+      if env.Bit('validator_ragel'):
+        validator = 'ncval_new'
+      else:
+        validator = 'ncval'
 
   trusted_env = env['TRUSTED_ENV']
   return trusted_env.File('${STAGING_DIR}/${PROGPREFIX}%s${PROGSUFFIX}' %
@@ -1187,6 +1190,11 @@ pre_base_env.AddMethod(GetSelLdrSeccomp)
 
 def SupportsSeccompBpfSandbox(env):
   if not (env.Bit('linux') and env.Bit('build_x86_64')):
+    return False
+
+  # The gcov runtime does some extra calls (such as 'access') that
+  # are not permitted by the policy.
+  if env.Bit('coverage_enabled'):
     return False
 
   # This is a lame detection if seccomp bpf filters are supported by the kernel.
@@ -1440,6 +1448,8 @@ def GetTranslatedNexe(env, pexe):
   # Make sure the pexe doesn't get removed by the fake builders when
   # built_elsewhere=1
   env.Precious(pexe)
+  if env.Bit('nonstable_bitcode'):
+    env.Append(TRANSLATEFLAGS=['--allow-llvm-bitcode-input'])
   node = env.Command(target=nexe_name, source=[pexe_name],
                      action=[Action('${TRANSLATECOM}', '${TRANSLATECOMSTR}')])
   assert len(node) == 1, node
@@ -1978,7 +1988,7 @@ pre_base_env.AddMethod(MakeGTestEnv)
 
 def MakeUntrustedNativeEnv(env):
   native_env = nacl_env.Clone()
-  if native_env.Bit('bitcode'):
+  if native_env.Bit('bitcode') and not native_env.Bit('target_mips32'):
     native_env = native_env.PNaClGetNNaClEnv()
   return native_env
 
@@ -2703,7 +2713,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
 def IsNewLinker(env):
   """Return True if using a new-style linker with the new-style layout.
 That means the linker supports the -Trodata-segment switch."""
-  return env.Bit('target_arm') and not env.Bit('bitcode')
+  return env.Bit('target_arm') or env.Bit('bitcode')
 
 nacl_env.AddMethod(IsNewLinker)
 
@@ -2748,16 +2758,8 @@ def TextSwitch(env, value):
   """ Return a string of arguments to place the text segment at |value|.
 Assume the string is going to the compiler driver, rather than directly
 to the linker. """
-  # The gold linker does not support -Ttext-segment, but -Ttext does the
-  # same thing that -Ttext-segment does in the bfd linker. However,
-  # -Ttext seems to be broken in gold currently (see bug
-  # https://code.google.com/p/nativeclient/issues/detail?id=3573 )
-  # Using --section-start .text= as a workaround works because PNaCl only uses
-  # one text section (no .init etc)
-  if env.Bit('bitcode'):
-    return '-Wn,--section-start,.text=' + value
-  else:
-    return '-Wl,-Ttext-segment=' + value
+  # TODO(dschuff): just replace uses of this with the flag directly.
+  return '-Wl,-Ttext-segment=' + value
 
 nacl_env.AddMethod(TextSwitch)
 
@@ -3100,6 +3102,7 @@ irt_variant_tests = [
     'tests/math/nacl.scons',
     'tests/memcheck_test/nacl.scons',
     'tests/mmap/nacl.scons',
+    'tests/mmap_main_nexe/nacl.scons',
     'tests/mmap_prot_exec/nacl.scons',
     'tests/mmap_race_protect/nacl.scons',
     'tests/nacl_log/nacl.scons',
@@ -3261,7 +3264,9 @@ nacl_irt_env.ClearBits('nacl_glibc')
 nacl_irt_env.ClearBits('nacl_pic')
 nacl_irt_env.ClearBits('pnacl_shared_newlib')
 # We build the IRT using the nnacl TC even when the pnacl TC is used otherwise.
-if not nacl_irt_env.Bit('target_mips32'):
+if nacl_irt_env.Bit('target_mips32') or nacl_irt_env.Bit('target_x86_64'):
+  nacl_irt_env.SetBits('bitcode')
+else:
   nacl_irt_env.ClearBits('bitcode')
 nacl_irt_env.ClearBits('pnacl_generate_pexe')
 nacl_irt_env.ClearBits('use_sandboxed_translator')
@@ -3278,14 +3283,21 @@ FixWindowsAssembler(nacl_irt_env)
 # Make it find the libraries it builds, rather than the SDK ones.
 nacl_irt_env.Replace(LIBPATH='${LIB_DIR}')
 
+if nacl_irt_env.Bit('bitcode'):
+  if nacl_irt_env.Bit('target_x86_64'):
+    nacl_irt_env.Append(CCFLAGS=['--target=x86_64-nacl'])
+    nacl_irt_env.Append(LINKFLAGS=['--target=x86_64-nacl',
+                                   '--pnacl-allow-translate',
+                                   '-arch', 'x86-64'])
+
 # All IRT code must avoid direct use of the TLS ABI register, which
 # is reserved for user TLS.  Instead, ensure all TLS accesses use a
 # call to __nacl_read_tp, which the IRT code overrides to segregate
 # IRT-private TLS from user TLS.
-if nacl_irt_env.Bit('target_arm'):
-  nacl_irt_env.Append(CCFLAGS=['-mtp=soft'])
-elif nacl_irt_env.Bit('target_mips32'):
+if nacl_irt_env.Bit('bitcode'):
   nacl_irt_env.Append(LINKFLAGS=['--pnacl-allow-native', '-Wt,-mtls-use-call'])
+elif nacl_irt_env.Bit('target_arm'):
+  nacl_irt_env.Append(CCFLAGS=['-mtp=soft'])
 else:
   nacl_irt_env.Append(CCFLAGS=['-mtls-use-call'])
 # A debugger should be able to unwind IRT call frames. As the IRT is compiled

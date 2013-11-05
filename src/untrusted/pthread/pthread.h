@@ -66,7 +66,7 @@ typedef struct {
    * mutex_state is either UNLOCKED (0), LOCKED_WITHOUT_WAITERS (1) or
    * LOCKED_WITH_WAITERS (2).  See "enum MutexState".
    */
-  int mutex_state;
+  volatile int mutex_state;
 
   /**
    * The kind of mutex:
@@ -201,13 +201,9 @@ extern int pthread_mutex_trylock(pthread_mutex_t *mutex);
 */
 extern int pthread_mutex_lock(pthread_mutex_t *mutex);
 
-/* TODO(gregoryd) - depends on implementation */
-#if 0
 /* Wait until lock becomes available, or specified time passes. */
-/* TODO(gregoryd): consider implementing this function. */
 extern int pthread_mutex_timedlock(pthread_mutex_t *mutex,
                                    struct timespec *abstime);
-#endif
 
 /** @nqPosix
 * Unlocks a mutex.

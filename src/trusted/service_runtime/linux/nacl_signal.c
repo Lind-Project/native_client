@@ -8,10 +8,9 @@
 #include <signal.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <unistd.h>
 
 #include "native_client/src/include/nacl_macros.h"
+#include "native_client/src/include/portability_io.h"
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_exit.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -21,6 +20,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_exception.h"
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
+#include "native_client/src/trusted/service_runtime/nacl_tls.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
@@ -31,27 +31,19 @@
  * http://www.opengroup.org/onlinepubs/009695399/functions/sigaction.html
  */
 
-#ifndef MAP_ANONYMOUS
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-
 /*
- * TODO(noelallen) split these macros and conditional compiles
- * into architecture specific files. Bug #955
+ * The signals listed here should either be handled by NaCl (or otherwise
+ * trusted) or have handlers that are expected to crash.
+ * Signals for which handlers are expected to crash should be listed
+ * in the NaClSignalHandleCustomCrashHandler function below.
  */
-
-/* Use 4K more than the minimum to allow breakpad to run. */
-#define SIGNAL_STACK_SIZE (SIGSTKSZ + 4096)
-#define STACK_GUARD_SIZE NACL_PAGESIZE
-
 static int s_Signals[] = {
-#if NACL_LINUX
-# if NACL_ARCH(NACL_BUILD_ARCH) != NACL_mips
+#if NACL_ARCH(NACL_BUILD_ARCH) != NACL_mips
   /* This signal does not exist on MIPS. */
   SIGSTKFLT,
-# endif
-  NACL_THREAD_SUSPEND_SIGNAL,
 #endif
+  SIGSYS, /* Used to support a seccomp-bpf sandbox. */
+  NACL_THREAD_SUSPEND_SIGNAL,
   SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV,
   /* Handle SIGABRT in case someone sends it asynchronously using kill(). */
   SIGABRT
@@ -65,85 +57,87 @@ void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
 }
 
-int NaClSignalStackAllocate(void **result) {
+/*
+ * Returns, via is_untrusted, whether the signal happened while
+ * executing untrusted code.
+ *
+ * Returns, via result_thread, the NaClAppThread that untrusted code
+ * was running in.
+ *
+ * Note that this should only be called from the thread in which the
+ * signal occurred, because on x86-64 it reads a thread-local variable
+ * (nacl_current_thread).
+ */
+static void GetCurrentThread(const struct NaClSignalContext *sig_ctx,
+                             int *is_untrusted,
+                             struct NaClAppThread **result_thread) {
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   /*
-   * We use mmap() to allocate the signal stack for two reasons:
+   * For x86-32, if %cs does not match, it is untrusted code.
    *
-   * 1) By page-aligning the memory allocation (which malloc() does
-   * not do for small allocations), we avoid allocating any real
-   * memory in the common case in which the signal handler is never
-   * run.
-   *
-   * 2) We get to create a guard page, to guard against the unlikely
-   * occurrence of the signal handler both overrunning and doing so in
-   * an exploitable way.
+   * Note that this check might not be valid on Mac OS X, because
+   * thread_get_state() does not return the value of NaClGetGlobalCs()
+   * for a thread suspended inside a syscall.  However, this code is
+   * not used on Mac OS X.
    */
-  uint8_t *stack = mmap(NULL, SIGNAL_STACK_SIZE + STACK_GUARD_SIZE,
-                        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
-                        -1, 0);
-  if (stack == MAP_FAILED) {
-    return 0;
+  *is_untrusted = (NaClGetGlobalCs() != sig_ctx->cs);
+  *result_thread = NaClAppThreadGetFromIndex(sig_ctx->gs >> 3);
+#elif (NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64) || \
+      NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm || \
+      NACL_ARCH(NACL_BUILD_ARCH) == NACL_mips
+  struct NaClAppThread *natp = NaClTlsGetCurrentThread();
+  if (natp == NULL) {
+    *is_untrusted = 0;
+    *result_thread = NULL;
+  } else {
+    /*
+     * Get the address of an arbitrary local, stack-allocated variable,
+     * just for the purpose of doing a sanity check.
+     */
+    void *pointer_into_stack = &natp;
+    /*
+     * Sanity check: Make sure the stack we are running on is not
+     * allocated in untrusted memory.  This checks that the alternate
+     * signal stack is correctly set up, because otherwise, if it is
+     * not set up, the test case would not detect that.
+     *
+     * There is little point in doing a CHECK instead of a DCHECK,
+     * because if we are running off an untrusted stack, we have already
+     * lost.
+     */
+    DCHECK(!NaClIsUserAddr(natp->nap, (uintptr_t) pointer_into_stack));
+    *is_untrusted = NaClIsUserAddr(natp->nap, sig_ctx->prog_ctr);
+    *result_thread = natp;
   }
-  /* We assume that the stack grows downwards. */
-  if (mprotect(stack, STACK_GUARD_SIZE, PROT_NONE) != 0) {
-    NaClLog(LOG_FATAL, "Failed to mprotect() the stack guard page:\n\t%s\n",
-      strerror(errno));
-  }
-  *result = stack;
-  return 1;
-}
-
-void NaClSignalStackFree(void *stack) {
-  CHECK(stack != NULL);
-  if (munmap(stack, SIGNAL_STACK_SIZE + STACK_GUARD_SIZE) != 0) {
-    NaClLog(LOG_FATAL, "Failed to munmap() signal stack:\n\t%s\n",
-      strerror(errno));
-  }
-}
-
-void NaClSignalStackRegister(void *stack) {
-  /*
-   * If we set up signal handlers, we must ensure that any thread that
-   * runs untrusted code has an alternate signal stack set up.  The
-   * default for a new thread is to use the stack pointer from the
-   * point at which the fault occurs, but it would not be safe to use
-   * untrusted code's %esp/%rsp value.
-   */
-  stack_t st;
-  st.ss_size = SIGNAL_STACK_SIZE;
-  st.ss_sp = ((uint8_t *) stack) + STACK_GUARD_SIZE;
-  st.ss_flags = 0;
-  if (sigaltstack(&st, NULL) != 0) {
-    NaClLog(LOG_FATAL, "Failed to register signal stack:\n\t%s\n",
-      strerror(errno));
-  }
-}
-
-void NaClSignalStackUnregister(void) {
-  /*
-   * Unregister the signal stack in case a fault occurs between the
-   * thread deallocating the signal stack and exiting.  Such a fault
-   * could be unsafe if the address space were reallocated before the
-   * fault, although that is unlikely.
-   */
-  stack_t st;
-#if NACL_OSX
-  /*
-   * This is a workaround for a bug in Mac OS X's libc, in which new
-   * versions of the sigaltstack() wrapper return ENOMEM if ss_size is
-   * less than MINSIGSTKSZ, even when ss_size should be ignored
-   * because we are unregistering the signal stack.
-   * See http://code.google.com/p/nativeclient/issues/detail?id=1053
-   */
-  st.ss_size = MINSIGSTKSZ;
 #else
-  st.ss_size = 0;
+# error Unsupported architecture
 #endif
-  st.ss_sp = NULL;
-  st.ss_flags = SS_DISABLE;
-  if (sigaltstack(&st, NULL) != 0) {
-    NaClLog(LOG_FATAL, "Failed to unregister signal stack:\n\t%s\n",
-      strerror(errno));
+
+  /*
+   * Trusted code could accidentally jump into sandbox address space,
+   * so don't rely on prog_ctr on its own for determining whether a
+   * crash comes from untrusted code.  We don't want to restore
+   * control to an untrusted exception handler if trusted code
+   * crashes.
+   */
+  if (*is_untrusted &&
+      ((*result_thread)->suspend_state & NACL_APP_THREAD_UNTRUSTED) == 0) {
+    *is_untrusted = 0;
+  }
+}
+
+/*
+ * If |sig| had a handler that was expected to crash, exit.
+ */
+static void NaClSignalHandleCustomCrashHandler(int sig) {
+  /* Only SIGSYS is expected to have a custom crash handler. */
+  if (sig == SIGSYS) {
+    char tmp[128];
+    SNPRINTF(tmp, sizeof(tmp),
+        "\n** Signal %d has a custom crash handler but did not crash.\n",
+        sig);
+    NaClSignalErrorMessage(tmp);
+    NaClExit(-sig);
   }
 }
 
@@ -167,6 +161,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
         if (s_OldActions[a].sa_sigaction != NULL) {
           /* then call the old handler. */
           s_OldActions[a].sa_sigaction(sig, info, uc);
+          NaClSignalHandleCustomCrashHandler(sig);
           break;
         }
       } else {
@@ -175,6 +170,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
             (s_OldActions[a].sa_handler != SIG_IGN)) {
           /* and call the old signal. */
           s_OldActions[a].sa_handler(sig);
+          NaClSignalHandleCustomCrashHandler(sig);
           break;
         }
       }
@@ -294,7 +290,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 #endif
 
   NaClSignalContextFromHandler(&sig_ctx, uc);
-  NaClSignalContextGetCurrentThread(&sig_ctx, &is_untrusted, &natp);
+  GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   /*
@@ -312,27 +308,30 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
    * Note that, in comparison, Breakpad tries to avoid using libc
    * calls at all when a crash occurs.
    *
-   * On Mac OS X, the kernel *does* restore the original %gs when
-   * entering the signal handler.  Our assignment to %gs here is
-   * therefore not strictly necessary, but not harmful.  However, this
-   * does mean we need to check the original %gs value (from the
-   * signal frame) rather than the current %gs value (from
-   * NaClGetGs()).
+   * For comparison, on Mac OS X, the kernel *does* restore the
+   * original %gs when entering the signal handler.  On Mac, our
+   * assignment to %gs here wouldn't be necessary, but it wouldn't be
+   * harmful either.  However, this code is not currently used on Mac
+   * OS X.
    *
-   * Both systems necessarily restore %cs, %ds, and %ss otherwise we
-   * would have a hard time handling signals in untrusted code at all.
+   * Both Linux and Mac OS X necessarily restore %cs, %ds, and %ss
+   * otherwise we would have a hard time handling signals generated by
+   * untrusted code at all.
    *
    * Note that we check natp (which is based on %gs) rather than
    * is_untrusted (which is based on %cs) because we need to handle
    * the case where %gs is set to the untrusted-code value but %cs is
    * not.
+   *
+   * GCC's stack protector (-fstack-protector) will make use of %gs even before
+   * we have a chance to restore it. It is important that this function is not
+   * compiled with -fstack-protector.
    */
   if (natp != NULL) {
     NaClSetGs(natp->user.trusted_gs);
   }
 #endif
 
-#if NACL_LINUX
   if (sig != SIGINT && sig != SIGQUIT) {
     if (NaClThreadSuspensionSignalHandler(sig, &sig_ctx, is_untrusted, natp)) {
       NaClSignalContextToHandler(uc, &sig_ctx);
@@ -340,7 +339,6 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
       return;
     }
   }
-#endif
 
   if (is_untrusted && sig == SIGSEGV) {
     if (DispatchToUntrustedHandler(natp, &sig_ctx)) {
@@ -397,7 +395,7 @@ static void AssertNoOtherSignalHandlers(void) {
        * valid signal number, which produces EINVAL.
        */
       if (errno != EINVAL) {
-        NaClLog(LOG_FATAL, "NaClSignalHandlerInitPlatform: "
+        NaClLog(LOG_FATAL, "AssertNoOtherSignalHandlers: "
                 "sigaction() call failed for signal %d: errno=%d\n",
                 signum, errno);
       }
@@ -415,13 +413,13 @@ static void AssertNoOtherSignalHandlers(void) {
             sa.sa_sigaction == (void (*)(int, siginfo_t *, void *)) SIG_IGN)
           continue;
       }
-      NaClLog(LOG_FATAL, "NaClSignalHandlerInitPlatform: "
+      NaClLog(LOG_FATAL, "AssertNoOtherSignalHandlers: "
               "A signal handler is registered for signal %d\n", signum);
     }
   }
 }
 
-void NaClSignalHandlerInitPlatform(void) {
+void NaClSignalHandlerInit(void) {
   struct sigaction sa;
   unsigned int a;
 
@@ -455,7 +453,7 @@ void NaClSignalHandlerInitPlatform(void) {
   }
 }
 
-void NaClSignalHandlerFiniPlatform(void) {
+void NaClSignalHandlerFini(void) {
   unsigned int a;
 
   /* Remove all handlers */

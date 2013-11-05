@@ -304,10 +304,38 @@ extern int NaClHostDescStat(char const        *host_os_pathname,
                             nacl_host_stat_t  *nasp) NACL_WUR;
 
 /*
+ * Create directory
+ */
+extern int NaClHostDescMkdir(const char *path, int mode) NACL_WUR;
+
+/*
+ * Remove directory
+ */
+extern int NaClHostDescRmdir(const char *path) NACL_WUR;
+
+/*
+ * Change current working directory
+ */
+extern int NaClHostDescChdir(const char *path) NACL_WUR;
+
+/*
+ * Get current working directory.
+ * This works like the POSIX getcwd(3) function except that it returns
+ * an error code rather than the resulting buffer.  The provided path may not
+ * be NULL.
+ */
+extern int NaClHostDescGetcwd(char *path, size_t len) NACL_WUR;
+
+/*
+ * Remove/delete the underlying file.
+ * Underlying host-OS functions:  unlink(2) / _unlink
+ */
+extern int NaClHostDescUnlink(char const *path) NACL_WUR;
+
+/*
  * Maps NACI_ABI_ versions of the mmap prot argument to host ABI versions
  * of the bit values
  */
-
 extern int NaClProtMap(int abi_prot);
 
 /*
@@ -317,6 +345,18 @@ extern int NaClProtMap(int abi_prot);
  */
 extern void NaClHostDescCheckValidity(char const *fn_name,
                                       struct NaClHostDesc *d);
+
+#if NACL_WINDOWS
+extern void NaClflProtectAndDesiredAccessMap(int prot,
+                                             int is_private,
+                                             int accmode,
+                                             DWORD *out_flProtect,
+                                             DWORD *out_dwDesiredAccess,
+                                             DWORD *out_flNewProtect,
+                                             char const **out_msg);
+
+extern DWORD NaClflProtectMap(int prot);
+#endif
 
 EXTERN_C_END
 

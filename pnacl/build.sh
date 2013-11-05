@@ -106,7 +106,7 @@ readonly TC_BUILD="${PNACL_ROOT}/build"
 readonly TC_BUILD_LLVM="${TC_BUILD}/llvm_${HOST_ARCH}"
 readonly TC_BUILD_BINUTILS="${TC_BUILD}/binutils_${HOST_ARCH}"
 readonly TC_BUILD_BINUTILS_LIBERTY="${TC_BUILD}/binutils-liberty"
-readonly TC_BUILD_NEWLIB="${TC_BUILD}/newlib"
+TC_BUILD_NEWLIB="${TC_BUILD}/newlib"
 readonly TC_BUILD_COMPILER_RT="${TC_BUILD}/compiler_rt"
 readonly TC_BUILD_GCC="${TC_BUILD}/gcc"
 readonly NACL_HEADERS_TS="${TC_BUILD}/nacl.sys.timestamp"
@@ -131,7 +131,7 @@ readonly INSTALL_GLIBC_BIN="${INSTALL_GLIBC}/bin"
 readonly INSTALL_GLIBC_LIB_ARCH="${INSTALL_GLIBC}/lib-"
 
 # Bitcode lib directories (including static bitcode libs and .pso stubs)
-readonly INSTALL_LIB_NEWLIB="${INSTALL_NEWLIB}/lib"
+INSTALL_LIB_NEWLIB="${INSTALL_NEWLIB}/lib"
 readonly INSTALL_LIB_GLIBC="${INSTALL_GLIBC}/lib"
 
 # Native nacl lib directories
@@ -158,7 +158,7 @@ readonly LLVM_INSTALL_DIR="${INSTALL_HOST}"
 readonly BINUTILS_INSTALL_DIR="${INSTALL_HOST}"
 readonly BFD_PLUGIN_DIR="${BINUTILS_INSTALL_DIR}/lib/bfd-plugins"
 readonly FAKE_INSTALL_DIR="${INSTALL_HOST}/fake"
-readonly NEWLIB_INSTALL_DIR="${INSTALL_NEWLIB}/usr"
+NEWLIB_INSTALL_DIR="${INSTALL_NEWLIB}/usr"
 readonly GLIBC_INSTALL_DIR="${INSTALL_GLIBC}/usr"
 readonly SYSROOT_DIR="${INSTALL_NEWLIB}/sysroot"
 
@@ -181,9 +181,6 @@ readonly PNACL_READELF="${INSTALL_NEWLIB_BIN}/pnacl-readelf"
 readonly PNACL_SIZE="${BINUTILS_INSTALL_DIR}/bin/${REAL_CROSS_TARGET}-size"
 readonly PNACL_STRIP="${INSTALL_NEWLIB_BIN}/pnacl-strip"
 readonly ILLEGAL_TOOL="${INSTALL_NEWLIB_BIN}"/pnacl-illegal
-
-# ELF -> PSO stub generator.
-readonly PSO_STUB_GEN="${LLVM_INSTALL_DIR}/bin/pso-stub"
 
 # PNACL_CC_NEUTRAL is pnacl-cc without LibC bias (newlib vs. glibc)
 # This should only be used in conjunction with -E, -c, or -S.
@@ -274,21 +271,51 @@ if ${HOST_ARCH_X8632}; then
   CXX="${PNACL_ROOT}/scripts/myg++32"
 fi
 
+# Set up some environment variables to build flavored bitcode libs
+setup-biased-bitcode-env() {
+ local arch=$1
+  case ${arch} in
+    portable)
+      BIASED_BC_CFLAGS=""
+      NEWLIB_INSTALL_DIR="${INSTALL_NEWLIB}/usr"
+      NEWLIB_TARGET=${REAL_CROSS_TARGET}
+      TC_BUILD_NEWLIB="${TC_BUILD}/newlib-portable"
+      INSTALL_LIB_NEWLIB="${INSTALL_NEWLIB}/lib"
+      LIBSTDCPP_BUILD="${TC_BUILD}/libstdcpp-${LIBSTDCPP_LIBMODE:-newlib}-portable"
+      LIBSTDCPP_INSTALL_DIR="$(GetInstallDir ${LIBSTDCPP_LIBMODE:-newlib})/usr"
+      ;;
+    x86-64)
+      BIASED_BC_CFLAGS="--target=x86_64-nacl"
+      NEWLIB_INSTALL_DIR="${INSTALL_NEWLIB}/usr-bc-${arch}"
+      # Do this to avoid .S files in newlib that clang doesn't like
+      NEWLIB_TARGET="${REAL_CROSS_TARGET}"
+      TC_BUILD_NEWLIB="${TC_BUILD}/newlib-${arch}"
+      INSTALL_LIB_NEWLIB="${INSTALL_NEWLIB}/lib-bc-${arch}"
+      LIBSTDCPP_BUILD="${TC_BUILD}/libstdcpp-${LIBSTDCPP_LIBMODE:-newlib}-${arch}"
+      LIBSTDCPP_INSTALL_DIR="$(GetInstallDir ${LIBSTDCPP_LIBMODE:-newlib})/usr-bc-${arch}"
+      ;;
+    *)
+      echo "Newlib architectures other than portable and x86-64 not implemented yet"
+      exit 1
+  esac
+}
+
 setup-libstdcpp-env() {
   # NOTE: we do not expect the assembler or linker to be used for libs
   #       hence the use of ILLEGAL_TOOL.
   local pnacl_cc=$(GetTool cc ${LIBSTDCPP_LIBMODE})
   local pnacl_cxx=$(GetTool cxx ${LIBSTDCPP_LIBMODE})
+
   STD_ENV_FOR_LIBSTDCPP=(
     CC_FOR_BUILD="${CC}"
     CC="${pnacl_cc}"
     CXX="${pnacl_cxx}"
     RAW_CXX_FOR_TARGET="${pnacl_cxx}"
     LD="${ILLEGAL_TOOL}"
-    CFLAGS="-g -O2 -mllvm -inline-threshold=5"
-    CXXFLAGS="-g -O2 -mllvm -inline-threshold=5"
-    CFLAGS_FOR_TARGET="-g -O2 -mllvm -inline-threshold=5"
-    CXXFLAGS_FOR_TARGET="-g -O2 -mllvm -inline-threshold=5"
+    CFLAGS="-g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
+    CXXFLAGS="-g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
+    CFLAGS_FOR_TARGET="-g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
+    CXXFLAGS_FOR_TARGET="-g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
     CC_FOR_TARGET="${pnacl_cc}"
     GCC_FOR_TARGET="${pnacl_cc}"
     CXX_FOR_TARGET="${pnacl_cxx}"
@@ -303,11 +330,14 @@ setup-libstdcpp-env() {
 }
 
 setup-newlib-env() {
+  local arch=$1
+  setup-biased-bitcode-env ${arch}
+
   STD_ENV_FOR_NEWLIB=(
     # TODO(robertm): get rid of '-allow-asm' here once we have a way of
     # distinguishing "good" from "bad" asms.
-    CFLAGS_FOR_TARGET="-allow-asm -g -O2 -mllvm -inline-threshold=5"
-    CXXFLAGS_FOR_TARGET="-allow-asm -g -O2 -mllvm -inline-threshold=5"
+    CFLAGS_FOR_TARGET="-allow-asm -g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
+    CXXFLAGS_FOR_TARGET="-allow-asm -g -O2 -mllvm -inline-threshold=5 ${BIASED_BC_CFLAGS}"
     CC_FOR_TARGET="${PNACL_CC_NEWLIB}"
     GCC_FOR_TARGET="${PNACL_CC_NEWLIB}"
     CXX_FOR_TARGET="${PNACL_CXX_NEWLIB}"
@@ -468,14 +498,16 @@ download-toolchains() {
 #@ libs                  - install native libs and build bitcode libs
 libs() {
   libs-clean
-  newlib
+  newlib portable
+  newlib x86-64
   libs-support newlib
   for arch in arm x86-32 x86-64 mips32; do
     dummy-irt-shim ${arch}
   done
   compiler-rt-all
   libgcc_eh-newlib
-  libstdcpp newlib
+  libstdcpp newlib portable
+  libstdcpp newlib x86-64
 }
 
 #@ everything            - Build and install untrusted SDK. no translator
@@ -505,6 +537,7 @@ build-all() {
   # NOTE: we delay the tool building till after the sdk is essentially
   #      complete, so that sdk sanity checks don't fail
   misc-tools
+  cp "${PNACL_ROOT}/README" "${INSTALL_ROOT}"
   verify
 
   if ${PNACL_PRUNE}; then
@@ -872,24 +905,6 @@ make-glibc-link() {
   done
 }
 
-#+ make-glibc-pso-stubs <src_native_basename> <dest_stub_basename> -
-#+     Create a pso-stub for GLibC bitcode lib directory based on the native
-#+     .so files in the translator lib directory.
-make-glibc-pso-stubs() {
-  local src_lib=$1
-  local target_lib=$2
-
-  local dest_dir="${INSTALL_LIB_GLIBC}"
-  # For now, pick x86-64 .so as the baseline for our .pso files.
-  local neutral_arch="x86-64"
-  local src_dir="${INSTALL_LIB_NATIVE}${neutral_arch}"
-
-  mkdir -p "${dest_dir}"
-  RunWithLog "glibc.pso_stub_gen" \
-    "${PSO_STUB_GEN}" "${src_dir}/${src_lib}" -o "${dest_dir}/${target_lib}"
-}
-
-
 #@ all                   - Alias for 'everything'
 all() {
   everything
@@ -1004,23 +1019,49 @@ prune-host() {
   echo "removing unused clang shared lib"
   rm -rf "${LLVM_INSTALL_DIR}/${SO_DIR}/${SO_PREFIX}clang${SO_EXT}"
 
-  echo "removing llvm's tblgen binaries which are not needed"
-  rm -rf "${LLVM_INSTALL_DIR}"/bin/*-tblgen
+  echo "removing unused binutils binaries"
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/le32-nacl-elfedit
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/le32-nacl-gprof
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/le32-nacl-objcopy
 
   echo "removing unused LLVM/Clang binaries"
-  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-config
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/bc-wrap
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/bugpoint
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/c-index-test
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/clang-*
   rm -rf "${LLVM_INSTALL_DIR}"/bin/llc
   rm -rf "${LLVM_INSTALL_DIR}"/bin/lli
-  rm -rf "${LLVM_INSTALL_DIR}"/bin/bugpoint
-  rm -rf "${LLVM_INSTALL_DIR}"/bin/clang-*
-  rm -rf "${LLVM_INSTALL_DIR}"/bin/c-index-test
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-ar
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-bcanalyzer
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-config
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-cov
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-diff
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-dwarfdump
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-extract
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-mcmarkup
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-prof
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-ranlib
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-readobj
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-rtdyld
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-size
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-stress
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/llvm-symbolizer
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/macho-dump
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/pso-stub
+  rm -rf "${LLVM_INSTALL_DIR}"/bin/*-tblgen
 
-  echo "removing llvm headers"
-  rm -rf "${LLVM_INSTALL_DIR}"/include/llvm*
+  echo "removing llvm & clang headers"
+  rm -rf "${LLVM_INSTALL_DIR}"/include
 
-  echo "removing llvm static libs"
+  echo "removing docs/ and share/"
+  rm -rf "${LLVM_INSTALL_DIR}"/docs
+  rm -rf "${LLVM_INSTALL_DIR}"/share
+
+  echo "removing unused libs"
   rm -rf "${LLVM_INSTALL_DIR}"/lib/*.a
-
+  rm -rf "${LLVM_INSTALL_DIR}"/lib/bfd-plugins
+  rm -rf "${LLVM_INSTALL_DIR}"/lib/BugpointPasses.so
+  rm -rf "${LLVM_INSTALL_DIR}"/lib/LLVMHello.so
 }
 
 #+ prune                 - Prune toolchain
@@ -1150,6 +1191,9 @@ llvm-configure() {
   llvm-link-clang
   # The --with-binutils-include is to allow llvm to build the gold plugin
   # re: --enable-targets  "x86" brings in both i686 and x86_64.
+  # Disabling zlib features for now to reduce set of shared lib deps.
+  # This may disable things like compressed debug info:
+  # https://code.google.com/p/nativeclient/issues/detail?id=3592
   local binutils_include="${TC_SRC_BINUTILS}/include"
   RunWithLog "llvm.configure" \
       env -i PATH="${PATH}" \
@@ -1158,6 +1202,7 @@ llvm-configure() {
              CXX="${CXX}" \
              ${srcdir}/configure \
              --enable-shared \
+             --enable-zlib=no \
              --disable-jit \
              --with-binutils-include=${binutils_include} \
              --enable-targets=x86,arm,mips \
@@ -1184,6 +1229,9 @@ llvm-configure-ninja() {
 
   llvm-link-clang
   local binutils_include="${TC_SRC_BINUTILS}/include"
+  # Disabling zlib features for now to reduce set of shared lib deps.
+  # This may disable things like compressed debug info:
+  # https://code.google.com/p/nativeclient/issues/detail?id=3592
   RunWithLog "llvm.configure.cmake" \
     env \
       cmake -G Ninja \
@@ -1193,6 +1241,7 @@ llvm-configure-ninja() {
       -DBUILD_SHARED_LIBS=ON \
       -DLLVM_TARGETS_TO_BUILD="X86;ARM;Mips" \
       -DLLVM_ENABLE_ASSERTIONS=ON \
+      -ULLVM_ENABLE_ZLIB \
       -DLLVM_BUILD_TESTS=ON \
       -DLLVM_APPEND_VC_REV=ON \
       -DLLVM_BINUTILS_INCDIR="${binutils_include}" \
@@ -1527,41 +1576,41 @@ libstdcpp-setup() {
   if ${LIBSTDCPP_IS_SETUP} && [ $# -eq 0 ]; then
     return 0
   fi
-  if [ $# -ne 1 ]; then
+  if [ $# -ne 2 ]; then
     Fatal "Please specify library mode: newlib or glibc"
   fi
   check-libmode "$1"
   LIBSTDCPP_LIBMODE=$1
+  local arch=$2
+  setup-biased-bitcode-env ${arch}
   LIBSTDCPP_IS_SETUP=true
-  LIBSTDCPP_BUILD="${TC_BUILD}/libstdcpp-${LIBSTDCPP_LIBMODE}"
-  LIBSTDCPP_INSTALL_DIR="$(GetInstallDir ${LIBSTDCPP_LIBMODE})/usr"
 }
 
 libstdcpp() {
   libstdcpp-setup "$@"
-  StepBanner "LIBSTDCPP 4.6 (BITCODE)"
+  StepBanner "LIBSTDCPP 4.6 (BITCODE $*)"
 
   if libstdcpp-needs-configure; then
     libstdcpp-clean
-    libstdcpp-configure
+    libstdcpp-configure "$@"
   else
     SkipBanner "LIBSTDCPP" "configure"
   fi
 
   if libstdcpp-needs-make; then
-    libstdcpp-make
+    libstdcpp-make "$@"
   else
     SkipBanner "LIBSTDCPP" "make"
   fi
 
-  libstdcpp-install
+  libstdcpp-install "$@"
+  LIBSTDCPP_IS_SETUP=false
 }
 
 #+ libstdcpp-clean - clean libstdcpp in bitcode
 libstdcpp-clean() {
-  libstdcpp-setup "$@"
   StepBanner "LIBSTDCPP" "Clean"
-  rm -rf "${LIBSTDCPP_BUILD}"
+  rm -rf "${TC_BUILD}/libstdcpp-*"
 }
 
 libstdcpp-needs-configure() {
@@ -2207,7 +2256,7 @@ translate-sb-tool() {
     # http://code.google.com/p/nativeclient/issues/detail?id=1591
     # you will need to do a build without these flags.
     "${PNACL_TRANSLATE}" -ffunction-sections -fdata-sections --gc-sections \
-      --noirt -arch ${tarch} "${pexe}" -o "${nexe}" &
+      --allow-llvm-bitcode-input --noirt -arch ${tarch} "${pexe}" -o "${nexe}" &
     QueueLastProcess
   done
   StepBanner "TRANSLATE" "Waiting for translation processes to finish"
@@ -2458,25 +2507,27 @@ binutils-gold-sb-install() {
 
 #+ newlib - Build and install newlib in bitcode.
 newlib() {
-  StepBanner "NEWLIB (BITCODE)"
+  local arch=$1
+  setup-newlib-env ${arch}
+  StepBanner "NEWLIB (${arch})"
 
   # TODO(pdox): Why is this step needed?
   sysroot
 
   if newlib-needs-configure; then
     newlib-clean
-    newlib-configure
+    newlib-configure ${arch}
   else
     SkipBanner "NEWLIB" "configure"
   fi
 
   if newlib-needs-make; then
-    newlib-make
+    newlib-make ${arch}
   else
     SkipBanner "NEWLIB" "make"
   fi
 
-  newlib-install
+  newlib-install ${arch}
 }
 
 #+ newlib-clean  - Clean bitcode newlib.
@@ -2495,15 +2546,16 @@ newlib-needs-configure() {
 
 #+ newlib-configure - Configure bitcode Newlib
 newlib-configure() {
-  StepBanner "NEWLIB" "Configure"
+  local arch=$1
+  setup-newlib-env ${arch}
+  StepBanner "NEWLIB" "Configure (${NEWLIB_TARGET})"
 
   local srcdir="${TC_SRC_NEWLIB}"
   local objdir="${TC_BUILD_NEWLIB}"
   mkdir -p "${objdir}"
   spushd "${objdir}"
 
-  setup-newlib-env
-  RunWithLog newlib.configure \
+  RunWithLog "newlib.${arch}.configure" \
     env -i \
     PATH="/usr/bin:/bin" \
     "${STD_ENV_FOR_NEWLIB[@]}" \
@@ -2518,7 +2570,7 @@ newlib-configure() {
         --enable-newlib-io-long-double \
         --enable-newlib-io-c99-formats \
         --enable-newlib-mb \
-        --target="${REAL_CROSS_TARGET}"
+        --target="${NEWLIB_TARGET}"
   spopd
 }
 
@@ -2532,15 +2584,16 @@ newlib-needs-make() {
 
 #+ newlib-make           - Make bitcode Newlib
 newlib-make() {
+  local arch=$1
+  setup-newlib-env ${arch}
   StepBanner "NEWLIB" "Make"
   local srcdir="${TC_SRC_NEWLIB}"
   local objdir="${TC_BUILD_NEWLIB}"
 
   ts-touch-open "${objdir}"
 
-  setup-newlib-env
   spushd "${objdir}"
-  RunWithLog newlib.make \
+  RunWithLog "newlib.${arch}.make" \
     env -i PATH="/usr/bin:/bin" \
     make \
       "${STD_ENV_FOR_NEWLIB[@]}" \
@@ -2553,6 +2606,8 @@ newlib-make() {
 
 #+ newlib-install        - Install Bitcode Newlib using build env.
 newlib-install() {
+  local arch=$1
+  setup-newlib-env ${arch}
   StepBanner "NEWLIB" "Install"
   local objdir="${TC_BUILD_NEWLIB}"
 
@@ -2560,7 +2615,6 @@ newlib-install() {
 
   # NOTE: we might be better off not using install, as we are already
   #       doing a bunch of copying of headers and libs further down
-  setup-newlib-env
   RunWithLog newlib.install \
     env -i PATH="/usr/bin:/bin" \
       make \
@@ -2568,16 +2622,16 @@ newlib-install() {
       install ${MAKE_OPTS}
   spopd
 
-  # Newlib installs files into usr/${REAL_CROSS_TARGET}/*
-  # Get rid of the ${REAL_CROSS_TARGET}/ prefix.
+  # Newlib installs files into usr/${NEWLIB_TARGET}/*
+  # Get rid of the ${NEWLIB_TARGET}/ prefix.
   pushd "${NEWLIB_INSTALL_DIR}"
   mkdir -p lib include
-  mv -f ${REAL_CROSS_TARGET}/lib/* lib
+  mv -f ${NEWLIB_TARGET}/lib/* lib
   rm -rf  include/sys include/machine
-  mv -f ${REAL_CROSS_TARGET}/include/* include
-  rmdir ${REAL_CROSS_TARGET}/lib
-  rmdir ${REAL_CROSS_TARGET}/include
-  rmdir ${REAL_CROSS_TARGET}
+  mv -f ${NEWLIB_TARGET}/include/* include
+  rmdir ${NEWLIB_TARGET}/lib
+  rmdir ${NEWLIB_TARGET}/include
+  rmdir ${NEWLIB_TARGET}
 
   StepBanner "NEWLIB" "Extra-install"
   local sys_include=${SYSROOT_DIR}/include
@@ -2593,6 +2647,11 @@ newlib-install() {
   StepBanner "NEWLIB" "Removing old pthreads headers"
   rm -f "${sys_include}/pthread.h"
 
+  if [[ ${arch} != "portable" ]]; then
+    # Do not populate the sdk directory for flavored bitcode
+    return
+  fi
+
   # Clang claims posix thread model, not single as llvm-gcc does.
   # It means that libstdcpp needs pthread.h to be in place.
   # This should go away when we properly import pthread.h with
@@ -2607,9 +2666,14 @@ libs-support() {
   local libmode=$1
   StepBanner "LIBS-SUPPORT"
   if [ ${libmode} == "newlib" ]; then
-    libs-support-newlib-crt1
+    libs-support-newlib-crt1 portable
+    libs-support-newlib-crt1 x86-64
+    libs-support-bitcode ${libmode} portable
+    libs-support-bitcode ${libmode} x86-64
+  else
+    libs-support-bitcode ${libmode} portable
   fi
-  libs-support-bitcode ${libmode}
+
   local arch
   for arch in arm x86-32 x86-64 mips32; do
     libs-support-native ${arch}
@@ -2617,6 +2681,8 @@ libs-support() {
 }
 
 libs-support-newlib-crt1() {
+  local arch=$1
+  setup-biased-bitcode-env ${arch}
   mkdir -p "${INSTALL_LIB_NEWLIB}"
   spushd "${PNACL_SUPPORT}/bitcode"
 
@@ -2631,17 +2697,19 @@ libs-support-newlib-crt1() {
 
 libs-support-bitcode() {
   local libmode=$1
-  local build_dir="${TC_BUILD}/libs-support-bitcode"
-  local cc_cmd="${PNACL_CC_NEUTRAL} -Wall -Werror"
+  local arch=$2
+  setup-biased-bitcode-env ${arch}
+  local build_dir="${TC_BUILD}/libs-support-bitcode-${arch}"
+  local cc_cmd="${PNACL_CC_NEUTRAL} -Wall -Werror ${BIASED_BC_CFLAGS}"
 
   mkdir -p "${build_dir}"
   spushd "${PNACL_SUPPORT}/bitcode"
   # Install crti.bc (empty _init/_fini)
-  StepBanner "LIBS-SUPPORT" "Install crti.bc"
+  StepBanner "LIBS-SUPPORT" "Install ${arch} crti.bc"
   ${cc_cmd} -c crti.c -o "${build_dir}"/crti.bc
 
   # Install crtbegin bitcode (__dso_handle/__cxa_finalize for C++)
-  StepBanner "LIBS-SUPPORT" "Install crtbegin.bc / crtbeginS.bc"
+  StepBanner "LIBS-SUPPORT" "Install ${arch} crtbegin.bc / crtbeginS.bc"
   # NOTE: we do not have "end" versions of these
   ${cc_cmd} -c crtbegin.c -o "${build_dir}"/crtbegin.bc
   ${cc_cmd} -c crtbegin.c -o "${build_dir}"/crtbeginS.bc \
@@ -2649,7 +2717,7 @@ libs-support-bitcode() {
 
   # Install unwind_stubs.bc (stubs for _Unwind_* functions when libgcc_eh
   # is not included in the native link).
-  StepBanner "LIBS-SUPPORT" "Install unwind_stubs.bc"
+  StepBanner "LIBS-SUPPORT" "Install ${arch} unwind_stubs.bc"
   ${cc_cmd} -c unwind_stubs.c -o "${build_dir}"/unwind_stubs.bc
 
   spopd
@@ -3058,7 +3126,7 @@ HAS_FRONTEND=0""" > "${destdir}"/driver.conf
 
 DumpAllRevisions() {
   one-line-rev-info ${NACL_ROOT}
-  for d in ${PNACL_ROOT}/src/*/ ${PNACL_ROOT}/git/*/ ; do
+  for d in ${PNACL_ROOT}/git/*/ ; do
     one-line-rev-info $d
   done
 }

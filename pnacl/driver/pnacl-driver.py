@@ -205,6 +205,11 @@ def AddAllowCXXExceptions(*args):
   env.set('ALLOW_CXX_EXCEPTIONS', '1')
   AddLDFlag(*args)
 
+def SetTarget(*args):
+  arch = ParseTriple(args[0])
+  env.set('FRONTEND_TRIPLE', args[0])
+  AddLDFlag('--target=' + args[0])
+
 stdin_count = 0
 def AddInputFileStdin():
   global stdin_count
@@ -234,7 +239,9 @@ CustomPatterns = [
   ( '--driver=(.+)',                "env.set('CC', pathtools.normalize($0))\n"),
   ( '--pnacl-allow-native',         "env.set('ALLOW_NATIVE', '1')"),
   ( '--pnacl-allow-translate',      "env.set('ALLOW_TRANSLATE', '1')"),
-  ( '--pnacl-frontend-triple=(.+)', "env.set('FRONTEND_TRIPLE', $0)"),
+  ( '--pnacl-frontend-triple=(.+)', SetTarget),
+  ( ('-target','(.+)'),             SetTarget),
+  ( ('--target=(.+)'),              SetTarget),
   ( '(--pnacl-allow-exceptions)',   AddAllowCXXExceptions),
   ( '(--pnacl-allow-nexe-build-id)', AddLDFlag),
   ( '(--pnacl-disable-abi-check)',  AddLDFlag),
@@ -337,7 +344,6 @@ GCCPatterns = [
 
   # Accept and ignore default flags
   ( '-m32',                      ""),
-  ( ('-target', 'le32-.*-nacl'), ""),
   ( '-emit-llvm',                ""),
 
   ( '(-MG)',          AddCCFlag),
@@ -611,7 +617,8 @@ def RunTranslate(infile, output, mode):
               'bitcode linking. This is supposed to wait until '
               'translation. Use --pnacl-allow-translate to override.',
               pathtools.touser(infile))
-  args = env.get('TRANSLATE_FLAGS') + [mode, infile, '-o', output]
+  args = env.get('TRANSLATE_FLAGS') + [mode, '--allow-llvm-bitcode-input',
+                                       infile, '-o', output]
   if env.getbool('PIC'):
     args += ['-fPIC']
   RunDriver('translate', args)

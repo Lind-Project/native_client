@@ -40,16 +40,14 @@ class SandboxingError(Exception):
 BUNDLE_SIZE = 32
 
 
-def _ValidateNop(instruction):
-  # TODO(shcherbina): whitelist nops by bytes, not only by disasm.
-  # Example:
-  #   66 66 0f 1f 84 00 00 00 00 00
-  # is decoded as
-  #   nopw   0x0(%rax,%rax,1)
-  # and so seems valid, but we should only allow
-  #   66 0f 1f 84 00 00 00 00 00
+def _ValidateLongNop(instruction):
+  # Short nops do not require special exceptions (such as allowing repeated
+  # prefixes and segment access), so they are handled as regular instructions.
+  if re.match(r'nopw 0x0\(%[er]ax,%[er]ax,1\)$',
+      instruction.disasm):
+    return
   if re.match(
-      r'(data32 )*nopw (%cs:)?0x0\(%[er]ax,%[er]ax,1\)$',
+      r'(data32 )*nopw %cs:0x0\(%[er]ax,%[er]ax,1\)$',
       instruction.disasm):
     return
   raise DoNotMatchError(instruction)
@@ -138,7 +136,7 @@ def _SplitOps(insn, args):
   ops = []
   i = 0
   while True:
-    # We do not use mere re.compile(_OperandRE(), args, i) here because
+    # We do not use mere re.match(_OperandRE(), args, i) here because
     # python backtracking regexes do not guarantee to find longest match.
     m = re.compile(r'(%s)($|,)' % _OperandRE()).match(args, i)
     assert m is not None, (args, i)
@@ -162,7 +160,8 @@ def _ParseInstruction(instruction):
 
   prefixes = []
   while elems != [] and elems[0] in [
-      'lock', 'rep', 'repz', 'repnz', 'data16', 'addr16', 'addr32']:
+      'lock', 'rep', 'repz', 'repnz',
+      'data16', 'data32', 'addr16', 'addr32', 'addr64']:
     prefixes.append(elems.pop(0))
 
   if elems == []:
@@ -178,7 +177,7 @@ def _ParseInstruction(instruction):
   #    jo,pt      <addr>
   #    jge,pn     <addr>
   name_re = r'[a-z]\w*(,p[nt])?$'
-  assert re.match(name_re, name), name
+  assert re.match(name_re, name) or name == "nop/reserved", name
 
   if len(elems) == 1:
     ops = []
@@ -355,6 +354,8 @@ def _GetLegacyPrefixes(instruction):
     if b not in [
         0x66, 0x67, 0x2e, 0x3e, 0x26, 0x64, 0x65, 0x36, 0xf0, 0xf3, 0xf2]:
       break
+    if b == 0x67:
+      raise SandboxingError('addr prefix is not allowed', instruction)
     if b in result:
       raise SandboxingError('duplicate legacy prefix', instruction)
     result.append(b)
@@ -1041,12 +1042,13 @@ def ValidateRegularInstruction(instruction, bitness):
     raise SandboxingError('objdump failed to decode', instruction)
 
   try:
-    _ValidateNop(instruction)
+    _ValidateLongNop(instruction)
     return Condition(), Condition()
   except DoNotMatchError:
     pass
 
-  # Report error on duplicate prefixes (note that they are allowed in nops).
+  # Report error on duplicate prefixes (note that they are allowed in
+  # long nops).
   _GetLegacyPrefixes(instruction)
 
   if bitness == 32:
@@ -1069,15 +1071,10 @@ def ValidateRegularInstruction(instruction, bitness):
       pass
 
   prefixes, name, ops = _ParseInstruction(instruction)
-  # TODO(shcherbina): prohibit excessive prefixes.
-  if 'addr16' in prefixes or 'addr32' in prefixes:
-    raise SandboxingError('addr prefixes are not allowed', instruction)
 
-  # Older versions of objdump decode 'tzcnt' as 'repz bsf'.
-  # TODO(shcherbina): get rid of this exception once objdump is updated.
-  if name != 'bsf':
-    if 'rep' in prefixes or 'repz' in prefixes or 'repnz' in prefixes:
-      raise SandboxingError('rep is only allowed with string instructions')
+  for prefix in prefixes:
+    if prefix != 'lock':
+      raise SandboxingError('prefix %s is not allowed' % prefix, instruction)
 
   for op in ops:
     if op in ['%cs', '%ds', '%es', '%ss', '%fs', '%gs']:
@@ -1175,7 +1172,7 @@ def ValidateRegularInstruction(instruction, bitness):
     # zero-extend regular register, or can modify protected registers (r15,
     # rbp, rsp).
     # This means that we don't have to worry about implicit operands (for
-    # example it does not matter to us that mul writes to edx and eax).
+    # example it does not matter to us that mul writes to rdx and rax).
 
     if (_InstructionNameIn(
           name, [
@@ -1184,8 +1181,8 @@ def ValidateRegularInstruction(instruction, bitness):
             'movd',
             'add', 'sub', 'and', 'or', 'xor']) or
         name in ['movd', 'vmovd', 'vmovq']):
-      # Technically, movabs is not allowed, it's ok to accept it here, because
-      # it will later be rejected because of improper memory access.
+      # Technically, movabs is not allowed, but it's ok to accept it here,
+      # because it will later be rejected because of improper memory access.
       # On the other hand, because of objdump quirk it prints regular
       # mov with 64-bit immediate as movabs:
       #   48 b8 00 00 00 00 00 00 00 00
@@ -1247,12 +1244,6 @@ def ValidateRegularInstruction(instruction, bitness):
          'lzcnt', 'tzcnt', 'popcnt', 'crc32', 'cmpxchg',
          'movbe',
          'movmskpd', 'movmskps', 'movnti']):
-      # Note: some versions of objdump (including one that is currently used
-      # in targeted tests) decode 'tzcnt' as 'repz bsf'
-      # (see validator_ragel/testdata/32/tzcnt.test)
-      # From sandboxing point of view bsf and tzcnt are the same, so
-      # we ignore this bug here.
-      # Same applies to 32-bit version.
       assert len(ops) == 2
       write_ops = [ops[1]]
 
@@ -1369,8 +1360,7 @@ def ValidateDirectJump(instruction, bitness):
       raise SandboxingError(
           'branch hints are not allowed with loop instruction', instruction)
     # Unfortunately we can't rely on presence of 'data16' prefix in disassembly,
-    # because nacl-objdump prints it, but objdump we base our decoder on
-    # does not.
+    # because neither nacl-objdump nor objdump we base our decoder print it.
     # So we look at bytes.
     if 0x66 in _GetLegacyPrefixes(instruction):
       raise SandboxingError(

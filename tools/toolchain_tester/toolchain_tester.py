@@ -125,7 +125,9 @@ def MakeExecutableCustom(config, test, extra):
   global TMP_PREFIX
   global SHOW_CONSOLE
   d = extra.copy()
-  d['tmp'] = TMP_PREFIX + '_' + os.path.basename(test)
+  d['tmp'] = (TMP_PREFIX + '_' +
+              os.path.basename(os.path.dirname(test)) + '_' +
+              os.path.basename(test))
   d['src'] = test
   for phase, command in config.GetCommands(d):
     command = shlex.split(command)

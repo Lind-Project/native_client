@@ -175,6 +175,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->bootstrap_channel = NULL;
   nap->secure_service = NULL;
   nap->irt_loaded = 0;
+  nap->main_exe_prevalidated = 0;
 
   nap->manifest_proxy = NULL;
   nap->kernel_service = NULL;
@@ -1001,6 +1002,14 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
   free(nap->aux_info);
   nap->aux_info = aux;
 
+  /*
+   * Check / Mark the nexe binary as OK to attempt memory mapping.
+   *
+   * TODO(bsy): change needed to get NaClFileToken and resolve to file
+   * path information, set NaClRichFileInfo, and stash via
+   * NaClSetFileOriginInfo, then set NACL_DESC_FLAGS_MMAP_EXEC_OK.
+   */
+
   suberr = NACL_FI_VAL("load_module", NaClErrorCode,
                        NaClAppLoadFile(nexe_binary, nap));
 
@@ -1041,72 +1050,6 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
  cleanup:
   NaClDescUnref(nexe_binary);
   nexe_binary = NULL;
-  (*done->Run)(done);
-}
-
-/*
- * This RPC can be used to load to the integrated runtime library.
- * The only argument is a handle to a shared memory object that
- * contains the IRT.
- */
-static void NaClLoadIrtRpc(struct NaClSrpcRpc      *rpc,
-                           struct NaClSrpcArg      **in_args,
-                           struct NaClSrpcArg      **out_args,
-                           struct NaClSrpcClosure  *done) {
-  struct NaClApp          *nap =
-      (struct NaClApp *) rpc->channel->server_instance_data;
-  struct NaClDesc         *irt_binary = in_args[0]->u.hval;
-  NaClErrorCode           suberr = LOAD_INTERNAL;
-
-  UNREFERENCED_PARAMETER(out_args);
-
-  NaClLog(4, "NaClLoadIrtRpc: entered\n");
-
-  rpc->result = NACL_SRPC_RESULT_INTERNAL;
-
-  suberr = NaClWaitForLoadModuleStatus(nap);
-  if (LOAD_OK != suberr) {
-    NaClLog(LOG_ERROR, "NaClLoadIrtRpc: Failed to load module.\n");
-    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-    goto cleanup;
-  }
-
-  /*
-   * The command channel gets the first chance to load the IRT, so the
-   * only way that we'll see irt_loaded true is if there were two
-   * LoadIrt RPCs.
-   */
-  if (nap->irt_loaded) {
-    NaClLog(LOG_ERROR, "NaClLoadIrtRpc: double load of IRT?\n");
-    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-    goto cleanup;
-  }
-
-  /*
-   * We cannot take the nap->mu lock, since NaClAppLoadFileDynamically
-   * invokes NaClElfImageLoadDynamically which in turn invokes
-   * NaClSysMmapIntern resulting in a deadlock. This is not really
-   * a problem since there is only one secure command channel, unless
-   * embedders invokes load_irt repeatedly, which is against the protocol.
-   * TODO(phosek): record load_module/load_irt state and return error
-   * on repeated invocations (issue 3038).
-   */
-
-  suberr = NACL_FI_VAL("load_irt", NaClErrorCode,
-                       NaClAppLoadFileDynamically(nap, irt_binary, NULL));
-
-  if (LOAD_OK != suberr) {
-    NaClLog(LOG_FATAL,
-            "NaClLoadIrt: Failed to load the integrated runtime (IRT). "
-            "The user executable was probably not built to use the IRT.\n");
-  }
-  nap->irt_loaded = 1;
-  rpc->result = NACL_SRPC_RESULT_OK;
-
- cleanup:
-  NaClDescUnref(irt_binary);
-  irt_binary = NULL;
-  NaClLog(4, "NaClLoadIrtRpc: leaving\n");
   (*done->Run)(done);
 }
 
@@ -1395,7 +1338,6 @@ struct NaClSrpcHandlerDesc const secure_handlers[] = {
   { "start_module::i", NaClSecureChannelStartModuleRpc, },
   { "log:is:", NaClSecureChannelLog, },
   { "load_module:hs:", NaClLoadModuleRpc, },
-  { "load_irt:h:", NaClLoadIrtRpc, },
   { "reverse_setup::h", NaClSecureReverseClientSetup, },
   /* add additional calls here.  upcall set up?  start module signal? */
   { (char const *) NULL, (NaClSrpcMethod) NULL, },

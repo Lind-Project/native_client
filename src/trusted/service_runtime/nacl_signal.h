@@ -86,6 +86,14 @@ typedef void (*NaClSignalHandler)(int sig_num,
 
 
 /*
+ * This allows setting a larger signal stack size than the default.
+ * This is for use by tests which may want to call functions such as
+ * fprintf() to print debugging info in the event of a failure,
+ * because fprintf() requires a larger stack.
+ */
+void NaClSignalStackSetSize(uint32_t size);
+
+/*
  * Allocates a stack suitable for passing to
  * NaClSignalStackRegister(), for use as a stack for signal handlers.
  * This can be called in any thread.
@@ -150,10 +158,6 @@ void NaClSignalContextToHandler(void *raw_ctx,
 int NaClSignalContextIsUntrusted(struct NaClAppThread *natp,
                                  const struct NaClSignalContext *sig_ctx);
 
-void NaClSignalContextGetCurrentThread(const struct NaClSignalContext *sig_ctx,
-                                       int *is_untrusted,
-                                       struct NaClAppThread **result_thread);
-
 int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
                                      struct NaClAppThread *natp);
 
@@ -166,12 +170,6 @@ void NaClSignalHandleUntrusted(int signal_number,
                                const struct NaClSignalContext *regs,
                                int is_untrusted);
 
-
-/*
- * Platform specific code. Do not call directly.
- */
-void NaClSignalHandlerInitPlatform(void);
-void NaClSignalHandlerFiniPlatform(void);
 
 void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
                                    const struct NaClSignalContext *regs,

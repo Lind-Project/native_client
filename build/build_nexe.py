@@ -12,6 +12,7 @@ additional arguments, and use them to build.
 from optparse import OptionParser
 import os
 import Queue
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -219,7 +220,7 @@ class Builder(object):
     self.empty = options.empty
     self.strip_all = options.strip_all
     self.strip_debug = options.strip_debug
-    self.finalize_pexe = options.finalize_pexe
+    self.finalize_pexe = options.finalize_pexe and arch == 'pnacl'
     self.gomacc = GetGomaPath(self.osname, arch, toolname)
 
     self.Log('Compile options: %s' % self.compile_options)
@@ -750,8 +751,13 @@ def Main(argv):
         if out:
           objs.append(out)
 
-    # Do not link if building an object
-    if not options.compile_only:
+    # Do not link if building an object. However we still want the output file
+    # to be what was specified in options.name
+    if options.compile_only:
+      if len(objs) > 1:
+        raise Error('--compile mode cannot be used with multiple sources')
+      shutil.copy(objs[0], options.name)
+    else:
       build.Generate(objs)
     return 0
   except Error as e:

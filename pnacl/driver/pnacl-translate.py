@@ -34,6 +34,12 @@ EXTRA_ENV = {
   # Experimental mode exploring newlib as a shared library
   'NEWLIB_SHARED_EXPERIMENT': '0',
 
+  # To simulate the sandboxed translator better and avoid user surprises,
+  # reject LLVM bitcode (non-finalized) by default, accepting only PNaCl
+  # (finalized) bitcode. --allow-llvm-bitcode-input has to be passed
+  # explicitly to override this.
+  'ALLOW_LLVM_BITCODE_INPUT': '0',
+
   # Flags for pnacl-nativeld
   'LD_FLAGS': '${STATIC ? -static} ${SHARED ? -shared}',
 
@@ -219,6 +225,8 @@ TranslatorPatterns = [
   # Allowing C++ exception handling causes a specific set of native objects to
   # get linked into the nexe.
   ( '--pnacl-allow-exceptions', "env.set('ALLOW_CXX_EXCEPTIONS', '1')"),
+
+  ( '--allow-llvm-bitcode-input', "env.set('ALLOW_LLVM_BITCODE_INPUT', '1')"),
 
   ( '-rpath-link=(.+)', "env.append('LD_FLAGS', '-L'+$0)"),
 
@@ -484,6 +492,10 @@ def RunLLC(infile, outfile, outfiletype):
     args = ["${RUN_LLC}"]
     if filetype.IsPNaClBitcode(infile):
       args.append("-bitcode-format=pnacl")
+    elif filetype.IsLLVMBitcode(infile):
+      if not env.getbool('ALLOW_LLVM_BITCODE_INPUT'):
+        Log.Fatal('Translator expects finalized PNaCl bitcode. '
+                  'Pass --allow-llvm-bitcode-input to override.')
     driver_tools.Run(' '.join(args))
     env.pop()
   return 0
