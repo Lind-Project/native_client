@@ -300,7 +300,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
       ) {
     NaClLog(LOG_ERROR,
             "NaClHostDescOpen: fstat failed?!?  errno %d\n", errno);
-    (void) close(host_desc);
+    (void) lind_close(host_desc);
     return -NaClXlateErrno(errno);
   }
 #if 0
