@@ -21,7 +21,7 @@ static int initialized = 0;
 
 #define GOTO_ERROR_IF_NULL(x) if(!(x)) {goto error;}
 
-static PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args)
+PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args)
 {
     PyObject* func_obj = NULL;
     PyObject* result = NULL;
@@ -125,6 +125,8 @@ int LindPythonFinalize(void)
     PyObject* repy_finalize_func = NULL;
     PyObject* repy_finalize_args = NULL;
     PyObject* result = NULL;
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
     if(!initialized) {
         return 0;
     }
@@ -147,6 +149,7 @@ cleanup:
     Py_XDECREF(code);
     Py_XDECREF(context);
     Py_XDECREF(repylib);
+    PyGILState_Release(gstate);
     return retval;
 }
 
@@ -178,7 +181,7 @@ cleanup:
     return retval;
 }
 
-static int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len)
+int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len)
 {
     int retval = 0;
     PyObject* attrIsError = NULL;
@@ -227,7 +230,7 @@ static int ParseResponse(PyObject* response, int* isError, int* code, char** dat
     retval = 1;
     goto cleanup;
 error:
-    NaClLog(LOG_ERROR, "ParseResponse Python error");
+    NaClLog(LOG_ERROR, "ParseResponse Python error\n");
     PyErr_Print();
 cleanup:
     Py_XDECREF(attrIsError);

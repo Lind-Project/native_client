@@ -18,6 +18,7 @@
 #include <sys/poll.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <Python.h>
 
 #include "native_client/src/shared/platform/lind_stat.h"
 
@@ -93,6 +94,9 @@ int GetHostFdFromLindFd(int lindFd);
 
 int LindPythonInit(void);
 int LindPythonFinalize(void);
+
+PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args);
+int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len);
 
 int lind_pread(int fd, void* buf, int count, off_t offset);
 int lind_pwrite(int fd, const void *buf, int count, off_t offset);

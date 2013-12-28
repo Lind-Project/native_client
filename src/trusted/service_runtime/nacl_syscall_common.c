@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 
 #include <stdio.h>
+#include <Python.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -1903,6 +1904,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   int32_t         retval;
   uintptr_t       sysaddr;
   nacl_abi_off_t  offset;
+  //PyGILState_STATE gstate;
 
   NaClLog(3,
           "Entered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
@@ -1923,6 +1925,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
     return -NACL_ABI_EINVAL;
   }
 
+  //gstate = PyGILState_Ensure();
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) offp, sizeof offset);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(3,
@@ -1936,6 +1939,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
 
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
 cleanup:
+  //PyGILState_Release(gstate);
   return retval;
 }
 

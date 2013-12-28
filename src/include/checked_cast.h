@@ -352,7 +352,7 @@ template <
     typename source_t,
     template<typename, typename> class trunc_policy>
 target_t nacl::checked_cast(const source_t& input) {
-  typedef CheckedCast::detail::CastInfo<target_t, source_t> info;
+//  typedef CheckedCast::detail::CastInfo<target_t, source_t> info;
 
   target_t output;
 

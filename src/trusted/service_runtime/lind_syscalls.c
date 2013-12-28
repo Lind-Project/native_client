@@ -15,6 +15,7 @@
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_host_desc.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 #include "native_client/src/include/portability.h"
 
@@ -44,80 +45,6 @@ typedef struct _LindArg
     uint64_t ptr;
     uint64_t len;
 } LindArg;
-
-static PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args)
-{
-    PyObject* func_obj = NULL;
-    PyObject* result = NULL;
-    func_obj = PyDict_GetItemString(context, func);
-    GOTO_ERROR_IF_NULL(func_obj);
-    GOTO_ERROR_IF_NULL(args);
-    result = PyObject_CallObject(func_obj, args);
-    GOTO_ERROR_IF_NULL(result);
-    return result;
-error:
-    PyErr_Print();
-    Py_XDECREF(func_obj);
-    return 0;
-}
-
-static int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len)
-{
-    int retval = 0;
-    PyObject* attrIsError = NULL;
-    PyObject* attrCode = NULL;
-    PyObject* attrDataOrMessage = NULL;
-
-    NaClLog(3, "Entered ParseResponse\n");
-
-    attrIsError = PyObject_GetAttrString(response, "is_error");
-    GOTO_ERROR_IF_NULL(attrIsError);
-
-    attrCode = PyObject_GetAttrString(response, "return_code");
-    GOTO_ERROR_IF_NULL(attrCode);
-
-    *dataOrMessage = NULL;
-    *len = 0;
-
-    if(attrIsError == Py_True) {
-        *isError = 1;
-        attrDataOrMessage = PyObject_GetAttrString(response, "message");
-        GOTO_ERROR_IF_NULL(attrDataOrMessage);
-    } else {
-        *isError = 0;
-        attrDataOrMessage = PyObject_GetAttrString(response, "data");
-    }
-
-    *code = PyInt_AsLong(attrCode);
-    if(PyErr_Occurred()) {
-        goto error;
-    }
-
-    if(attrDataOrMessage) {
-        *dataOrMessage = PyString_AsString(attrDataOrMessage);
-        if(PyErr_Occurred()) {
-            goto error;
-        }
-        *len = (int)PyString_Size(attrDataOrMessage);
-        if(PyErr_Occurred()) {
-            goto error;
-        }
-    }
-    NaClLog(3, "ParseResponse isError=%d, code=%d, len=%d\n", *isError, *code, *len);
-    if(*isError) {
-        NaClLog(3, "Error message: %s\n", *dataOrMessage);
-    }
-    retval = 1;
-    goto cleanup;
-error:
-    NaClLog(LOG_ERROR, "ParseResponse Python error\n");
-    PyErr_Print();
-cleanup:
-    Py_XDECREF(attrIsError);
-    Py_XDECREF(attrCode);
-    Py_XDECREF(attrDataOrMessage);
-    return retval;
-}
 
 void DumpArg(const LindArg *arg)
 {
@@ -208,6 +135,7 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
             ndp = NaClGetDescMu(nap, i);
             if(ndp && ndp->base.vtbl == (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
                 hfd = ((struct NaClDescIoDesc*)ndp)->hd->d;
+                NaClDescUnref(ndp);
                 if(hfd<FD_SETSIZE) {
                     if(hfd > max_hfd) {
                         max_hfd = hfd;
@@ -220,6 +148,7 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
                 }
             } else {
                 NaClLog(LOG_ERROR, "Invalid NaCl desc: %d\n", i);
+                NaClDescSafeUnref(ndp);
                 retval = -NACL_ABI_EINVAL;
                 goto cleanup_xdata;
             }
@@ -327,6 +256,7 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
 
 #define CONVERT_NACL_DESC_TO_LIND_END \
 cleanup: \
+    NaClDescSafeUnref(ndp); \
     return retval
 
 #define CONVERT_NACL_DESC_TO_LIND(x) \
@@ -371,6 +301,7 @@ cleanup: \
     } \
     *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
 cleanup: \
+    NaClDescSafeUnref(ndp); \
     return retval
 
 #define BUILD_AND_RETURN_NACL_DESC() \
@@ -470,12 +401,14 @@ int LindEpollWaitPostprocess(struct NaClApp *nap, int iserror, int* code, char* 
             ndp = NaClGetDescMu(nap, j);
             NaClFastMutexUnlock(&nap->desc_mu);
             if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+                NaClDescSafeUnref(ndp);
                 continue;
             }
             hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
             if(pfds[i].data.fd == hfd) {
                 pfds[i].data.fd = j;
             }
+            NaClDescUnref(ndp);
         }
     }
     return retval;
@@ -555,12 +488,14 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, voi
         pfds[i] = inpfds[i];
         ndp = NaClGetDescMu(nap, inpfds[i].fd);
         if(NULL == ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+            NaClDescSafeUnref(ndp);
             retval = -NACL_ABI_EINVAL;
             goto cleanup_pfds;
         }
         pfds[i].fd = ((struct NaClDescIoDesc*)ndp)->hd->d;
         mapdata[i].nacl_fd = inpfds[i].fd;
         mapdata[i].lind_fd = pfds[i].fd;
+        NaClDescUnref(ndp);
     }
     NaClFastMutexUnlock(&nap->desc_mu);
     inArgs[2].ptr = (uint64_t)(uintptr_t)pfds;
@@ -710,7 +645,6 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
 
     NaClLog(3, "Entered NaClSysLindSyscall callNum=%8u inNum=%8u outNum=%8u\n", callNum, inNum, outNum);
 
-    gstate = PyGILState_Ensure();
     if(inNum>MAX_INARGS || outNum>MAX_OUTARGS) {
         NaClLog(LOG_ERROR, "NaClSysLindSyscall: Number of in/out arguments too large\n");
         retval = -NACL_ABI_EINVAL;
@@ -770,6 +704,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
+    gstate = PyGILState_Ensure();
     callArgs = PyList_New(0);
     apiArg = PyTuple_New(2);
     PyTuple_SetItem(apiArg, 0, PyInt_FromLong(callNum));
@@ -784,7 +719,9 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         case AT_STRING:
         case AT_STRING_OPTIONAL:
             if(inArgSys[i].ptr) {
+                PyGILState_Release(gstate);
                 if (!NaClCopyZStr(nap, stringArg, sizeof(stringArg), (uintptr_t)inArgSys[i].ptr)) {
+                    gstate = PyGILState_Ensure();
                     if (stringArg[0] == '\0') {
                         NaClLog(LOG_ERROR, "NaClSysLindSyscall: input string is empty\n");
                         retval = -NACL_ABI_EFAULT;
@@ -794,6 +731,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
                     }
                     goto cleanup;
                 }
+                gstate = PyGILState_Ensure();
                 NaClLog(3, "String argument: %s\n", stringArg);
                 PyList_Append(callArgs, PyString_FromString(stringArg));
             } else if(inArgSys[i].type == AT_STRING_OPTIONAL) {
@@ -810,7 +748,9 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         case AT_DATA_OPTIONAL:
             if(inArgSys[i].ptr) {
                 NaClLog(3, "Data argument of length: %u\n", (unsigned int)inArgSys[i].len);
+                PyGILState_Release(gstate);
                 NaClXMutexLock(&nap->mu);
+                gstate = PyGILState_Ensure();
                 PyList_Append(callArgs, PyString_FromStringAndSize((char*)inArgSys[i].ptr, inArgSys[i].len));
                 NaClXMutexUnlock(&nap->mu);
             } else if(inArgSys[i].type == AT_DATA_OPTIONAL) {
