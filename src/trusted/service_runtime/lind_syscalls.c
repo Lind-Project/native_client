@@ -64,7 +64,6 @@ int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void
 {
     UNREFERENCED_PARAMETER(nap);
     UNREFERENCED_PARAMETER(inNum);
-    NaClLog(3, "Entering LindSelectCleanup\n");
     if(inArgs[1].ptr) {
         free((void*)inArgs[1].ptr);
     }
@@ -75,7 +74,6 @@ int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void
         free((void*)inArgs[3].ptr);
     }
     free(xchangedata);
-    NaClLog(3, "Exiting LindSelectCleanup\n");
     return 0;
 }
 
@@ -90,7 +88,6 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
     fd_set es;
     int64_t max_fd;
     int64_t max_hfd = -1;
-    NaClLog(3, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
     max_fd = *(int64_t*)&inArgs[0].ptr;
     if(inArgs[1].ptr) {
         rs = *(fd_set*)inArgs[1].ptr;
@@ -186,7 +183,6 @@ cleanup_rs:
         free((void*)inArgs[1].ptr);
     }
 finish:
-    NaClLog(3, "Exiting LindSelectPreprocess\n");
     return retval;
 }
 
@@ -535,10 +531,8 @@ int LindPollCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void* 
 {
     UNREFERENCED_PARAMETER(nap);
     UNREFERENCED_PARAMETER(inNum);
-    NaClLog(3, "Entering LindSelectCleanup\n");
     free((void*)inArgs[2].ptr);
     free(xchangedata);
-    NaClLog(3, "Exiting LindSelectCleanup\n");
     return 0;
 }
 
@@ -779,19 +773,25 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
         if(outNum == 1) {
             assert(((unsigned int)_len)<=outArgSys[0].len);
+            PyGILState_Release(gstate);
             if(!NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, _data, _len)) {
+            	gstate = PyGILState_Ensure();
                 retval = -NACL_ABI_EFAULT;
                 goto cleanup;
             }
+            gstate = PyGILState_Ensure();
         } else if (outNum > 1) {
             offset = 0;
             for(i=0; i<outNum; ++i) {
                 NaClLog(3, "Out#%d, len=%"NACL_PRIu32", maxlen=%"NACL_PRIu64"\n",i, (unsigned int)(((int*)_data)[i]), outArgSys[i].len);
                 assert(((unsigned int)(((int*)_data)[i]))<=outArgSys[i].len);
+                PyGILState_Release(gstate);
                 if(!NaClCopyOutToUser(nap, (uintptr_t)outArgSys[i].ptr, _data+sizeof(int)*outNum+offset, ((int*)_data)[i])) {
+                	gstate = PyGILState_Ensure();
                     retval = -NACL_ABI_EFAULT;
                     goto cleanup;
                 }
+                gstate = PyGILState_Ensure();
                 offset += ((int*)_data)[i];
             }
         }
