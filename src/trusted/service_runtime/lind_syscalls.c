@@ -88,6 +88,7 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
     fd_set es;
     int64_t max_fd;
     int64_t max_hfd = -1;
+    NaClLog(3, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
     max_fd = *(int64_t*)&inArgs[0].ptr;
     if(inArgs[1].ptr) {
         rs = *(fd_set*)inArgs[1].ptr;
@@ -183,6 +184,7 @@ cleanup_rs:
         free((void*)inArgs[1].ptr);
     }
 finish:
+    NaClLog(3, "Exiting LindSelectPreprocess\n");
     return retval;
 }
 
