@@ -641,6 +641,8 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
 
     NaClLog(3, "Entered NaClSysLindSyscall callNum=%8u inNum=%8u outNum=%8u\n", callNum, inNum, outNum);
 
+    gstate = PyGILState_Ensure();
+
     if(inNum>MAX_INARGS || outNum>MAX_OUTARGS) {
         NaClLog(LOG_ERROR, "NaClSysLindSyscall: Number of in/out arguments too large\n");
         retval = -NACL_ABI_EINVAL;
@@ -700,7 +702,6 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
-    gstate = PyGILState_Ensure();
     callArgs = PyList_New(0);
     apiArg = PyTuple_New(2);
     PyTuple_SetItem(apiArg, 0, PyInt_FromLong(callNum));
