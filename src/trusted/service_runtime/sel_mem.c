@@ -284,7 +284,6 @@ void NaClVmmapAdd(struct NaClVmmap  *self,
   if (self->nvalid == self->size) {
     size_t                    new_size = 2 * self->size;
     struct NaClVmmapEntry     **new_map;
-
     new_map = realloc(self->vmentry, new_size * sizeof *new_map);
     if (NULL == new_map) {
       NaClLog(LOG_FATAL, "NaClVmmapAdd: could not allocate memory\n");

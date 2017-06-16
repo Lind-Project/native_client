@@ -301,6 +301,7 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
 
   subret = NaClCheckAddressSpaceLayoutSanity(nap, rodata_end, data_end,
                                              max_vaddr);
+
   if (LOAD_OK != subret) {
     ret = subret;
     goto done;
@@ -361,7 +362,6 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
     ret = subret;
     goto done;
   }
-
   /*
    * NaClFillEndOfTextRegion will fill with halt instructions the
    * padding space after the static text region.
@@ -389,7 +389,6 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
     ret = subret;
     goto done;
   }
-
   NaClLog(2, "Initializing arch switcher\n");
   NaClInitSwitchToApp(nap);
 
@@ -398,7 +397,6 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
 
   NaClLog(2, "Installing springboard\n");
   NaClLoadSpringboard(nap);
-
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information
    * about the memory pages and their current protection value.
@@ -418,7 +416,6 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
   ret = LOAD_OK;
 done:
   NaClElfImageDelete(image);
-
   NaClPerfCounterMark(&time_load_file, "EndLoadFile");
   NaClPerfCounterIntervalTotal(&time_load_file);
   return ret;

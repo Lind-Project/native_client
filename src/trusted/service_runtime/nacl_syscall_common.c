@@ -12,6 +12,11 @@
 
 #include <stdio.h>
 #include <Python.h>
+#include <string.h>
+#include <unistd.h>
+
+// yiwen
+#include <time.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -72,10 +77,25 @@
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
+// yiwen
+#include "native_client/src/trusted/service_runtime/env_cleanser.h"
+#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
+#include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
+#include "native_client/src/trusted/service_runtime/nacl_app.h"
+#include "native_client/src/trusted/service_runtime/load_file.h"
 
 struct NaClDescQuotaInterface;
 
 static size_t const kdefault_io_buffer_bytes_to_log = 64;
+
+// yiwen: my data for the in-process-pipe
+char pipe_buffer[16*4096];
+char* buffer_ptr;
+int pipe_mutex; // 0: pipe is empty, ready to write, cannot read; 1: pipe is full, ready to read, cannot write.
+                // at initialization, it should be set to 0.
+
+// yiwen: this is for debugging in fork()
+int fork_mark;
 
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length);
@@ -728,12 +748,42 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   struct NaClDesc *ndp;
   size_t          log_bytes;
   char const      *ellipsis = "";
+  char* string;
 
   NaClLog(3,
           ("Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  // yiwen: try to use the kernel pipe
+  /*
+  if (d == 8000) {
+     while (pipe_mutex != 1) {
+          // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
+     }
+     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+     string = (char*)sysaddr;
+     read(31, string, count);
+     pipe_mutex = 0;
+     retval = 0;
+     goto cleanup;
+  } */
+
+  // yiwen: this is the read end of my pipe
+  if (d == 8000) {
+     while (pipe_mutex != 1) {
+          // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
+     }
+     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+     string = (char*)sysaddr;
+     // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
+     memcpy(string, buffer_ptr, count);
+     // NaClLog(LOG_WARNING, "[NaClSysRead] Read succeed: %s \n", string);
+     pipe_mutex = 0; // the buffer is empty, after an immediate read
+     retval = 0;
+     goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, d);
   if (NULL == ndp) {
@@ -802,12 +852,42 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   char const      *ellipsis = "";
   struct NaClDesc *ndp;
   size_t          log_bytes;
+  char* string;
 
   NaClLog(3,
           "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+   
+  // yiwen: try to use the kernel pipe
+  /*
+  if (d == 8001) {
+     while (pipe_mutex != 0) {
+          // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+     }
+     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+     string = (char*)sysaddr;
+     write(32, string, count);
+     pipe_mutex = 1;
+     retval = 0;
+     goto cleanup;
+  } */
+
+  // yiwen: this is the write end of my pipe
+  if (d == 8001) {
+     while (pipe_mutex != 0) {
+          // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+     }
+     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+     string = (char*)sysaddr;
+     // NaClLog(LOG_WARNING, "[NaClSysWrite] string = %s \n", string);
+     memcpy(buffer_ptr, string, count);
+     // NaClLog(LOG_WARNING, "[NaClSysWrite] Write succeed: %s \n", buffer_ptr);
+     pipe_mutex = 1; // the buffer is full, after an immediate write
+     retval = 0;
+     goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, d);
   NaClLog(4, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -3721,3 +3801,273 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
   return NaClSysClockGetCommon(natp, clk_id, (uintptr_t) tsp,
                                      NaClClockGetTime);
 }
+
+// yiwen
+int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
+  struct NaClApp *nap = natp->nap;
+  int32_t   retval = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  int size;
+  int string[2];
+  int* string_ptr;
+  int string2[2];
+  int* string2_ptr;
+
+  size = 8;
+  string_ptr = string;
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) pipedes, size);
+  string_ptr = (int*)sysaddr;
+
+  // return two fds to the user
+  string_ptr[0] = 8000;  
+  string_ptr[1] = 8001;
+
+  // we initialize our pipe buffer
+  buffer_ptr = pipe_buffer;
+  pipe_mutex = 0; // at the initialization, the pipe should be empty, allow write but not read
+
+  // let's try to use the kernel pipes
+  string2_ptr = string2;
+  pipe(string2_ptr);
+  NaClLog(LOG_WARNING, "[NaClSysPipe] fds = %i, %i \n", string2_ptr[0], string2_ptr[1]);
+
+  retval = 0;
+  return retval;
+}
+
+// yiwen
+int32_t NaClSysFork(struct NaClAppThread  *natp) {
+  struct NaClApp *nap = natp->nap;
+  int32_t retval;
+  int nap_size;
+  
+  int argc2;
+  char **argv2;
+  struct NaClEnvCleanser env_cleanser;
+  const char **envp;
+  extern char **environ;
+  struct DynArray env_vars;
+
+  NaClLog(LOG_WARNING, "[TEST!] cage = %d \n", cage); 
+
+  if (fork_mark == 999) {
+      retval = 400;
+      return retval;
+  }
+
+  fork_mark = 999;
+  nap_size = sizeof(struct NaClApp); 
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap size = %d \n", nap_size);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap cage id = %d \n", nap->cage_id);
+
+  // yiwen: let's try to do execv here
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap = %p \n", (void*) nap);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 = %p \n", (void*) nap0);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0->mem_start = %p \n", (void*) nap0->mem_start); 
+
+#if NACL_OSX
+  envp = (const char **) *_NSGetEnviron();
+#else
+  envp = (const char **) environ;
+#endif
+
+  if (!DynArrayCtor(&env_vars, 0)) {
+    NaClLog(LOG_FATAL, "Failed to allocate env var array\n");
+  }
+
+  if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
+    NaClLog(LOG_FATAL, "Adding env_vars NULL terminator failed\n");
+  }
+  NaClEnvCleanserCtor(&env_cleanser, 0);
+  if (!NaClEnvCleanserInit(&env_cleanser, envp,
+          (char const *const *)env_vars.ptr_array)) {
+    NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
+  }
+
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap = %p \n", (void*) nap);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
+
+  memcpy((void*)(nap), (void*)(nap0), sizeof(*nap)); 
+
+  if (!NaClCreateMainThread(nap,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+    fprintf(stderr, "creating main thread failed\n");
+    retval = -1;
+    return retval;
+  }
+
+  NaClEnvCleanserDtor(&env_cleanser); 
+  
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap size = %lu \n", sizeof(*nap));
+  /*
+  nap->break_addr = addr;
+
+  NaClLog(LOG_WARNING, "[DEBUG!]: <nap->break_addr> = %p \n", (void*) nap->break_addr);
+  NaClLog(LOG_WARNING, "[DEBUG!]: %p \n", (void*) NaClUserToSys(nap, nap->break_addr)); */
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] I am done! \n");
+  retval = 0;
+  return retval;
+}
+
+// yiwen
+int32_t NaClSysExecv(struct NaClAppThread  *natp) {
+  struct NaClApp *nap = natp->nap;
+  int32_t retval = -NACL_ABI_EINVAL;
+  // char* nacl_file;
+  // int errcode;
+  
+  int argc2;
+  char **argv2;
+  // struct NaClEnvCleanser env_cleanser;
+  // const char **envp;
+  // extern char **environ;
+  // struct DynArray env_vars; 
+
+  NaClLog(LOG_WARNING, "[NaClSysExecv] nap cage id = %d \n", nap->cage_id);
+
+  // yiwen: let's try to start a new nap here
+  /*
+  struct NaClApp state_new;
+  struct NaClApp *nap_new;
+
+  nap_new = &state_new;
+
+  memset(&state_new, 0, sizeof state_new);
+  if (!NaClAppCtor(&state_new)) {
+    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+  }
+  NaClAppInitialDescriptorHookup(nap_new);
+
+  nacl_file = (char*) malloc(22 * sizeof(char));
+  strncpy(nacl_file, "/glibc/runnable-ld.so", 22);
+  errcode = NaClAppLoadFileFromFilename(nap_new, nacl_file);
+  if (LOAD_OK != errcode) {
+        fprintf(stderr, "Error while loading \"%s\": %s\n",
+                nacl_file,
+                NaClErrorString(errcode));
+        fprintf(stderr,
+                ("Using the wrong type of nexe (nacl-x86-32"
+                 " on an x86-64 or vice versa)\n"
+                 "or a corrupt nexe file may be"
+                 " responsible for this error.\n"));
+  }
+
+  errcode = NaClAppPrepareToLaunch(nap_new);
+
+  if (!NaClAppLaunchServiceThreads(nap_new)) {
+    fprintf(stderr, "Launch service threads failed\n");
+    return -1;
+  }
+  
+  // yiwen: let's try to do execv here
+  
+#if NACL_OSX
+  envp = (const char **) *_NSGetEnviron();
+#else
+  envp = (const char **) environ;
+#endif
+
+  if (!DynArrayCtor(&env_vars, 0)) {
+    NaClLog(LOG_FATAL, "Failed to allocate env var array\n");
+  }
+
+  if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
+    NaClLog(LOG_FATAL, "Adding env_vars NULL terminator failed\n");
+  }
+  NaClEnvCleanserCtor(&env_cleanser, 0);
+  if (!NaClEnvCleanserInit(&env_cleanser, envp,
+          (char const *const *)env_vars.ptr_array)) {
+    NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
+  } */
+
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+
+  // memcpy((void*)(nap), (void*)(nap0), sizeof(*nap)); 
+  // NaClLog(LOG_WARNING, "[NaClSysExecv] nap->mem_start = %p \n", (void*) nap->mem_start);
+  // NaClLog(LOG_WARNING, "[NaClSysExecv] nap->initial_entry_pt = %p \n", (void*) nap->initial_entry_pt);
+
+  NaClLog(LOG_WARNING, "[NaClSysExecv] PASS! 01 \n");
+  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0 = %p \n", (void*) nap0);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->mem_start = %p \n", (void*) nap0->mem_start);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->initial_entry_pt = %p \n", (void*) nap0->initial_entry_pt);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->user_entry_pt = %p \n", (void*) nap0->user_entry_pt);
+
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (01) nap threads number = %i \n", nap->num_threads);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (01) napt number = %i \n", natp->thread_num);
+
+  // yiwen: be careful about where to remove the natp
+  // NaClRemoveThread(nap, natp->thread_num);
+  // NaClAppThreadTeardown(natp);
+
+  // yiwen: try!
+  /*
+  if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
+    NaClLog(LOG_ERROR, "Could not get app lock ! \n");
+    retval = -1;
+    return retval;
+  }
+  NaClAppThreadDelete(natp);
+  if (NACL_SYNC_OK != NaClMutexUnlock(&nap->mu)) {
+    NaClLog(LOG_ERROR, "Could not get app lock ! \n");
+    retval = -1;
+    return retval;
+  } */
+
+  // yiwen: 
+  // this clears everything in the existing nap
+  // so any cleanup to the previously running thread should be done before this
+  NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
+
+  memcpy((void*)(nap_ready), (void*)(nap0), sizeof(*nap0));
+  memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap0));
+  memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
+
+  // nap->cage_id = 99;
+  NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
+
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (02) nap threads number = %i \n", nap->num_threads);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (02) napt number = %i \n", natp->thread_num);
+
+  if (!NaClCreateMainThread(nap,
+                            argc2,
+                            argv2,
+                            NULL)) {
+    fprintf(stderr, "creating main thread failed\n");
+    NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");
+    retval = -1;
+    return retval;
+  }
+  
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (03) nap threads number = %i \n", nap->num_threads);
+  NaClLog(LOG_WARNING, "[NaClSysExecv] (03) napt number = %i \n", natp->thread_num);
+  
+  NaClLog(LOG_WARNING, "[NaClSysExecv] PASS! 02 \n"); 
+
+  return retval; 
+}
+

@@ -129,7 +129,6 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                NULL,
                0,
                0);
-
   start_addr = nap->mem_start + NACL_SYSCALL_START_ADDR;
   /*
    * The next pages up to NACL_TRAMPOLINE_END are the trampolines.

@@ -107,6 +107,9 @@ struct NaClSpringboardInfo {
 };
 
 struct NaClApp {
+  // yiwen
+  int cage_id; 
+
   /*
    * public, user settable prior to app start.
    */

@@ -22,6 +22,14 @@ struct NaClAppThread;
 struct NaClMutex;
 struct NaClApp;
 
+// yiwen
+extern int cage;
+extern struct NaClApp state_ready;
+extern struct NaClApp *nap_ready;
+
+extern struct NaClApp state0;
+extern struct NaClApp *nap0;
+
 #if NACL_WINDOWS
 __declspec(dllexport)
 /*

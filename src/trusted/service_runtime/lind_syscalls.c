@@ -12,6 +12,10 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+// yiwen: added header files
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -699,7 +703,9 @@ StubType stubs[]    =   {{NULL, NULL, NULL}, // 0
                          {LindEpollCtlPreprocess, NULL, NULL}, // 57 epoll_ctl
                          {LindEpollWaitPreprocess, LindEpollWaitPostprocess, NULL}, // 58 epoll_wait
                          {LindCommonPreprocess, NULL, NULL}, // 59 sendmsg
-                         {LindCommonPreprocess, NULL, NULL}}; // 60 recvmsg
+                         {LindCommonPreprocess, NULL, NULL}, // 60
+                         {NULL, NULL, NULL}}; // yiwen: 61 LIND_sys_pipe
+
 
 static int NaClCopyZStr(struct NaClApp *nap,
                         char           *dst_buffer,
@@ -805,6 +811,24 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     for(int i=0; i<(int)outNum; ++i) {
         DumpArg(&outArgSys[i]);
     }*/
+
+    // yiwen: handle lind_pipe here.
+    //        the pipe() call should initialize the pipe buffer 
+    //        and returns two fds for the pipe
+    if (callNum == 61) {
+        int data[2];
+        int len;
+        int error = 1;
+        data[0] = 9000;
+        data[1] = 9001;
+        len = 8;
+        error = NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, data, len);
+        if (!error) {
+            NaClLog(LOG_ERROR, "NaClCopyOutToUser: failed! \n");
+        }
+        retval = 0;
+        goto cleanup;
+    }
 
     if(stubs[callNum].pre) {
         retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);

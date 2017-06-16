@@ -57,6 +57,14 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
 
+// yiwen
+int cage = 1001;
+struct NaClApp state_ready;
+struct NaClApp *nap_ready;
+
+struct NaClApp state0;
+struct NaClApp *nap0;
+
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
 }
@@ -665,18 +673,25 @@ int NaClAddThread(struct NaClApp        *nap,
 }
 
 void NaClRemoveThreadMu(struct NaClApp  *nap,
-                        int             thread_num) {
+                        int             thread_num) {// yiwen
+  NaClLog(LOG_WARNING, "[NaClRemoveThreadMu] cage id = %i; thread_num = %i \n", nap->cage_id, thread_num); 
+  /*
+  if (nap->cage_id == 99) {
+     nap->cage_id = 1;
+     return;
+  } */
+
   if (NULL == DynArrayGet(&nap->threads, thread_num)) {
-    NaClLog(LOG_FATAL,
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: thread to be removed is not in the table\n");
   }
   if (nap->num_threads == 0) {
-    NaClLog(LOG_FATAL,
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: num_threads cannot be 0!!!\n");
   }
   --nap->num_threads;
   if (!DynArraySet(&nap->threads, thread_num, (struct NaClAppThread *) NULL)) {
-    NaClLog(LOG_FATAL,
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: DynArraySet at position %d failed\n",
             thread_num);
   }

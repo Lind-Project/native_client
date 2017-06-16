@@ -664,7 +664,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 .PHONY: updateglibc
 updateglibc:
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
-	    BUILD_CC="gcc -O2 -g" \
+	    BUILD_CC="gcc -O2 -g " \
 	    CC="$(GLIBC_CC) -m64" \
 	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
