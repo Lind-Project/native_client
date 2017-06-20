@@ -201,8 +201,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClApp                state2;
   struct NaClApp                *nap2 = &state2;
 
+  // yiwen: added a third cage, nap3. 
   struct NaClApp                state3;
   struct NaClApp                *nap3 = &state3;
+  
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
   int argc2;
@@ -245,12 +247,15 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_qend = &redir_queue;
 
   memset(&state, 0, sizeof state);
-  // yiwen: my code
+  // yiwen: my code, setting up nap2(cage2)
   memset(&state2, 0, sizeof state2);
-  // yiwen
+  // yiwen: nap0 is shared with nacl_syscall_common.c
+  // we use it to store the snapshot of an initial cage, which is ready to run a program(create a thread)
+  // this snapshot is used by execv()
   nap0 = &state0;
   nap_ready = &state_ready;
   memset(&state0, 0, sizeof state0);
+  // yiwen: my code, setting up nap3(cage3)
   memset(&state_ready, 0, sizeof state_ready);
   memset(&state3, 0, sizeof state3);
 
@@ -942,15 +947,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap->mem_start = %p \n", (void*) nap->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap size = %lu \n", sizeof(*nap));
   
+  // yiwen: my code to set and test cage_id
   nap3->cage_id = 1; 
-
-  // NaClLog(LOG_WARNING, "[TEST!] cage = %d \n", cage); 
   cage = 1002;
-  // NaClLog(LOG_WARNING, "[TEST!] cage = %d \n", cage); 
   
   // yiwen: let's take a snapshot of nap here 
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap = %p \n", (void*) nap);
@@ -984,24 +984,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   // memcpy((void*)(nap_ready), (void*)(nap3), sizeof(*nap3));
   // memcpy((void*)(nap3), (void*)(nap_ready), sizeof(*nap3));
 
-  if (!NaClCreateMainThread(nap3,
-                            argc - optind,
-                            argv + optind,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  } 
-  /*
-  // yiwen: test, can we use nap0 here
-  memcpy((void*)(nap), (void*)(nap->nap0), sizeof(*nap));
-
+  // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
                             argv + optind,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } */
+  } 
 
   // yiwen: here we tries to create a second thread to run nap2
   argc2 = 4;
@@ -1012,10 +1002,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[1], "--library-path", 15);
   argv2[2] = (char*) malloc(7 * sizeof(char)); 
   strncpy(argv2[2], "/glibc", 7);
-  // argv2[3] = (char*) malloc(43 * sizeof(char)); 
-  // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  argv2[3] = (char*) malloc(30 * sizeof(char)); 
-  strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
+  // argv2[3] = (char*) malloc(30 * sizeof(char)); 
+  // strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
 
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap2->mem_start = %p \n", (void*) nap2->mem_start);
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap size = %lu \n", sizeof(*nap2));
@@ -1063,7 +1053,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);
 
-  ret_code = NaClWaitForMainThreadToExit(nap3);
+  ret_code = NaClWaitForMainThreadToExit(nap);
   // yiwen
   ret_code = NaClWaitForMainThreadToExit(nap2);
   // yiwen
