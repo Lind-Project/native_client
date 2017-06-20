@@ -1,0 +1,111 @@
+*****************************************************************************
+*                        LIND INSTALLATION DOCUMENT                         *                            
+*                                                                           *
+*                                                                           *                                  
+*  Author:  Yiwen Li                                                        *
+*  Date Created:  September 1st, 2014                                       *  
+*  Date Last Updated:  June 20th, 2017                                      * 
+*                                                                           *
+*                                                                           *
+*****************************************************************************
+
+
+
+*****************************************************************************
+General Instructions for Installation: 
+https://lind.poly.edu/projects/project/wiki/InstallLindFromSource
+
+
+*****************************************************************************
+Problems & Solutions:
+
+Setting up Lind environment:
+1.Install the needed libraries
+1.1 sudo apt-get ia32-ibs would fail:
+Package ia32-libs is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  lib32z1 lib32ncurses5 lib32bz2-1.0
+E: Package 'ia32-libs' has no installation candidate
+
+Because Ubuntu 14.04 doesn't support ia32-lib any more.
+
+Solution: 
+install the suggested replacement libs through apt-get
+
+2.Setup Google depot-tools
+Google updated their gclient code, and the new version of gclient.py doesn't work for lind at the moment.
+Use an old version of gclient.py. (We have backup file for this)
+
+3.Setup environment variables
+
+set the following environment variables in ~/.bashrc 
+
+export LIND_SRC=/usr/lind_project/lind
+export REPY_PATH=/usr/lind_project/repy
+export NACL_SDK_ROOT=/usr/lind_project/repy/sdk
+export LIND_MONITOR=/usr/lind_project/reference_monitor
+export PATH=/usr/lind_project/depot_tools:$PATH
+export LD_LIBRARY_PATH=/glibc/
+
+[*** note ***]: the last one(LD_LIBRARY_PATH=/glibc/) is a path in Repy's file system. 
+All the other paths are in the actual host file system.
+Because LD_LIBRARY_PATH is used by the NaCl loader, therefore, it is able to interprete the Repy path correctly.
+
+4.Build lind
+4.0
+NaCl's git urls were removed!
+So now, we need to copy the following directories in nacl/native_client/tools/SRC/
+To build correctly, need lind/nacl/native_client/tools/SRC/binutils, SRC/linux-headers-for-nacl, SRC/newlib, SRC/gdb, SRC/glibc_orig, and SRC/gcc
+
+4.1 for latest version of texinfo, 2 errors: unknown command `colophon', unknown command `cygnus'. 
+
+Solution:
+1) Remove current texinfo: sudo apt-get remove texinfo
+2) Download the texinfo source (old version):
+   wget http://ftp.gnu.org/gnu/texinfo/texinfo-4.13.tar.gz (We have backup file for this, in case the url got removed!)
+3) Extract the source files:
+   gzip -dc < texinfo-4.13.tar.gz | tar -xf -
+   cd texinfo-4.13
+4) Configure, build and install:
+   ./configure
+   make
+   sudo make install
+
+4.2 need gperf to complete building
+sudo apt-get update
+sudo apt-get install gperf
+
+***potential problem***
+If you did the building before having gperf installed, then there will be an empty /gcc/cp/cfns.h created, which will cause "undefined reference to libc_name_p" error.
+To solve this, delete /gcc/cp/cfns.h file and run the building again with gperf installed.
+
+
+5.Build reference_monitor (NOT used currently!)
+5.1 encounter error: "/usr/bin/ld: cannot find -lcurl", although curl has been installed and is the newest version. 
+
+Solution:
+Need the libcurl3-dev package. Curl is just the command line utility. The library is libcurl3, and it has a -dev package.
+Use: sudo apt-get install libcurl3-dev
+
+6.Run reference_monitor (NOT used currently!)
+6.1 /usr/lind_project/reference_monitor/src/main/reference_monitor /usr/lind_project/reference_monitor/src/lind_test/utf/build/testcases/test_exit.o
+Aborting
+/usr/lind_project/reference_monitor/src/lind_test/utf/build/testcases/test_exit.o: error while loading shared libraries: /lib/x86_64-linux-gnu/libpthread.so.0: cannot read file data: Operation not permitted
+
+Solution: 
+Not solved yet.
+
+
+*****************************************************************************
+Run Lind:
+liyiwen@laputa:/usr/lind_project/repy/repy$ $NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc -o hello.nexe hello.c
+python lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
+liyiwen@laputa:/usr/lind_project/repy/repy$ ../bin/sel_ldr -a -- /glibc/runnable-ld.so --library-path /glibc /hello.nexe
+
+git checkout origin/fixhttpd
+git checkout -- seattlelib/lind_server.mix
+
+
+*****************************************************************************

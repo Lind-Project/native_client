@@ -1,0 +1,65 @@
+*****************************************************************************
+*                        LIND DEVELOPMENT DOCUMENT                          *                            
+*                                                                           *
+*                                                                           *                                  
+*  Author:  Yiwen Li                                                        *
+*  Date Created:  September 1st, 2014                                       *  
+*  Date Last Updated:  June 20th, 2017                                      *  
+*                                                                           *
+*                                                                           *
+*****************************************************************************
+
+
+
+*****************************************************************************
+Modifying Code and Rebuilding:                                              
+Author: Yiwen Li
+
+
+Use build.sh under /lind_project/lind/
+1. To cleanup existing NaCl toolchain, ./build.sh cleantoolchain
+2. To compile and build glibc, ./build.sh buildglibc
+3. To update glibc with changes, ./build.sh updateglibc, try ./build.sh updateglibc2 if the previous one failed
+4. To compile and build NaCl, ./build.sh nacl 
+5. To compile and build Repy SafePOSIX lib, ./build.sh repy
+6. To installed binary code into our Repy running repository, ./build.sh install
+
+
+*****************************************************************************
+Running Lind: 
+Author: Shengqian Ji and Qishen Li 
+
+
+1. python lind_fs_utils.py cp root file1 [file2 ...]
+2. Run Command: 
+	Lower Version: ~/Code/LIND/REPY_PATH/repy$ ../bin/sel_ldr -a -s -- ../lib/glibc/runnable-ld.so --library-path /lib/glibc:/usr/lib ./lind_socket_test
+	Higher Version: ../bin/sel_ldr -a -B /lind/irt_core_x86_64.nexe -s -- ../lib/glibc/runnable-ld.so --library-path /lib/glibc:/lind/usr/lib /lind/usr/bin/date.nexe
+
+3. complier path: ~/Code/LIND/LIND_BASE/nacl/native_client/tools/out/nacl-sdk/bin
+4. :~/Code/LIND/LIND_BASE/nacl/native_client/tools$ make build-with-glibc
+5. Files need to be edited: ~/Code/LIND/LIND_BASE/lind_glibc/sysdeps/nacl
+
+
+*****************************************************************************
+Running a C program in Lind: (hello.c)
+Author: Yiwen Li
+
+
+1. Put hello.c code under: /usr/lind_project/repy/repy/
+2. Use NaCl tool chain to compile c code":o Lind file system, which is different from the normal os file system
+and is necessary for the program to run in Lind.
+/usr/lind_project/repy/repy$ $NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc -o hello.nexe hello.c
+
+3. /usr/lind_project/repy/repy$ python lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
+During this step, a lind file (linddata.xxx) will be created for hello.nexe
+
+problem: if a lind file already exists, it doesn't allow recreation at the moment. 
+To update the program and test, first use "lind_fs_utils.py rm" to remove the existing file from the Lind fs, 
+then use "lind_fs_utils.py cp" to copy the updated program into the Lind fs.
+
+4. /usr/lind_project/repy/repy$ ../bin/sel_ldr -a -s -- /glibc/runnable-ld.so --library-path /glibc /hello.nexe (NOT used anymore!)
+   /usr/lind_project/repy/repy$ ../bin/sel_ldr -a -- /glibc/runnable-ld.so --library-path /glibc /hello.nexe (Use this now!)
+   (Note: "-s" doesn't seem to be necessary now, since stubmode is not supported.)
+
+
+*****************************************************************************
