@@ -948,9 +948,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
-  // yiwen: my code to set and test cage_id
-  nap3->cage_id = 1; 
-  cage = 1002;
+  // yiwen: my code to set and test cage
+  // cage = 1002;
   
   // yiwen: let's take a snapshot of nap here 
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap = %p \n", (void*) nap);
@@ -984,6 +983,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   // memcpy((void*)(nap_ready), (void*)(nap3), sizeof(*nap3));
   // memcpy((void*)(nap3), (void*)(nap_ready), sizeof(*nap3));
 
+  // yiwen: set cage id for cage 1
+  nap->cage_id = 1; 
+
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1010,6 +1012,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap2->mem_start = %p \n", (void*) nap2->mem_start);
   // NaClLog(LOG_WARNING, "[DEBUG!]: nap size = %lu \n", sizeof(*nap2));
   
+  // yiwen: set cage id for cage 2
   nap2->cage_id = 2;  
 
   if (!NaClCreateMainThread(nap2,

@@ -4021,7 +4021,6 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   NaClLog(LOG_WARNING, "[NaClSysExecv] (01) napt number = %i \n", natp->thread_num);
 
   // yiwen: be careful about where to remove the natp
-  // NaClRemoveThread(nap, natp->thread_num);
   // NaClAppThreadTeardown(natp);
 
   // yiwen: try!
@@ -4047,11 +4046,17 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap0));
   memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
 
-  // nap->cage_id = 99;
+  // reset cage id
+  nap->cage_id = 1;
   NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
 
   NaClLog(LOG_WARNING, "[NaClSysExecv] (02) nap threads number = %i \n", nap->num_threads);
   NaClLog(LOG_WARNING, "[NaClSysExecv] (02) napt number = %i \n", natp->thread_num);
+
+  // yiwen: test for removing thread
+  // nap->cage_id = 999;
+
+  nap->num_threads++;
 
   if (!NaClCreateMainThread(nap,
                             argc2,

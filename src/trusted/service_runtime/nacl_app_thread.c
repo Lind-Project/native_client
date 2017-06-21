@@ -58,6 +58,9 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   natp->thread_num = NaClAddThreadMu(natp->nap, natp);
   NaClXMutexUnlock(&natp->nap->threads_mu);
 
+  // yiwen 
+  NaClLog(LOG_WARNING, "[NaClAppThreadLauncher] cage id = %i; total threads num = %i; thread num = %i \n", natp->nap->cage_id, natp->nap->num_threads, natp->thread_num); 
+
   NaClVmHoleThreadStackIsSafe(natp->nap);
 
   NaClStackSafetyNowOnUntrustedStack();
@@ -87,6 +90,15 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap;
   size_t          thread_idx;
 
+  // yiwen: debug 
+  /*
+  NaClLog(LOG_WARNING, "[NaClAppThreadTeardown] cage id = %i; total threads num = %i; current thread id = %i \n", natp->nap->cage_id, natp->nap->num_threads, natp->thread_num);   
+  if (natp->nap->num_threads > 1) {
+     // natp->thread_num = 1;
+     natp->nap->num_threads--;
+     NaClThreadExit();
+  } */
+  
   /*
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
@@ -94,6 +106,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClLog(3, "NaClAppThreadTeardown(0x%08"NACL_PRIxPTR")\n",
           (uintptr_t) natp);
   nap = natp->nap;
+
   if (NULL != nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
     /*
@@ -109,6 +122,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap->threads_mu);
   NaClLog(3, " getting thread lock\n");
   NaClXMutexLock(&natp->mu);
+
   /*
    * Remove ourselves from the ldt-indexed global tables.  The ldt
    * entry is released as part of NaClAppThreadDelete(), and if
@@ -147,6 +161,10 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
   NaClLog(3, " NaClThreadExit\n");
+
+  // yiwen: debug 
+  // NaClLog(LOG_WARNING, "[NaClAppThreadTeardown] Here!!! \n");   
+
   NaClThreadExit();
   NaClLog(LOG_FATAL,
           "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
@@ -175,6 +193,13 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
    * Set these early, in case NaClTlsAllocate() wants to examine them.
    */
   natp->nap = nap;
+
+  // yiwen
+  /*
+  if (nap->num_threads > 0) {
+     natp->thread_num = 0;
+  } */
+
   natp->thread_num = -1;  /* illegal index */
   natp->host_thread_is_defined = 0;
   memset(&natp->host_thread, 0, sizeof(natp->host_thread));
@@ -266,6 +291,9 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   /*
    * the thread must not be still running, else this crashes the system
    */
+
+  // yiwen: for debug purpose
+  // NaClLog(LOG_WARNING, "[NaClAppThreadDelete] cage id = %i \n", natp->nap->cage_id);
 
   if (natp->host_thread_is_defined) {
     NaClThreadDtor(&natp->host_thread);
