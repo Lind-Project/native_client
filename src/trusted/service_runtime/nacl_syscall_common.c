@@ -4042,8 +4042,9 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   // so any cleanup to the previously running thread should be done before this
   NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
 
-  memcpy((void*)(nap_ready), (void*)(nap0), sizeof(*nap0));
-  memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap0));
+  // memcpy((void*)(nap_ready), (void*)(nap0), sizeof(*nap0));
+  // memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap0));
+  // memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
   memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
 
   // reset cage id
@@ -4072,6 +4073,14 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   NaClLog(LOG_WARNING, "[NaClSysExecv] (03) napt number = %i \n", natp->thread_num);
   
   NaClLog(LOG_WARNING, "[NaClSysExecv] PASS! 02 \n"); 
+
+  /*
+  sleep(5);
+  if (nap->num_threads > 0) {
+     natp->thread_num = 1;
+  } */
+
+  NaClAppThreadTeardown(natp);
 
   return retval; 
 }

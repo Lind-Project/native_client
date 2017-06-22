@@ -986,6 +986,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: set cage id for cage 1
   nap->cage_id = 1; 
 
+  memcpy((void*)(nap0), (void*)(nap), sizeof(*nap));
+
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1055,6 +1057,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);
+
+  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap threads number = %i \n", nap->num_threads);
+  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap2 threads number = %i \n", nap2->num_threads);
+  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap0 threads number = %i \n", nap0->num_threads);
 
   ret_code = NaClWaitForMainThreadToExit(nap);
   // yiwen

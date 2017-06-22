@@ -653,9 +653,10 @@ int NaClAddThreadMu(struct NaClApp        *nap,
   pos = DynArrayFirstAvail(&nap->threads);
 
   // yiwen
+  /*
   if (nap->num_threads > 0) {
      pos++;
-  } 
+  } */
 
   // yiwen 
   NaClLog(LOG_WARNING, "[NaClAddThreadMu] cage id = %i; total threads num = %i \n", nap->cage_id, nap->num_threads); 
