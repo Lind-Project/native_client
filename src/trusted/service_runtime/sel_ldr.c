@@ -652,24 +652,12 @@ int NaClAddThreadMu(struct NaClApp        *nap,
 
   pos = DynArrayFirstAvail(&nap->threads);
 
-  // yiwen
-  /*
-  if (nap->num_threads > 0) {
-     pos++;
-  } */
-
-  // yiwen 
-  NaClLog(LOG_WARNING, "[NaClAddThreadMu] cage id = %i; total threads num = %i \n", nap->cage_id, nap->num_threads); 
-
   if (!DynArraySet(&nap->threads, pos, natp)) {
     NaClLog(LOG_FATAL,
             "NaClAddThreadMu: DynArraySet at position %"NACL_PRIuS" failed\n",
             pos);
   }
   ++nap->num_threads;
-
-  // yiwen
-  NaClLog(LOG_WARNING, "[NaClAddThreadMu] cage id = %i; total threads num = %i; pos = %i \n", nap->cage_id, nap->num_threads, (int)pos); 
 
   return (int) pos;
 }
@@ -687,10 +675,6 @@ int NaClAddThread(struct NaClApp        *nap,
 
 void NaClRemoveThreadMu(struct NaClApp  *nap,
                         int             thread_num) {
-  // yiwen
-  // NaClLog(LOG_WARNING, "[NaClRemoveThreadMu] cage id = %i; total threads num = %i \n", nap->cage_id, nap->num_threads); 
-  // NaClLog(LOG_WARNING, "[NaClRemoveThreadMu] cage id = %i; thread_num = %i \n", nap->cage_id, thread_num); 
-
   if (NULL == DynArrayGet(&nap->threads, thread_num)) {
      NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: thread to be removed is not in the table\n");

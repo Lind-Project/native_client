@@ -948,45 +948,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
-  // yiwen: my code to set and test cage
-  // cage = 1002;
-  
-  // yiwen: let's take a snapshot of nap here 
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap = %p \n", (void*) nap);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap->mem_start = %p \n", (void*) nap->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0 = %p \n", (void*) nap0);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0->mem_start = %p \n", (void*) nap0->mem_start);
-  
-  // yiwen: let's actually use nap0 for our first cage
-  // memcpy((void*)(nap0), (void*)(nap), sizeof(*nap)); 
-  // memcpy((void*)(nap_ready), (void*)(nap0), sizeof(*nap0)); 
-  // memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap_ready)); 
-  
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap3 = %p \n", (void*) nap3);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap3->mem_start = %p \n", (void*) nap3->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap3->initial_entry_pt = %p \n", (void*) nap3->initial_entry_pt);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap3->user_entry_pt = %p \n", (void*) nap3->user_entry_pt);
-
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0 = %p \n", (void*) nap0);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0->mem_start = %p \n", (void*) nap0->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0->initial_entry_pt = %p \n", (void*) nap0->initial_entry_pt);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap0->user_entry_pt = %p \n", (void*) nap0->user_entry_pt);
-  
-  // try to see if nap0 works
-  // it works! So we should be able to use snapshot nap0
-  // but nap pointers need to be carefully managed! remember we have memory inside of a cage and in the view of the runtime system
-  // memcpy((void*)(nap), (void*)(nap0), sizeof(*nap));
-
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap->mem_start = %p \n", (void*) nap->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap->initial_entry_pt = %p \n", (void*) nap->initial_entry_pt);
-
-  // memcpy((void*)(nap_ready), (void*)(nap3), sizeof(*nap3));
-  // memcpy((void*)(nap3), (void*)(nap_ready), sizeof(*nap3));
-
   // yiwen: set cage id for cage 1
   nap->cage_id = 1; 
-
-  memcpy((void*)(nap0), (void*)(nap), sizeof(*nap));
 
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
@@ -1010,9 +973,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
   // argv2[3] = (char*) malloc(30 * sizeof(char)); 
   // strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
-
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap2->mem_start = %p \n", (void*) nap2->mem_start);
-  // NaClLog(LOG_WARNING, "[DEBUG!]: nap size = %lu \n", sizeof(*nap2));
   
   // yiwen: set cage id for cage 2
   nap2->cage_id = 2;  
@@ -1024,27 +984,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
   } 
-  
-  // NaClLog(LOG_WARNING, "[DEBUG!]: PASS! 01 \n");
-
-  // yiwen: try to take a snapshot of nap3, and store it in nap0s
-  // memcpy((void*)(nap0), (void*)(nap3), sizeof(*nap3));
-  // memcpy((void*)(nap3), (void*)(nap0), sizeof(*nap0));
-
-  // yiwen: try to start nap3
-  // yiwen: take a snapshot of nap3 and store it in nap0
-  // memcpy((void*)(nap0), (void*)(nap3), sizeof(*nap3)); 
-
-  /*
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_3.nexe", 43);
-  if (!NaClCreateMainThread(nap3,
-                            argc2,
-                            argv2,
-                            NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  } 
-  NaClLog(LOG_WARNING, "[DEBUG!]: PASS! 02 \n");*/
 
   free(argv2[0]);
   free(argv2[1]);
@@ -1058,15 +997,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);
 
-  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap threads number = %i \n", nap->num_threads);
-  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap2 threads number = %i \n", nap2->num_threads);
-  NaClLog(LOG_WARNING, "[NaCl_Sel_Main] nap0 threads number = %i \n", nap0->num_threads);
-
+  // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  // yiwen
   ret_code = NaClWaitForMainThreadToExit(nap2);
-  // yiwen
-  // ret_code = NaClWaitForMainThreadToExit(nap0);
+  ret_code = NaClWaitForMainThreadToExit(nap0);
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);

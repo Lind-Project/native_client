@@ -3929,72 +3929,9 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
-  // char* nacl_file;
-  // int errcode;
   
   int argc2;
   char **argv2;
-  // struct NaClEnvCleanser env_cleanser;
-  // const char **envp;
-  // extern char **environ;
-  // struct DynArray env_vars; 
-
-  NaClLog(LOG_WARNING, "[NaClSysExecv] nap cage id = %d \n", nap->cage_id);
-
-  // yiwen: let's try to start a new nap here
-  /*
-  struct NaClApp state_new;
-  struct NaClApp *nap_new;
-
-  nap_new = &state_new;
-
-  memset(&state_new, 0, sizeof state_new);
-  if (!NaClAppCtor(&state_new)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
-  }
-  NaClAppInitialDescriptorHookup(nap_new);
-
-  nacl_file = (char*) malloc(22 * sizeof(char));
-  strncpy(nacl_file, "/glibc/runnable-ld.so", 22);
-  errcode = NaClAppLoadFileFromFilename(nap_new, nacl_file);
-  if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
-                nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-  }
-
-  errcode = NaClAppPrepareToLaunch(nap_new);
-
-  if (!NaClAppLaunchServiceThreads(nap_new)) {
-    fprintf(stderr, "Launch service threads failed\n");
-    return -1;
-  }
-  
-  // yiwen: let's try to do execv here
-  
-#if NACL_OSX
-  envp = (const char **) *_NSGetEnviron();
-#else
-  envp = (const char **) environ;
-#endif
-
-  if (!DynArrayCtor(&env_vars, 0)) {
-    NaClLog(LOG_FATAL, "Failed to allocate env var array\n");
-  }
-
-  if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
-    NaClLog(LOG_FATAL, "Adding env_vars NULL terminator failed\n");
-  }
-  NaClEnvCleanserCtor(&env_cleanser, 0);
-  if (!NaClEnvCleanserInit(&env_cleanser, envp,
-          (char const *const *)env_vars.ptr_array)) {
-    NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
-  } */
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
@@ -4007,59 +3944,7 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
 
-  // memcpy((void*)(nap), (void*)(nap0), sizeof(*nap)); 
-  // NaClLog(LOG_WARNING, "[NaClSysExecv] nap->mem_start = %p \n", (void*) nap->mem_start);
-  // NaClLog(LOG_WARNING, "[NaClSysExecv] nap->initial_entry_pt = %p \n", (void*) nap->initial_entry_pt);
-
-  NaClLog(LOG_WARNING, "[NaClSysExecv] PASS! 01 \n");
-  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0 = %p \n", (void*) nap0);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->mem_start = %p \n", (void*) nap0->mem_start);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->initial_entry_pt = %p \n", (void*) nap0->initial_entry_pt);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] nap0->user_entry_pt = %p \n", (void*) nap0->user_entry_pt);
-
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (01) nap threads number = %i \n", nap->num_threads);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (01) napt number = %i \n", natp->thread_num);
-
-  // yiwen: be careful about where to remove the natp
-  // NaClAppThreadTeardown(natp);
-
-  // yiwen: try!
-  /*
-  if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
-    NaClLog(LOG_ERROR, "Could not get app lock ! \n");
-    retval = -1;
-    return retval;
-  }
-  NaClAppThreadDelete(natp);
-  if (NACL_SYNC_OK != NaClMutexUnlock(&nap->mu)) {
-    NaClLog(LOG_ERROR, "Could not get app lock ! \n");
-    retval = -1;
-    return retval;
-  } */
-
-  // yiwen: 
-  // this clears everything in the existing nap
-  // so any cleanup to the previously running thread should be done before this
-  NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
-
-  // memcpy((void*)(nap_ready), (void*)(nap0), sizeof(*nap0));
-  // memcpy((void*)(nap0), (void*)(nap_ready), sizeof(*nap0));
-  // memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
-  memcpy((void*)(nap), (void*)(nap0), sizeof(*nap0));
-
-  // reset cage id
-  nap->cage_id = 1;
-  NaClLog(LOG_WARNING, "[NaClSysExecv] cage id = %i \n", nap->cage_id);
-
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (02) nap threads number = %i \n", nap->num_threads);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (02) napt number = %i \n", natp->thread_num);
-
-  // yiwen: test for removing thread
-  // nap->cage_id = 999;
-
-  nap->num_threads++;
-
-  if (!NaClCreateMainThread(nap,
+  if (!NaClCreateMainThread(nap0,
                             argc2,
                             argv2,
                             NULL)) {
@@ -4068,18 +3953,8 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
     retval = -1;
     return retval;
   }
-  
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (03) nap threads number = %i \n", nap->num_threads);
-  NaClLog(LOG_WARNING, "[NaClSysExecv] (03) napt number = %i \n", natp->thread_num);
-  
-  NaClLog(LOG_WARNING, "[NaClSysExecv] PASS! 02 \n"); 
 
-  /*
-  sleep(5);
-  if (nap->num_threads > 0) {
-     natp->thread_num = 1;
-  } */
-
+  NaClReportExitStatus(nap, 0);
   NaClAppThreadTeardown(natp);
 
   return retval; 
