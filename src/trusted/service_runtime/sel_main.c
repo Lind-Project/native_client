@@ -922,11 +922,11 @@ int NaClSelLdrMain(int argc, char **argv) {
           (char const *const *)env_vars.ptr_array)) {
     NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
   }
-
+  
   if (!NaClAppLaunchServiceThreads(nap)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  }
+  } 
   // yiwen: my code 
   if (!NaClAppLaunchServiceThreads(nap2)) {
     fprintf(stderr, "Launch service threads failed\n");
@@ -949,7 +949,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
   // yiwen: set cage id for cage 1
-  nap->cage_id = 1; 
+  nap->cage_id = 1;  
+
+  fd_cage_table[20][20] = 20;
 
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,

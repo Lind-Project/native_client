@@ -558,6 +558,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+  
 
   NaClLog(3, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
@@ -634,6 +635,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     }
   }
 cleanup:
+  // yiwen: debug
+  // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, (int)retval);
+  // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[20][20]);
   return retval;
 }
 
@@ -3835,97 +3839,29 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   return retval;
 }
 
-// yiwen
+// yiwen: my in-process-fork implementation
+// Conceptually, here are the steps we need to do: 
+// 1) create a new cage/nap for the child process
+// 2) create a new thread inside the new cage to run the program
+// 3) make sure that the new cage has an exact duplication of the code and data from the parent cage
+// 4) set up the return value of the child process correctly (on the stack)
+// 5) set up the context switch info correctly for the child process
+// 6) schedule the context switch to run the child process 
+
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval;
-  int nap_size;
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %i \n", nap->cage_id);
   
-  int argc2;
-  char **argv2;
-  struct NaClEnvCleanser env_cleanser;
-  const char **envp;
-  extern char **environ;
-  struct DynArray env_vars;
-
-  NaClLog(LOG_WARNING, "[TEST!] cage = %d \n", cage); 
-
-  if (fork_mark == 999) {
-      retval = 400;
-      return retval;
-  }
-
-  fork_mark = 999;
-  nap_size = sizeof(struct NaClApp); 
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap size = %d \n", nap_size);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap cage id = %d \n", nap->cage_id);
-
-  // yiwen: let's try to do execv here
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap = %p \n", (void*) nap);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 = %p \n", (void*) nap0);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap0->mem_start = %p \n", (void*) nap0->mem_start); 
-
-#if NACL_OSX
-  envp = (const char **) *_NSGetEnviron();
-#else
-  envp = (const char **) environ;
-#endif
-
-  if (!DynArrayCtor(&env_vars, 0)) {
-    NaClLog(LOG_FATAL, "Failed to allocate env var array\n");
-  }
-
-  if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
-    NaClLog(LOG_FATAL, "Adding env_vars NULL terminator failed\n");
-  }
-  NaClEnvCleanserCtor(&env_cleanser, 0);
-  if (!NaClEnvCleanserInit(&env_cleanser, envp,
-          (char const *const *)env_vars.ptr_array)) {
-    NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
-  }
-
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap = %p \n", (void*) nap);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
-
-  memcpy((void*)(nap), (void*)(nap0), sizeof(*nap)); 
-
-  if (!NaClCreateMainThread(nap,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    retval = -1;
-    return retval;
-  }
-
-  NaClEnvCleanserDtor(&env_cleanser); 
-  
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap->mem_start = %p \n", (void*) nap->mem_start);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap size = %lu \n", sizeof(*nap));
-  /*
-  nap->break_addr = addr;
-
-  NaClLog(LOG_WARNING, "[DEBUG!]: <nap->break_addr> = %p \n", (void*) nap->break_addr);
-  NaClLog(LOG_WARNING, "[DEBUG!]: %p \n", (void*) NaClUserToSys(nap, nap->break_addr)); */
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] I am done! \n");
-  retval = 0;
+  retval = 486;
   return retval;
 }
 
-// yiwen
+// yiwen: my implementation fo execv() call
+// a new cage is created for the new program
+// the new program will be running inside the new cage
+// the old cage and the runnging main thread inside that cage will be torn down
 int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
@@ -3954,8 +3890,8 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
     return retval;
   }
 
-  NaClReportExitStatus(nap, 0);
-  NaClAppThreadTeardown(natp);
+  NaClReportExitStatus(nap, 0);  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
+  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
 
   return retval; 
 }

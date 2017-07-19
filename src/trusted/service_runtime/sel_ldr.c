@@ -65,6 +65,8 @@ struct NaClApp *nap_ready;
 struct NaClApp state0;
 struct NaClApp *nap0;
 
+int fd_cage_table[3000][1000]; // fd_cage_table[fd][cage_id] = 1: read only; 2: write only; 3: read&write
+
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
 }
