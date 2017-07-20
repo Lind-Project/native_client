@@ -949,9 +949,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
   // yiwen: set cage id for cage 1
+  // TODO: we need to write a function to initialize things for a cage
   nap->cage_id = 1;  
-
-  fd_cage_table[20][20] = 20;
+  fd_cage_table[1][0] = 0;
+  fd_cage_table[1][1] = 1;
+  fd_cage_table[1][2] = 2;
+  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved
 
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
@@ -977,7 +980,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   // strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
   
   // yiwen: set cage id for cage 2
-  nap2->cage_id = 2;  
+  nap2->cage_id = 2;
+  fd_cage_table[2][0] = 0;
+  fd_cage_table[2][1] = 1;
+  fd_cage_table[2][2] = 2;  
+  nap2->fd = 3;
 
   if (!NaClCreateMainThread(nap2,
                             argc2,

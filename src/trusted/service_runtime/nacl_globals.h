@@ -24,7 +24,7 @@ struct NaClApp;
 
 // yiwen
 extern int cage;
-extern int fd_cage_table[3000][1000];
+extern int fd_cage_table[1000][1000];
 extern struct NaClApp state_ready;
 extern struct NaClApp *nap_ready;
 

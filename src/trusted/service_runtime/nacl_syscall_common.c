@@ -558,6 +558,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+
+  // yiwen
+  int                  fd_retval; // this is the virtual fd returned to the cage
   
 
   NaClLog(3, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
@@ -635,10 +638,15 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     }
   }
 cleanup:
+  // yiwen: now translate the real fds to virtual fds and return them to the cage
+  fd_cage_table[nap->cage_id][nap->fd] = retval;
+  fd_retval = nap->fd;
+  nap->fd++;
+
   // yiwen: debug
-  // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, (int)retval);
-  // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[20][20]);
-  return retval;
+  // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
+  // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
+  return fd_retval;
 }
 
 int32_t NaClSysClose(struct NaClAppThread *natp,
@@ -646,15 +654,23 @@ int32_t NaClSysClose(struct NaClAppThread *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval = -NACL_ABI_EBADF;
   struct NaClDesc *ndp;
+  
+  // yiwen
+  int fd;
 
   NaClLog(3, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
   NaClFastMutexLock(&nap->desc_mu);
-  ndp = NaClGetDescMu(nap, d);
+
+  // yiwen 
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDescMu(nap, fd);
   if (NULL != ndp) {
     NaClSetDescMu(nap, d, NULL);  /* Unref the desc_tbl */
   }
+
   NaClFastMutexUnlock(&nap->desc_mu);
   NaClLog(5, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
           (uintptr_t) ndp);
@@ -675,6 +691,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   ssize_t         getdents_ret;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
+  
+  // yiwen
+  int fd;
 
   NaClLog(3,
           ("Entered NaClSysGetdents(0x%08"NACL_PRIxPTR", "
@@ -682,7 +701,10 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen 
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
@@ -754,6 +776,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   char const      *ellipsis = "";
   char* string;
 
+  // yiwen
+  int             fd;
+
   NaClLog(3,
           ("Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
@@ -789,7 +814,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      goto cleanup;
   }
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+
+  // NaClLog(LOG_WARNING, "[NaClSysRead] <cage> = %i; fd = %i \n", nap->cage_id, fd);
+
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
@@ -858,6 +888,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   size_t          log_bytes;
   char* string;
 
+  // yiwen
+  int             fd;
+
   NaClLog(3,
           "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
@@ -893,7 +926,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      goto cleanup;
   }
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDesc(nap, fd);
   NaClLog(4, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
@@ -961,13 +997,18 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   nacl_off64_t    retval64;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
-
+  // yiwen
+  int             fd;
+  
   NaClLog(3,
           ("Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
@@ -1005,6 +1046,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   int             retval = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
+  int             fd;
 
   NaClLog(3,
           ("Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
@@ -1026,7 +1068,10 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    ****************************************
    */
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     NaClLog(4, "bad desc\n");
     retval = -NACL_ABI_EBADF;
@@ -1066,6 +1111,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   int32_t               retval = -NACL_ABI_EINVAL;
   struct NaClDesc       *ndp;
   struct nacl_abi_stat  result;
+  int                   fd;
 
   NaClLog(3,
           ("Entered NaClSysFstat(0x%08"NACL_PRIxPTR
@@ -1077,7 +1123,10 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
           " sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
           sizeof *nasp, sizeof *nasp);
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     NaClLog(4, "bad desc\n");
     retval = -NACL_ABI_EBADF;
@@ -1308,6 +1357,8 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   nacl_off64_t                file_bytes;
   nacl_off64_t                host_rounded_file_bytes;
   size_t                      alloc_rounded_file_bytes;
+  // yiwen
+  int fd;
 
   holding_app_lock = 0;
   ndp = NULL;
@@ -1330,7 +1381,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
      */
     ndp = NULL;
   } else {
-    ndp = NaClGetDesc(nap, d);
+    // yiwen
+    fd = fd_cage_table[nap->cage_id][d];
+    ndp = NaClGetDesc(nap, fd);
     if (NULL == ndp) {
       map_result = -NACL_ABI_EBADF;
       goto cleanup;
@@ -2478,11 +2531,14 @@ int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
+  int             fd;
 
   NaClLog(3, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
   } else {
@@ -2503,11 +2559,14 @@ int32_t NaClSysImcConnect(struct NaClAppThread *natp,
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
+  int             fd;
 
   NaClLog(3, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
   } else {
@@ -2546,6 +2605,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
   struct NaClImcTypedMsgHdr     kern_msg_hdr;
   struct NaClDesc               *ndp;
   size_t                        i;
+  int                           fd;
 
   NaClLog(3,
           ("Entered NaClSysImcSendmsg(0x%08"NACL_PRIxPTR", %d,"
@@ -2602,7 +2662,9 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
     }
   }
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
     goto cleanup_leave;
@@ -2718,6 +2780,8 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   struct NaClDesc                       *new_desc[NACL_ABI_IMC_DESC_MAX];
   nacl_abi_size_t                       num_user_desc;
   struct NaClDesc                       *invalid_desc = NULL;
+  // yiwen
+  int                                   fd;
 
   NaClLog(3,
           ("Entered NaClSysImcRecvMsg(0x%08"NACL_PRIxPTR", %d,"
@@ -2789,7 +2853,9 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
     }
   }
 
-  ndp = NaClGetDesc(nap, d);
+  // yiwen
+  fd = fd_cage_table[nap->cage_id][d];
+  ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     NaClLog(4, "receiving descriptor invalid\n");
     retval = -NACL_ABI_EBADF;
@@ -3854,6 +3920,11 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %i \n", nap->cage_id);
   
+  // 1) create a new cage for the child process
+  //    we can use nap0 here
+
+  // 2) create a new thread inside the new cage
+
   retval = 486;
   return retval;
 }

@@ -110,6 +110,9 @@ struct NaClApp {
   // yiwen
   int cage_id; 
 
+  // yiwen: record the current fd number(largest) assigned by this cage
+  int fd;
+
   /*
    * public, user settable prior to app start.
    */
