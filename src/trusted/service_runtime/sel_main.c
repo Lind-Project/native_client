@@ -59,6 +59,17 @@
 // yiwen
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 
+// yiwen 
+// set up the cage id
+// set up the fd table for the cage
+static void InitializeCage(struct NaClApp *nap, int cage_id) {
+  nap->cage_id = cage_id;  
+  fd_cage_table[cage_id][0] = 0;
+  fd_cage_table[cage_id][1] = 1;
+  fd_cage_table[cage_id][2] = 2;
+  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved  
+}
+
 static void (*g_enable_outer_sandbox_func)(void) =
 #if NACL_OSX
     NaClEnableOuterSandbox;
@@ -948,13 +959,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
-  // yiwen: set cage id for cage 1
-  // TODO: we need to write a function to initialize things for a cage
-  nap->cage_id = 1;  
-  fd_cage_table[1][0] = 0;
-  fd_cage_table[1][1] = 1;
-  fd_cage_table[1][2] = 2;
-  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved
+  // yiwen: set up cage 0 (currently used by fork and execv) 
+  InitializeCage(nap0, 0); 
+
+  // yiwen: set up cage 1
+  InitializeCage(nap, 1);
 
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
@@ -979,12 +988,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   // argv2[3] = (char*) malloc(30 * sizeof(char)); 
   // strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
   
-  // yiwen: set cage id for cage 2
-  nap2->cage_id = 2;
-  fd_cage_table[2][0] = 0;
-  fd_cage_table[2][1] = 1;
-  fd_cage_table[2][2] = 2;  
-  nap2->fd = 3;
+  // yiwen: set up cage 2
+  InitializeCage(nap2, 2);
 
   if (!NaClCreateMainThread(nap2,
                             argc2,

@@ -3918,12 +3918,90 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval;
 
+  void *sysaddr_parent;
+  void *sysaddr_child;  
+  // unsigned int cage_size;
+
+  /*
+  int data_size;
+  int data_size2;
+  uintptr_t sysaddr_parent;
+  uintptr_t useraddr_parent_start;
+  uintptr_t parent_test;
+  uintptr_t sysaddr_parent_test;
+  uintptr_t sysaddr_child; */
+
   NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %i \n", nap->cage_id);
+  // cage_size = 0xffffffff - 0x00000000;
   
+  // debug: let's first print out the memory of the current cage
+  /*
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap cage_size = %u \n", cage_size);
+
+  useraddr_parent_start = NaClSysToUser(nap, (uintptr_t) (nap->mem_start + 8));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap user mem_start = %p \n", (void *)useraddr_parent_start);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap mem_start = %p \n", (void *)nap->mem_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap static_text_end = %p \n", (void *)nap->static_text_end);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_start = %p \n", (void *)nap->data_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_end = %p \n", (void *)nap->data_end);
+
+  data_size = nap->data_end - nap->data_start;
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_size = %i \n", data_size);
+  sysaddr_parent = NaClUserToSys(nap, (uintptr_t) nap->data_start);
+  data_size2 = sysaddr_parent;
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_start = %p \n", (void *)sysaddr_parent);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data = %d \n", *((int *)(sysaddr_parent)));
+  sysaddr_parent = NaClUserToSys(nap, (uintptr_t) nap->data_end);
+  data_size2 = sysaddr_parent - data_size2;
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_end = %p \n", (void *)sysaddr_parent);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap data_size = %i \n", data_size2);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap break_addr = %p \n", (void *)nap->break_addr);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap dynamic_text_start = %p \n", (void *)nap->dynamic_text_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap dynamic_text_end = %p \n", (void *)nap->dynamic_text_end);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap rodata_start = %p \n\n", (void *)nap->rodata_start);
+
+  parent_test = 0xfffefe5c;
+  sysaddr_parent_test = NaClUserToSys(nap, (uintptr_t) parent_test);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap &test = %p \n", (void *)sysaddr_parent_test);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent_test)));
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap initial_entry_pt = %p \n", (void *)nap->initial_entry_pt);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap user_entry_pt = %p \n\n", (void *)nap->user_entry_pt);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 mem_start = %p \n", (void *)nap0->mem_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 static_text_end = %p \n", (void *)nap0->static_text_end);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 data_start = %p \n", (void *)nap0->data_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 data_end = %p \n", (void *)nap0->data_end);
+
+  data_size = nap0->data_end - nap0->data_start;
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 data_size = %i \n", data_size);
+  sysaddr_child = NaClUserToSys(nap0, (uintptr_t) nap0->data_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 data_start = %p \n", (void *)sysaddr_child);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 data = %d \n", *((int *)(sysaddr_child)));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 dynamic_text_start = %p \n", (void *)nap0->dynamic_text_start);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 dynamic_text_end = %p \n", (void *)nap0->dynamic_text_end);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 initial_entry_pt = %p \n", (void *)nap0->initial_entry_pt);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 user_entry_pt = %p \n\n", (void *)nap0->user_entry_pt); */
+
   // 1) create a new cage for the child process
   //    we can use nap0 here
 
   // 2) create a new thread inside the new cage
+
+  // yiwen: let's try to make it work
+
+  sysaddr_parent = (void *)NaClUserToSys(nap, 0xfffefe5c);
+  sysaddr_child = (void *)NaClUserToSys(nap0, 0xfffefe5c);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n", (void *)sysaddr_child);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n", *((int *)(sysaddr_child)));
+  memcpy(sysaddr_child, sysaddr_parent, 4);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap &test = %p \n", (void *)sysaddr_parent);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n", (void *)sysaddr_child);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n", *((int *)(sysaddr_child)));
 
   retval = 486;
   return retval;
