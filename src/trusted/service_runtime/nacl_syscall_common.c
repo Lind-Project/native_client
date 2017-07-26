@@ -97,6 +97,30 @@ int pipe_mutex; // 0: pipe is empty, ready to write, cannot read; 1: pipe is ful
 // yiwen: this is for debugging in fork()
 int fork_mark;
 
+// yiwen: print out memory layout of a nap
+void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
+  NaClLog(LOG_WARNING, "NaClApp addr space layout:\n");
+  NaClLog(LOG_WARNING, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+          nap->static_text_end);
+  NaClLog(LOG_WARNING, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_start);
+  NaClLog(LOG_WARNING, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_end);
+  NaClLog(LOG_WARNING, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+          nap->rodata_start);
+  NaClLog(LOG_WARNING, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_start);
+  NaClLog(LOG_WARNING, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_end);
+  NaClLog(LOG_WARNING, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+          nap->break_addr);
+  NaClLog(LOG_WARNING, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+          nap->initial_entry_pt);
+  NaClLog(LOG_WARNING, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+          nap->user_entry_pt);
+  NaClLog(LOG_WARNING, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
+}
+
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length);
 
@@ -3920,6 +3944,31 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   void *sysaddr_parent;
   void *sysaddr_child;  
+
+  int argc2;
+  char **argv2;
+
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+
+  if (!NaClCreateMainThread(nap0,
+                            argc2,
+                            argv2,
+                            NULL)) {
+    fprintf(stderr, "creating main thread failed\n");
+    NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");
+    retval = -1;
+    return retval;
+  }
+
   // unsigned int cage_size;
 
   /*
@@ -3991,17 +4040,34 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   // yiwen: let's try to make it work
 
-  sysaddr_parent = (void *)NaClUserToSys(nap, 0xfffefe5c);
+  // sysaddr_parent = (void *)NaClUserToSys(nap, 0xfffefe5c);
+  /*
   sysaddr_child = (void *)NaClUserToSys(nap0, 0xfffefe5c);
+  sysaddr_parent = (void *)NaClUserToSys(nap, 0x11010784);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap &test_global = %p \n", (void *)sysaddr_parent);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test_global = %d \n", *((int *)(sysaddr_parent)));
+  *(int *)(sysaddr_parent) = 97;
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap &test_global = %p \n", (void *)sysaddr_parent);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test_global = %d \n", *((int *)(sysaddr_parent)));
 
   NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n", (void *)sysaddr_child);
   NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n", *((int *)(sysaddr_child)));
+  
   memcpy(sysaddr_child, sysaddr_parent, 4);
 
   NaClLog(LOG_WARNING, "[NaClSysFork] nap &test = %p \n", (void *)sysaddr_parent);
   NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
   NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n", (void *)sysaddr_child);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n", *((int *)(sysaddr_child)));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child))); */
+
+  // NaClPrintAddressSpaceLayout(nap);
+
+  sysaddr_parent = (void *)NaClUserToSys(nap, nap->break_addr);
+  sysaddr_child = (void *)NaClUserToSys(nap0, nap0->break_addr);
+  NaClLog(LOG_WARNING, "[DEBUG][NaClSysFork] Here! \n");
+  memcpy(sysaddr_child, sysaddr_parent, 4);
+  NaClLog(LOG_WARNING, "[DEBUG][NaClSysFork] Here!! \n");
 
   retval = 486;
   return retval;
