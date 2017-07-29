@@ -3945,6 +3945,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   void *sysaddr_parent;
   void *sysaddr_child;  
 
+  /*
   int argc2;
   char **argv2;
 
@@ -3968,6 +3969,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
     retval = -1;
     return retval;
   }
+  */
 
   // unsigned int cage_size;
 
@@ -4061,13 +4063,16 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n", (void *)sysaddr_child);
   NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child))); */
 
-  // NaClPrintAddressSpaceLayout(nap);
+  NaClPrintAddressSpaceLayout(nap);
 
-  sysaddr_parent = (void *)NaClUserToSys(nap, nap->break_addr);
-  sysaddr_child = (void *)NaClUserToSys(nap0, nap0->break_addr);
-  NaClLog(LOG_WARNING, "[DEBUG][NaClSysFork] Here! \n");
+  sysaddr_parent = (void *)NaClUserToSys(nap, 0xfffefe5c);
+  sysaddr_child = (void *)NaClUserToSys(nap0, 0xfffefe5c);
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child)));
+  *((int *)(sysaddr_parent)) = 97;
   memcpy(sysaddr_child, sysaddr_parent, 4);
-  NaClLog(LOG_WARNING, "[DEBUG][NaClSysFork] Here!! \n");
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
+  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child)));
 
   retval = 486;
   return retval;
