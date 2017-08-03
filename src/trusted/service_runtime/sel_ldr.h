@@ -594,6 +594,11 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status);
  */
 uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
 
+// yiwen
+void NaClLogMemoryContent(struct NaClApp *nap, uintptr_t useraddr);
+void NaClLogThreadContext(struct NaClAppThread *natp);
+void NaClPrintAddressSpaceLayout(struct NaClApp *nap);
+
 /*
  * Used to launch the main thread.  NB: calling thread may in the
  * future become the main NaCl app thread, and this function will
@@ -605,6 +610,13 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                          int                argc,
                          char               **argv,
                          char const *const  *envp) NACL_WUR;
+
+// yiwen
+int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
+                             struct NaClApp     *nap_child,
+                             int                argc,
+                             char               **argv,
+                             char const *const  *envp) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 

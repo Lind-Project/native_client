@@ -24,6 +24,72 @@
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 #include "native_client/src/trusted/service_runtime/osx/mach_thread_map.h"
 
+// yiwen
+#include "native_client/src/include/win/mman.h"
+#include "native_client/src/trusted/service_runtime/sel_memory.h"
+
+// yiwen
+void WINAPI NaClAppForkThreadLauncher(void *state) {
+  struct NaClAppThread *natp = (struct NaClAppThread *) state;
+  uint32_t thread_idx;
+
+  // NaClLog(LOG_WARNING, "[NaClApp Fork] parent cage id = %i \n", parent->cage_id);
+  // NaClLog(LOG_WARNING, "[NaClApp Fork] child cage id = %i \n", child->cage_id);
+
+  NaClLog(4, "NaClAppThreadLauncher: entered\n");
+
+  NaClSignalStackRegister(natp->signal_stack);
+
+  NaClLog(4, "      natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
+  NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
+          NaClGetThreadCtxSp(&natp->user));
+
+  thread_idx = NaClGetThreadIdx(natp);
+  CHECK(0 < thread_idx);
+  CHECK(thread_idx < NACL_THREAD_MAX);
+  NaClTlsSetCurrentThread(natp);
+  nacl_user[thread_idx] = &natp->user;
+#if NACL_WINDOWS
+  nacl_thread_ids[thread_idx] = GetCurrentThreadId();
+#elif NACL_OSX
+  NaClSetCurrentMachThreadForThreadIndex(thread_idx);
+#endif
+
+  /*
+   * We have to hold the threads_mu lock until after thread_num field
+   * in this thread has been initialized.  All other threads can only
+   * find and examine this natp through the threads table, so the fact
+   * that natp is not consistent (no thread_num) will not be visible.
+   */
+  NaClXMutexLock(&natp->nap->threads_mu);
+  natp->thread_num = NaClAddThreadMu(natp->nap, natp);
+  NaClXMutexUnlock(&natp->nap->threads_mu);
+
+  NaClVmHoleThreadStackIsSafe(natp->nap);
+
+  NaClStackSafetyNowOnUntrustedStack();
+
+  /*
+   * Notify the debug stub, that a new thread is availible.
+   */
+  if (NULL != natp->nap->debug_stub_callbacks) {
+    natp->nap->debug_stub_callbacks->thread_create_hook(natp);
+  }
+
+  /*
+   * After this NaClAppThreadSetSuspendState() call, we should not
+   * claim any mutexes, otherwise we risk deadlock.
+   */
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
+                               NACL_APP_THREAD_UNTRUSTED);
+
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
+  // NaClLogThreadContext(natp);
+
+  NaClStartThreadInApp(natp, natp->user.prog_ctr);
+}
 
 void WINAPI NaClAppThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
@@ -235,6 +301,79 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
 }
 
+// yiwen
+int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
+                           struct NaClApp *nap_child, 
+                           uintptr_t      usr_entry,
+                           uintptr_t      usr_stack_ptr,
+                           uint32_t       user_tls1,
+                           uint32_t       user_tls2) {
+  struct NaClAppThread *natp = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr,
+                                                 user_tls1, user_tls2);
+  // int retval;
+  // void *sysaddr_parent;
+  // void *sysaddr_child;
+  // size_t size_of_dynamic_text;
+  /*
+  sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
+  sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);  
+  size_of_dynamic_text = nap_child->dynamic_text_end - nap_child->dynamic_text_start;
+  NaClLog(LOG_WARNING, "copy size = %zd \n", size_of_dynamic_text);
+  size_of_dynamic_text = 4000;
+  memcpy(sysaddr_child, sysaddr_parent, 4); 
+  memcpy(sysaddr_child, sysaddr_parent, nap_parent->dynamic_text_end - nap_parent->dynamic_text_start); 
+  sysaddr_child = (void *)malloc(4);
+  retval = NaClMprotect(sysaddr_parent, 
+                        size_of_dynamic_text,
+                        PROT_READ | PROT_WRITE | PROT_EXEC);
+  retval = NaClMprotect(sysaddr_child, 
+                        size_of_dynamic_text,
+                        PROT_READ | PROT_WRITE | PROT_EXEC);
+  if (retval == -1) {
+     NaClLog(LOG_WARNING, "NaClMprotect failed! \n");
+  } 
+  
+  memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text); 
+  
+  retval = NaClMprotect(sysaddr_parent, 
+                        size_of_dynamic_text,
+                        PROT_READ | PROT_EXEC);
+  retval = NaClMprotect(sysaddr_child, 
+                        size_of_dynamic_text,
+                        PROT_READ | PROT_EXEC); 
+
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClLog(LOG_WARNING, "\n"); 
+  NaClPrintAddressSpaceLayout(nap_child);
+  NaClLog(LOG_WARNING, "\n"); 
+  */
+  NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
+
+  if (natp == NULL) {
+    return 0;
+  }
+  /*
+   * We set host_thread_is_defined assuming, for now, that
+   * NaClThreadCtor() will succeed.
+   */
+  natp->host_thread_is_defined = 1;
+
+  // yiwen: copy memory from parent to child
+  
+
+  if (!NaClThreadCtor(&natp->host_thread, NaClAppForkThreadLauncher, (void *) natp,
+                      NACL_KERN_STACK_SIZE)) {
+    /*
+     * No other thread saw the NaClAppThread, so it is OK that
+     * host_thread was not initialized despite host_thread_is_defined
+     * being set.
+     */
+    natp->host_thread_is_defined = 0;
+    NaClAppThreadDelete(natp);
+    return 0;
+  }
+  return 1;
+}
 
 int NaClAppThreadSpawn(struct NaClApp *nap,
                        uintptr_t      usr_entry,

@@ -960,7 +960,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   
   // yiwen: set up cage 0 (currently used by fork and execv) 
-  InitializeCage(nap0, 0); 
+  // right now, nap0 is reserved for fork()
+  InitializeCage(nap0, 0);
 
   // yiwen: set up cage 1
   InitializeCage(nap, 1);

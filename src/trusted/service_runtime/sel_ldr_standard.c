@@ -166,6 +166,51 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
   return LOAD_OK;
 }
 
+// yiwen: print out memory content for debug purpose
+void NaClLogMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
+  void *sysaddr;
+  unsigned int *addr;
+  
+  sysaddr = (void *)NaClUserToSys(nap, useraddr);
+  addr = (unsigned int *)sysaddr;
+
+  NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr);
+  NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+} 
+
+// yiwen: print out thread context info
+void NaClLogThreadContext(struct NaClAppThread *natp) {
+  NaClLog(LOG_WARNING, "[Thread Context] cage id = %i \n", natp->nap->cage_id);
+  NaClLog(LOG_WARNING, "[Thread Context] sysret = %p \n", (void *)natp->user.sysret);
+  NaClLog(LOG_WARNING, "[Thread Context] prog_ctr = %p \n", (void *)natp->user.prog_ctr);
+  NaClLog(LOG_WARNING, "[Thread Context] new_prog_ctr = %p \n", (void *)natp->user.new_prog_ctr);
+  NaClLog(LOG_WARNING, "[Thread Context] trusted_stack_ptr = %p \n\n", (void *)natp->user.trusted_stack_ptr);
+} 
+
+// yiwen: print out memory layout of a nap
+void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
+  NaClLog(LOG_WARNING, "NaClApp addr space layout:\n");
+  NaClLog(LOG_WARNING, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+          nap->static_text_end);
+  NaClLog(LOG_WARNING, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_start);
+  NaClLog(LOG_WARNING, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_end);
+  NaClLog(LOG_WARNING, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+          nap->rodata_start);
+  NaClLog(LOG_WARNING, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_start);
+  NaClLog(LOG_WARNING, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_end);
+  NaClLog(LOG_WARNING, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+          nap->break_addr);
+  NaClLog(LOG_WARNING, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+          nap->initial_entry_pt);
+  NaClLog(LOG_WARNING, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+          nap->user_entry_pt);
+  NaClLog(LOG_WARNING, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
+}
+
 void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
   NaClLog(2, "NaClApp addr space layout:\n");
   NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
@@ -893,6 +938,209 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                               NaClSysToUserStackAddr(nap, stack_ptr),
                               /* user_tls1= */ (uint32_t) nap->break_addr,
                               /* user_tls2= */ 0);
+
+cleanup:
+  free(argv_len);
+  free(envv_len);
+
+  return retval;
+}
+
+// yiwen
+int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
+                             struct NaClApp     *nap_child,
+                             int                argc,
+                             char               **argv,
+                             char const *const  *envv) {
+  /*
+   * Compute size of string tables for argv and envv
+   */
+  int                   retval;
+  int                   envc;
+  size_t                size;
+  int                   auxv_entries;
+  size_t                ptr_tbl_size;
+  int                   i;
+  uint32_t              *p;
+  char                  *strp;
+  size_t                *argv_len;
+  size_t                *envv_len;
+  uintptr_t             stack_ptr;
+
+  retval = 0;  /* fail */
+  CHECK(argc >= 0);
+  CHECK(NULL != argv || 0 == argc);
+
+  envc = 0;
+  if (NULL != envv) {
+    char const *const *pp;
+    for (pp = envv; NULL != *pp; ++pp) {
+      ++envc;
+    }
+  }
+  envv_len = 0;
+  argv_len = malloc(argc * sizeof argv_len[0]);
+  envv_len = malloc(envc * sizeof envv_len[0]);
+  if (NULL == argv_len) {
+    goto cleanup;
+  }
+  if (NULL == envv_len && 0 != envc) {
+    goto cleanup;
+  }
+
+  size = 0;
+
+  /*
+   * The following two loops cannot overflow.  The reason for this is
+   * that they are counting the number of bytes used to hold the
+   * NUL-terminated strings that comprise the argv and envv tables.
+   * If the entire address space consisted of just those strings, then
+   * the size variable would overflow; however, since there's the code
+   * space required to hold the code below (and we are not targetting
+   * Harvard architecture machines), at least one page holds code, not
+   * data.  We are assuming that the caller is non-adversarial and the
+   * code does not look like string data....
+   */
+  for (i = 0; i < argc; ++i) {
+    argv_len[i] = strlen(argv[i]) + 1;
+    size += argv_len[i];
+  }
+  for (i = 0; i < envc; ++i) {
+    envv_len[i] = strlen(envv[i]) + 1;
+    size += envv_len[i];
+  }
+
+  /*
+   * NaCl modules are ILP32, so the argv, envv pointers, as well as
+   * the terminating NULL pointers at the end of the argv/envv tables,
+   * are 32-bit values.  We also have the auxv to take into account.
+   *
+   * The argv and envv pointer tables came from trusted code and is
+   * part of memory.  Thus, by the same argument above, adding in
+   * "ptr_tbl_size" cannot possibly overflow the "size" variable since
+   * it is a size_t object.  However, the extra pointers for auxv and
+   * the space for argv could cause an overflow.  The fact that we
+   * used stack to get here etc means that ptr_tbl_size could not have
+   * overflowed.
+   *
+   * NB: the underlying OS would have limited the amount of space used
+   * for argv and envv -- on linux, it is ARG_MAX, or 128KB -- and
+   * hence the overflow check is for obvious auditability rather than
+   * for correctness.
+   */
+  auxv_entries = 1;
+  if (0 != nap_child->user_entry_pt) {
+    auxv_entries++;
+  }
+  ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0) +
+                   (3 + argc + 1 + envc + 1 + auxv_entries * 2)) *
+                  sizeof(uint32_t));
+
+  if (SIZE_T_MAX - size < ptr_tbl_size) {
+    NaClLog(LOG_WARNING,
+            "NaClCreateMainThread: ptr_tbl_size cause size of"
+            " argv / environment copy to overflow!?!\n");
+    retval = 0;
+    goto cleanup;
+  }
+  size += ptr_tbl_size;
+
+  size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
+
+  if (size > nap_child->stack_size) {
+    retval = 0;
+    goto cleanup;
+  }
+
+  /*
+   * Write strings and char * arrays to stack.
+   */
+  stack_ptr = NaClUserToSysAddrRange(nap_child, NaClGetInitialStackTop(nap_child) - size,
+                                     size);
+  if (stack_ptr == kNaClBadAddress) {
+    retval = 0;
+    goto cleanup;
+  }
+
+  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
+
+  VCHECK(0 == (stack_ptr & NACL_STACK_ALIGN_MASK),
+         ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
+
+  p = (uint32_t *) stack_ptr;
+  strp = (char *) stack_ptr + ptr_tbl_size;
+
+  /*
+   * For x86-32, we push an initial argument that is the address of
+   * the main argument block.  For other machines, this is passed
+   * in a register and that's set in NaClStartThreadInApp.
+   */
+  if (NACL_STACK_GETS_ARG) {
+    uint32_t *argloc = p++;
+    *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
+  }
+
+  *p++ = 0;  /* Cleanup function pointer, always NULL.  */
+  *p++ = envc;
+  *p++ = argc;
+
+  for (i = 0; i < argc; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) strp);
+    NaClLog(2, "copying arg %d  %p -> %p\n",
+            i, argv[i], strp);
+    strcpy(strp, argv[i]);
+    strp += argv_len[i];
+  }
+  *p++ = 0;  /* argv[argc] is NULL.  */
+
+  for (i = 0; i < envc; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) strp);
+    NaClLog(2, "copying env %d  %p -> %p\n",
+            i, envv[i], strp);
+    strcpy(strp, envv[i]);
+    strp += envv_len[i];
+  }
+  *p++ = 0;  /* envp[envc] is NULL.  */
+
+  /* Push an auxv */
+  if (0 != nap_child->user_entry_pt) {
+    *p++ = AT_ENTRY;
+    *p++ = (uint32_t) nap_child->user_entry_pt;
+  }
+  *p++ = AT_NULL;
+  *p++ = 0;
+
+  CHECK((char *) p == (char *) stack_ptr + ptr_tbl_size);
+
+  /* now actually spawn the thread */
+  NaClXMutexLock(&nap_child->mu);
+  nap_child->running = 1;
+  NaClXMutexUnlock(&nap_child->mu);
+
+  NaClVmHoleWaitToStartThread(nap_child);
+
+  /*
+   * For x86, we adjust the stack pointer down to push a dummy return
+   * address.  This happens after the stack pointer alignment.
+   * We avoid the otherwise harmless call for the zero case because
+   * _FORTIFY_SOURCE memset can warn about zero-length calls.
+   */
+  if (NACL_STACK_PAD_BELOW_ALIGN != 0) {
+    stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
+    memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
+  }
+
+  NaClLog(2, "system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+  NaClLog(2, "  user stack ptr : %016"NACL_PRIxPTR"\n",
+          NaClSysToUserStackAddr(nap_child, stack_ptr));
+
+  /* e_entry is user addr */
+  retval = NaClAppForkThreadSpawn(nap_parent,
+                                  nap_child,
+                                  nap_child->initial_entry_pt,
+                                  NaClSysToUserStackAddr(nap_child, stack_ptr),
+                                  /* user_tls1= */ (uint32_t) nap_child->break_addr,
+                                  /* user_tls2= */ 0);
 
 cleanup:
   free(argv_len);

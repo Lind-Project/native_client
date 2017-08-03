@@ -150,6 +150,8 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 };
 
+//yiwen
+void WINAPI NaClAppForkThreadLauncher(void *state);
 void WINAPI NaClAppThreadLauncher(void *state);
 
 void NaClAppThreadTeardown(struct NaClAppThread *natp);
@@ -178,6 +180,14 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uintptr_t      usr_stack_ptr,
                        uint32_t       user_tls1,
                        uint32_t       user_tls2) NACL_WUR;
+
+// yiwen
+int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
+                           struct NaClApp *nap_child,
+                           uintptr_t      usr_entry,
+                           uintptr_t      usr_stack_ptr,
+                           uint32_t       user_tls1,
+                           uint32_t       user_tls2) NACL_WUR;
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
 
