@@ -976,6 +976,22 @@ int NaClSelLdrMain(int argc, char **argv) {
   } 
 
   // yiwen: here we tries to create a second thread to run nap2
+  /* yiwen: arg setup for running grep.nexe
+  argc2 = 6;
+  argv2 = (char**) malloc(6 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(36 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/pipe/cat_grep/grep.nexe", 36);
+  argv2[4] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[4], "testfile", 9);
+  argv2[5] = (char*) malloc(34 * sizeof(char)); 
+  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34); */
+
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
@@ -986,8 +1002,21 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[2], "/glibc", 7);
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  // argv2[3] = (char*) malloc(30 * sizeof(char)); 
-  // strncpy(argv2[3], "./test_case/pipe/pipe_02.nexe", 30);
+  /*
+  argc2 = 6;
+  argv2 = (char**) malloc(6 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(25 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/cat/cat.nexe", 25);
+  argv2[4] = (char*) malloc(34 * sizeof(char)); 
+  strncpy(argv2[4], "./test_case/files/testfile_01.txt", 34);
+  argv2[5] = (char*) malloc(34 * sizeof(char)); 
+  strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
   
   // yiwen: set up cage 2
   InitializeCage(nap2, 2);
@@ -1004,6 +1033,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
+  // free(argv2[4]);
+  // free(argv2[5]);
   free(argv2);
 
   NaClEnvCleanserDtor(&env_cleanser);

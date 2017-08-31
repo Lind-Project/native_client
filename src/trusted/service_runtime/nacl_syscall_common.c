@@ -496,6 +496,8 @@ done:
   return retval;
 }
 
+// yiwen: this is the old NaCl dup2 implementation
+/*
 int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   oldfd,
                     int                   newfd) {
@@ -508,11 +510,12 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   if (newfd < 0) {
     retval = -NACL_ABI_EINVAL;
     goto done;
-  }
+  } */
   /*
    * TODO(bsy): is this a reasonable largest sane value?  The
    * descriptor array shouldn't get too large.
    */
+  /*
   if (newfd >= NACL_MAX_FD) {
     retval = -NACL_ABI_EINVAL;
     goto done;
@@ -525,6 +528,26 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClSetDesc(nap, newfd, old_nd);
   retval = newfd;
 done:
+  return retval;
+} */
+
+// yiwen: my dup2 implementation
+int32_t NaClSysDup2(struct NaClAppThread  *natp,
+                    int                   oldfd,
+                    int                   newfd) {
+  struct NaClApp  *nap = natp->nap;
+  int             retval;
+
+  if ((oldfd == 8000) | (oldfd == 8001)) {
+     fd_cage_table[nap->cage_id][newfd] = oldfd;
+     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
+     retval = 0;
+     return retval;
+  }
+  
+  fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+  
+  retval = 0;
   return retval;
 }
 
@@ -665,6 +688,10 @@ int32_t NaClSysClose(struct NaClAppThread *natp,
 
   // yiwen 
   fd = fd_cage_table[nap->cage_id][d];
+  if ((fd == 8000) | (fd == 8001)) {
+     retval = 0; 
+     return retval;
+  }
 
   ndp = NaClGetDescMu(nap, fd);
   if (NULL != ndp) {
@@ -785,9 +812,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  fd = fd_cage_table[nap->cage_id][d];
   // yiwen: try to use the kernel pipe
-  /*
-  if (d == 8000) {
+  if (fd == 8000) {
+     printf("[Debug][Cage %d][fd = 8000] NaCl Read Begins! \n", nap->cage_id);
      while (pipe_mutex != 1) {
           // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
      }
@@ -796,11 +824,16 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      read(31, string, count);
      pipe_mutex = 0;
      retval = 0;
+     printf("[Debug][Cage %d][fd = 8000] From NaCl Read Succeed! \n", nap->cage_id); 
      goto cleanup;
-  } */
+  } 
+
+  // fd = fd_cage_table[nap->cage_id][d];
+  // printf("[Debug][Cage %d][fd = %d] From NaClSysRead! \n", nap->cage_id, fd); 
 
   // yiwen: this is the read end of my pipe
-  if (d == 8000) {
+  /*
+  if (fd == 8000) {
      while (pipe_mutex != 1) {
           // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
      }
@@ -812,10 +845,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      pipe_mutex = 0; // the buffer is empty, after an immediate read
      retval = 0;
      goto cleanup;
-  }
+  } */
 
   // yiwen
-  fd = fd_cage_table[nap->cage_id][d];
+  // fd = fd_cage_table[nap->cage_id][d];
 
   // NaClLog(LOG_WARNING, "[NaClSysRead] <cage> = %i; fd = %i \n", nap->cage_id, fd);
 
@@ -896,10 +929,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  fd = fd_cage_table[nap->cage_id][d];
    
   // yiwen: try to use the kernel pipe
-  /*
-  if (d == 8001) {
+  
+  if (fd == 8001) {
+     printf("[Debug][Cage %d][fd = 8001] NaCl Write Begins! \n", nap->cage_id);
      while (pipe_mutex != 0) {
           // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
      }
@@ -908,11 +944,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      write(32, string, count);
      pipe_mutex = 1;
      retval = 0;
+     printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
      goto cleanup;
-  } */
+  } 
 
   // yiwen: this is the write end of my pipe
-  if (d == 8001) {
+  /*
+  if (fd == 8001) {
+     printf("[Debug][Cage %d][fd = 8001] From NaCl Write. \n", nap->cage_id);
      while (pipe_mutex != 0) {
           // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
      }
@@ -922,12 +961,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      memcpy(buffer_ptr, string, count);
      // NaClLog(LOG_WARNING, "[NaClSysWrite] Write succeed: %s \n", buffer_ptr);
      pipe_mutex = 1; // the buffer is full, after an immediate write
+
+     printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
      retval = 0;
      goto cleanup;
-  }
+  } */
 
   // yiwen
-  fd = fd_cage_table[nap->cage_id][d];
+  // fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(4, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -3892,6 +3933,11 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   string_ptr[0] = 8000;  
   string_ptr[1] = 8001;
 
+  fd_cage_table[1][8000] = 8000;
+  fd_cage_table[1][8001] = 8001;
+  fd_cage_table[2][8000] = 8000;
+  fd_cage_table[2][8001] = 8001;
+
   // we initialize our pipe buffer
   buffer_ptr = pipe_buffer;
   pipe_mutex = 0; // at the initialization, the pipe should be empty, allow write but not read
@@ -3899,7 +3945,9 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   // let's try to use the kernel pipes
   string2_ptr = string2;
   pipe(string2_ptr);
-  NaClLog(LOG_WARNING, "[NaClSysPipe] fds = %i, %i \n", string2_ptr[0], string2_ptr[1]);
+  
+  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
+  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);  
 
   retval = 0;
   return retval;
