@@ -115,7 +115,8 @@
 #define NACL_sys_pipe                   114
 #define NACL_sys_fork                   115
 #define NACL_sys_execv                  116
+#define NACL_sys_execve                 117
 
-#define NACL_MAX_SYSCALLS               117
+#define NACL_MAX_SYSCALLS               118
 
 #endif

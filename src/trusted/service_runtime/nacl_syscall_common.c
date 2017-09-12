@@ -3988,13 +3988,17 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   NaClPrintAddressSpaceLayout(nap0);
   NaClLog(LOG_WARNING, "\n"); */
 
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
+
   if (nap->cage_id == 0) {
      retval = 0;
+     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
      return retval;
   }
 
   // NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %i \n", nap->cage_id);
-
+  /*
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
@@ -4004,7 +4008,36 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   argv2[2] = (char*) malloc(7 * sizeof(char)); 
   strncpy(argv2[2], "/glibc", 7);
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
-  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
+  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29); */
+
+  /*
+  argc2 = 6;
+  argv2 = (char**) malloc(6 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(16 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/grep.nexe", 16);
+  argv2[4] = (char*) malloc(6 * sizeof(char)); 
+  strncpy(argv2[4], "Hello", 6);
+  argv2[5] = (char*) malloc(29 * sizeof(char)); 
+  strncpy(argv2[5], "./test_files/testfile_01.txt", 29); */
+
+  argc2 = 5;
+  argv2 = (char**) malloc(6 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(27 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/bash/bash.nexe", 27);
+  argv2[4] = (char*) malloc(35 * sizeof(char)); 
+  strncpy(argv2[4], "./test_case/bash/scripts/script_06", 35);
 
   if (!NaClCreateMainForkThread(nap,
                                 nap0,
@@ -4012,7 +4045,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
                                 argv2,
                                 NULL)) {
     fprintf(stderr, "creating main thread failed\n");
-    NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");
+    NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
     retval = -1;
     return retval;
   }
@@ -4069,7 +4102,8 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   // NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
   // NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child)));
 
-  retval = 486;
+  retval = 0;
+  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
   return retval;
 }
 
@@ -4083,6 +4117,8 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   
   int argc2;
   char **argv2;
+
+  NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv starts! \n");
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
@@ -4107,7 +4143,70 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
 
   NaClReportExitStatus(nap, 0);  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
   NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
+ 
+  NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv finishes! \n");
 
   return retval; 
 }
 
+int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void* envp)  {
+  struct NaClApp *nap = natp->nap;
+  int argc2;
+  char **argv2;
+  int32_t retval = 777; 
+  int path_len = 0;
+  uintptr_t path_get;
+  uintptr_t argv_get;
+  uintptr_t envp_get;
+
+  path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
+  argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
+  envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
+
+  path_len = strlen((char*) path_get);
+  path_len += 1;
+
+  NaClLog(LOG_WARNING, "[NaClSysExecve] NaCl execve starts! \n");
+  NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] path addr = %p \n", (void*) path_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] path length = %d \n", path_len);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] argv addr = %p \n", (void*) argv_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) (argv_get));
+  NaClLog(LOG_WARNING, "[NaClSysExecve] envp addr = %p \n", (void*) envp_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) (envp_get));
+
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(path_len * sizeof(char)); 
+  strncpy(argv2[3], (char*) path_get, path_len);
+
+  if (!NaClCreateMainThread(nap_ready,
+                            argc2,
+                            argv2,
+                            NULL)) {
+    fprintf(stderr, "creating main thread failed\n");
+    NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");
+    retval = -1;
+    return retval;
+  }
+
+  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
+  if (nap->cage_id == 1) {
+     NaClReportExitStatus(nap, 0);
+  }
+  if (nap->cage_id == 0) {
+     NaClReportExitStatus(nap0, 0);
+  }
+  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
+ 
+  NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv finishes! \n");
+
+  return retval; 
+}

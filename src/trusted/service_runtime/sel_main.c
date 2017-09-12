@@ -699,6 +699,20 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " responsible for this error.\n"));
       } 
 
+      // yiwen: load NaCl file to nap_ready
+      errcode = NaClAppLoadFileFromFilename(nap_ready, nacl_file);    
+      if (LOAD_OK != errcode) {
+        fprintf(stderr, "Error while loading \"%s\": %s\n",
+                nacl_file,
+                NaClErrorString(errcode));
+        fprintf(stderr,
+                ("Using the wrong type of nexe (nacl-x86-32"
+                 " on an x86-64 or vice versa)\n"
+                 "or a corrupt nexe file may be"
+                 " responsible for this error.\n"));
+      } 
+
+
       NaClPerfCounterMark(&time_all_main, "AppLoadEnd");
       NaClPerfCounterIntervalLast(&time_all_main);
 
@@ -723,6 +737,12 @@ int NaClSelLdrMain(int argc, char **argv) {
       nap0->module_load_status = errcode;
       NaClXCondVarBroadcast(&nap0->cv);
       NaClXMutexUnlock(&nap0->mu);
+
+      // yiwen
+      NaClXMutexLock(&nap_ready->mu);
+      nap_ready->module_load_status = errcode;
+      NaClXCondVarBroadcast(&nap_ready->cv);
+      NaClXMutexUnlock(&nap_ready->mu);
     }
 
     if (fuzzing_quit_after_load) {
@@ -819,6 +839,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       errcode = NaClAppPrepareToLaunch(nap3);
       // yiwen
       errcode = NaClAppPrepareToLaunch(nap0);
+      errcode = NaClAppPrepareToLaunch(nap_ready);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
@@ -952,6 +973,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
   } 
+  if (!NaClAppLaunchServiceThreads(nap_ready)) {
+    fprintf(stderr, "Launch service threads failed\n");
+    goto done;
+  } 
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
@@ -962,6 +987,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: set up cage 0 (currently used by fork and execv) 
   // right now, nap0 is reserved for fork()
   InitializeCage(nap0, 0);
+  InitializeCage(nap_ready, 10);
 
   // yiwen: set up cage 1
   InitializeCage(nap, 1);
@@ -1047,6 +1073,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   ret_code = NaClWaitForMainThreadToExit(nap);
   ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap0);
+  ret_code = NaClWaitForMainThreadToExit(nap_ready);
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
