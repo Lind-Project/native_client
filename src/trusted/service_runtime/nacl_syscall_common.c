@@ -3953,6 +3953,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   return retval;
 }
 
+
 // yiwen: my in-process-fork implementation
 // Conceptually, here are the steps we need to do: 
 // 1) create a new cage/nap for the child process
@@ -3964,31 +3965,10 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
-  int32_t retval;
-
-  // void *sysaddr_parent;
-  // void *sysaddr_child;  
-
-  // int i;
-  /*
-  unsigned int cage_size;
-  cage_size = 0xffffffff - 0x00050000;
-  NaClLog(LOG_WARNING, "[NaClSysFork] cage_size = %u \n", cage_size); */
-
-  
+  int32_t retval;  
   int argc2;
   char **argv2;
 
-  // NaClLogThreadContext(natp);
-  // NaClLogMemoryContent(nap, natp->user.sysret);
-
-  /*
-  NaClPrintAddressSpaceLayout(nap);
-  NaClLog(LOG_WARNING, "\n"); 
-  NaClPrintAddressSpaceLayout(nap0);
-  NaClLog(LOG_WARNING, "\n"); */
-
-  // yiwen: debug
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
   if (nap->cage_id == 0) {
@@ -3996,35 +3976,6 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
      NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
      return retval;
   }
-
-  // NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %i \n", nap->cage_id);
-  /*
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
-  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29); */
-
-  /*
-  argc2 = 6;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(16 * sizeof(char)); 
-  strncpy(argv2[3], "./bin/grep.nexe", 16);
-  argv2[4] = (char*) malloc(6 * sizeof(char)); 
-  strncpy(argv2[4], "Hello", 6);
-  argv2[5] = (char*) malloc(29 * sizeof(char)); 
-  strncpy(argv2[5], "./test_files/testfile_01.txt", 29); */
 
   argc2 = 4;
   argv2 = (char**) malloc(6 * sizeof(char*));
@@ -4036,8 +3987,6 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   strncpy(argv2[2], "/glibc", 7);
   argv2[3] = (char*) malloc(29 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
-  // argv2[4] = (char*) malloc(35 * sizeof(char)); 
-  // strncpy(argv2[4], "./test_case/bash/scripts/script_06", 35);
 
   if (!NaClCreateMainForkThread(nap,
                                 nap0,
@@ -4049,63 +3998,55 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
     retval = -1;
     return retval;
   }
-  
 
-  /*
-
-  NaClPrintAddressSpaceLayout(nap);
-  NaClLog(LOG_WARNING, "\n"); 
-  NaClPrintAddressSpaceLayout(nap0);
-  NaClLog(LOG_WARNING, "\n"); 
-
-  sysaddr_parent = (void *)NaClUserToSys(nap, nap->data_start);
-  sysaddr_child = (void *)NaClUserToSys(nap0, nap0->data_start);
-  // sysaddr_child = (void *)malloc(4);
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap &test = %p \n", (void *)sysaddr_parent);
-  NaClLog(LOG_WARNING, "[NaClSysFork] nap0 &test = %p \n\n", (void *)sysaddr_child); */
-
-  /*
-  for (i = 0; i < 100; i++) { 
-      NaClLogMemoryContent(nap, nap->data_start + i*4);
-  }  
-  NaClLog(LOG_WARNING, "\n"); */
-
-  /*
-  memcpy(sysaddr_child, sysaddr_parent, nap->data_end - nap->data_start);
-
-  nap0->break_addr = nap->break_addr;
-
-  NaClPrintAddressSpaceLayout(nap0);
-  NaClLog(LOG_WARNING, "\n"); */ 
-
-  /*
-  retval = NaClMprotect(sysaddr_parent, 
-                        4,
-                        PROT_READ); */
-  
-  // *((int *)(sysaddr_parent)) = 97;
-  /*
-  for (i = 0; i < 10; i++) { 
-      NaClLogMemoryContent(nap0, nap0->data_start + i*4);
-  } 
-  NaClLog(LOG_WARNING, "\n");
-
-  memcpy(sysaddr_child, sysaddr_parent, nap->data_end - nap->data_start);
-  // memcpy(sysaddr_child, sysaddr_parent, 0xffffffff - nap->data_start);
-  
-  for (i = 0; i < 10; i++) { 
-      NaClLogMemoryContent(nap0, nap0->data_start + i*4);
-  } 
-  NaClLog(LOG_WARNING, "\n"); */
-
-  // NaClLog(LOG_WARNING, "[NaClSysFork] nap test = %d \n", *((int *)(sysaddr_parent)));
-  // NaClLog(LOG_WARNING, "[NaClSysFork] nap0 test = %d \n\n", *((int *)(sysaddr_child)));
-
-  retval = 3456;
+  retval = 1234;
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
   return retval;
 }
+
+// yiwen: a basic working version 1.0 of my fork implementation
+/*
+int32_t NaClSysFork(struct NaClAppThread  *natp) {
+  struct NaClApp *nap = natp->nap;
+  int32_t retval;  
+  int argc2;
+  char **argv2;
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
+
+  if (nap->cage_id == 0) {
+     retval = 0;
+     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
+     return retval;
+  }
+
+  argc2 = 4;
+  argv2 = (char**) malloc(6 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(29 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
+
+  if (!NaClCreateMainForkThread(nap,
+                                nap0,
+                                argc2,
+                                argv2,
+                                NULL)) {
+    fprintf(stderr, "creating main thread failed\n");
+    NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
+    retval = -1;
+    return retval;
+  }
+
+  retval = 1234;
+  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
+  return retval;
+} */
+
 
 // yiwen: my implementation for execv() call
 // a new cage is created for the new program
