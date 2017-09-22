@@ -992,6 +992,16 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: set up cage 1
   InitializeCage(nap, 1);
 
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
+  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
+  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
+
+  nap->binary_path = (char*) malloc((strlen((argv + optind)[3]) + 1) * sizeof(char));
+  strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
+  nap->binary_command = (char*) malloc((strlen((argv + optind)[4]) + 1) * sizeof(char));
+  strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
+
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1046,6 +1056,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // yiwen: set up cage 2
   InitializeCage(nap2, 2);
+
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
 
   if (!NaClCreateMainThread(nap2,
                             argc2,

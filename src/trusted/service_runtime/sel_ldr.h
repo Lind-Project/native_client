@@ -110,6 +110,10 @@ struct NaClApp {
   // yiwen
   int cage_id; 
 
+  // yiwen: store the path of the execuable running inside this cage(as the main thread)
+  char                      *binary_path;
+  char                      *binary_command;
+
   // yiwen: record the current fd number(largest) assigned by this cage
   int fd;
 

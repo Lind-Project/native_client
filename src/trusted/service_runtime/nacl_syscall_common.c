@@ -3968,6 +3968,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   int32_t retval;  
   int argc2;
   char **argv2;
+  int path_len;
 
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
@@ -3977,7 +3978,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
      return retval;
   }
 
-  argc2 = 4;
+  argc2 = 5;
   argv2 = (char**) malloc(6 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
   strncpy(argv2[0], "NaClMain", 9);
@@ -3985,8 +3986,19 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   strncpy(argv2[1], "--library-path", 15);
   argv2[2] = (char*) malloc(7 * sizeof(char)); 
   strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(29 * sizeof(char)); 
-  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
+  // argv2[3] = (char*) malloc(29 * sizeof(char)); 
+  // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
+
+  path_len = strlen(nap->binary_path) + 1;
+  argv2[3] = (char*) malloc(path_len * sizeof(char)); 
+  strncpy(argv2[3], nap->binary_path, path_len);
+
+  path_len = strlen(nap->binary_command) + 1;
+  argv2[4] = (char*) malloc(path_len * sizeof(char)); 
+  strncpy(argv2[4], nap->binary_command, path_len);
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+  NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
 
   if (!NaClCreateMainForkThread(nap,
                                 nap0,
@@ -3999,7 +4011,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
     return retval;
   }
 
-  retval = 1234;
+  retval = 0;
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
   return retval;
 }
@@ -4127,6 +4139,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   argv_newcage[3] = (char*) malloc(path_len * sizeof(char)); 
   strncpy(argv_newcage[3], (char*) path_get, path_len);
 
+  NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
 
