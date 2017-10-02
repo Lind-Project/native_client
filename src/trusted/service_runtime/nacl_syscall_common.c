@@ -4012,7 +4012,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
     return retval;
   }
 
-  retval = 0;
+  retval = 1234;
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
   return retval;
 }
