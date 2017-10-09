@@ -4220,3 +4220,24 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
   return retval; 
 }
+
+// yiwen:
+int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options) {
+	struct NaClApp *nap = natp->nap;
+	int *stat_loc_ptr;
+	uintptr_t sysaddr;
+	int retval;
+
+        NaClLog(LOG_WARNING, "[NaClSysWaitpid] entered waitpid! \n");
+
+	sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
+	stat_loc_ptr = (int *)sysaddr;
+	*stat_loc_ptr = 111;
+
+	NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
+        NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
+
+	retval = 1234;
+	return retval;
+	
+}

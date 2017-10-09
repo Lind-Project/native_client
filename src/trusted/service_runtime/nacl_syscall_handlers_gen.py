@@ -207,6 +207,7 @@ SYSCALL_LIST = [
     ('NACL_sys_fork', 'NaClSysFork', []),
     ('NACL_sys_execv', 'NaClSysExecv', []),
     ('NACL_sys_execve', 'NaClSysExecve', ['void *path', 'void *argv', 'void *envp']),
+    ('NACL_sys_waitpid', 'NaClSysWaitpid', ['uint32_t pid', 'uint32_t *stat_loc', 'uint32_t options']),
     ]
 
 
