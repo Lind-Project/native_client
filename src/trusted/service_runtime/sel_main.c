@@ -218,8 +218,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
-  int argc2;
-  char **argv2;
+  // int argc2;
+  // char **argv2;
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
@@ -264,10 +264,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   // we use it to store the snapshot of an initial cage, which is ready to run a program(create a thread)
   // this snapshot is used by execv()
   nap0 = &state0;
+  nap0_2 = &state0_2;
   nap_ready = &state_ready;
+  nap_ready_2 = &state_ready_2;
   memset(&state0, 0, sizeof state0);
+  memset(&state0_2, 0, sizeof state0_2);
   // yiwen: my code, setting up nap3(cage3)
   memset(&state_ready, 0, sizeof state_ready);
+  memset(&state_ready_2, 0, sizeof state_ready_2);
   memset(&state3, 0, sizeof state3);
 
   NaClAllModulesInit();
@@ -300,8 +304,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!NaClAppCtor(&state0)) {
     NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
   }
+  if (!NaClAppCtor(&state0_2)) {
+    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+  }
   // yiwen
   if (!NaClAppCtor(&state_ready)) {
+    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+  }
+  if (!NaClAppCtor(&state_ready_2)) {
     NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
   }
   if (!DynArrayCtor(&env_vars, 0)) {
@@ -638,7 +648,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClAppInitialDescriptorHookup(nap3);
   // yiwen
   NaClAppInitialDescriptorHookup(nap0);
+  NaClAppInitialDescriptorHookup(nap0_2);
   NaClAppInitialDescriptorHookup(nap_ready);
+  NaClAppInitialDescriptorHookup(nap_ready_2);
 
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {
@@ -699,6 +711,19 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " responsible for this error.\n"));
       } 
 
+      // yiwen: load NaCl file to nap0_2
+      errcode = NaClAppLoadFileFromFilename(nap0_2, nacl_file);    
+      if (LOAD_OK != errcode) {
+        fprintf(stderr, "Error while loading \"%s\": %s\n",
+                nacl_file,
+                NaClErrorString(errcode));
+        fprintf(stderr,
+                ("Using the wrong type of nexe (nacl-x86-32"
+                 " on an x86-64 or vice versa)\n"
+                 "or a corrupt nexe file may be"
+                 " responsible for this error.\n"));
+      }
+
       // yiwen: load NaCl file to nap_ready
       errcode = NaClAppLoadFileFromFilename(nap_ready, nacl_file);    
       if (LOAD_OK != errcode) {
@@ -712,6 +737,18 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " responsible for this error.\n"));
       } 
 
+      // yiwen: load NaCl file to nap_ready_2
+      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nacl_file);    
+      if (LOAD_OK != errcode) {
+        fprintf(stderr, "Error while loading \"%s\": %s\n",
+                nacl_file,
+                NaClErrorString(errcode));
+        fprintf(stderr,
+                ("Using the wrong type of nexe (nacl-x86-32"
+                 " on an x86-64 or vice versa)\n"
+                 "or a corrupt nexe file may be"
+                 " responsible for this error.\n"));
+      } 
 
       NaClPerfCounterMark(&time_all_main, "AppLoadEnd");
       NaClPerfCounterIntervalLast(&time_all_main);
@@ -738,11 +775,21 @@ int NaClSelLdrMain(int argc, char **argv) {
       NaClXCondVarBroadcast(&nap0->cv);
       NaClXMutexUnlock(&nap0->mu);
 
+      NaClXMutexLock(&nap0_2->mu);
+      nap0_2->module_load_status = errcode;
+      NaClXCondVarBroadcast(&nap0_2->cv);
+      NaClXMutexUnlock(&nap0_2->mu);
+
       // yiwen
       NaClXMutexLock(&nap_ready->mu);
       nap_ready->module_load_status = errcode;
       NaClXCondVarBroadcast(&nap_ready->cv);
       NaClXMutexUnlock(&nap_ready->mu);
+
+      NaClXMutexLock(&nap_ready_2->mu);
+      nap_ready_2->module_load_status = errcode;
+      NaClXCondVarBroadcast(&nap_ready_2->cv);
+      NaClXMutexUnlock(&nap_ready_2->mu);
     }
 
     if (fuzzing_quit_after_load) {
@@ -840,6 +887,8 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen
       errcode = NaClAppPrepareToLaunch(nap0);
       errcode = NaClAppPrepareToLaunch(nap_ready);
+      errcode = NaClAppPrepareToLaunch(nap0_2);
+      errcode = NaClAppPrepareToLaunch(nap_ready_2);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
@@ -977,6 +1026,14 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
   } 
+  if (!NaClAppLaunchServiceThreads(nap0_2)) {
+    fprintf(stderr, "Launch service threads failed\n");
+    goto done;
+  } 
+  if (!NaClAppLaunchServiceThreads(nap_ready_2)) {
+    fprintf(stderr, "Launch service threads failed\n");
+    goto done;
+  } 
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
@@ -986,8 +1043,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // yiwen: set up cage 0 (currently used by fork and execv) 
   // right now, nap0 is reserved for fork()
-  InitializeCage(nap0, 0);
-  InitializeCage(nap_ready, 10);
+  InitializeCage(nap0, 1000);
+  InitializeCage(nap_ready, 1000);
+  InitializeCage(nap0_2, 1001);
+  InitializeCage(nap_ready_2, 1001);
 
   // yiwen: set up cage 1
   InitializeCage(nap, 1);
@@ -1030,7 +1089,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   argv2[4] = (char*) malloc(9 * sizeof(char)); 
   strncpy(argv2[4], "testfile", 9);
   argv2[5] = (char*) malloc(34 * sizeof(char)); 
-  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34); */
+  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34); 
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
@@ -1042,7 +1101,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[2], "/glibc", 7);
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  /*
+  
   argc2 = 6;
   argv2 = (char**) malloc(6 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
@@ -1059,11 +1118,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
   
   // yiwen: set up cage 2
-  InitializeCage(nap2, 2);
+  // InitializeCage(nap2, 2);
 
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
-
+  // NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
+  /*
   if (!NaClCreateMainThread(nap2,
                             argc2,
                             argv2,
@@ -1071,14 +1130,15 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
   } 
-
+  
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
-  // free(argv2[4]);
-  // free(argv2[5]);
-  free(argv2);
+  free(argv2[4]);
+  free(argv2[5]);
+  free(argv2); 
+  */
 
   NaClEnvCleanserDtor(&env_cleanser);
 
@@ -1088,9 +1148,11 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  ret_code = NaClWaitForMainThreadToExit(nap2);
-  ret_code = NaClWaitForMainThreadToExit(nap0);
-  ret_code = NaClWaitForMainThreadToExit(nap_ready);
+  // ret_code = NaClWaitForMainThreadToExit(nap2);
+  // ret_code = NaClWaitForMainThreadToExit(nap0);
+  // ret_code = NaClWaitForMainThreadToExit(nap_ready);
+  ret_code = NaClWaitForMainThreadToExit(nap0_2);
+  ret_code = NaClWaitForMainThreadToExit(nap_ready_2);
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);

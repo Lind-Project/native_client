@@ -24,12 +24,16 @@ struct NaClApp;
 
 // yiwen
 extern int cage;
-extern int fd_cage_table[1000][1000];
+extern int fd_cage_table[2000][2000];
 extern struct NaClApp state_ready;
 extern struct NaClApp *nap_ready;
+extern struct NaClApp state_ready_2;
+extern struct NaClApp *nap_ready_2;
 
 extern struct NaClApp state0;
 extern struct NaClApp *nap0;
+extern struct NaClApp state0_2;
+extern struct NaClApp *nap0_2;
 
 #if NACL_WINDOWS
 __declspec(dllexport)

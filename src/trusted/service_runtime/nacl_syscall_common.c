@@ -3975,7 +3975,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
-  if (nap->cage_id == 0) {
+  if (nap->cage_id >= 1000) {
      retval = 0;
      NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
      return retval;
@@ -4005,7 +4005,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   }
 
   if (!NaClCreateMainForkThread(nap,
-                                nap0,
+                                nap0_2,
                                 argc2,
                                 argv2,
                                 NULL)) {
@@ -4236,7 +4236,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
 
   // create and start running the main thread in the new cage
-  if (!NaClCreateMainThread(nap_ready,
+  if (!NaClCreateMainThread(nap_ready_2,
                             argc_newcage,
                             argv_newcage,
                             NULL)) {
@@ -4249,8 +4249,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   if (nap->cage_id == 1) {
      NaClReportExitStatus(nap, 0);
   }
-  if (nap->cage_id == 0) {
+  if (nap->cage_id == 1000) {
      NaClReportExitStatus(nap0, 0);
+  }
+  if (nap->cage_id == 1001) {
+     NaClReportExitStatus(nap0_2, 0);
   }
   NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
   return retval; 
@@ -4274,5 +4277,4 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 
 	retval = 1234;
 	return retval;
-	
 }

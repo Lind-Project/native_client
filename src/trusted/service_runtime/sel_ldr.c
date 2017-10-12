@@ -61,11 +61,15 @@
 int cage = 1001;
 struct NaClApp state_ready;
 struct NaClApp *nap_ready;
+struct NaClApp state_ready_2;
+struct NaClApp *nap_ready_2;
 
 struct NaClApp state0;
 struct NaClApp *nap0;
+struct NaClApp state0_2;
+struct NaClApp *nap0_2;
 
-int fd_cage_table[1000][1000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is the virtual fd visible to the cages
+int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is the virtual fd visible to the cages
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
