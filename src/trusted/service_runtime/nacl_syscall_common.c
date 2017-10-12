@@ -813,7 +813,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   fd = fd_cage_table[nap->cage_id][d];
+
   // yiwen: try to use the kernel pipe
+  /*
   if (fd == 8000) {
      printf("[Debug][Cage %d][fd = 8000] NaCl Read Begins! \n", nap->cage_id);
      while (pipe_mutex != 1) {
@@ -830,9 +832,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   // fd = fd_cage_table[nap->cage_id][d];
   // printf("[Debug][Cage %d][fd = %d] From NaClSysRead! \n", nap->cage_id, fd); 
-
+  */
   // yiwen: this is the read end of my pipe
-  /*
+  
   if (fd == 8000) {
      while (pipe_mutex != 1) {
           // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
@@ -845,7 +847,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      pipe_mutex = 0; // the buffer is empty, after an immediate read
      retval = 0;
      goto cleanup;
-  } */
+  } 
 
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
@@ -933,7 +935,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   fd = fd_cage_table[nap->cage_id][d];
    
   // yiwen: try to use the kernel pipe
-  
+  /*
   if (fd == 8001) {
      printf("[Debug][Cage %d][fd = 8001] NaCl Write Begins! \n", nap->cage_id);
      while (pipe_mutex != 0) {
@@ -947,9 +949,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
      goto cleanup;
   } 
-
+  */
   // yiwen: this is the write end of my pipe
-  /*
+  
   if (fd == 8001) {
      printf("[Debug][Cage %d][fd = 8001] From NaCl Write. \n", nap->cage_id);
      while (pipe_mutex != 0) {
@@ -965,7 +967,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
      retval = 0;
      goto cleanup;
-  } */
+  } 
 
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
@@ -3921,8 +3923,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   int size;
   int string[2];
   int* string_ptr;
-  int string2[2];
-  int* string2_ptr;
+  // int string2[2];
+  // int* string2_ptr;
 
   size = 8;
   string_ptr = string;
@@ -3933,22 +3935,23 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   string_ptr[0] = 8000;  
   string_ptr[1] = 8001;
 
-  fd_cage_table[1][8000] = 8000;
-  fd_cage_table[1][8001] = 8001;
-  fd_cage_table[2][8000] = 8000;
-  fd_cage_table[2][8001] = 8001;
+  // fd_cage_table[1][8000] = 8000;
+  // fd_cage_table[1][8001] = 8001;
+  // fd_cage_table[2][8000] = 8000;
+  // fd_cage_table[2][8001] = 8001;
 
   // we initialize our pipe buffer
   buffer_ptr = pipe_buffer;
   pipe_mutex = 0; // at the initialization, the pipe should be empty, allow write but not read
 
   // let's try to use the kernel pipes
+  /*
   string2_ptr = string2;
   pipe(string2_ptr);
   
   NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
   NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);  
-
+  */
   retval = 0;
   return retval;
 }
@@ -4174,6 +4177,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   uintptr_t path_get;
   uintptr_t argv_get;
   uintptr_t envp_get;
+  char *argv_split;
+  int argv_num = 0;
+  char **options;
+  int option_len = 0;
+  int i;
 
   // convert pointers from addresses within the cage into ones in the whole address space 
   // basically just adding the cage memory start address to the offset within the cage
@@ -4184,9 +4192,27 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   path_len = strlen((char*) path_get);
   path_len += 1;
 
+  options = (char**) malloc(3 * sizeof(char*));
+  argv_split = strtok((char*)argv_get, " ");
+  while (argv_split != NULL) {
+    option_len = (int) (strlen(argv_split) + 1);
+    printf ("%s \n", argv_split);
+    printf ("%d \n", option_len);
+    options[argv_num] = (char*) malloc(option_len * sizeof(char)); 
+    strncpy(options[argv_num], argv_split, option_len - 1);
+    options[argv_num][option_len - 1] = '\0';
+    argv_num++;
+    argv_split = strtok(NULL, " ");
+  }
+
+  printf ("%d \n", argv_num);
+  for (i = 0; i < argv_num; i++) { 
+    printf ("%s \n", options[i]);
+  }
+
   // setup the arguments needed to start running a new main thread in a pre-allocated new cage 
-  argc_newcage = 4;
-  argv_newcage = (char**) malloc(4 * sizeof(char*));
+  argc_newcage = 4 + argv_num - 1;
+  argv_newcage = (char**) malloc(argc_newcage * sizeof(char*));
   argv_newcage[0] = (char*) malloc(9 * sizeof(char)); 
   strncpy(argv_newcage[0], "NaClMain", 9);
   argv_newcage[1] = (char*) malloc(15 * sizeof(char)); 
@@ -4196,7 +4222,16 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   argv_newcage[3] = (char*) malloc(path_len * sizeof(char)); 
   strncpy(argv_newcage[3], (char*) path_get, path_len);
 
+  for (i = 1; i < argv_num; i++) {
+    printf ("%d \n", (int) strlen(options[i]));
+    argv_newcage[3 + i] = (char*) malloc((strlen(options[i]) + 1) * sizeof(char)); 
+    strncpy(argv_newcage[3 + i], (char*) options[i], strlen(options[i]));
+    argv_newcage[3 + i][strlen(options[i])] = '\0';
+    printf ("%s \n", argv_newcage[3 + i]);
+  }
+
   NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
   NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
 
