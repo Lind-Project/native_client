@@ -64,6 +64,7 @@
 // set up the fd table for the cage
 static void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->cage_id = cage_id;  
+  nap->num_children = 0;  
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
@@ -1052,9 +1053,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap, 1);
 
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
+  // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
+  // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
+  // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
   nap->command_num = argc - optind - 3;
 

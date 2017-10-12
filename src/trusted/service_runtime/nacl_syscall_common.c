@@ -3973,11 +3973,11 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   char **argv2;
   int path_len;
 
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
+  // NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
   if (nap->cage_id >= 1000) {
      retval = 0;
-     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
+     // NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
      return retval;
   }
 
@@ -3995,13 +3995,13 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   path_len = strlen(nap->binary_path) + 1;
   argv2[3] = (char*) malloc(path_len * sizeof(char)); 
   strncpy(argv2[3], nap->binary_path, path_len);
-  NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+  // NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
      argv2[4] = (char*) malloc(path_len * sizeof(char)); 
      strncpy(argv2[4], nap->binary_command, path_len);
-     NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
+     // NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
 
   if (!NaClCreateMainForkThread(nap,
@@ -4015,8 +4015,10 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
     return retval;
   }
 
-  retval = 1234;
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
+  nap->children_ids[nap->num_children] = nap0_2->cage_id;
+  nap->num_children++; 
+  retval = nap0_2->cage_id;
+  // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
   return retval;
 }
 
@@ -4196,8 +4198,8 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   argv_split = strtok((char*)argv_get, " ");
   while (argv_split != NULL) {
     option_len = (int) (strlen(argv_split) + 1);
-    printf ("%s \n", argv_split);
-    printf ("%d \n", option_len);
+    // printf ("%s \n", argv_split);
+    // printf ("%d \n", option_len);
     options[argv_num] = (char*) malloc(option_len * sizeof(char)); 
     strncpy(options[argv_num], argv_split, option_len - 1);
     options[argv_num][option_len - 1] = '\0';
@@ -4205,10 +4207,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
     argv_split = strtok(NULL, " ");
   }
 
+  /*
   printf ("%d \n", argv_num);
   for (i = 0; i < argv_num; i++) { 
     printf ("%s \n", options[i]);
-  }
+  } */
 
   // setup the arguments needed to start running a new main thread in a pre-allocated new cage 
   argc_newcage = 4 + argv_num - 1;
@@ -4223,17 +4226,23 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   strncpy(argv_newcage[3], (char*) path_get, path_len);
 
   for (i = 1; i < argv_num; i++) {
-    printf ("%d \n", (int) strlen(options[i]));
+    // printf ("%d \n", (int) strlen(options[i]));
     argv_newcage[3 + i] = (char*) malloc((strlen(options[i]) + 1) * sizeof(char)); 
     strncpy(argv_newcage[3 + i], (char*) options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
-    printf ("%s \n", argv_newcage[3 + i]);
+    // printf ("%s \n", argv_newcage[3 + i]);
   }
 
-  NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
-  NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
-  NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
+  // NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
+  // NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
+  // NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
+
+  // need to inherit children info from previous cage
+  nap_ready_2->num_children = nap->num_children;
+  for (i = 0; i < nap->num_children; i++) { 
+      nap_ready_2->children_ids[i] = nap->children_ids[i]; 
+  }
 
   // create and start running the main thread in the new cage
   if (!NaClCreateMainThread(nap_ready_2,
@@ -4266,7 +4275,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 	uintptr_t sysaddr;
 	int retval;
 
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] entered waitpid! \n");
+        // NaClLog(LOG_WARNING, "[NaClSysWaitpid] entered waitpid! \n");
 
 	sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
 	stat_loc_ptr = (int *)sysaddr;
@@ -4275,6 +4284,10 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 	NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
         NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
 
-	retval = 1234;
+        retval = 0; 
+        if (nap->num_children > 0) {
+           retval = nap->children_ids[nap->num_children-1];
+	}
+        // NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
 	return retval;
 }

@@ -110,6 +110,10 @@ struct NaClApp {
   // yiwen
   int                       cage_id; 
 
+  // yiwen: store info of its children
+  int                       num_children; 
+  int                       children_ids[10];
+
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
   int                       command_num; 
   char                      *binary_path;
