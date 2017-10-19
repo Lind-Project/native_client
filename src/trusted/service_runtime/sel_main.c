@@ -58,6 +58,7 @@
 
 // yiwen
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
+#include <time.h>
 
 // yiwen 
 // set up the cage id
@@ -69,6 +70,14 @@ static void InitializeCage(struct NaClApp *nap, int cage_id) {
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
   nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved  
+}
+
+// yiwen
+// initialize timing variables for doing the measurement
+static void InitializeTiming(void) {
+  nacl_sys_read_begin = 0; 
+  nacl_sys_read_finish = 0;
+  nacl_sys_read_spent = 0;
 }
 
 static void (*g_enable_outer_sandbox_func)(void) =
@@ -244,6 +253,13 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen
   char                          *nacl_file2 = NULL;
 
+  // yiwen: define variables for doing evaluation measurement
+  clock_t 			nacl_main_begin;
+  clock_t			nacl_main_finish;
+  clock_t			nacl_initialization_finish;
+  double			nacl_main_spent;
+  double			nacl_initialization_spent;
+
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
   envp = (const char **) *_NSGetEnviron();
@@ -253,6 +269,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   extern char **environ;
   envp = (const char **) environ;
 #endif
+
+  // yiwen: time measurement, record the start time of the NaCl main program
+  nacl_main_begin = clock();
+  InitializeTiming();
 
   ret_code = 1;
   redir_queue = NULL;
@@ -1066,6 +1086,9 @@ int NaClSelLdrMain(int argc, char **argv) {
      strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
   }
 
+  // yiwen: this records the finishing time of the NaCl initialization / setup
+  nacl_initialization_finish = clock();
+
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1150,10 +1173,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
   // ret_code = NaClWaitForMainThreadToExit(nap2);
-  // ret_code = NaClWaitForMainThreadToExit(nap0);
-  // ret_code = NaClWaitForMainThreadToExit(nap_ready);
-  ret_code = NaClWaitForMainThreadToExit(nap0_2);
-  ret_code = NaClWaitForMainThreadToExit(nap_ready_2);
+  ret_code = NaClWaitForMainThreadToExit(nap0);
+  ret_code = NaClWaitForMainThreadToExit(nap_ready);
+  if (fork_num == 2) {
+      ret_code = NaClWaitForMainThreadToExit(nap0_2);
+      ret_code = NaClWaitForMainThreadToExit(nap_ready_2);
+  } 
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
@@ -1166,6 +1191,20 @@ int NaClSelLdrMain(int argc, char **argv) {
    * addr space is still valid.  otherwise we'd have to kill threads
    * before we clean up the address space.
    */
+
+  // yiwen: time measurement, record the start time of the NaCl main program
+  nacl_main_finish = clock();
+
+  // yiwen: for evaluation measurement, we need to print out info here
+  NaClLog(LOG_WARNING, "[NaClMain] End of the program! \n");
+
+  // calculate and print out time of running the NaCl main program 
+  nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
+
+  nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call read time spent = %f \n", nacl_sys_read_spent);
 
   LindPythonFinalize();
 

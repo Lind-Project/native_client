@@ -812,6 +812,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  nacl_sys_read_begin = clock();
+
   fd = fd_cage_table[nap->cage_id][d];
 
   // yiwen: try to use the kernel pipe
@@ -907,6 +909,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 cleanup:
+  nacl_sys_read_finish = clock();
+  nacl_sys_read_spent += (double)(nacl_sys_read_finish - nacl_sys_read_begin) / CLOCKS_PER_SEC;
   return retval;
 }
 
@@ -3975,9 +3979,13 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   // NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
+  NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d \n", fork_num);
+  if (nap->cage_id < 1000) 
+     fork_num++;
+
   if (nap->cage_id >= 1000) {
      retval = 0;
-     // NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
+     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
      return retval;
   }
 
@@ -4004,22 +4012,44 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
      // NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
 
-  if (!NaClCreateMainForkThread(nap,
-                                nap0_2,
-                                argc2,
-                                argv2,
-                                NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
-    NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
-    retval = -1;
-    return retval;
-  }
+  if (fork_num == 1) {
+      if (!NaClCreateMainForkThread(nap,
+                                    nap0,
+                                    argc2,
+                                    argv2,
+                                    NULL)) {
+        fprintf(stderr, "creating main thread failed\n");
+        NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
+        retval = -1;
+        return retval;
+      }
 
-  nap->children_ids[nap->num_children] = nap0_2->cage_id;
-  nap->num_children++; 
-  retval = nap0_2->cage_id;
-  // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
-  return retval;
+      nap->children_ids[nap->num_children] = nap0->cage_id;
+      nap->num_children++; 
+      retval = nap0->cage_id;
+      // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+      return retval;
+  }  
+
+  else if (fork_num == 2) {
+      if (!NaClCreateMainForkThread(nap,
+                                    nap0_2,
+                                    argc2,
+                                    argv2,
+                                    NULL)) {
+        fprintf(stderr, "creating main thread failed\n");
+        NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
+        retval = -1;
+        return retval;
+      }
+
+      nap->children_ids[nap->num_children] = nap0_2->cage_id;
+      nap->num_children++; 
+      retval = nap0_2->cage_id;
+      // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+      return retval;
+  }
+  return 0;
 }
 
 // yiwen: an improved basic working version 1.1 of my fork implementation
@@ -4236,22 +4266,44 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   // NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   // NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
   // NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
+  NaClLog(LOG_WARNING, "[NaClSysExecve] fork_num = %d \n", fork_num);
 
-  // need to inherit children info from previous cage
-  nap_ready_2->num_children = nap->num_children;
-  for (i = 0; i < nap->num_children; i++) { 
-      nap_ready_2->children_ids[i] = nap->children_ids[i]; 
+  if (fork_num == 1) { 
+      // need to inherit children info from previous cage
+      nap_ready->num_children = nap->num_children;
+      for (i = 0; i < nap->num_children; i++) { 
+          nap_ready->children_ids[i] = nap->children_ids[i]; 
+      }
+
+      // create and start running the main thread in the new cage
+      if (!NaClCreateMainThread(nap_ready,
+                                argc_newcage,
+                                argv_newcage,
+                                NULL)) {
+        NaClLog(LOG_WARNING, "[NaClSysExecve] creating main thread failed \n");
+        retval = -1;
+        return retval;
+      }
   }
 
-  // create and start running the main thread in the new cage
-  if (!NaClCreateMainThread(nap_ready_2,
-                            argc_newcage,
-                            argv_newcage,
-                            NULL)) {
-    NaClLog(LOG_WARNING, "[NaClSysExecve] creating main thread failed \n");
-    retval = -1;
-    return retval;
+  else if (fork_num == 2) {
+      // need to inherit children info from previous cage
+      nap_ready_2->num_children = nap->num_children;
+      for (i = 0; i < nap->num_children; i++) { 
+          nap_ready_2->children_ids[i] = nap->children_ids[i]; 
+      }
+
+      // create and start running the main thread in the new cage
+      if (!NaClCreateMainThread(nap_ready_2,
+                                argc_newcage,
+                                argv_newcage,
+                                NULL)) {
+        NaClLog(LOG_WARNING, "[NaClSysExecve] creating main thread failed \n");
+        retval = -1;
+        return retval;
+      }
   }
 
   // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
@@ -4281,13 +4333,13 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 	stat_loc_ptr = (int *)sysaddr;
 	*stat_loc_ptr = 111;
 
-	NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
-
         retval = 0; 
         if (nap->num_children > 0) {
            retval = nap->children_ids[nap->num_children-1];
 	}
-        // NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
+        
+        NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
+        NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
+        NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
 	return retval;
 }

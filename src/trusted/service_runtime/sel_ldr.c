@@ -69,7 +69,14 @@ struct NaClApp *nap0;
 struct NaClApp state0_2;
 struct NaClApp *nap0_2;
 
+int fork_num = 0;
+
 int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is the virtual fd visible to the cages
+
+// yiwen: global variables used for doing timing measurement
+clock_t nacl_sys_read_begin;
+clock_t nacl_sys_read_finish;
+double nacl_sys_read_spent;
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);

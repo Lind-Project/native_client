@@ -24,6 +24,7 @@ struct NaClApp;
 
 // yiwen
 extern int cage;
+extern int fork_num;
 extern int fd_cage_table[2000][2000];
 extern struct NaClApp state_ready;
 extern struct NaClApp *nap_ready;
@@ -34,6 +35,10 @@ extern struct NaClApp state0;
 extern struct NaClApp *nap0;
 extern struct NaClApp state0_2;
 extern struct NaClApp *nap0_2;
+
+extern clock_t nacl_sys_read_begin;
+extern clock_t nacl_sys_read_finish;
+extern double nacl_sys_read_spent;
 
 #if NACL_WINDOWS
 __declspec(dllexport)
