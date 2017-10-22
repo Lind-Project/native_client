@@ -911,6 +911,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 cleanup:
   nacl_sys_read_finish = clock();
   nacl_sys_read_spent += (double)(nacl_sys_read_finish - nacl_sys_read_begin) / CLOCKS_PER_SEC;
+  nacl_sys_read_invoked_num++;
   return retval;
 }
 
@@ -935,6 +936,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  nacl_sys_write_begin = clock();
 
   fd = fd_cage_table[nap->cage_id][d];
    
@@ -1028,6 +1031,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t) write_result;
 
 cleanup:
+  nacl_sys_write_finish = clock();
+  nacl_sys_write_spent += (double)(nacl_sys_write_finish - nacl_sys_write_begin) / CLOCKS_PER_SEC;
+  nacl_sys_write_invoked_num++;
   return retval;
 }
 
@@ -3979,6 +3985,8 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   // NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
+  nacl_sys_fork_begin = clock();
+
   NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d \n", fork_num);
   if (nap->cage_id < 1000) 
      fork_num++;
@@ -4028,6 +4036,11 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       nap->num_children++; 
       retval = nap0->cage_id;
       // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+
+      nacl_sys_fork_finish = clock();
+      nacl_sys_fork_spent += (double)(nacl_sys_fork_finish - nacl_sys_fork_begin) / CLOCKS_PER_SEC;
+      nacl_sys_fork_invoked_num++;
+
       return retval;
   }  
 
@@ -4047,6 +4060,11 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       nap->num_children++; 
       retval = nap0_2->cage_id;
       // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+  
+      nacl_sys_fork_finish = clock();
+      nacl_sys_fork_spent += (double)(nacl_sys_fork_finish - nacl_sys_fork_begin) / CLOCKS_PER_SEC;
+      nacl_sys_fork_invoked_num++;
+
       return retval;
   }
   return 0;

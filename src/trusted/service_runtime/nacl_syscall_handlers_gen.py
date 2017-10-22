@@ -21,6 +21,7 @@ import getopt
 import re
 import sys
 
+
 AUTOGEN_COMMENT = """\
 /*
  * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -50,8 +51,24 @@ void NaClSyscallTableInit() {
 IMPLEMENTATION_SKELETON = """\
 /* this function was automagically generated */
 static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
-%(members)s\
+  #ifdef SYSCALL_TIMING
+  int32_t retval;
+  clock_t nacl_sys_begin;
+  clock_t nacl_sys_finish;
+  #endif
+  %(members)s\
+
+  #ifdef SYSCALL_TIMING
+  syscall_counter++;
+  nacl_syscall_invoked_times[%(num)s]++;
+  nacl_sys_begin = clock();
+  retval = %(name)s(natp%(arglist)s);
+  nacl_sys_finish = clock();
+  nacl_syscall_execution_time[%(num)s] += (double)(nacl_sys_finish - nacl_sys_begin) / CLOCKS_PER_SEC;
+  return retval;
+  #else
   return %(name)s(natp%(arglist)s);
+  #endif
 }
 
 /*
@@ -302,7 +319,8 @@ def PrintSyscallTableInitializer(protos, ostr):
 def PrintImplSkel(architecture, protos, ostr):
   print >>ostr, AUTOGEN_COMMENT
   for syscall_number, func_name, alist in protos:
-    values = { 'name' : func_name,
+    values = { 'num' : syscall_number,
+               'name' : func_name,
                'arglist' : ArgList(architecture, alist),
                'arg_type_list' :
                    ', '.join(['struct NaClAppThread *natp'] + alist),

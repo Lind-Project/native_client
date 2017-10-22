@@ -58,7 +58,12 @@
 
 // yiwen
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
+#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include <time.h>
+
+extern int syscall_counter;
+extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
+extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 
 // yiwen 
 // set up the cage id
@@ -78,6 +83,15 @@ static void InitializeTiming(void) {
   nacl_sys_read_begin = 0; 
   nacl_sys_read_finish = 0;
   nacl_sys_read_spent = 0;
+  nacl_sys_read_invoked_num = 0;
+  nacl_sys_write_begin = 0; 
+  nacl_sys_write_finish = 0;
+  nacl_sys_write_spent = 0;
+  nacl_sys_write_invoked_num = 0;
+  nacl_sys_fork_begin = 0; 
+  nacl_sys_fork_finish = 0;
+  nacl_sys_fork_spent = 0;
+  nacl_sys_fork_invoked_num = 0;
 }
 
 static void (*g_enable_outer_sandbox_func)(void) =
@@ -259,6 +273,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   clock_t			nacl_initialization_finish;
   double			nacl_main_spent;
   double			nacl_initialization_spent;
+  #ifdef SYSCALL_TIMING
+  int				i;
+  #endif
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -269,6 +286,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   extern char **environ;
   envp = (const char **) environ;
 #endif
+
+  // yiwen: initialize the syscall_counter
+  syscall_counter = 0;
 
   // yiwen: time measurement, record the start time of the NaCl main program
   nacl_main_begin = clock();
@@ -1205,6 +1225,19 @@ int NaClSelLdrMain(int argc, char **argv) {
   nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
   NaClLog(LOG_WARNING, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
   NaClLog(LOG_WARNING, "[NaClMain] NaCl system call read time spent = %f \n", nacl_sys_read_spent);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call read invoked times = %d \n", nacl_sys_read_invoked_num);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call write time spent = %f \n", nacl_sys_write_spent);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call write invoked times = %d \n", nacl_sys_write_invoked_num);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call fork time spent = %f \n", nacl_sys_fork_spent);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call fork invoked times = %d \n\n", nacl_sys_fork_invoked_num);
+  
+  #ifdef SYSCALL_TIMING
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl global system call counter = %d \n", syscall_counter);
+  NaClLog(LOG_WARNING, "[NaClMain] Print out system call timing table: \n");
+  for (i = 0; i < NACL_MAX_SYSCALLS; i++) {
+    NaClLog(LOG_WARNING, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
+  }
+  #endif
 
   LindPythonFinalize();
 

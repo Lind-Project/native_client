@@ -77,6 +77,17 @@ int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is 
 clock_t nacl_sys_read_begin;
 clock_t nacl_sys_read_finish;
 double nacl_sys_read_spent;
+int nacl_sys_read_invoked_num;
+
+clock_t nacl_sys_write_begin;
+clock_t nacl_sys_write_finish;
+double nacl_sys_write_spent;
+int nacl_sys_write_invoked_num;
+
+clock_t nacl_sys_fork_begin;
+clock_t nacl_sys_fork_finish;
+double nacl_sys_fork_spent;
+int nacl_sys_fork_invoked_num;
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
