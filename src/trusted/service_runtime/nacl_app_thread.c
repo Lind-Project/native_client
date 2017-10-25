@@ -85,7 +85,9 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
                                NACL_APP_THREAD_UNTRUSTED);
 
   // yiwen: debug
+  #ifdef DEBUG_INFO_ENABLED
   NaClLog(LOG_WARNING, "[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
+  #endif
   // NaClLogThreadContext(natp);
 
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
@@ -347,7 +349,10 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   NaClPrintAddressSpaceLayout(nap_child);
   NaClLog(LOG_WARNING, "\n"); 
   */
+  nap_parent->cage_id = nap_parent->cage_id;
+  #ifdef DEBUG_INFO_ENABLED
   NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
+  #endif
 
   if (natp == NULL) {
     return 0;

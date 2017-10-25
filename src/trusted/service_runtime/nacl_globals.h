@@ -11,6 +11,9 @@
 // yiwen: enable system call timing with SYSCALL_TIMING
 #define SYSCALL_TIMING
 
+// yiwen: enable printing out debug info inside functions in NaCl runtime
+// #define DEBUG_INFO_ENABLED
+
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_NACL_GLOBALS_H__
 #define NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_NACL_GLOBALS_H__
 
@@ -38,21 +41,6 @@ extern struct NaClApp state0;
 extern struct NaClApp *nap0;
 extern struct NaClApp state0_2;
 extern struct NaClApp *nap0_2;
-
-extern clock_t nacl_sys_read_begin;
-extern clock_t nacl_sys_read_finish;
-extern double nacl_sys_read_spent;
-extern int nacl_sys_read_invoked_num;
-
-extern clock_t nacl_sys_write_begin;
-extern clock_t nacl_sys_write_finish;
-extern double nacl_sys_write_spent;
-extern int nacl_sys_write_invoked_num;
-
-extern clock_t nacl_sys_fork_begin;
-extern clock_t nacl_sys_fork_finish;
-extern double nacl_sys_fork_spent;
-extern int nacl_sys_fork_invoked_num;
 
 #if NACL_WINDOWS
 __declspec(dllexport)
