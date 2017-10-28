@@ -9,7 +9,7 @@
  */
 
 // yiwen: enable system call timing with SYSCALL_TIMING
-#define SYSCALL_TIMING
+// #define SYSCALL_TIMING
 
 // yiwen: enable printing out debug info inside functions in NaCl runtime
 // #define DEBUG_INFO_ENABLED
