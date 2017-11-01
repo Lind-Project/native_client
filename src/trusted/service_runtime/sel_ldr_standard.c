@@ -190,6 +190,7 @@ void NaClLogThreadContext(struct NaClAppThread *natp) {
 // yiwen: print out memory layout of a nap
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
   NaClLog(LOG_WARNING, "NaClApp addr space layout:\n");
+  NaClLog(LOG_WARNING, "NaClApp cage id: %d \n", nap->cage_id);
   NaClLog(LOG_WARNING, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
   NaClLog(LOG_WARNING, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",

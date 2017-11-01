@@ -695,6 +695,8 @@ int NaClSelLdrMain(int argc, char **argv) {
                  "or a corrupt nexe file may be"
                  " responsible for this error.\n"));
       }
+      InitializeCage(nap, 1);
+      NaClPrintAddressSpaceLayout(nap);
 
       // yiwen: load NaCl file to nap2
       errcode = NaClAppLoadFileFromFilename(nap2, nacl_file);    
@@ -1073,7 +1075,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap_ready_2, 1001);
 
   // yiwen: set up cage 1
-  InitializeCage(nap, 1);
+  // InitializeCage(nap, 1);
 
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
@@ -1100,6 +1102,8 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
   } 
+  NaClPrintAddressSpaceLayout(nap);
+  NaClLogMemoryContent(nap, nap->static_text_end - 8);
 
   // yiwen: here we tries to create a second thread to run nap2
   /* yiwen: arg setup for running grep.nexe
