@@ -747,8 +747,13 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     char* _data;
     int _len;
     void* xchangeData;
+    clock_t lind_sys_begin;
+    clock_t lind_sys_finish;
 
     NaClLog(3, "Entered NaClSysLindSyscall callNum=%8u inNum=%8u outNum=%8u\n", callNum, inNum, outNum);
+
+    // yiwen: start recording time for making a Lind system call, this includes the time to parse and prepare the argument passing right now
+    lind_sys_begin = clock();
 
     gstate = PyGILState_Ensure();
 
@@ -946,5 +951,12 @@ cleanup:
     Py_XDECREF(apiArg);
     Py_XDECREF(response);
     PyGILState_Release(gstate);
+
+    // yiwen: record the ending time of the Lind system call, this includes the post-processing of arguments right now
+    lind_sys_finish = clock();
+    // yiwen: record Lind system call timing info
+    lind_syscall_counter++;
+    lind_syscall_invoked_times[callNum]++;
+    lind_syscall_execution_time[callNum] += (double)(lind_sys_finish - lind_sys_begin) / CLOCKS_PER_SEC;
     return retval;
 }

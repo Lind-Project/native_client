@@ -61,9 +61,13 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include <time.h>
 
-extern int syscall_counter;
+extern int nacl_syscall_counter;
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
+extern int lind_syscall_counter;
+extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
+extern int nacl_syscall_trace_level_counter;
 
 // yiwen 
 // set up the cage id
@@ -225,8 +229,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
-  int argc2;
-  char **argv2;
+  // int argc2;
+  // char **argv2;
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
@@ -258,7 +262,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   double			nacl_initialization_spent;
   #ifdef SYSCALL_TIMING
   int				i;
-  double			syscall_total_time;
+  double			nacl_syscall_total_time;
+  double			lind_syscall_total_time;
   #endif
 
 #if NACL_OSX
@@ -272,7 +277,10 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   // yiwen: initialize the syscall_counter
-  syscall_counter = 0;
+  NaClLog(LOG_WARNING, "[NaCl Main Loader] NaCl Loader started! \n\n");
+  nacl_syscall_counter = 0;
+  lind_syscall_counter = 0;
+  nacl_syscall_trace_level_counter = 0;
 
   // yiwen: time measurement, record the start time of the NaCl main program
   nacl_main_begin = clock();
@@ -620,8 +628,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   if (!skip_qualification) {
-    NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
-                                         NaClRunSelQualificationTests());
+    // yiwen: temporarily skip this(caused gdb segmentation fault, the seg fault signal was ignored somehow when not running gdb.)
+    // NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
+    //                                     NaClRunSelQualificationTests());
+    // yiwen: temporarily define pq_error here, and assume that everything is Okay. 
+    NaClErrorCode pq_error = LOAD_OK;
     if (LOAD_OK != pq_error) {
       errcode = pq_error;
       nap->module_load_status = pq_error;
@@ -695,8 +706,6 @@ int NaClSelLdrMain(int argc, char **argv) {
                  "or a corrupt nexe file may be"
                  " responsible for this error.\n"));
       }
-      InitializeCage(nap, 1);
-      NaClPrintAddressSpaceLayout(nap);
 
       // yiwen: load NaCl file to nap2
       errcode = NaClAppLoadFileFromFilename(nap2, nacl_file);    
@@ -1075,7 +1084,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap_ready_2, 1001);
 
   // yiwen: set up cage 1
-  // InitializeCage(nap, 1);
+  InitializeCage(nap, 1);
 
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
@@ -1094,6 +1103,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
 
+  // yiwen: before the creation of the first cage
+  NaClLog(LOG_WARNING, "[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program! \n\n");
+
   // yiwen: this is cage1, start a new thread with program given and run
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1102,8 +1114,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
   } 
-  NaClPrintAddressSpaceLayout(nap);
-  NaClLogMemoryContent(nap, nap->static_text_end - 8);
+  // NaClPrintAddressSpaceLayout(nap);
 
   // yiwen: here we tries to create a second thread to run nap2
   /* yiwen: arg setup for running grep.nexe
@@ -1149,6 +1160,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
   
   // yiwen: set up cage 2
+  /*
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
@@ -1160,25 +1172,31 @@ int NaClSelLdrMain(int argc, char **argv) {
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
 
-  InitializeCage(nap2, 2);
+  InitializeCage(nap2, 2); */
 
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
-  
+  /*
   if (!NaClCreateMainThread(nap2,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } 
+  } */
+
+  // yiwen: for gdb debug purpose only
+  /*
+  while(1) {
+  } */
   
+  /*
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
   free(argv2); 
-  
+  */
 
   NaClEnvCleanserDtor(&env_cleanser);
 
@@ -1188,7 +1206,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  ret_code = NaClWaitForMainThreadToExit(nap2);
+  // ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
   if (fork_num == 2) {
@@ -1224,14 +1242,24 @@ int NaClSelLdrMain(int argc, char **argv) {
   #ifdef SYSCALL_TIMING
   NaClLog(LOG_WARNING, "[NaClMain] NaCl system call timing enabled! \n");
   NaClLog(LOG_WARNING, "[NaClMain] Start printing out results now: \n");
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl global system call counter = %d \n", syscall_counter);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
   NaClLog(LOG_WARNING, "[NaClMain] Print out system call timing table: \n");
-  syscall_total_time = 0.0;
+  nacl_syscall_total_time = 0.0;
   for (i = 0; i < NACL_MAX_SYSCALLS; i++) {
     NaClLog(LOG_WARNING, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
-    syscall_total_time +=  nacl_syscall_execution_time[i];
+    nacl_syscall_total_time +=  nacl_syscall_execution_time[i];
   }
-  NaClLog(LOG_WARNING, "[NaClMain] System call total time: %f \n", syscall_total_time);
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call total time: %f \n\n", nacl_syscall_total_time);
+
+  NaClLog(LOG_WARNING, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
+  NaClLog(LOG_WARNING, "[NaClMain] Print out Lind system call timing table: \n");
+  lind_syscall_total_time = 0.0;
+  for (i = 0; i < LIND_MAX_SYSCALLS; i++) {
+    NaClLog(LOG_WARNING, "sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
+    lind_syscall_total_time +=  lind_syscall_execution_time[i];
+  }
+  NaClLog(LOG_WARNING, "[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
+  
   NaClLog(LOG_WARNING, "[NaClMain] Results printing out: done! \n");
   #endif
 

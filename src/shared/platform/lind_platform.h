@@ -82,6 +82,13 @@
 #define LIND_comp_accept                107
 #define LIND_comp_recv                  108
 
+// yiwen: we should define the MAX system call number
+#define LIND_MAX_SYSCALLS               110
+
+// yiwen
+int lind_syscall_counter;
+int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 struct select_results {
     struct timeval used_t;
