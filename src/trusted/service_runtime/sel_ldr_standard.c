@@ -167,7 +167,7 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
 }
 
 // yiwen: print out memory content for debug purpose
-void NaClLogMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
+void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
   unsigned int *addr;
   
@@ -176,6 +176,18 @@ void NaClLogMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
 
   NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr);
   NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+} 
+
+void NaClLogSysMemoryContent(uintptr_t sysaddr) {
+  void *sysaddr_print;
+  unsigned int *addr;
+  
+  sysaddr_print = (void *)sysaddr;
+  addr = (unsigned int *)sysaddr_print;
+
+  NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr_print);
+  NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+  NaClLog(LOG_WARNING, "[Memory] Memory content: %s \n", (char *) addr);
 } 
 
 // yiwen: print out thread context info

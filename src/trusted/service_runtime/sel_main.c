@@ -60,6 +60,7 @@
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include <time.h>
+#include <sys/shm.h>
 
 extern int nacl_syscall_counter;
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
@@ -265,6 +266,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   double			nacl_syscall_total_time;
   double			lind_syscall_total_time;
   #endif
+
+  // yiwen: testing mmap
+  int shmid; 
+  char *reg1;
+  char *reg2;
+  int data_size;
+  void *reg1_ptr;
+  void *reg2_ptr;
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -1198,6 +1207,36 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2); 
   */
 
+  // yiwen: here we have an empty cage nap2
+  //        let's try to use mmap to do memory mapping between nap2 and a memory cache region 
+  InitializeCage(nap2, 2);
+  data_size = 8;
+  reg1_ptr = (void*) 0x5000000; // this is a NaCl sys_addr, outside of any cage
+  reg2_ptr = (void *) NaClUserToSys(nap2, 0x11030000); // this is addr inside of cage 2
+  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr);
+
+  shmid = shmget(IPC_PRIVATE, data_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+
+  reg1 = (char *) shmat (shmid,  reg1_ptr, 0);
+  reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP);
+  printf("Successfully created regions at %p and %p of length %d \n", reg1, reg2, data_size);
+
+  printf("Initial data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
+  reg1[0] = 'X';
+  printf("Write new data 'X' to reg1[0] \n");
+  printf("New data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
+
+  // printf("errno = %s\n", strerror(errno));
+
+
+  /* yiwen: we try to map memory of a shared lib, libgcc_s.so.1
+  7a3911030000-7a3911040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
+  7a3911040000-7a3911050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
+  */
+
+  // ***********************************************************************
+  // yiwen: cleanup and exit
+  // ***********************************************************************
   NaClEnvCleanserDtor(&env_cleanser);
 
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");

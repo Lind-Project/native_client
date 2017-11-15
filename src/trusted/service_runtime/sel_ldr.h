@@ -604,7 +604,8 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status);
 uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
 
 // yiwen
-void NaClLogMemoryContent(struct NaClApp *nap, uintptr_t useraddr);
+void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr);
+void NaClLogSysMemoryContent(uintptr_t sysaddr);
 void NaClLogThreadContext(struct NaClAppThread *natp);
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap);
 
