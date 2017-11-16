@@ -1213,7 +1213,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   data_size = 8;
   reg1_ptr = (void*) 0x5000000; // this is a NaCl sys_addr, outside of any cage
   reg2_ptr = (void *) NaClUserToSys(nap2, 0x11030000); // this is addr inside of cage 2
-  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr);
+  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); 
 
   shmid = shmget(IPC_PRIVATE, data_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
