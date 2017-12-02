@@ -63,6 +63,8 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
+#define SHM_SIZE 4096*2
+
 extern int nacl_syscall_counter;
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
@@ -277,6 +279,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   void *reg1_ptr;
   void *reg2_ptr;
   void *reg3_ptr;
+
+  // yiwen: testing cow mapping
+  int shm_fd;
+  char *shm_buf1;
+  char *shm_buf2;
+  void *cage1_ptr;
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -1198,7 +1206,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   } */
 
   // yiwen: for gdb debug purpose only
-  /*
+  /*  
   while(1) {
   } */
   
@@ -1216,6 +1224,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   data_size = 8;
   reg1_ptr = (void*) 0x5000000; // this is a NaCl sys_addr, outside of any cage
   reg2_ptr = (void *) NaClUserToSys(nap2, 0x11030000); // this is addr inside of cage 2
+
+  printf(" \n");
+  printf("*************************************************************************************** \n");
+  printf("Testing shared memory mapping starts! \n\n");
   NaClLog(LOG_WARNING, "[Shm] reg1_ptr = %p \n", reg1_ptr); 
   NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); 
 
@@ -1227,7 +1239,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   shmid = shmget(IPC_PRIVATE, data_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
   reg1 = (char *) shmat (shmid,  reg1_ptr, 0);
-  reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP);
+  reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
 
   // yiwen: permission of the shared memory in cage 2, changed after the shmat(, , SHM_REMAP) 
   // 1db011030000-1db011031000 rw-s 00000000 00:04 31260749                   /SYSV00000000 (deleted)
@@ -1241,7 +1253,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   reg3_ptr = (void *) NaClUserToSys(nap3, 0x11030000); // this is addr inside of cage 3
   NaClLog(LOG_WARNING, "[Shm] reg3_ptr = %p \n", reg3_ptr); 
-  reg3 = (char *) shmat (shmid,  reg3_ptr, SHM_REMAP);
+  reg3 = (char *) shmat (shmid,  reg3_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
   printf("Successfully created region at %p of length %d \n", reg3, data_size);
   printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
   reg3[0] = 'Z';
@@ -1255,9 +1267,47 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
   printf("But trying to write to reg3 now should fail and cause a crash. \n");
   // reg3[0] = 'P';
+
+  printf(" \n");
+  printf("Testing shared memory mapping ends! \n");
+  printf("*************************************************************************************** \n\n");
   
   // printf("errno = %s\n", strerror(errno));
 
+  // yiwen: testing cow shared memory mapping here
+  printf(" \n");
+  printf("*************************************************************************************** \n");
+  printf("Testing cow mapping starts! \n\n");
+
+  cage1_ptr = (void *) NaClUserToSys(nap2, 0x11040000); // this is addr inside of cage 2
+  NaClLog(LOG_WARNING, "[Shm] cage1_ptr = %p \n", cage1_ptr); 
+
+  munmap(cage1_ptr, SHM_SIZE); // need to remap the memory because this region in the cage has already been mapped before but with content 0
+
+  shm_fd = shm_open("/tmpmem", O_RDWR | O_CREAT, 0666);
+  shm_buf1 = mmap((void*) 0x1000000, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  shm_buf2 = mmap((void*) cage1_ptr, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE, shm_fd, 0);
+  shm_buf1[0] = 41;
+  shm_buf1[1] = 42;
+  printf("buf1 = %p, buf2 = %p \n", shm_buf1, shm_buf2);
+  printf("buf1[0]: %i, buf1[1]: %i, buf2[0]: %i, buf2[1]: %i \n",
+      shm_buf1[0],
+      shm_buf1[1],
+      shm_buf2[0],
+      shm_buf2[1]);
+
+  shm_buf2[0] = 43;
+  shm_buf2[1] = 44;
+  printf("buf1 = %p, buf2 = %p \n", shm_buf1, shm_buf2);
+  printf("buf1[0]: %i, buf1[1]: %i, buf2[0]: %i, buf2[1]: %i \n",
+      shm_buf1[0],
+      shm_buf1[1],
+      shm_buf2[0],
+      shm_buf2[1]);
+
+  printf(" \n");
+  printf("Testing cow mapping ends! \n");
+  printf("*************************************************************************************** \n\n");
 
   /* yiwen: we try to map memory of a shared lib, libgcc_s.so.1
   7a3911030000-7a3911040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226

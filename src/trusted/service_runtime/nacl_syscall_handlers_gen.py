@@ -59,6 +59,9 @@ static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
   #ifdef NACL_SYSCALL_TRACE_ENABLED
   struct NaClApp *nap = natp->nap;
   int32_t retval;
+#if %(arglist_not_empty)d
+  unsigned int i = 0;
+#endif
   #endif
   %(members)s\
 
@@ -72,7 +75,14 @@ static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
   return retval;
   #endif
   #ifdef NACL_SYSCALL_TRACE_ENABLED
-  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [enter][syscall_depth = %%d]", nap->cage_id, nacl_syscall_trace_level_counter);
+  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [enter][syscall_depth = %%d]\\n", nap->cage_id, nacl_syscall_trace_level_counter);
+  printf("==> %(num)s(");
+#if %(arglist_not_empty)d
+  for (i = 0; i < sizeof(p)/4; i++) {
+    printf("%%x,", *((uint32_t *)&p+i));
+  }
+#endif
+  printf(")\\n");
   nacl_syscall_trace_level_counter++; 
   retval = %(name)s(natp%(arglist)s);
   nacl_syscall_trace_level_counter--;
@@ -335,6 +345,7 @@ def PrintImplSkel(architecture, protos, ostr):
     values = { 'num' : syscall_number,
                'name' : func_name,
                'arglist' : ArgList(architecture, alist),
+               'arglist_not_empty' : 1 if ArgList(architecture, alist) else 0,
                'arg_type_list' :
                    ', '.join(['struct NaClAppThread *natp'] + alist),
                'members' : MemoryArgStruct(architecture, func_name, alist),

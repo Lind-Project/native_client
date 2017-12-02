@@ -15,7 +15,7 @@
 // #define DEBUG_INFO_ENABLED
 
 // yiwen: enable printing out system call tracing info for NaCl irt calls
-// #define NACL_SYSCALL_TRACE_ENABLED
+#define NACL_SYSCALL_TRACE_ENABLED
 
 
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_NACL_GLOBALS_H__

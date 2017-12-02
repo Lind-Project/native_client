@@ -20,6 +20,9 @@ NaClErrorCode NaClAppLoadFileFromFilename(struct NaClApp *nap,
 
   NaClFileNameForValgrind(filename);
 
+  // yiwen: debug
+  printf("\n [***Debug!***][NaClAppLoadFileFromFilename] loading file: %s \n", filename);
+
   nd = (struct NaClDesc *) NaClDescIoDescOpen(filename, NACL_ABI_O_RDONLY,
                                               0666);
   if (NULL == nd) {
