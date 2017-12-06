@@ -586,13 +586,16 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   // yiwen
   int                  fd_retval; // this is the virtual fd returned to the cage
-  
 
   NaClLog(3, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
           (uintptr_t) natp, (uintptr_t) pathname, flags, mode);
 
   retval = CopyPathFromUser(nap, path, sizeof path, (uintptr_t) pathname);
+
+  // yiwen: debug
+  printf("[Debug!][NaClSysOpen] pathname = %s \n", path);
+
   if (0 != retval)
     goto cleanup;
 
