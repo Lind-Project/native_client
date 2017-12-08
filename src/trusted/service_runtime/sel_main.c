@@ -233,8 +233,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
-  // int argc2;
-  // char **argv2;
+  int argc2;
+  char **argv2;
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
@@ -271,6 +271,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   #endif
 
   // yiwen: testing mmap
+  /*
   int shmid; 
   char *reg1;
   char *reg2;
@@ -278,13 +279,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   int data_size;
   void *reg1_ptr;
   void *reg2_ptr;
-  void *reg3_ptr;
+  void *reg3_ptr; */
 
   // yiwen: testing cow mapping
+  /*
   int shm_fd;
   char *shm_buf1;
   char *shm_buf2;
-  void *cage1_ptr;
+  void *cage1_ptr; */
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -1180,7 +1182,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
   
   // yiwen: set up cage 2
-  /*
+  
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
@@ -1192,34 +1194,35 @@ int NaClSelLdrMain(int argc, char **argv) {
   argv2[3] = (char*) malloc(43 * sizeof(char)); 
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
 
-  InitializeCage(nap2, 2); */
+  InitializeCage(nap2, 2); 
 
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
-  /*
+  
   if (!NaClCreateMainThread(nap2,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } */
+  } 
 
   // yiwen: for gdb debug purpose only
   /*  
   while(1) {
   } */
   
-  /*
+  
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
   free(argv2); 
-  */
+  
 
   // yiwen: here we have an empty cage nap2
   //        let's try to use mmap to do memory mapping between nap2 and a memory cache region 
+  /*
   InitializeCage(nap2, 2);
   data_size = 8;
   reg1_ptr = (void*) 0x5000000; // this is a NaCl sys_addr, outside of any cage
@@ -1229,21 +1232,21 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("*************************************************************************************** \n");
   printf("Testing shared memory mapping starts! \n\n");
   NaClLog(LOG_WARNING, "[Shm] reg1_ptr = %p \n", reg1_ptr); 
-  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); 
+  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); */
 
   // yiwen: permission in the memory at this moment
   // 596c11030000-596c11040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226 (226, '/glibc/tls/libgcc_s.so.1')
   // 596c11040000-596c11050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
   // 78e410050000-78e4ff000000 ---p 00000000 00:00 0
- 
+  /*
   shmid = shmget(IPC_PRIVATE, data_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
   reg1 = (char *) shmat (shmid,  reg1_ptr, 0);
   reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
-
+  */
   // yiwen: permission of the shared memory in cage 2, changed after the shmat(, , SHM_REMAP) 
   // 1db011030000-1db011031000 rw-s 00000000 00:04 31260749                   /SYSV00000000 (deleted)
-
+  /*
   printf("Successfully created regions at %p and %p of length %d \n", reg1, reg2, data_size);
   reg1[0] = 'X';
   printf("Initial data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
@@ -1266,15 +1269,17 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("Write new data 'Q' to reg1[0] \n");
   printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
   printf("But trying to write to reg3 now should fail and cause a crash. \n");
+  */
   // reg3[0] = 'P';
-
+  /*
   printf(" \n");
   printf("Testing shared memory mapping ends! \n");
   printf("*************************************************************************************** \n\n");
-  
+  */
   // printf("errno = %s\n", strerror(errno));
 
   // yiwen: testing cow shared memory mapping here
+  /*
   printf(" \n");
   printf("*************************************************************************************** \n");
   printf("Testing cow mapping starts! \n\n");
@@ -1308,11 +1313,16 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf(" \n");
   printf("Testing cow mapping ends! \n");
   printf("*************************************************************************************** \n\n");
-
+  */
   /* yiwen: we try to map memory of a shared lib, libgcc_s.so.1
   7a3911030000-7a3911040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
   7a3911040000-7a3911050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
   */
+
+  // yiwen: for gdb debug purpose only
+  /*  
+  while(1) {
+  } */
 
   // ***********************************************************************
   // yiwen: cleanup and exit
@@ -1325,7 +1335,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  // ret_code = NaClWaitForMainThreadToExit(nap2);
+  ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
   if (fork_num == 2) {

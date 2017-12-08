@@ -28,6 +28,8 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
 
+// yiwen
+#include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 /* initial size of the malloced buffer for dynamic regions */
 static const int kMinDynamicRegionsAllocated = 32;
@@ -643,6 +645,10 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
     return -NACL_ABI_EINVAL;
   }
   dest_addr = NaClUserToSysAddrRange(nap, dest, size);
+  
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[***Debug!***][NaClTextDyncodeCreate] dest_addr = %p \n", (void*) dest_addr);
+
   if (kNaClBadAddress == dest_addr) {
     NaClLog(1, "NaClTextDyncodeCreate: Dest address out of range\n");
     return -NACL_ABI_EFAULT;
@@ -736,6 +742,10 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   uint8_t                     *code_copy;
   int32_t                     retval = -NACL_ABI_EINVAL;
 
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] <cage id> = %d; dest = 0x%x; src = 0x%x; size = %u \n", nap->cage_id, dest, src, size);
+  printf("[***Debug!***][NaClSysDyncodeCreate] shared_lib_path = %s \n", shared_lib_path);
+
   if (!nap->enable_dyncode_syscalls) {
     NaClLog(LOG_WARNING,
             "NaClSysDyncodeCreate: Dynamic code syscalls are disabled\n");
@@ -743,6 +753,10 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   }
 
   src_addr = NaClUserToSysAddrRange(nap, src, size);
+
+  // yiwen: debug
+  NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] src_addr = %p \n", (void*) src_addr);
+
   if (kNaClBadAddress == src_addr) {
     NaClLog(1, "NaClSysDyncodeCreate: Source address out of range\n");
     return -NACL_ABI_EFAULT;

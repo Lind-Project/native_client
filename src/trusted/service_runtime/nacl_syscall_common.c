@@ -595,6 +595,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   // yiwen: debug
   printf("[Debug!][NaClSysOpen] pathname = %s \n", path);
+  strncpy(shared_lib_path, path, strlen(path) + 1);
+  printf("[Debug!][NaClSysOpen] shared_lib_path = %s \n", shared_lib_path);
 
   if (0 != retval)
     goto cleanup;

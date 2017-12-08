@@ -26,6 +26,9 @@
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 
+// yiwen
+#define SHARED_LIB_PATH_SIZE 50 
+
 EXTERN_C_BEGIN
 struct NaClThreadContext;
 struct NaClAppThread;
@@ -45,6 +48,9 @@ extern struct NaClApp state0;
 extern struct NaClApp *nap0;
 extern struct NaClApp state0_2;
 extern struct NaClApp *nap0_2;
+
+// yiwen: defined for doing "shared libs caching"
+extern char shared_lib_path[SHARED_LIB_PATH_SIZE];
 
 #if NACL_WINDOWS
 __declspec(dllexport)
