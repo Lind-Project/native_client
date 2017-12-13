@@ -57,6 +57,8 @@
 #include "native_client/src/trusted/service_runtime/name_service/name_service.h"
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
+// yiwen
+#include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 EXTERN_C_BEGIN
 
@@ -109,6 +111,10 @@ struct NaClSpringboardInfo {
 struct NaClApp {
   // yiwen
   int                       cage_id; 
+
+  // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
+  struct                    CachedLibTable lib_table[CACHED_LIB_NUM_MAX];
+  int                       num_lib; 
 
   // yiwen: store info of its children
   int                       num_children; 

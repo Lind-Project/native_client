@@ -744,7 +744,6 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
 
   // yiwen: debug
   NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] <cage id> = %d; dest = 0x%x; src = 0x%x; size = %u \n", nap->cage_id, dest, src, size);
-  printf("[***Debug!***][NaClSysDyncodeCreate] shared_lib_path = %s \n", shared_lib_path);
 
   if (!nap->enable_dyncode_syscalls) {
     NaClLog(LOG_WARNING,

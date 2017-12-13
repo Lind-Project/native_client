@@ -27,7 +27,15 @@
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 
 // yiwen
-#define SHARED_LIB_PATH_SIZE 50 
+#define CAGING_LIB_PATH_MAX 50 
+#define CACHED_LIB_NUM_MAX 20
+
+// yiwen: define struct for storing the <file_path, mem_addr> relation 
+//        which is being used by our "shared libs caching" mechanism 
+struct CachedLibTable {
+  char path[CAGING_LIB_PATH_MAX];
+  void *mem_addr; 
+}; 
 
 EXTERN_C_BEGIN
 struct NaClThreadContext;
@@ -49,8 +57,10 @@ extern struct NaClApp *nap0;
 extern struct NaClApp state0_2;
 extern struct NaClApp *nap0_2;
 
-// yiwen: defined for doing "shared libs caching"
-extern char shared_lib_path[SHARED_LIB_PATH_SIZE];
+// yiwen: this is the lookup table used, when checking if a lib has already been loaded previously, 
+//        and will contain the shared memory address for the lib if it has been loaded before. 
+extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+extern int cached_lib_num;
 
 #if NACL_WINDOWS
 __declspec(dllexport)

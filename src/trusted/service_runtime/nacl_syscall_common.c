@@ -593,11 +593,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   retval = CopyPathFromUser(nap, path, sizeof path, (uintptr_t) pathname);
 
-  // yiwen: debug
-  printf("[Debug!][NaClSysOpen] pathname = %s \n", path);
-  strncpy(shared_lib_path, path, strlen(path) + 1);
-  printf("[Debug!][NaClSysOpen] shared_lib_path = %s \n", shared_lib_path);
-
   if (0 != retval)
     goto cleanup;
 
@@ -678,6 +673,20 @@ cleanup:
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
   // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
+  printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+
+  // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
+  //        this will be used when trying to check if a lib has been cached in our system 
+  // yiwen: do sanity check for the given fd first before our registration
+  if ((fd_retval >= CACHED_LIB_NUM_MAX) || (fd_retval < 0)) {
+     printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");  
+  } 
+  else {
+     strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
+     nap->num_lib++;
+     // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
+  }
+
   return fd_retval;
 }
 
@@ -2131,6 +2140,9 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   NaClLog(4, " offset = 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
+  // yiwen: debug, output NaClSysMmapIntern key parameters
+  printf("[Debug!][NaClSysMmap] cage id = %d, mem_addr = %p, fd = %d \n", nap->cage_id, start, d);
+
 cleanup:
   //PyGILState_Release(gstate);
   return retval;

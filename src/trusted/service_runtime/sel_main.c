@@ -79,6 +79,7 @@ extern int nacl_syscall_trace_level_counter;
 static void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->cage_id = cage_id;  
   nap->num_children = 0;  
+  nap->num_lib = 3;
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
@@ -287,6 +288,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   char *shm_buf1;
   char *shm_buf2;
   void *cage1_ptr; */
+
+  int i;
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -1218,7 +1221,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2[2]);
   free(argv2[3]);
   free(argv2); 
-  
 
   // yiwen: here we have an empty cage nap2
   //        let's try to use mmap to do memory mapping between nap2 and a memory cache region 
@@ -1391,6 +1393,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   NaClLog(LOG_WARNING, "[NaClMain] Results printing out: done! \n");
   #endif
+
+  // yiwen: test output for cage->lib_table[CACHED_LIB_NUM_MAX]
+  printf("[*** TESTING! ***] nap->num_lib = %d \n", nap->num_lib);
+  for (i = 0; i < nap->num_lib; i++) {
+     printf("[*** TESTING! ***] fd = %d, filepath = %s \n", i, nap->lib_table[i].path);
+  }
 
   LindPythonFinalize();
 

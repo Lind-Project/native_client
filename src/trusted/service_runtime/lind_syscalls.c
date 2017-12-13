@@ -835,10 +835,6 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         goto cleanup;
     }
 
-    // yiwen: debug: output args for doing nacl_sys_lind_open
-    if (callNum == 10) { 
-    }
-
     if(stubs[callNum].pre) {
         retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
         if(retval) {

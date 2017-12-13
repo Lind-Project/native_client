@@ -56,7 +56,8 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_rservice.h"
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
-
+// yiwen
+#include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 // yiwen
 int cage = 1001;
@@ -74,8 +75,9 @@ int fork_num = 0;
 
 int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is the virtual fd visible to the cages
 
-// yiwen: defined for doing "shared libs caching"
-char shared_lib_path[SHARED_LIB_PATH_SIZE];
+// yiwen: lookup table for <file_path, mem_addr>
+struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+int cached_lib_num = 0;
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
