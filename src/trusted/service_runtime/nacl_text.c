@@ -765,16 +765,18 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
    * Make a private copy of the code, so that we can validate it
    * without a TOCTTOU race condition.
    */
+  
   code_copy = malloc(size);
   if (NULL == code_copy) {
     return -NACL_ABI_ENOMEM;
   }
-  memcpy(code_copy, (uint8_t*) src_addr, size);
+  memcpy(code_copy, (uint8_t*) src_addr, size); 
 
   /* Unknown data source, no metadata. */
+  
   retval = NaClTextDyncodeCreate(nap, dest, code_copy, size, NULL);
 
-  free(code_copy);
+  free(code_copy); 
   return retval;
 }
 

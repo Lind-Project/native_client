@@ -666,6 +666,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 cleanup:
   // yiwen: now translate the real fds to virtual fds and return them to the cage
+  printf("[Debug!][NaClSysOpen] cage id = %d, real NaCl fd = %d, filepath = %s \n", nap->cage_id, retval, path);
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
   nap->fd++;
@@ -2141,8 +2142,8 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
 
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
   // yiwen: debug, output NaClSysMmapIntern key parameters
-  printf("[Debug!][NaClSysMmap] cage id = %d, mem_addr = %p, fd = %d \n", nap->cage_id, start, d);
-
+  printf("[Debug!][NaClSysMmap] cage id = %d, mem_addr = %p, length = %zd, fd = %d, flags = %x \n", nap->cage_id, start, length, d, flags);
+  printf("[Debug!][NaClSysMmap] fd = %d, filepath = %s \n", d, nap->lib_table[d].path);
 cleanup:
   //PyGILState_Release(gstate);
   return retval;
