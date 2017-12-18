@@ -289,7 +289,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   char *shm_buf2;
   void *cage1_ptr; */
 
-  int i;
+  int j;
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -529,10 +529,13 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
+  time_start = clock();
   if(!LindPythonInit()) {
       fflush(NULL);
       exit(1);
   }
+  time_end = clock();
+  time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
   if (debug_mode_ignore_validator == 1)
     fprintf(stderr, "DEBUG MODE ENABLED (ignore validator)\n");
@@ -720,7 +723,12 @@ int NaClSelLdrMain(int argc, char **argv) {
       nacl_file2 = (char*) malloc(22 * sizeof(char));
       strncpy(nacl_file2, "/glibc/runnable-ld.so", 22);
 
+      // yiwen
+      // time_start = clock();
       errcode = NaClAppLoadFileFromFilename(nap, nacl_file2);
+      // time_end = clock();
+      // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
+
       if (LOAD_OK != errcode) {
         fprintf(stderr, "Error while loading \"%s\": %s\n",
                 nacl_file,
@@ -949,6 +957,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       errcode = NaClAppPrepareToLaunch(nap_ready);
       errcode = NaClAppPrepareToLaunch(nap0_2);
       errcode = NaClAppPrepareToLaunch(nap_ready_2);
+
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
@@ -1396,9 +1405,11 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: test output for cage->lib_table[CACHED_LIB_NUM_MAX]
   printf("[*** TESTING! ***] nap->num_lib = %d \n", nap->num_lib);
-  for (i = 0; i < nap->num_lib; i++) {
-     printf("[*** TESTING! ***] fd = %d, filepath = %s \n", i, nap->lib_table[i].path);
+  for (j = 0; j < nap->num_lib; j++) {
+     printf("[*** TESTING! ***] fd = %d, filepath = %s \n", j, nap->lib_table[j].path);
   }
+
+  NaClLog(LOG_WARNING, "[Performance results] LindPythonInit(): %f \n", time_counter);
 
   LindPythonFinalize();
 

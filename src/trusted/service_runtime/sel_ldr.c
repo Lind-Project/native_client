@@ -60,6 +60,9 @@
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 // yiwen
+double time_counter = 0.0;
+double time_start = 0.0;
+double time_end = 0.0;
 int cage = 1001;
 struct NaClApp state_ready;
 struct NaClApp *nap_ready;

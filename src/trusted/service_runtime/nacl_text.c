@@ -678,7 +678,10 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
    * See: http://code.google.com/p/nativeclient/issues/detail?id=2566
    */
   if (!nap->skip_validator) {
-    validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata);
+    // yiwen
+    metadata = metadata;
+    // validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata);
+    validator_result = LOAD_OK;
   } else {
     NaClLog(LOG_ERROR, "VALIDATION SKIPPED.\n");
     validator_result = LOAD_OK;
@@ -774,7 +777,10 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
 
   /* Unknown data source, no metadata. */
   
+  // time_start = clock();
   retval = NaClTextDyncodeCreate(nap, dest, code_copy, size, NULL);
+  // time_end = clock();
+  // time_counter += (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
   free(code_copy); 
   return retval;

@@ -9,7 +9,7 @@
  */
 
 // yiwen: enable system call timing with SYSCALL_TIMING
-// #define SYSCALL_TIMING
+#define SYSCALL_TIMING
 
 // yiwen: enable printing out debug info inside functions in NaCl runtime
 // #define DEBUG_INFO_ENABLED
@@ -56,6 +56,10 @@ extern struct NaClApp state0;
 extern struct NaClApp *nap0;
 extern struct NaClApp state0_2;
 extern struct NaClApp *nap0_2;
+
+extern double time_counter;
+extern double time_start;
+extern double time_end;
 
 // yiwen: this is the lookup table used, when checking if a lib has already been loaded previously, 
 //        and will contain the shared memory address for the lib if it has been loaded before. 
