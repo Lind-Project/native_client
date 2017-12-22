@@ -172,7 +172,7 @@ struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
   struct NaClHostDesc *nhdp;
 
   // yiwen: debug
-  printf("\n [***Debug!***][NaClDescIoDesc] opening file: %s \n", path);
+  // printf("\n [***Debug!***][NaClDescIoDesc] opening file: %s \n", path);
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {

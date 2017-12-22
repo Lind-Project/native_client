@@ -145,7 +145,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
                                NACL_APP_THREAD_UNTRUSTED);
 
   // yiwen: 
-  printf("[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage! \n");
+  // printf("[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage! \n");
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 

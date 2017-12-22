@@ -647,7 +647,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
   dest_addr = NaClUserToSysAddrRange(nap, dest, size);
   
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[***Debug!***][NaClTextDyncodeCreate] dest_addr = %p \n", (void*) dest_addr);
+  // NaClLog(LOG_WARNING, "[***Debug!***][NaClTextDyncodeCreate] dest_addr = %p \n", (void*) dest_addr);
 
   if (kNaClBadAddress == dest_addr) {
     NaClLog(1, "NaClTextDyncodeCreate: Dest address out of range\n");
@@ -746,7 +746,7 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   int32_t                     retval = -NACL_ABI_EINVAL;
 
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] <cage id> = %d; dest = 0x%x; src = 0x%x; size = %u \n", nap->cage_id, dest, src, size);
+  // NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] <cage id> = %d; dest = 0x%x; src = 0x%x; size = %u \n", nap->cage_id, dest, src, size);
 
   if (!nap->enable_dyncode_syscalls) {
     NaClLog(LOG_WARNING,
@@ -757,7 +757,7 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   src_addr = NaClUserToSysAddrRange(nap, src, size);
 
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] src_addr = %p \n", (void*) src_addr);
+  // NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] src_addr = %p \n", (void*) src_addr);
 
   if (kNaClBadAddress == src_addr) {
     NaClLog(1, "NaClSysDyncodeCreate: Source address out of range\n");

@@ -406,7 +406,7 @@ int lind_open (int flags, int mode, const char *path)
 {
     LIND_API_PART1
     // yiwen: debug
-    printf("\n [***Debug!***][lind_open] opening file: %s \n", path);
+    // printf("\n [***Debug!***][lind_open] opening file: %s \n", path);
     callArgs = Py_BuildValue("(i[iis])", LIND_safe_fs_open, flags, mode, path);
     LIND_API_PART2
     LIND_API_PART3

@@ -666,7 +666,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 cleanup:
   // yiwen: now translate the real fds to virtual fds and return them to the cage
-  printf("[Debug!][NaClSysOpen] cage id = %d, real NaCl fd = %d, filepath = %s \n", nap->cage_id, retval, path);
+  // printf("[Debug!][NaClSysOpen] cage id = %d, real NaCl fd = %d, filepath = %s \n", nap->cage_id, retval, path);
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
   nap->fd++;
@@ -674,13 +674,13 @@ cleanup:
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
   // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
-  printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+  // printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
   //        this will be used when trying to check if a lib has been cached in our system 
   // yiwen: do sanity check for the given fd first before our registration
   if ((fd_retval >= CACHED_LIB_NUM_MAX) || (fd_retval < 0)) {
-     printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");  
+     // printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");  
   } 
   else {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
@@ -2142,8 +2142,8 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
 
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
   // yiwen: debug, output NaClSysMmapIntern key parameters
-  printf("[Debug!][NaClSysMmap] cage id = %d, mem_addr = %p, length = %zd, fd = %d, flags = %x \n", nap->cage_id, start, length, d, flags);
-  printf("[Debug!][NaClSysMmap] fd = %d, filepath = %s \n", d, nap->lib_table[d].path);
+  // printf("[Debug!][NaClSysMmap] cage id = %d, mem_addr = %p, length = %zd, fd = %d, flags = %x \n", nap->cage_id, start, length, d, flags);
+  // printf("[Debug!][NaClSysMmap] fd = %d, filepath = %s \n", d, nap->lib_table[d].path);
 cleanup:
   //PyGILState_Release(gstate);
   return retval;
