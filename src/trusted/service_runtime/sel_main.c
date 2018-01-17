@@ -234,8 +234,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
-  // int argc2;
-  // char **argv2;
+  int argc2;
+  char **argv2;
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
@@ -265,6 +265,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   clock_t			nacl_initialization_finish;
   double			nacl_main_spent;
   double			nacl_initialization_spent;
+
+  clock_t 			nacl_user_program_begin;
+  clock_t 			nacl_user_program_finish;
+  double			nacl_user_program_spent;
   #ifdef SYSCALL_TIMING
   int				i;
   double			nacl_syscall_total_time;
@@ -288,6 +292,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   char *shm_buf1;
   char *shm_buf2;
   void *cage1_ptr; */
+
+  // yiwen: variables used to create our named pipe
+  char * myfifo;
+  int myfifo_fd;
+  char user_input[256];  
 
   // int j;
 
@@ -1335,6 +1344,58 @@ int NaClSelLdrMain(int argc, char **argv) {
   while(1) {
   } */
 
+  // ******************************************************************************************************************************
+  // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages  
+  // ******************************************************************************************************************************
+  myfifo = (char*) malloc(12 * sizeof(char));
+  strncpy(myfifo, "/tmp/myfifo", 12);
+  
+  // creating the named file(FIFO)
+  // mkfifo(<pathname>, <permission>)
+  mkfifo(myfifo, 0666);
+
+  while(1)
+  {
+     // Open FIFO for Read only
+     myfifo_fd = open(myfifo, O_RDONLY);
+     // Read from FIFO
+     read(myfifo_fd, user_input, sizeof(user_input));
+ 
+     // Print the read message
+     printf("User input: %s \n", user_input);
+     close(myfifo_fd);
+
+     if (user_input[0] == '0') {
+        break;
+     }
+
+     argc2 = 4;
+     argv2 = (char**) malloc(4 * sizeof(char*));
+     argv2[0] = (char*) malloc(9 * sizeof(char)); 
+     strncpy(argv2[0], "NaClMain", 9);
+     argv2[1] = (char*) malloc(15 * sizeof(char)); 
+     strncpy(argv2[1], "--library-path", 15);
+     argv2[2] = (char*) malloc(7 * sizeof(char)); 
+     strncpy(argv2[2], "/glibc", 7);
+     argv2[3] = (char*) malloc(256 * sizeof(char)); 
+     strncpy(argv2[3], user_input, 42);
+     argv2[3][42] = '\0';
+     // strncpy(argv2[3], "./test_case/bash/bash.nexe ./test_case/bash/scripts/script_01", 62);
+
+     InitializeCage(nap2, 2); 
+  
+     nacl_user_program_begin = clock();    
+     if (!NaClCreateMainThread(nap2,
+                               argc2,
+                               argv2,
+                               NaClEnvCleanserEnvironment(&env_cleanser))) {
+        fprintf(stderr, "creating main thread failed\n");
+        goto done;
+     } 
+     ret_code = NaClWaitForMainThreadToExit(nap2);
+     nacl_user_program_finish = clock();    
+  }
+
   // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
@@ -1378,6 +1439,9 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
   NaClLog(LOG_WARNING, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+
+  nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
+  NaClLog(LOG_WARNING, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
   
   #ifdef SYSCALL_TIMING
   NaClLog(LOG_WARNING, "[NaClMain] NaCl system call timing enabled! \n");
