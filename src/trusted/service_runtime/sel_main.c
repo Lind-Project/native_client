@@ -298,7 +298,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   int myfifo_fd;
   char user_input[256];  
 
-  // int j;
+  // yiwen: variables used when processing the user input command from the client program
+  int j;
+  int k;
+  int is_new_argument;
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -1127,13 +1130,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap_ready_2, 1001);
 
   // yiwen: set up cage 1
-  InitializeCage(nap, 1);
+  // InitializeCage(nap, 1);
 
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
+  /*
   nap->command_num = argc - optind - 3;
 
   nap->binary_path = (char*) malloc((strlen((argv + optind)[3]) + 1) * sizeof(char));
@@ -1141,7 +1145,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (nap->command_num > 1) {
      nap->binary_command = (char*) malloc((strlen((argv + optind)[4]) + 1) * sizeof(char));
      strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
-  }
+  } 
+
+  printf("nap->command_num = %d \n", nap->command_num);
+  printf("nap->binary_path = %s \n", nap->binary_path);
+  */
 
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
@@ -1150,13 +1158,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   // NaClLog(LOG_WARNING, "[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program! \n\n");
 
   // yiwen: this is cage1, start a new thread with program given and run
+  /*
   if (!NaClCreateMainThread(nap,
                             argc - optind,
                             argv + optind,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } 
+  } */
   // NaClPrintAddressSpaceLayout(nap);
 
   // yiwen: here we tries to create a second thread to run nap2
@@ -1354,7 +1363,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // mkfifo(<pathname>, <permission>)
   mkfifo(myfifo, 0666);
 
-  while(1)
+  while (1)
   {
      // Open FIFO for Read only
      myfifo_fd = open(myfifo, O_RDONLY);
@@ -1377,22 +1386,53 @@ int NaClSelLdrMain(int argc, char **argv) {
      strncpy(argv2[1], "--library-path", 15);
      argv2[2] = (char*) malloc(7 * sizeof(char)); 
      strncpy(argv2[2], "/glibc", 7);
-     argv2[3] = (char*) malloc(256 * sizeof(char)); 
-     strncpy(argv2[3], user_input, 42);
-     argv2[3][42] = '\0';
-     // strncpy(argv2[3], "./test_case/bash/bash.nexe ./test_case/bash/scripts/script_01", 62);
+     argv2[3] = (char*) malloc(strlen(user_input) * sizeof(char)); 
 
-     InitializeCage(nap2, 2); 
+     is_new_argument = 1;
+     k = 0;
+
+     // yiwen: I am assuming that there is no space at the very beginning and very end of the user input,
+     //        but multiple space characters are allowed between different arguments.
+     for (j = 0; j < (int)(strlen(user_input)) - 1; j++) {
+        if (user_input[j] == ' ') {
+           if (is_new_argument == 1) {
+              continue;
+           }
+           else {
+              is_new_argument = 1; 
+              argv2[argc2 - 1][k] = '\0';
+              k = 0;
+              argv2[argc2] = (char*) malloc(strlen(user_input) * sizeof(char));
+              argc2++;
+              continue;
+           }
+        }
+        else {
+           is_new_argument = 0;
+           argv2[argc2 - 1][k] = user_input[j];
+           k++;
+        }
+     } 
+     argv2[argc2 - 1][strlen(user_input) - 1] = '\0';
+
+     InitializeCage(nap, 1); 
+     nap->command_num = argc2 - 3;
+     nap->binary_path = (char*) malloc((strlen(argv2[3]) + 1) * sizeof(char));
+     strncpy(nap->binary_path, argv2[3], strlen(argv2[3]) + 1);
+     if (nap->command_num > 1) {
+        nap->binary_command = (char*) malloc((strlen(argv2[4]) + 1) * sizeof(char));
+        strncpy(nap->binary_command, argv2[4], strlen(argv2[4]) + 1);
+     } 
   
      nacl_user_program_begin = clock();    
-     if (!NaClCreateMainThread(nap2,
+     if (!NaClCreateMainThread(nap,
                                argc2,
                                argv2,
                                NaClEnvCleanserEnvironment(&env_cleanser))) {
         fprintf(stderr, "creating main thread failed\n");
         goto done;
      } 
-     ret_code = NaClWaitForMainThreadToExit(nap2);
+     ret_code = NaClWaitForMainThreadToExit(nap);
      nacl_user_program_finish = clock();    
   }
 
@@ -1406,7 +1446,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   DynArrayDtor(&env_vars);
 
   // yiwen: waiting for running cages to exit
-  ret_code = NaClWaitForMainThreadToExit(nap);
+  // ret_code = NaClWaitForMainThreadToExit(nap);
   // ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
