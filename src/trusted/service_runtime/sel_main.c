@@ -1372,6 +1372,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  
      // Print the read message
      printf("User input: %s \n", user_input);
+     printf("User input length: %d \n", (int)strlen(user_input));
      close(myfifo_fd);
 
      if (user_input[0] == '0') {
@@ -1414,6 +1415,8 @@ int NaClSelLdrMain(int argc, char **argv) {
         }
      } 
      argv2[argc2 - 1][strlen(user_input) - 1] = '\0';
+     // debug
+     printf("program args: %s \n", argv2[argc2 - 1]);
 
      InitializeCage(nap, 1); 
      nap->command_num = argc2 - 3;
