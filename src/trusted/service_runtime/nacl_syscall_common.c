@@ -540,6 +540,11 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval;
 
+  printf("[*** Debug ***][dup2] Entered dup2! \n");
+  printf("[*** Debug ***][dup2] cage id = %d \n", nap->cage_id);
+  printf("[*** Debug ***][dup2] oldfd = %d \n", oldfd);
+  printf("[*** Debug ***][dup2] newfd = %d \n", newfd);
+
   if ((oldfd == 8000) | (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
      printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
@@ -549,8 +554,36 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   
-  retval = 0;
-  return retval;
+  retval = newfd;
+  return newfd;
+}
+
+// yiwen: my dup3 implementation
+int32_t NaClSysDup3(struct NaClAppThread  *natp,
+                    int                   oldfd,
+                    int                   newfd,
+                    int                   flags) {
+  struct NaClApp  *nap = natp->nap;
+  int             retval;
+
+  printf("[*** Debug ***][dup3] Entered dup3! \n");
+  printf("[*** Debug ***][dup3] cage id = %d \n", nap->cage_id);
+  printf("[*** Debug ***][dup3] oldfd = %d \n", oldfd);
+  printf("[*** Debug ***][dup3] newfd = %d \n", newfd);
+
+  if ((oldfd == 8000) | (oldfd == 8001)) {
+     fd_cage_table[nap->cage_id][newfd] = oldfd;
+     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
+     retval = 0;
+     return retval;
+  }
+  
+  fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+
+  flags = flags;  
+
+  retval = newfd;
+  return newfd;
 }
 
 static uint32_t CopyPathFromUser(struct NaClApp *nap,
@@ -687,6 +720,8 @@ cleanup:
      nap->num_lib++;
      // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
+
+  // printf("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
 }

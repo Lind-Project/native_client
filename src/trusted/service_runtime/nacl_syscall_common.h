@@ -68,6 +68,11 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   oldfd,
                     int                   newfd);
 
+int32_t NaClSysDup3(struct NaClAppThread  *natp,
+                    int                   oldfd,
+                    int                   newfd,
+                    int                   flags);
+
 int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     char                  *pathname,
                     int                   flags,

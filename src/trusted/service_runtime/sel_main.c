@@ -1414,7 +1414,8 @@ int NaClSelLdrMain(int argc, char **argv) {
            k++;
         }
      } 
-     argv2[argc2 - 1][strlen(user_input) - 1] = '\0';
+
+     argv2[argc2 - 1][k] = '\0';
      // debug
      printf("program args: %s \n", argv2[argc2 - 1]);
 

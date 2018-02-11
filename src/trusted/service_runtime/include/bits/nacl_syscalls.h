@@ -117,7 +117,8 @@
 #define NACL_sys_execv                  116
 #define NACL_sys_execve                 117
 #define NACL_sys_waitpid                118
+#define NACL_sys_dup3                   119
 
-#define NACL_MAX_SYSCALLS               119
+#define NACL_MAX_SYSCALLS               120
 
 #endif

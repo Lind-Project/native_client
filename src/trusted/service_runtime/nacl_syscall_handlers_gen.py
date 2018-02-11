@@ -140,6 +140,7 @@ SYSCALL_LIST = [
     ('NACL_sys_nameservice', 'NaClSysNameService', ['int *desc_in_out']),
     ('NACL_sys_dup', 'NaClSysDup', ['int oldfd']),
     ('NACL_sys_dup2', 'NaClSysDup2', ['int oldfd', 'int newfd']),
+    ('NACL_sys_dup3', 'NaClSysDup3', ['int oldfd', 'int newfd', 'int flags']),
     ('NACL_sys_open', 'NaClSysOpen',
      ['char *pathname', 'int flags', 'int mode']),
     ('NACL_sys_close', 'NaClSysClose', ['int d']),
