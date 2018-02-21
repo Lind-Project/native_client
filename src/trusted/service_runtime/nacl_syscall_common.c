@@ -539,7 +539,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   newfd) {
   struct NaClApp  *nap = natp->nap;
   int             retval;
+  int             i;
 
+  // yiwen: debug
   printf("[*** Debug ***][dup2] Entered dup2! \n");
   printf("[*** Debug ***][dup2] cage id = %d \n", nap->cage_id);
   printf("[*** Debug ***][dup2] oldfd = %d \n", oldfd);
@@ -555,6 +557,13 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   
   retval = newfd;
+
+  // yiwen: debug output
+  printf("[*** Debug ***][dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
+  for (i = 0; i < nap->fd; i++) {
+     printf("[*** Debug ***][dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
+  }
+
   return newfd;
 }
 
