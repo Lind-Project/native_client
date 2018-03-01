@@ -90,6 +90,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   #endif
   // NaClLogThreadContext(natp);
 
+  NaClAppThreadPrintInfo(natp);
+
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 
@@ -427,4 +429,9 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClTlsFree(natp);
   NaClMutexDtor(&natp->mu);
   NaClAlignedFree(natp);
+}
+
+// yiwen
+void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
+  printf("[NaClAppThreadPrintInfo] cage id = %d; user.prog_ctr = %p; user.sysret = %p \n", natp->nap->cage_id, (void*)natp->user.prog_ctr, (void*)natp->user.sysret);
 }

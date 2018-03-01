@@ -4037,6 +4037,45 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 // 6) schedule the context switch to run the child process 
 
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
+  struct NaClApp *nap = natp->nap; 
+  int argc2;
+  char **argv2;
+
+  NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %d \n", nap->cage_id);
+  NaClAppThreadPrintInfo(natp);
+
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+
+  if (!NaClCreateMainForkThread(nap,
+                                nap0,
+                                argc2,
+                                argv2,
+                                NULL)) {
+    fprintf(stderr, "creating main thread failed\n");
+    return 0;
+  } 
+
+  free(argv2[0]);
+  free(argv2[1]);
+  free(argv2[2]);
+  free(argv2[3]);
+  free(argv2);
+
+  return 1;
+}
+
+// yiwen: this one below is currently working
+/*
+int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval;  
   int argc2;
@@ -4124,6 +4163,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   }
   return 0;
 }
+*/
 
 // yiwen: an improved basic working version 1.1 of my fork implementation
 /*

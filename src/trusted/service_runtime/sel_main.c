@@ -1353,6 +1353,47 @@ int NaClSelLdrMain(int argc, char **argv) {
   while(1) {
   } */
 
+  // yiwen: development testing, using nap2 and nap3 here. 
+  /*
+  argc2 = 4;
+  argv2 = (char**) malloc(4 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+
+  InitializeCage(nap2, 2); 
+
+  if (!NaClCreateMainThread(nap2,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+    fprintf(stderr, "creating main thread failed\n");
+    goto done;
+  } 
+
+  InitializeCage(nap3, 3); 
+
+  if (!NaClCreateMainThread(nap3,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+    fprintf(stderr, "creating main thread failed\n");
+    goto done;
+  } 
+  
+  free(argv2[0]);
+  free(argv2[1]);
+  free(argv2[2]);
+  free(argv2[3]);
+  free(argv2); */
+
+  InitializeCage(nap0, 0); 
+
   // ******************************************************************************************************************************
   // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages  
   // ******************************************************************************************************************************
@@ -1436,6 +1477,13 @@ int NaClSelLdrMain(int argc, char **argv) {
         fprintf(stderr, "creating main thread failed\n");
         goto done;
      } 
+ 
+     free(argv2[0]);
+     free(argv2[1]);
+     free(argv2[2]);
+     free(argv2[3]);
+     free(argv2);
+
      ret_code = NaClWaitForMainThreadToExit(nap);
      nacl_user_program_finish = clock();    
   }
@@ -1450,7 +1498,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   DynArrayDtor(&env_vars);
 
   // yiwen: waiting for running cages to exit
-  // ret_code = NaClWaitForMainThreadToExit(nap);
+  ret_code = NaClWaitForMainThreadToExit(nap);
   // ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
