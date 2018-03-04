@@ -1489,6 +1489,77 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   // ***********************************************************************
+  // yiwen: testing
+  // ***********************************************************************
+  buffer_ptr = pipe_buffer;
+  pipe_mutex = 0;
+  pipe_transfer_over = 0;
+
+  argc2 = 5;
+  argv2 = (char**) malloc(5 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  // argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
+  argv2[3] = (char*) malloc(10 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/cat", 10);
+  argv2[4] = (char*) malloc(29 * sizeof(char)); 
+  strncpy(argv2[4], "./test_files/testfile_01.txt", 29);
+
+  InitializeCage(nap2, 2);
+  // fd_cage_table[2][1] = 8001;  
+  if (!NaClCreateMainThread(nap2,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+     fprintf(stderr, "creating main thread failed\n");
+     goto done;
+  } 
+
+  free(argv2[0]);
+  free(argv2[1]);
+  free(argv2[2]);
+  free(argv2[3]);
+  free(argv2[4]);
+  free(argv2);
+
+  argc2 = 5;
+  argv2 = (char**) malloc(5 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  // argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
+  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/grep", 11);
+  argv2[4] = (char*) malloc(4 * sizeof(char)); 
+  strncpy(argv2[4], "End", 4);
+
+  InitializeCage(nap3, 3);
+  // fd_cage_table[3][0] = 8000;  
+  if (!NaClCreateMainThread(nap3,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+     fprintf(stderr, "creating main thread failed\n");
+     goto done;
+  } 
+   
+  free(argv2[0]);
+  free(argv2[1]);
+  free(argv2[2]);
+  free(argv2[3]);
+  free(argv2[4]);
+  free(argv2);
+
+  // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
   NaClEnvCleanserDtor(&env_cleanser);
@@ -1499,7 +1570,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  // ret_code = NaClWaitForMainThreadToExit(nap2);
+  ret_code = NaClWaitForMainThreadToExit(nap2);
+  ret_code = NaClWaitForMainThreadToExit(nap3);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
   if (fork_num == 2) {

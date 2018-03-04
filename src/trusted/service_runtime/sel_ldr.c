@@ -82,6 +82,12 @@ int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is 
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 int cached_lib_num = 0;
 
+// yiwen: global pipe buffer 
+char pipe_buffer[16*4096];
+char* buffer_ptr;
+int pipe_mutex;
+int pipe_transfer_over;
+
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
 }

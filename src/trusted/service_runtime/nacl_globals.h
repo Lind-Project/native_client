@@ -66,6 +66,12 @@ extern double time_end;
 extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 extern int cached_lib_num;
 
+// yiwen: global pipe buffer
+extern char pipe_buffer[16*4096];
+extern char* buffer_ptr;
+extern int pipe_mutex;
+extern int pipe_transfer_over;
+
 #if NACL_WINDOWS
 __declspec(dllexport)
 /*
