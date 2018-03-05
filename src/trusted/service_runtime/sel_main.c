@@ -231,6 +231,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: added a third cage, nap3. 
   struct NaClApp                state3;
   struct NaClApp                *nap3 = &state3;
+  struct NaClApp                state4;
+  struct NaClApp                *nap4 = &state4;
   
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
@@ -342,6 +344,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   memset(&state_ready, 0, sizeof state_ready);
   memset(&state_ready_2, 0, sizeof state_ready_2);
   memset(&state3, 0, sizeof state3);
+  memset(&state4, 0, sizeof state4);
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
@@ -367,6 +370,9 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
   }
   if (!NaClAppCtor(&state3)) {
+    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+  }
+  if (!NaClAppCtor(&state4)) {
     NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
   }
   // yiwen
@@ -721,6 +727,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen
   NaClAppInitialDescriptorHookup(nap2);
   NaClAppInitialDescriptorHookup(nap3);
+  NaClAppInitialDescriptorHookup(nap4);
   // yiwen
   NaClAppInitialDescriptorHookup(nap0);
   NaClAppInitialDescriptorHookup(nap0_2);
@@ -767,6 +774,19 @@ int NaClSelLdrMain(int argc, char **argv) {
 
       // yiwen: load NaCl file to nap3
       errcode = NaClAppLoadFileFromFilename(nap3, nacl_file);    
+      if (LOAD_OK != errcode) {
+        fprintf(stderr, "Error while loading \"%s\": %s\n",
+                nacl_file,
+                NaClErrorString(errcode));
+        fprintf(stderr,
+                ("Using the wrong type of nexe (nacl-x86-32"
+                 " on an x86-64 or vice versa)\n"
+                 "or a corrupt nexe file may be"
+                 " responsible for this error.\n"));
+      }
+
+      // yiwen: load NaCl file to nap4
+      errcode = NaClAppLoadFileFromFilename(nap4, nacl_file);    
       if (LOAD_OK != errcode) {
         fprintf(stderr, "Error while loading \"%s\": %s\n",
                 nacl_file,
@@ -1392,7 +1412,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2[3]);
   free(argv2); */
 
-  InitializeCage(nap0, 0); 
+  // InitializeCage(nap0, 0); 
 
   // ******************************************************************************************************************************
   // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages  
@@ -1491,11 +1511,13 @@ int NaClSelLdrMain(int argc, char **argv) {
   // ***********************************************************************
   // yiwen: testing
   // ***********************************************************************
-  buffer_ptr = pipe_buffer;
-  pipe_mutex = 0;
-  pipe_transfer_over = 0;
+  buffer_ptr = pipe_buffer[0];
+  pipe_mutex[0] = 0;
+  pipe_mutex[1] = 0;
+  pipe_transfer_over[0] = 0;
+  pipe_transfer_over[1] = 0;
 
-  argc2 = 5;
+  argc2 = 7;
   argv2 = (char**) malloc(5 * sizeof(char*));
   argv2[0] = (char*) malloc(9 * sizeof(char)); 
   strncpy(argv2[0], "NaClMain", 9);
@@ -1505,10 +1527,14 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[2], "/glibc", 7);
   // argv2[3] = (char*) malloc(43 * sizeof(char)); 
   // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  argv2[3] = (char*) malloc(10 * sizeof(char)); 
-  strncpy(argv2[3], "./bin/cat", 10);
-  argv2[4] = (char*) malloc(29 * sizeof(char)); 
-  strncpy(argv2[4], "./test_files/testfile_01.txt", 29);
+  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/grep", 11);
+  argv2[4] = (char*) malloc(((int)strlen("-r")+1) * sizeof(char)); 
+  strncpy(argv2[4], "-r", (int)strlen("-r")+1);
+  argv2[5] = (char*) malloc(((int)strlen("IOADDR")+1) * sizeof(char)); 
+  strncpy(argv2[5], "IOADDR", (int)strlen("IOADDR")+1);
+  argv2[6] = (char*) malloc(((int)strlen("./test_files/irqfuzz.old")+1) * sizeof(char)); 
+  strncpy(argv2[6], "./test_files/irqfuzz.old", (int)strlen("./test_files/irqfuzz.old")+1);
 
   InitializeCage(nap2, 2);
   // fd_cage_table[2][1] = 8001;  
@@ -1537,10 +1563,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   strncpy(argv2[2], "/glibc", 7);
   // argv2[3] = (char*) malloc(43 * sizeof(char)); 
   // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
-  strncpy(argv2[3], "./bin/grep", 11);
-  argv2[4] = (char*) malloc(4 * sizeof(char)); 
-  strncpy(argv2[4], "End", 4);
+  argv2[3] = (char*) malloc(10 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/sed", 10);
+  argv2[4] = (char*) malloc(((int)strlen("'s/.*: //'")+1) * sizeof(char)); 
+  strncpy(argv2[4], "'s/.*: //'", (int)strlen("'s/.*: //'")+1);
 
   InitializeCage(nap3, 3);
   // fd_cage_table[3][0] = 8000;  
@@ -1559,6 +1585,38 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2[4]);
   free(argv2);
 
+  argc2 = 5;
+  argv2 = (char**) malloc(5 * sizeof(char*));
+  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[0], "NaClMain", 9);
+  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  strncpy(argv2[1], "--library-path", 15);
+  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  strncpy(argv2[2], "/glibc", 7);
+  // argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  // strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
+  argv2[3] = (char*) malloc(9 * sizeof(char)); 
+  strncpy(argv2[3], "./bin/tr", 9);
+  argv2[4] = (char*) malloc(((int)strlen("' ' '\n'")+1) * sizeof(char)); 
+  strncpy(argv2[4], "' ' '\n'", (int)strlen("' ' '\n'")+1);
+
+  InitializeCage(nap4, 4); 
+  if (!NaClCreateMainThread(nap4,
+                            argc2,
+                            argv2,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+     fprintf(stderr, "creating main thread failed\n");
+     goto done;
+  } 
+   
+  free(argv2[0]);
+  free(argv2[1]);
+  free(argv2[2]);
+  free(argv2[3]);
+  free(argv2[4]);
+  free(argv2);
+
+
   // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
@@ -1572,6 +1630,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   ret_code = NaClWaitForMainThreadToExit(nap);
   ret_code = NaClWaitForMainThreadToExit(nap2);
   ret_code = NaClWaitForMainThreadToExit(nap3);
+  ret_code = NaClWaitForMainThreadToExit(nap4);
   ret_code = NaClWaitForMainThreadToExit(nap0);
   ret_code = NaClWaitForMainThreadToExit(nap_ready);
   if (fork_num == 2) {

@@ -29,6 +29,8 @@
 // yiwen
 #define CAGING_LIB_PATH_MAX 50 
 #define CACHED_LIB_NUM_MAX 20
+#define PIPE_BUF_MAX 16*4096
+#define PIPE_NUM_MAX 10
 
 // yiwen: define struct for storing the <file_path, mem_addr> relation 
 //        which is being used by our "shared libs caching" mechanism 
@@ -67,10 +69,10 @@ extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 extern int cached_lib_num;
 
 // yiwen: global pipe buffer
-extern char pipe_buffer[16*4096];
+extern char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 extern char* buffer_ptr;
-extern int pipe_mutex;
-extern int pipe_transfer_over;
+extern int pipe_mutex[PIPE_NUM_MAX];
+extern int pipe_transfer_over[PIPE_NUM_MAX];
 
 #if NACL_WINDOWS
 __declspec(dllexport)

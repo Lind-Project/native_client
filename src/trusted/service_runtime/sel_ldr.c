@@ -83,10 +83,10 @@ struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 int cached_lib_num = 0;
 
 // yiwen: global pipe buffer 
-char pipe_buffer[16*4096];
+char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 char* buffer_ptr;
-int pipe_mutex;
-int pipe_transfer_over;
+int pipe_mutex[PIPE_NUM_MAX];
+int pipe_transfer_over[PIPE_NUM_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return NULL != getenv(env_name);
