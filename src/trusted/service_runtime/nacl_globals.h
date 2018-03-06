@@ -70,7 +70,6 @@ extern int cached_lib_num;
 
 // yiwen: global pipe buffer
 extern char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
-extern char* buffer_ptr;
 extern int pipe_mutex[PIPE_NUM_MAX];
 extern int pipe_transfer_over[PIPE_NUM_MAX];
 

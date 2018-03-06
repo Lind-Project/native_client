@@ -542,10 +542,10 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   int             i;
 
   // yiwen: debug
-  printf("[*** Debug ***][dup2] Entered dup2! \n");
-  printf("[*** Debug ***][dup2] cage id = %d \n", nap->cage_id);
-  printf("[*** Debug ***][dup2] oldfd = %d \n", oldfd);
-  printf("[*** Debug ***][dup2] newfd = %d \n", newfd);
+  // printf("[*** Debug ***][dup2] Entered dup2! \n");
+  // printf("[*** Debug ***][dup2] cage id = %d \n", nap->cage_id);
+  // printf("[*** Debug ***][dup2] oldfd = %d \n", oldfd);
+  // printf("[*** Debug ***][dup2] newfd = %d \n", newfd);
 
   if ((oldfd == 8000) | (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
@@ -559,9 +559,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   retval = newfd;
 
   // yiwen: debug output
-  printf("[*** Debug ***][dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
+  // printf("[*** Debug ***][dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
   for (i = 0; i < nap->fd; i++) {
-     printf("[*** Debug ***][dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
+     // printf("[*** Debug ***][dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
   }
 
   return newfd;
@@ -575,14 +575,14 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval;
 
-  printf("[*** Debug ***][dup3] Entered dup3! \n");
-  printf("[*** Debug ***][dup3] cage id = %d \n", nap->cage_id);
-  printf("[*** Debug ***][dup3] oldfd = %d \n", oldfd);
-  printf("[*** Debug ***][dup3] newfd = %d \n", newfd);
+  // printf("[*** Debug ***][dup3] Entered dup3! \n");
+  // printf("[*** Debug ***][dup3] cage id = %d \n", nap->cage_id);
+  // printf("[*** Debug ***][dup3] oldfd = %d \n", oldfd);
+  // printf("[*** Debug ***][dup3] newfd = %d \n", newfd);
 
   if ((oldfd == 8000) | (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
-     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
+     // printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
      retval = 0;
      return retval;
   }
@@ -735,7 +735,7 @@ cleanup:
      // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
 
-  // printf("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
+  printf("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
 }
@@ -883,7 +883,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   fd = fd_cage_table[nap->cage_id][d];
 
-  printf("[Debug][Cage %d] From NaClSysRead: d = %d, fd = %d \n", nap->cage_id, d, fd);
+  // printf("[Debug][Cage %d] From NaClSysRead: d = %d, fd = %d \n", nap->cage_id, d, fd);
 
   // yiwen: try to use the kernel pipe
   /*
@@ -906,38 +906,45 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   */
   // yiwen: this is the read end of my pipe
   
-  if (((nap->cage_id == 3)||(nap->cage_id == 4))&&(fd == 0)) {
-     if (nap->cage_id == 3) {
-        buffer_ptr = pipe_buffer[0]; 
-     }
-     if (nap->cage_id == 4) {
-        buffer_ptr = pipe_buffer[1]; 
-     }
-
-     while (((nap->cage_id == 3)&&(pipe_mutex[0] != 1))||((nap->cage_id == 4)&&(pipe_mutex[1] != 1))) {
-          if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))) {
+  if (((nap->cage_id == 3)||(nap->cage_id == 4)||(nap->cage_id == 5)||(nap->cage_id == 6)
+      ||(nap->cage_id == 7))&&(fd == 0)) {
+     if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))
+              ||((pipe_transfer_over[2] == 1)&&(nap->cage_id == 5))||((pipe_transfer_over[3] == 1)&&(nap->cage_id == 6))||((pipe_transfer_over[4] == 1)&&(nap->cage_id == 7)))  {
              retval = 0;
              goto cleanup;
-          }
-          // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
+     }
+     while (((nap->cage_id == 3)&&(pipe_mutex[0] != 1))||((nap->cage_id == 4)&&(pipe_mutex[1] != 1))
+            ||((nap->cage_id == 5)&&(pipe_mutex[2] != 1))||((nap->cage_id == 6)&&(pipe_mutex[3] != 1))
+            ||((nap->cage_id == 7)&&(pipe_mutex[4] != 1))) {
      }
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
      // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
-     memcpy(string, buffer_ptr, count);
-     // NaClLog(LOG_WARNING, "[NaClSysRead] Read succeed: %s \n", string);
-     // pipe_mutex = 0; // the buffer is empty, after an immediate read
      if (nap->cage_id == 3) {
+        memcpy(string, pipe_buffer[0], count);
         pipe_mutex[0] = 0; 
      }
      if (nap->cage_id == 4) {
-        pipe_mutex[1] = 0; 
+        memcpy(string, pipe_buffer[1], count);
+        pipe_mutex[1] = 0;
+     }
+     if (nap->cage_id == 5) {
+        memcpy(string, pipe_buffer[2], count);
+        pipe_mutex[2] = 0;
+     }
+     if (nap->cage_id == 6) {
+        memcpy(string, pipe_buffer[3], count);
+        pipe_mutex[3] = 0; 
+     }
+     if (nap->cage_id == 7) {
+        memcpy(string, pipe_buffer[4], count);
+        pipe_mutex[4] = 0; 
      }
 
-     printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
-     printf("[Debug][Cage %d] From NaCl Read Data: \n %s \n", nap->cage_id, string);
+     // printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
+     // printf("[Debug][Cage %d] From NaCl Read Data: \n %s \n", nap->cage_id, string);
      read_data_size = strlen(string);
-     printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
+     // printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
      retval = read_data_size;
      goto cleanup;
   } 
@@ -1028,7 +1035,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   fd = fd_cage_table[nap->cage_id][d];
 
-  printf("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
+  // printf("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
   
   // yiwen: try to use the kernel pipe
   /*
@@ -1048,36 +1055,49 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   */
   // yiwen: this is the write end of my pipe
   
-  if (((nap->cage_id == 2)||(nap->cage_id == 3))&&(fd == 1)) {
-     if (nap->cage_id == 2) {
-        buffer_ptr = pipe_buffer[0]; 
-     }
-     if (nap->cage_id == 3) {
-        buffer_ptr = pipe_buffer[1]; 
-     }
-     printf("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
-     while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))) {
+  if (((nap->cage_id == 2)||(nap->cage_id == 3)||(nap->cage_id == 4)
+      ||(nap->cage_id == 5)||(nap->cage_id == 6))&&(fd == 1)) {
+     // printf("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
+     while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))
+            ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
+            ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
           // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
      }
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
      // NaClLog(LOG_WARNING, "[NaClSysWrite] string = %s \n", string);
-     memcpy(buffer_ptr, string, count);
-     // NaClLog(LOG_WARNING, "[NaClSysWrite] Write succeed: %s \n", buffer_ptr);
      if (nap->cage_id == 2) {
+        memcpy(pipe_buffer[0], string, count);
         pipe_mutex[0] = 1;
         pipe_transfer_over[0] = 1;
      }
      if (nap->cage_id == 3) {
+        memcpy(pipe_buffer[1], string, count);
         pipe_mutex[1] = 1;
-        pipe_transfer_over[1] = 1;
+        pipe_transfer_over[1] = 1; 
      }
+     if (nap->cage_id == 4) {
+        memcpy(pipe_buffer[2], string, count); 
+        pipe_mutex[2] = 1;
+        pipe_transfer_over[2] = 1; 
+     }
+     if (nap->cage_id == 5) {
+        memcpy(pipe_buffer[3], string, count);  
+        pipe_mutex[3] = 1;
+        pipe_transfer_over[3] = 1;
+     }
+     if (nap->cage_id == 6) {
+        memcpy(pipe_buffer[4], string, count);  
+        pipe_mutex[4] = 1;
+        pipe_transfer_over[4] = 1;
+     }
+
      // pipe_mutex = 1; // the buffer is full, after an immediate write
 
-     printf("[Debug][Cage %d] From NaCl Write Succeed! \n", nap->cage_id);
-     printf("[Debug][Cage %d] From NaCl Write Data: \n %s \n", nap->cage_id, buffer_ptr);
-     write_data_size = strlen(buffer_ptr);
-     printf("[Debug][Cage %d] From NaCl Write Data Size: %d \n", nap->cage_id, write_data_size);
+     // printf("[Debug][Cage %d] From NaCl Write Succeed! \n", nap->cage_id);
+     // printf("[Debug][Cage %d] From NaCl Write Data: \n %s \n", nap->cage_id, string);
+     write_data_size = strlen(string);
+     // printf("[Debug][Cage %d] From NaCl Write Data Size: %d \n", nap->cage_id, write_data_size);
      // pipe_transfer_over = 1;
      retval = write_data_size;
      goto cleanup;
@@ -4062,7 +4082,6 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   // fd_cage_table[2][8001] = 8001;
 
   // we initialize our pipe buffer
-  buffer_ptr = pipe_buffer[0];
   pipe_mutex[0] = 0; // at the initialization, the pipe should be empty, allow write but not read
 
   // let's try to use the kernel pipes

@@ -84,7 +84,6 @@ int cached_lib_num = 0;
 
 // yiwen: global pipe buffer 
 char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
-char* buffer_ptr;
 int pipe_mutex[PIPE_NUM_MAX];
 int pipe_transfer_over[PIPE_NUM_MAX];
 
