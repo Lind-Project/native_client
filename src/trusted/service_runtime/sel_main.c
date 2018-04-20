@@ -1570,21 +1570,30 @@ int NaClSelLdrMain(int argc, char **argv) {
      ret_code = NaClWaitForMainThreadToExit(nap);
   } */
 
+  if (!NaClCreateMainThread(nap,
+                            argc - optind,
+                            argv + optind,
+                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+     fprintf(stderr, "creating main thread failed\n");
+     goto done;
+  }
+  nacl_user_program_begin = clock();
+
   argc2 = 5;
   argv2 = malloc(6 * sizeof *argv2);
   argv2[0] = malloc(9);
-  strcpy(argv2[0], "naclmain");
+  strcpy(argv2[0], "NaClMain");
   argv2[1] = malloc(15);
   strcpy(argv2[1], "--library-path");
   argv2[2] = malloc(11);
   strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(11);
-  strcpy(argv2[3], "./bin/grep");
+  argv2[3] = malloc(10);
+  strcpy(argv2[3], "/bin/grep");
   argv2[4] = malloc(10);
   strcpy(argv2[4], "--version");
   argv2[5] = 0;
 
-  if (!NaClCreateMainThread(nap,
+  if (!NaClCreateMainThread(nap2,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
@@ -1613,185 +1622,187 @@ int NaClSelLdrMain(int argc, char **argv) {
   pipe_transfer_over[3] = 0;
   pipe_transfer_over[4] = 0;
 
-  argc2 = 6;
-  argv2 = malloc(7 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "naclmain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(11);
-  strcpy(argv2[3], "./bin/grep");
-  argv2[4] = malloc(7);
-  strcpy(argv2[4], "IOADDR");
-  argv2[5] = malloc(27);
-  strcpy(argv2[5], "./test_files/dataset01.txt");
-  argv2[6] = 0;
-
-  nacl_user_program_begin = clock();
-
-  if (!NaClCreateMainThread(nap2,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
-  free(argv2[5]);
-  free(argv2);
-
-  argc2 = 5;
-  argv2 = malloc(6 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "naclmain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(10);
-  strcpy(argv2[3], "./bin/sed");
-  argv2[4] = malloc(9);
-  strcpy(argv2[4], "s/.*: //");
-  argv2[5] = 0;
-
-  if (!NaClCreateMainThread(nap3,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
-  free(argv2);
-
-  argc2 = 6;
-  argv2 = malloc(7 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "naclmain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(9);
-  strcpy(argv2[3], "./bin/tr");
-  argv2[4] = malloc(2);
-  strcpy(argv2[4], " ");
-  argv2[5] = malloc(5);
-  strcpy(argv2[5], "'\\n'");
-  argv2[6] = 0;
-
-  if (!NaClCreateMainThread(nap4,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
-  free(argv2[5]);
-  free(argv2);
-
-  argc2 = 4;
-  argv2 = malloc(5 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "NaClMain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(11);
-  strcpy(argv2[3], "./bin/sort");
-  argv2[4] = 0;
-
-
-  if (!NaClCreateMainThread(nap5,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2);
-
-  argc2 = 5;
-  argv2 = malloc(6 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "NaClMain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(11);
-  strcpy(argv2[3], "./bin/uniq");
-  argv2[4] = malloc(3);
-  strcpy(argv2[4], "-c");
-  argv2[5] = 0;
-
-  if (!NaClCreateMainThread(nap6,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
-  free(argv2);
-
-  argc2 = 5;
-  argv2 = malloc(6 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "NaClMain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(11);
-  strcpy(argv2[3], "./bin/sort");
-  argv2[4] = malloc(3);
-  strcpy(argv2[4], "-n");
-  argv2[5] = 0;
-
-  if (!NaClCreateMainThread(nap7,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
-  free(argv2);
+/*
+ *   argc2 = 6;
+ *   argv2 = malloc(7 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "naclmain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(11);
+ *   strcpy(argv2[3], "./bin/grep");
+ *   argv2[4] = malloc(7);
+ *   strcpy(argv2[4], "IOADDR");
+ *   argv2[5] = malloc(27);
+ *   strcpy(argv2[5], "./test_files/dataset01.txt");
+ *   argv2[6] = 0;
+ *
+ *   nacl_user_program_begin = clock();
+ *
+ *   if (!NaClCreateMainThread(nap2,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2[4]);
+ *   free(argv2[5]);
+ *   free(argv2);
+ *
+ *   argc2 = 5;
+ *   argv2 = malloc(6 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "naclmain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(10);
+ *   strcpy(argv2[3], "./bin/sed");
+ *   argv2[4] = malloc(9);
+ *   strcpy(argv2[4], "s/.*: //");
+ *   argv2[5] = 0;
+ *
+ *   if (!NaClCreateMainThread(nap3,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2[4]);
+ *   free(argv2);
+ *
+ *   argc2 = 6;
+ *   argv2 = malloc(7 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "naclmain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(9);
+ *   strcpy(argv2[3], "./bin/tr");
+ *   argv2[4] = malloc(2);
+ *   strcpy(argv2[4], " ");
+ *   argv2[5] = malloc(5);
+ *   strcpy(argv2[5], "'\\n'");
+ *   argv2[6] = 0;
+ *
+ *   if (!NaClCreateMainThread(nap4,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2[4]);
+ *   free(argv2[5]);
+ *   free(argv2);
+ *
+ *   argc2 = 4;
+ *   argv2 = malloc(5 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "NaClMain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(11);
+ *   strcpy(argv2[3], "./bin/sort");
+ *   argv2[4] = 0;
+ *
+ *
+ *   if (!NaClCreateMainThread(nap5,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2);
+ *
+ *   argc2 = 5;
+ *   argv2 = malloc(6 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "NaClMain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(11);
+ *   strcpy(argv2[3], "./bin/uniq");
+ *   argv2[4] = malloc(3);
+ *   strcpy(argv2[4], "-c");
+ *   argv2[5] = 0;
+ *
+ *   if (!NaClCreateMainThread(nap6,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2[4]);
+ *   free(argv2);
+ *
+ *   argc2 = 5;
+ *   argv2 = malloc(6 * sizeof *argv2);
+ *   argv2[0] = malloc(9);
+ *   strcpy(argv2[0], "NaClMain");
+ *   argv2[1] = malloc(15);
+ *   strcpy(argv2[1], "--library-path");
+ *   argv2[2] = malloc(11);
+ *   strcpy(argv2[2], "/lib/glibc");
+ *   argv2[3] = malloc(11);
+ *   strcpy(argv2[3], "./bin/sort");
+ *   argv2[4] = malloc(3);
+ *   strcpy(argv2[4], "-n");
+ *   argv2[5] = 0;
+ *
+ *   if (!NaClCreateMainThread(nap7,
+ *                             argc2,
+ *                             argv2,
+ *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
+ *      fprintf(stderr, "creating main thread failed\n");
+ *      goto done;
+ *   }
+ *
+ *   free(argv2[0]);
+ *   free(argv2[1]);
+ *   free(argv2[2]);
+ *   free(argv2[3]);
+ *   free(argv2[4]);
+ *   free(argv2);
+ */
 
   // ***********************************************************************
   // yiwen: cleanup and exit
@@ -1834,7 +1845,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   nacl_main_finish = clock();
 
   // yiwen: for evaluation measurement, we need to print out info here
-  // NaClLog(LOG_WARNING, "[NaClMain] End of the program! \n\n");
+  NaClLog(LOG_WARNING, "[NaClMain] End of the program! \n\n");
 
   // calculate and print out time of running the NaCl main program
   nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
