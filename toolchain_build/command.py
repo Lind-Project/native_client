@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,7 +6,7 @@
 """Class capturing a command invocation as data."""
 
 
-# Done first to setup python module path.
+# Done first to setup python2 module path.
 import toolchain_env
 
 import multiprocessing

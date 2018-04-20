@@ -14,7 +14,7 @@ EMU_HACK=${EMU_HACK:-yes}
 
 LIST="166.i 200.i expr.i integrate.i  scilab.i"
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 
 for i in ${LIST} ; do

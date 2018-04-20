@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -275,7 +275,7 @@ def Command(context, cmd, cwd=None):
 # A specialized version of CommandStep.
 def SCons(context, mode=None, platform=None, parallel=False, browser_test=False,
           args=(), cwd=None):
-  python = sys.executable
+  python2 = sys.executable
   if mode is None: mode = context['default_scons_mode']
   if platform is None: platform = context['default_scons_platform']
   if parallel:

@@ -31,7 +31,7 @@
 
 """ Generates C header/source files for an enumerated type.
 
-Usage: python enum_gen.py <enum_spec>.enum
+Usage: python2 enum_gen.py <enum_spec>.enum
 """
 
 import getopt

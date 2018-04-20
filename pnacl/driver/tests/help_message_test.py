@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -46,7 +46,7 @@ class TestHelpMessages(unittest.TestCase):
     # this at least tests that no exception is raised, etc.
     self.assertNotEqual(help_str, driver_tools.HelpNotAvailable())
     # Use assertTrue x > 0 instead of assertGreater(x, 0) since some of
-    # our bots don't have python 2.7.
+    # our bots don't have python2 2.7.
     self.assertTrue(len(help_str) > 0)
 
   def test_ASHelpMessage(self):

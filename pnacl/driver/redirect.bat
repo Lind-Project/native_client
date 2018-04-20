@@ -11,7 +11,7 @@
 ::
 :: inside the Windows command prompt, then Windows runs pnacl-gcc.bat.
 :: This script will in turn run:
-:: "python path\to\pnacl\bin\pydir/loader.py pnacl-gcc hello.c -o hello.pexe"
+:: "python2 path\to\pnacl\bin\pydir/loader.py pnacl-gcc hello.c -o hello.pexe"
 
 setlocal
 
@@ -20,6 +20,6 @@ set CYGWIN=nodosfilewarning %CYGWIN%
 
 :: Run the driver
 :: For now, assume "python" is in the PATH.
-python -OO "%~dp0\pydir\loader.py" "%~n0" %*
+python2 -OO "%~dp0\pydir\loader.py" "%~n0" %*
 
 :end

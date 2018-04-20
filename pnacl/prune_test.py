@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -18,7 +18,7 @@ class TestTranslatorPruned(unittest.TestCase):
 
   def my_check_output(self, cmd):
     # Local version of check_output() for compatibility
-    # with python 2.6 (used by build bots).
+    # with python2 2.6 (used by build bots).
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, _ = p.communicate()
     if p.returncode != 0:

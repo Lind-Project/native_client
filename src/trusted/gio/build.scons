@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- python2 -*-
 # Copyright (c) 2010 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -74,7 +74,7 @@ if not env.Bit('coverage_enabled') or not env.Bit('windows'):
                   ])
 
   # atexit processing is necessary because on windows, the process
-  # itself often cannot unlink the file -- the python process has an
+  # itself often cannot unlink the file -- the python2 process has an
   # open file handle, and windows refuses to unlink a file that is
   # already open.
   temporary_file = tempfile.mktemp()

@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- python2 -*-
 # Copyright 2008, Google Inc.
 # All rights reserved.
 #

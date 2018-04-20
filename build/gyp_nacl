@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 # This script is wrapper for NaCl that adds some support for how GYP
 # is invoked by NaCl beyond what can be done it the gclient hooks.

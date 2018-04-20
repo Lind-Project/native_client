@@ -9,7 +9,7 @@ import os, sys
 python_major_version = sys.version_info[:2]
 if not python_major_version in ((2, 6), (2, 7)):
   print '''Python version 2.6 or 2.7 required!
-The environment variable PNACLPYTHON can override the python found in PATH'''
+The environment variable PNACLPYTHON can override the python2 found in PATH'''
   sys.exit(1)
 
 import driver_tools

@@ -98,9 +98,9 @@ if [[ ${PLATFORM} == win ]]; then
   # Explicitly call the depot tools version of Python to avoid cygwin issues.
   python.bat buildbot/buildbot_standard.py opt 64 newlib
 elif [[ ${PLATFORM} == mac ]]; then
-  python buildbot/buildbot_standard.py opt 32 newlib
+  python2 buildbot/buildbot_standard.py opt 32 newlib
 elif [[ ${PLATFORM} == linux ]]; then
-  python buildbot/buildbot_standard.py opt 32 newlib
+  python2 buildbot/buildbot_standard.py opt 32 newlib
 else
   echo "ERROR, bad platform."
   exit 1

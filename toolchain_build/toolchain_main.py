@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """Build NativeClient toolchain packages."""
 
-# Done first to setup python module path.
+# Done first to setup python2 module path.
 import toolchain_env
 
 import logging
@@ -99,7 +99,7 @@ class PackageBuilder(object):
     self.BuildAll()
 
   def SetupLogging(self):
-    """Setup python logging based on options."""
+    """Setup python2 logging based on options."""
     if self._options.verbose:
       logging.getLogger().setLevel(logging.DEBUG)
     else:

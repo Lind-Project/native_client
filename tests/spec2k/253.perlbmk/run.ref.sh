@@ -10,7 +10,7 @@ PREFIX=${PREFIX:-}
 VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 ${PREFIX} $1 ${DASHDASH} -I./lib data/all/input/diffmail.pl 2 550 15 24 23 100 \
     > stdout1.out 2> stderr1.out

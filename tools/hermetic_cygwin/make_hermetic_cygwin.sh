@@ -194,7 +194,7 @@ END
   generate_init_function 2
   generate_onselchange_function
 ) > make_hermetic_cygwin.nsi
-# Replace symlinks with hardlinks for python and gawk
+# Replace symlinks with hardlinks for python2 and gawk
 if ! patch --no-backup-if-mismatch <<END
 --- make_hermetic_cygwin.nsi
 +++ make_hermetic_cygwin.nsi

@@ -82,7 +82,7 @@ class ImcTest(unittest.TestCase):
   def test_raw_file_descriptor(self):
     fd = os.open(os.devnull, os.O_RDONLY)
     if sys.platform == "win32":
-      # Unwrap the file descriptor (which is emulated by python.exe's
+      # Unwrap the file descriptor (which is emulated by python2.exe's
       # instance of crt) to get a Windows handle.
       import msvcrt
       fd = msvcrt.get_osfhandle(fd)

@@ -446,7 +446,7 @@ while read name id comment ; do
 	    if [[ "$2" = "win" ]]; then (
 	      # Use extended globbing (cygwin should always have it).
 	      shopt -s extglob
-	      # Filter out cygwin python (everything under /usr or /bin, or *cygwin*).
+	      # Filter out cygwin python2 (everything under /usr or /bin, or *cygwin*).
 	      export PATH=${PATH/#\/bin*([^:])/}
 	      export PATH=${PATH//:\/bin*([^:])/}
 	      export PATH=${PATH/#\/usr*([^:])/}
@@ -457,7 +457,7 @@ while read name id comment ; do
 	      (cd ../.. ; sha1sum "$scriptname" "$1" || shasum "$scriptname" "$1") >"../../$1.$name.lastver" 2>/dev/null
 	      rm -rf "../../$name"
 	    ) else
-	      python buildbot/buildbot_selector.py
+	      python2 buildbot/buildbot_selector.py
 	      (cd ../.. ; sha1sum "$scriptname" "$1" || shasum "$scriptname" "$1") >"../../$1.$name.lastver" 2>/dev/null
 	      rm -rf "../../$name"
 	    fi

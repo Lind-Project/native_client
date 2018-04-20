@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- python2 -*-
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -75,7 +75,7 @@ run_benchmark = env.AutoDepsCommand(
 
 env.AlwaysBuild(env.Alias('dfavalidatorbenchmark', run_benchmark))
 
-# We don't run this test under qemu because it attempts to execute host python
+# We don't run this test under qemu because it attempts to execute host python2
 # binary.
 gen_dfa_test = env.CommandTest(
     'gen_dfa_test.out',
@@ -110,13 +110,13 @@ validator_dll = dll_env.ComponentLibrary(
     'rdfa_validator_dll',
     [validator32_dll, validator64_dll, nacl_log_for_dll_dll] + features_dll)
 
-# Here for simplicity we make assumption that python used to run scons
+# Here for simplicity we make assumption that python2 used to run scons
 # is the same as the one invoked by scons to run tests.
 python_bitness = {2**31 - 1: 32, 2**63 - 1: 64}[sys.maxsize]
 bitness = int(env.get('TARGET_SUBARCH'))
 assert bitness in [32, 64]
 # Note that it is possible that we build on one machine and run tests on another
-# one, so we build DLL even if python bitness does not match target bitness.
+# one, so we build DLL even if python2 bitness does not match target bitness.
 # Asan does not instrument DLLs (only executables), so we will be unable to
 # run tests under asan.
 python_can_load_dll = python_bitness == bitness and not env.Bit('asan')
