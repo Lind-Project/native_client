@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,7 +10,7 @@
 #
 
 # __import__ is required because of the dash in the filename.
-# TODO(pdox): Change - to _ in python file names.
+# TODO(pdox): Change - to _ in python2 file names.
 pnacl_driver = __import__("pnacl-driver")
 
 def main(argv):

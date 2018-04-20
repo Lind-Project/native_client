@@ -19,13 +19,13 @@ if %ERRORLEVEL% == 0 (
 :: Preserve a copy of the PATH (in case we need it later, mainly for cygwin).
 set PRESCONS_PATH=%PATH%
 
-:: Add python to the path
+:: Add python2 to the path
 set PATH=%~dp0..\third_party\python_26;%PATH%
 
 :: Stop incessant CYGWIN complains about "MS-DOS style path"
 set CYGWIN=nodosfilewarning %CYGWIN%
 
 :: Run the included copy of scons.
-python "%~dp0\scons.py" %*
+python2 "%~dp0\scons.py" %*
 
 :end

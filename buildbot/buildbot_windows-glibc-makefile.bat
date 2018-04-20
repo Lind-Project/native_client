@@ -4,7 +4,7 @@
 
 @echo off
 
-:: gclient does not work when called from cygwin - python versions conflict.
+:: gclient does not work when called from cygwin - python2 versions conflict.
 
 echo @@@BUILD_STEP gclient_runhooks@@@
 call gclient runhooks --force
@@ -23,5 +23,5 @@ endlocal
 :: Run tests
 
 set INSIDE_TOOLCHAIN=1
-python buildbot\buildbot_standard.py opt 64 glibc
+python2 buildbot\buildbot_standard.py opt 64 glibc
 

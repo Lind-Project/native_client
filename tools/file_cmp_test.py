@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright 2009, Google Inc.
 # All rights reserved.
 #
@@ -32,7 +32,7 @@
 """Simple test comparing two files.
 """
 
-# python imports
+# python2 imports
 import filecmp
 import os.path
 import sys

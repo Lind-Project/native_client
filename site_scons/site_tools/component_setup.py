@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2011 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -77,7 +77,7 @@ def generate(env):
   # aliases in input/output lists if they're not explicitly coerced via
   # Alias(), and removes a conflict where a program has the same shorthand
   # alias as the program name itself.  This conflict manifests itself as a
-  # python exception if you try to build a program in multiple modes on linux,
+  # python2 exception if you try to build a program in multiple modes on linux,
   # for example:
   #      hammer --mode=dbg,opt port_test
   new_lookup_list = []
@@ -111,7 +111,7 @@ def generate(env):
 
   # Cover part of the environment
   env.Replace(
-      # Add a reference to our python executable, so subprocesses can find and
+      # Add a reference to our python2 executable, so subprocesses can find and
       # invoke python.
       PYTHON = env.File(sys.executable),
 

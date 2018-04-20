@@ -12,7 +12,7 @@ of these two cases change.
 The elf file layout are special (one-time) generated using
 native_client/tools/generate_bad_x86_64_nexes.py, while in
 this directory. If the pattern elf files change, these tests
-need to be upgraded by manually editing the python file above.
+need to be upgraded by manually editing the python2 file above.
 Each generate specific error messages that are tested for
 specific error messages.
 
@@ -34,7 +34,7 @@ The elf file tests are:
    text_overlaps_rodata.nexe
 
 Note: The input fib_scalar_base.nexe is the input file for this
-python script! DO NOT replace it!!!!
+python2 script! DO NOT replace it!!!!
 
 The scons staging test executables come from
    native_client/scons-out/nacl-x86-64/staging

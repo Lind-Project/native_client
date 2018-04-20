@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -120,7 +120,7 @@ class TidyChecker(ExternalChecker):
 
 
 class PyChecker(ExternalChecker):
-  """Invokes pychecker tool on python files."""
+  """Invokes pychecker tool on python2 files."""
   def __init__(self):
     ExternalChecker.__init__(self, PYTHON_CHECKER)
     return

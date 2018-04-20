@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 
-python = sys.executable
+python2 = sys.executable
 
 
 BOT_ASSIGNMENT = {
@@ -15,35 +15,35 @@ BOT_ASSIGNMENT = {
     # Buildbots.
     ######################################################################
     'xp-newlib-opt':
-        python + ' buildbot\\buildbot_standard.py opt 32 newlib --no-gyp',
+        python2 + ' buildbot\\buildbot_standard.py opt 32 newlib --no-gyp',
     'xp-glibc-opt':
-        python + ' buildbot\\buildbot_standard.py opt 32 glibc --no-gyp',
+        python2 + ' buildbot\\buildbot_standard.py opt 32 glibc --no-gyp',
 
     'xp-bare-newlib-opt':
-        python + ' buildbot\\buildbot_standard.py opt 32 newlib --no-gyp',
+        python2 + ' buildbot\\buildbot_standard.py opt 32 newlib --no-gyp',
     'xp-bare-glibc-opt':
-        python + ' buildbot\\buildbot_standard.py opt 32 glibc --no-gyp',
+        python2 + ' buildbot\\buildbot_standard.py opt 32 glibc --no-gyp',
 
     'lucid-64-validator-opt':
-        python + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
+        python2 + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
     'precise-64-validator-opt':
-        python + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
+        python2 + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
 
     # Clang.
     'lucid_64-newlib-dbg-clang':
-      python + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
+      python2 + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
     'precise_64-newlib-dbg-clang':
-      python + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
+      python2 + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
     'mac10.6-newlib-dbg-clang':
-      python + ' buildbot/buildbot_standard.py dbg 32 newlib --clang',
+      python2 + ' buildbot/buildbot_standard.py dbg 32 newlib --clang',
 
     # ASan.
     'lucid_64-newlib-dbg-asan':
-      python + ' buildbot/buildbot_standard.py opt 64 newlib --asan',
+      python2 + ' buildbot/buildbot_standard.py opt 64 newlib --asan',
     'precise_64-newlib-dbg-asan':
-      python + ' buildbot/buildbot_standard.py opt 64 newlib --asan',
+      python2 + ' buildbot/buildbot_standard.py opt 64 newlib --asan',
     'mac10.6-newlib-dbg-asan':
-      python + ' buildbot/buildbot_standard.py opt 32 newlib --asan',
+      python2 + ' buildbot/buildbot_standard.py opt 32 newlib --asan',
 
     # PNaCl.
     'lucid_64-newlib-arm_qemu-pnacl-dbg':
@@ -96,56 +96,56 @@ BOT_ASSIGNMENT = {
         'bash buildbot/buildbot_valgrind.sh glibc',
     # Coverage.
     'mac10.6-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 64 newlib --coverage --clang'),
     'lucid-64-32-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 32 newlib --coverage'),
     'lucid-64-64-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 64 newlib --coverage'),
     'precise-64-32-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 32 newlib --coverage'),
     'precise-64-64-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 64 newlib --coverage'),
     'xp-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 32 newlib --coverage'),
     # PPAPI Integration.
     'lucid64-m32-n32-opt-ppapi':
-        python + ' buildbot/buildbot_standard.py opt 32 newlib',
+        python2 + ' buildbot/buildbot_standard.py opt 32 newlib',
     'lucid64-m64-n64-dbg-ppapi':
-        python + ' buildbot/buildbot_standard.py dbg 64 newlib',
+        python2 + ' buildbot/buildbot_standard.py dbg 64 newlib',
 
     ######################################################################
     # Trybots.
     ######################################################################
     'nacl-lucid64_validator_opt':
-        python + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
+        python2 + ' buildbot/buildbot_standard.py opt 64 glibc --validator',
     'nacl-lucid64_newlib_dbg_valgrind':
         'bash buildbot/buildbot_valgrind.sh newlib',
     'nacl-lucid64_glibc_dbg_valgrind':
         'bash buildbot/buildbot_valgrind.sh glibc',
     # Coverage trybots.
     'nacl-mac10.6-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 64 newlib --coverage --clang'),
     'nacl-lucid-64-32-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 32 newlib --coverage'),
     'nacl-lucid-64-64-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 64 newlib --coverage'),
     'nacl-win32-newlib-coverage':
-         python + (' buildbot/buildbot_standard.py '
+         python2 + (' buildbot/buildbot_standard.py '
                    'coverage 32 newlib --coverage'),
     # Clang trybots.
     'nacl-lucid_64-newlib-dbg-clang':
-        python + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
+        python2 + ' buildbot/buildbot_standard.py dbg 64 newlib --clang',
     'nacl-mac10.6-newlib-dbg-clang':
-        python + ' buildbot/buildbot_standard.py dbg 32 newlib --clang',
+        python2 + ' buildbot/buildbot_standard.py dbg 32 newlib --clang',
     # Pnacl main trybots
     'nacl-lucid_64-newlib-arm_qemu-pnacl':
         'bash buildbot/buildbot_pnacl.sh mode-trybot-qemu',
@@ -180,11 +180,11 @@ BOT_ASSIGNMENT = {
     'lucid64-toolchain_x86': 'bash buildbot/buildbot_toolchain.sh linux',
     # Toolchain newlib arm.
     'win7-toolchain_arm':
-        python + ' buildbot/buildbot_toolchain_build.py --buildbot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --buildbot',
     'mac-toolchain_arm':
-        python + ' buildbot/buildbot_toolchain_build.py --buildbot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --buildbot',
     'lucid64-toolchain_arm':
-        python + ' buildbot/buildbot_toolchain_build.py --buildbot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --buildbot',
 
     # Pnacl toolchain builders (second argument indicates trybot).
     'linux-armtools-x86_32':
@@ -221,11 +221,11 @@ BOT_ASSIGNMENT = {
     'nacl-toolchain-mac-newlib': 'bash buildbot/buildbot_toolchain.sh mac',
     'nacl-toolchain-win7-newlib': 'buildbot\\buildbot_toolchain_win.bat',
     'nacl-toolchain-lucid64-newlib-arm':
-        python + ' buildbot/buildbot_toolchain_build.py --trybot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --trybot',
     'nacl-toolchain-mac-newlib-arm':
-        python + ' buildbot/buildbot_toolchain_build.py --trybot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --trybot',
     'nacl-toolchain-win7-newlib-arm':
-        python + ' buildbot/buildbot_toolchain_build.py --trybot',
+        python2 + ' buildbot/buildbot_toolchain_build.py --trybot',
     'nacl-toolchain-lucid64-glibc':
         'bash buildbot/buildbot_lucid64-glibc-makefile.sh',
     'nacl-toolchain-mac-glibc': 'bash buildbot/buildbot_mac-glibc-makefile.sh',
@@ -296,14 +296,14 @@ for platform in [
           name = platform + arch_part + bare + '-' + libc + '-' + mode
           assert name not in BOT_ASSIGNMENT, name
           BOT_ASSIGNMENT[name] = (
-              python + ' buildbot/buildbot_standard.py ' +
+              python2 + ' buildbot/buildbot_standard.py ' +
               mode + ' ' + real_arch + ' ' + libc + arch_flags)
         # Trybots
         for arch_sep in ['', '-', '_']:
           name = 'nacl-' + platform + arch_sep + arch + '_' + libc + '_' + mode
           assert name not in BOT_ASSIGNMENT, name
           BOT_ASSIGNMENT[name] = (
-              python + ' buildbot/buildbot_standard.py ' +
+              python2 + ' buildbot/buildbot_standard.py ' +
               mode + ' ' + real_arch + ' ' + libc + arch_flags)
 
 

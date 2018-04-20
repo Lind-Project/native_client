@@ -175,8 +175,8 @@ fail() {
 
 # First run 32bit tests, then 64bit tests.  Both should succeed.
 export INSIDE_TOOLCHAIN=1
-python buildbot/buildbot_standard.py --step-suffix=' (32)' opt 32 glibc || fail
-python buildbot/buildbot_standard.py --step-suffix=' (64)' opt 64 glibc || fail
+python2 buildbot/buildbot_standard.py --step-suffix=' (32)' opt 32 glibc || fail
+python2 buildbot/buildbot_standard.py --step-suffix=' (64)' opt 64 glibc || fail
 
 if [[ "${BUILD_COMPATIBLE_TOOLCHAINS:-yes}" != "no" ]]; then
   echo @@@BUILD_STEP sync backports@@@

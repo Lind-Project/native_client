@@ -10,7 +10,7 @@ PREFIX=${PREFIX:-}
 VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
-python ../prepare_input.py --config $(basename $(pwd)) train
+python2 ../prepare_input.py --config $(basename $(pwd)) train
 
 ${PREFIX} $1 ${DASHDASH} 2.1.dict -batch < data/train/input/train.in \
   > stdout.out 2> stderr.out

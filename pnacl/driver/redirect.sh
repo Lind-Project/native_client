@@ -10,7 +10,7 @@ DRIVER_BIN="`dirname "$0"`"
 TOOLNAME="`basename "$0"`"
 PYDIR="${DRIVER_BIN}/pydir"
 
-# Expect to find python in the PATH. It can be overridden with PNACLPYTHON.
+# Expect to find python2 in the PATH. It can be overridden with PNACLPYTHON.
 PNACLPYTHON="${PNACLPYTHON:-python}"
 ${PNACLPYTHON} "${PYDIR}/loader.py" "${TOOLNAME}" "$@"
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -11,7 +11,7 @@ This harness is used instead of shell scripts to ensure windows compatibility
 """
 
 
-# python imports
+# python2 imports
 import getopt
 import os
 import re
@@ -562,7 +562,7 @@ def DoRun(command, stdin_data):
             and not GlobalSettings['process_output_single']
             and not GlobalSettings['process_output_combined']
             )
-    # If python ever changes popen.stdout.read() to not risk deadlock,
+    # If python2 ever changes popen.stdout.read() to not risk deadlock,
     # we could stream and capture, and use RunTestWithInputOutput instead.
     (total_time, exit_status, failed) = test_lib.RunTestWithInput(command,
                                                                   stdin_data)
