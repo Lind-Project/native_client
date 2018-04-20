@@ -132,7 +132,7 @@ Not solved yet.
 *****************************************************************************
 Run Lind:
 liyiwen@laputa:/usr/lind_project/repy/repy$ $NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc -o hello.nexe hello.c
-python lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
+python2 lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
 liyiwen@laputa:/usr/lind_project/repy/repy$ ../bin/sel_ldr -a -- /glibc/runnable-ld.so --library-path /glibc /hello.nexe
 
 git checkout origin/fixhttpd

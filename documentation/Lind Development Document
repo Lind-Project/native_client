@@ -30,7 +30,7 @@ Running Lind:
 Author: Shengqian Ji and Qishen Li 
 
 
-1. python lind_fs_utils.py cp root file1 [file2 ...]
+1. python2 lind_fs_utils.py cp root file1 [file2 ...]
 2. Run Command: 
 	Lower Version: ~/Code/LIND/REPY_PATH/repy$ ../bin/sel_ldr -a -s -- ../lib/glibc/runnable-ld.so --library-path /lib/glibc:/usr/lib ./lind_socket_test
 	Higher Version: ../bin/sel_ldr -a -B /lind/irt_core_x86_64.nexe -s -- ../lib/glibc/runnable-ld.so --library-path /lib/glibc:/lind/usr/lib /lind/usr/bin/date.nexe
@@ -50,7 +50,7 @@ Author: Yiwen Li
 and is necessary for the program to run in Lind.
 /usr/lind_project/repy/repy$ $NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc -o hello.nexe hello.c
 
-3. /usr/lind_project/repy/repy$ python lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
+3. /usr/lind_project/repy/repy$ python2 lind_fs_utils.py cp $REPY_PATH/repy hello.nexe
 During this step, a lind file (linddata.xxx) will be created for hello.nexe
 
 problem: if a lind file already exists, it doesn't allow recreation at the moment. 
