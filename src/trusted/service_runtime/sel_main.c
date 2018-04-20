@@ -5,7 +5,7 @@
  */
 
 /*
- * NaCl Simple/secure ELF loader (NaCl SEL).
+ * NaCl Simple/secure ELF loader (NaCl SEL). The main entry point for the binary.
  */
 #include "native_client/src/include/portability.h"
 #include "native_client/src/include/portability_io.h"
@@ -29,6 +29,7 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/shared/srpc/nacl_srpc.h"
 
 #include "native_client/src/trusted/desc/nacl_desc_base.h"
@@ -54,7 +55,7 @@
 #include "native_client/src/trusted/service_runtime/sel_qualify.h"
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
-#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
+
 
 // yiwen
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
@@ -73,17 +74,17 @@ extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 extern int nacl_syscall_trace_level_counter;
 
-// yiwen 
+// yiwen
 // set up the cage id
 // set up the fd table for the cage
 static void InitializeCage(struct NaClApp *nap, int cage_id) {
-  nap->cage_id = cage_id;  
-  nap->num_children = 0;  
+  nap->cage_id = cage_id;
+  nap->num_children = 0;
   nap->num_lib = 3;
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
-  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved  
+  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved
 }
 
 static void (*g_enable_outer_sandbox_func)(void) =
@@ -228,7 +229,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClApp                state2;
   struct NaClApp                *nap2 = &state2;
 
-  // yiwen: added a third cage, nap3. 
+  // yiwen: added a third cage, nap3.
   struct NaClApp                state3;
   struct NaClApp                *nap3 = &state3;
   struct NaClApp                state4;
@@ -239,7 +240,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClApp                *nap6 = &state6;
   struct NaClApp                state7;
   struct NaClApp                *nap7 = &state7;
-  
+
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
   int argc2;
@@ -263,7 +264,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClPerfCounter        time_all_main;
   const char                    **envp;
   struct NaClEnvCleanser        env_cleanser;
- 
+
   // yiwen
   char                          *nacl_file2 = NULL;
 
@@ -285,7 +286,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: testing mmap
   /*
-  int shmid; 
+  int shmid;
   char *reg1;
   char *reg2;
   char *reg3;
@@ -305,7 +306,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   /*
   char * myfifo;
   int myfifo_fd;
-  char user_input[256]; */ 
+  char user_input[256]; */
 
   // yiwen: variables used when processing the user input command from the client program
   /*
@@ -697,7 +698,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     // yiwen: temporarily skip this(caused gdb segmentation fault, the seg fault signal was ignored somehow when not running gdb.)
     // NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
     //                                     NaClRunSelQualificationTests());
-    // yiwen: temporarily define pq_error here, and assume that everything is Okay. 
+    // yiwen: temporarily define pq_error here, and assume that everything is Okay.
     NaClErrorCode pq_error = LOAD_OK;
     if (LOAD_OK != pq_error) {
       errcode = pq_error;
@@ -705,7 +706,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen
       nap2->module_load_status = pq_error;
 
-      fprintf(stderr, "Error while loading \"%s\": %s\n",
+      fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
               NULL != nacl_file ? nacl_file
                                 : "(no file, to-be-supplied-via-RPC)",
               NaClErrorString(errcode));
@@ -760,10 +761,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {
       NaClLog(2, "Loading nacl file %s (non-RPC)\n", nacl_file);
-      // yiwen: this is where an nexe binary got loaded as an nap. 
-      //        we should load a second nap here. 
+      // yiwen: this is where an nexe binary got loaded as an nap.
+      //        we should load a second nap here.
       nacl_file2 = (char*) malloc(22 * sizeof(char));
-      strncpy(nacl_file2, "/glibc/runnable-ld.so", 22);
+      strncpy(nacl_file2, "/lib/glibc/runnable-ld.so", 22);
 
       // yiwen
       // time_start = clock();
@@ -772,7 +773,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -783,9 +784,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap2
-      errcode = NaClAppLoadFileFromFilename(nap2, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap2, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -796,9 +797,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap3
-      errcode = NaClAppLoadFileFromFilename(nap3, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap3, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -809,9 +810,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap4
-      errcode = NaClAppLoadFileFromFilename(nap4, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap4, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -822,9 +823,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap5
-      errcode = NaClAppLoadFileFromFilename(nap5, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap5, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -835,9 +836,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap6
-      errcode = NaClAppLoadFileFromFilename(nap6, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap6, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -848,9 +849,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap7
-      errcode = NaClAppLoadFileFromFilename(nap7, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap7, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -861,9 +862,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap0
-      errcode = NaClAppLoadFileFromFilename(nap0, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap0, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -871,12 +872,12 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " on an x86-64 or vice versa)\n"
                  "or a corrupt nexe file may be"
                  " responsible for this error.\n"));
-      } 
+      }
 
       // yiwen: load NaCl file to nap0_2
-      errcode = NaClAppLoadFileFromFilename(nap0_2, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap0_2, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -887,9 +888,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap_ready
-      errcode = NaClAppLoadFileFromFilename(nap_ready, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap_ready, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -897,12 +898,12 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " on an x86-64 or vice versa)\n"
                  "or a corrupt nexe file may be"
                  " responsible for this error.\n"));
-      } 
+      }
 
       // yiwen: load NaCl file to nap_ready_2
-      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nacl_file);    
+      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -910,7 +911,7 @@ int NaClSelLdrMain(int argc, char **argv) {
                  " on an x86-64 or vice versa)\n"
                  "or a corrupt nexe file may be"
                  " responsible for this error.\n"));
-      } 
+      }
 
       NaClPerfCounterMark(&time_all_main, "AppLoadEnd");
       NaClPerfCounterIntervalLast(&time_all_main);
@@ -1106,7 +1107,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       if (LOAD_OK == errcode) {
         nap->irt_loaded = 1;
       } else {
-        fprintf(stderr, "Error while loading \"%s\": %s\n",
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
                 blob_library_file,
                 NaClErrorString(errcode));
       }
@@ -1166,12 +1167,12 @@ int NaClSelLdrMain(int argc, char **argv) {
           (char const *const *)env_vars.ptr_array)) {
     NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
   }
-  
+
   if (!NaClAppLaunchServiceThreads(nap)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  } 
-  // yiwen: my code 
+  }
+  // yiwen: my code
   if (!NaClAppLaunchServiceThreads(nap2)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
@@ -1184,27 +1185,27 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!NaClAppLaunchServiceThreads(nap0)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  } 
+  }
   if (!NaClAppLaunchServiceThreads(nap_ready)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  } 
+  }
   if (!NaClAppLaunchServiceThreads(nap0_2)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  } 
+  }
   if (!NaClAppLaunchServiceThreads(nap_ready_2)) {
     fprintf(stderr, "Launch service threads failed\n");
     goto done;
-  } 
+  }
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
     }
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  
-  // yiwen: set up cage 0 (currently used by fork and execv) 
+
+  // yiwen: set up cage 0 (currently used by fork and execv)
   // right now, nap0 is reserved for fork()
   InitializeCage(nap0, 1000);
   InitializeCage(nap_ready, 1000);
@@ -1227,7 +1228,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (nap->command_num > 1) {
      nap->binary_command = (char*) malloc((strlen((argv + optind)[4]) + 1) * sizeof(char));
      strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
-  } 
+  }
 
   printf("nap->command_num = %d \n", nap->command_num);
   printf("nap->binary_path = %s \n", nap->binary_path);
@@ -1254,59 +1255,59 @@ int NaClSelLdrMain(int argc, char **argv) {
   /* yiwen: arg setup for running grep.nexe
   argc2 = 6;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(36 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(36 * sizeof(char));
   strncpy(argv2[3], "./test_case/pipe/cat_grep/grep.nexe", 36);
-  argv2[4] = (char*) malloc(9 * sizeof(char)); 
+  argv2[4] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[4], "testfile", 9);
-  argv2[5] = (char*) malloc(34 * sizeof(char)); 
-  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34); 
+  argv2[5] = (char*) malloc(34 * sizeof(char));
+  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34);
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char));
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-  
+
   argc2 = 6;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(25 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(25 * sizeof(char));
   strncpy(argv2[3], "./test_case/cat/cat.nexe", 25);
-  argv2[4] = (char*) malloc(34 * sizeof(char)); 
+  argv2[4] = (char*) malloc(34 * sizeof(char));
   strncpy(argv2[4], "./test_case/files/testfile_01.txt", 34);
-  argv2[5] = (char*) malloc(34 * sizeof(char)); 
+  argv2[5] = (char*) malloc(34 * sizeof(char));
   strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
-  
+
   // yiwen: set up cage 2
   /*
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char));
   strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
 
-  InitializeCage(nap2, 2); 
+  InitializeCage(nap2, 2);
   */
   // yiwen: debug
   // NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
@@ -1320,19 +1321,19 @@ int NaClSelLdrMain(int argc, char **argv) {
   } */
 
   // yiwen: for gdb debug purpose only
-  /*  
+  /*
   while(1) {
   } */
-  
+
   /*
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
-  free(argv2); 
+  free(argv2);
   */
   // yiwen: here we have an empty cage nap2
-  //        let's try to use mmap to do memory mapping between nap2 and a memory cache region 
+  //        let's try to use mmap to do memory mapping between nap2 and a memory cache region
   /*
   InitializeCage(nap2, 2);
   data_size = 8;
@@ -1342,11 +1343,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf(" \n");
   printf("*************************************************************************************** \n");
   printf("Testing shared memory mapping starts! \n\n");
-  NaClLog(LOG_WARNING, "[Shm] reg1_ptr = %p \n", reg1_ptr); 
+  NaClLog(LOG_WARNING, "[Shm] reg1_ptr = %p \n", reg1_ptr);
   NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); */
 
   // yiwen: permission in the memory at this moment
-  // 596c11030000-596c11040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226 (226, '/glibc/tls/libgcc_s.so.1')
+  // 596c11030000-596c11040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226 (226, '/lib/glibc/tls/libgcc_s.so.1')
   // 596c11040000-596c11050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
   // 78e410050000-78e4ff000000 ---p 00000000 00:00 0
   /*
@@ -1355,7 +1356,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   reg1 = (char *) shmat (shmid,  reg1_ptr, 0);
   reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
   */
-  // yiwen: permission of the shared memory in cage 2, changed after the shmat(, , SHM_REMAP) 
+  // yiwen: permission of the shared memory in cage 2, changed after the shmat(, , SHM_REMAP)
   // 1db011030000-1db011031000 rw-s 00000000 00:04 31260749                   /SYSV00000000 (deleted)
   /*
   printf("Successfully created regions at %p and %p of length %d \n", reg1, reg2, data_size);
@@ -1366,7 +1367,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("New data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
 
   reg3_ptr = (void *) NaClUserToSys(nap3, 0x11030000); // this is addr inside of cage 3
-  NaClLog(LOG_WARNING, "[Shm] reg3_ptr = %p \n", reg3_ptr); 
+  NaClLog(LOG_WARNING, "[Shm] reg3_ptr = %p \n", reg3_ptr);
   reg3 = (char *) shmat (shmid,  reg3_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
   printf("Successfully created region at %p of length %d \n", reg3, data_size);
   printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
@@ -1374,7 +1375,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("Write new data 'Z' to reg3[0] \n");
   printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
   printf("Change permission of reg3 to READ_ONLY! \n");
-  mprotect(reg3, data_size, PROT_READ);  
+  mprotect(reg3, data_size, PROT_READ);
   printf("The shared memory for reg3 should still work fine. \n");
   reg1[0] = 'Q';
   printf("Write new data 'Q' to reg1[0] \n");
@@ -1396,7 +1397,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   printf("Testing cow mapping starts! \n\n");
 
   cage1_ptr = (void *) NaClUserToSys(nap2, 0x11040000); // this is addr inside of cage 2
-  NaClLog(LOG_WARNING, "[Shm] cage1_ptr = %p \n", cage1_ptr); 
+  NaClLog(LOG_WARNING, "[Shm] cage1_ptr = %p \n", cage1_ptr);
 
   munmap(cage1_ptr, SHM_SIZE); // need to remap the memory because this region in the cage has already been mapped before but with content 0
 
@@ -1431,24 +1432,24 @@ int NaClSelLdrMain(int argc, char **argv) {
   */
 
   // yiwen: for gdb debug purpose only
-  /*  
+  /*
   while(1) {
   } */
 
-  // yiwen: development testing, using nap2 and nap3 here. 
+  // yiwen: development testing, using nap2 and nap3 here.
   /*
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(43 * sizeof(char));
   strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
 
-  InitializeCage(nap2, 2); 
+  InitializeCage(nap2, 2);
 
   if (!NaClCreateMainThread(nap2,
                             argc2,
@@ -1456,9 +1457,9 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } 
+  }
 
-  InitializeCage(nap3, 3); 
+  InitializeCage(nap3, 3);
 
   if (!NaClCreateMainThread(nap3,
                             argc2,
@@ -1466,17 +1467,17 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
     fprintf(stderr, "creating main thread failed\n");
     goto done;
-  } 
-  
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
   free(argv2); */
 
-  // InitializeCage(nap0, 0); 
+  // InitializeCage(nap0, 0);
 
-  InitializeCage(nap, 1); 
+  InitializeCage(nap, 1);
   InitializeCage(nap2, 2);
   InitializeCage(nap3, 3);
   InitializeCage(nap4, 4);
@@ -1484,19 +1485,19 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap6, 6);
   InitializeCage(nap7, 7);
 // ******************************************************************************************************************************
-  // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages  
+  // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages
   // ******************************************************************************************************************************
   /*
   myfifo = (char*) malloc(12 * sizeof(char));
   strncpy(myfifo, "/tmp/myfifo", 12);
-  
+
   mkfifo(myfifo, 0666);
 
   while (1)
   {
      myfifo_fd = open(myfifo, O_RDONLY);
      read(myfifo_fd, user_input, sizeof(user_input));
- 
+
      printf("User input: %s \n", user_input);
      printf("User input length: %d \n", (int)strlen(user_input));
      close(myfifo_fd);
@@ -1507,13 +1508,13 @@ int NaClSelLdrMain(int argc, char **argv) {
 
      argc2 = 4;
      argv2 = (char**) malloc(4 * sizeof(char*));
-     argv2[0] = (char*) malloc(9 * sizeof(char)); 
+     argv2[0] = (char*) malloc(9 * sizeof(char));
      strncpy(argv2[0], "NaClMain", 9);
-     argv2[1] = (char*) malloc(15 * sizeof(char)); 
+     argv2[1] = (char*) malloc(15 * sizeof(char));
      strncpy(argv2[1], "--library-path", 15);
-     argv2[2] = (char*) malloc(7 * sizeof(char)); 
-     strncpy(argv2[2], "/glibc", 7);
-     argv2[3] = (char*) malloc(strlen(user_input) * sizeof(char)); 
+     argv2[2] = (char*) malloc(7 * sizeof(char));
+     strncpy(argv2[2], "/lib/glibc", 7);
+     argv2[3] = (char*) malloc(strlen(user_input) * sizeof(char));
 
      is_new_argument = 1;
      k = 0;
@@ -1524,7 +1525,7 @@ int NaClSelLdrMain(int argc, char **argv) {
               continue;
            }
            else {
-              is_new_argument = 1; 
+              is_new_argument = 1;
               argv2[argc2 - 1][k] = '\0';
               k = 0;
               argv2[argc2] = (char*) malloc(strlen(user_input) * sizeof(char));
@@ -1537,7 +1538,7 @@ int NaClSelLdrMain(int argc, char **argv) {
            argv2[argc2 - 1][k] = user_input[j];
            k++;
         }
-     } 
+     }
 
      argv2[argc2 - 1][k] = '\0';
      printf("program args: %s \n", argv2[argc2 - 1]);
@@ -1548,36 +1549,36 @@ int NaClSelLdrMain(int argc, char **argv) {
      if (nap->command_num > 1) {
         nap->binary_command = (char*) malloc((strlen(argv2[4]) + 1) * sizeof(char));
         strncpy(nap->binary_command, argv2[4], strlen(argv2[4]) + 1);
-     } 
-   
+     }
+
      if (!NaClCreateMainThread(nap,
                                argc2,
                                argv2,
                                NaClEnvCleanserEnvironment(&env_cleanser))) {
         fprintf(stderr, "creating main thread failed\n");
         goto done;
-     } 
- 
+     }
+
      free(argv2[0]);
      free(argv2[1]);
      free(argv2[2]);
      free(argv2[3]);
      free(argv2);
 
-     ret_code = NaClWaitForMainThreadToExit(nap);   
+     ret_code = NaClWaitForMainThreadToExit(nap);
   } */
 
   argc2 = 5;
   argv2 = (char**) malloc(5 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(11 * sizeof(char));
   strncpy(argv2[3], "./bin/grep", 11);
-  argv2[4] = (char*) malloc(10 * sizeof(char)); 
+  argv2[4] = (char*) malloc(10 * sizeof(char));
   strncpy(argv2[4], "--version", 10);
 
   if (!NaClCreateMainThread(nap,
@@ -1586,8 +1587,8 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
@@ -1611,20 +1612,20 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   argc2 = 6;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(11 * sizeof(char));
   strncpy(argv2[3], "./bin/grep", 11);
-  argv2[4] = (char*) malloc(((int)strlen("IOADDR")+1) * sizeof(char)); 
+  argv2[4] = (char*) malloc(((int)strlen("IOADDR")+1) * sizeof(char));
   strncpy(argv2[4], "IOADDR", (int)strlen("IOADDR")+1);
-  argv2[5] = (char*) malloc(((int)strlen("./test_files/dataset01.txt")+1) * sizeof(char)); 
+  argv2[5] = (char*) malloc(((int)strlen("./test_files/dataset01.txt")+1) * sizeof(char));
   strncpy(argv2[5], "./test_files/dataset01.txt", (int)strlen("./test_files/dataset01.txt")+1);
 
-  nacl_user_program_begin = clock(); 
+  nacl_user_program_begin = clock();
 
   if (!NaClCreateMainThread(nap2,
                             argc2,
@@ -1632,7 +1633,7 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
+  }
 
   free(argv2[0]);
   free(argv2[1]);
@@ -1644,15 +1645,15 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   argc2 = 5;
   argv2 = (char**) malloc(5 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(10 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(10 * sizeof(char));
   strncpy(argv2[3], "./bin/sed", 10);
-  argv2[4] = (char*) malloc(((int)strlen("s/.*: //")+1) * sizeof(char)); 
+  argv2[4] = (char*) malloc(((int)strlen("s/.*: //")+1) * sizeof(char));
   strncpy(argv2[4], "s/.*: //", (int)strlen("s/.*: //")+1);
 
   if (!NaClCreateMainThread(nap3,
@@ -1661,8 +1662,8 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
@@ -1672,17 +1673,17 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   argc2 = 6;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(9 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[3], "./bin/tr", 9);
-  argv2[4] = (char*) malloc(((int)strlen(" ")+1) * sizeof(char)); 
+  argv2[4] = (char*) malloc(((int)strlen(" ")+1) * sizeof(char));
   strncpy(argv2[4], " ", (int)strlen(" ")+1);
-  argv2[5] = (char*) malloc(((int)strlen("\n")+1) * sizeof(char)); 
+  argv2[5] = (char*) malloc(((int)strlen("\n")+1) * sizeof(char));
   strncpy(argv2[5], "\n", (int)strlen("\n")+1);
 
   if (!NaClCreateMainThread(nap4,
@@ -1691,8 +1692,8 @@ int NaClSelLdrMain(int argc, char **argv) {
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
@@ -1703,23 +1704,23 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(11 * sizeof(char));
   strncpy(argv2[3], "./bin/sort", 11);
- 
+
   if (!NaClCreateMainThread(nap5,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
@@ -1728,53 +1729,53 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   argc2 = 5;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(11 * sizeof(char));
   strncpy(argv2[3], "./bin/uniq", 11);
-  argv2[4] = (char*) malloc(((int)strlen("-c")+1) * sizeof(char)); 
+  argv2[4] = (char*) malloc(((int)strlen("-c")+1) * sizeof(char));
   strncpy(argv2[4], "-c", (int)strlen("-c")+1);
- 
+
   if (!NaClCreateMainThread(nap6,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
   free(argv2[3]);
   free(argv2[4]);
   free(argv2);
-  
+
   argc2 = 5;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
+  strncpy(argv2[2], "/lib/glibc", 7);
+  argv2[3] = (char*) malloc(11 * sizeof(char));
   strncpy(argv2[3], "./bin/sort", 11);
-  argv2[4] = (char*) malloc(((int)strlen("-n")+1) * sizeof(char)); 
+  argv2[4] = (char*) malloc(((int)strlen("-n")+1) * sizeof(char));
   strncpy(argv2[4], "-n", (int)strlen("-n")+1);
- 
+
   if (!NaClCreateMainThread(nap7,
                             argc2,
                             argv2,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
-  } 
-   
+  }
+
   free(argv2[0]);
   free(argv2[1]);
   free(argv2[2]);
@@ -1805,7 +1806,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (fork_num == 2) {
       ret_code = NaClWaitForMainThreadToExit(nap0_2);
       ret_code = NaClWaitForMainThreadToExit(nap_ready_2);
-  } 
+  }
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
@@ -1825,7 +1826,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: for evaluation measurement, we need to print out info here
   // NaClLog(LOG_WARNING, "[NaClMain] End of the program! \n\n");
 
-  // calculate and print out time of running the NaCl main program 
+  // calculate and print out time of running the NaCl main program
   nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
   NaClLog(LOG_WARNING, "[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
 
@@ -1834,7 +1835,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
   NaClLog(LOG_WARNING, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
-  
+
   #ifdef SYSCALL_TIMING
   NaClLog(LOG_WARNING, "[NaClMain] NaCl system call timing enabled! \n");
   NaClLog(LOG_WARNING, "[NaClMain] Start printing out results now: \n");
@@ -1855,7 +1856,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     lind_syscall_total_time +=  lind_syscall_execution_time[i];
   }
   NaClLog(LOG_WARNING, "[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
-  
+
   NaClLog(LOG_WARNING, "[NaClMain] Results printing out: done! \n");
   #endif
 

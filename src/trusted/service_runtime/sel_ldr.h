@@ -109,24 +109,34 @@ struct NaClSpringboardInfo {
 };
 
 struct NaClApp {
+  /*
+   * Children table lock children_mu is higher in the locking order than
+   * the thread locks, i.e., children_mu must be acqured w/o holding
+   * any thread table or per-thread lock (threads_mu or natp->mu).
+   *
+   * -Joey Pabalinas
+   */
+  struct NaClMutex          children_mu;
+  struct DynArray           children;   /* NaClApp pointers */
+  int                       num_children;  /* number actually running */
+
   // yiwen
-  int                       cage_id; 
+  int                       cage_id;
 
   // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
-  struct                    CachedLibTable lib_table[CACHED_LIB_NUM_MAX];
-  int                       num_lib; 
+  struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
+  int                       num_lib;
 
   // yiwen: store info of its children
-  int                       num_children; 
   int                       children_ids[10];
 
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
-  int                       command_num; 
+  int                       command_num;
   char                      *binary_path;
   char                      *binary_command;
 
   // yiwen: record the current fd number(largest) assigned by this cage
-  int fd;
+  int                       fd;
 
   /*
    * public, user settable prior to app start.
@@ -889,6 +899,25 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
   UNREFERENCED_PARAMETER(argv_p);
 }
 #endif
+
+/*
+ * Passed to NaClVmmapVisit in order to copy a memory region from
+ * an NaClApp to a child process (used when forking).
+ *
+ * preconditions:
+ * * target_state must be a pointer to a valid, initialized NaClApp
+ */
+void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry);
+
+/*
+ * Copy the entire address space of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child);
 
 EXTERN_C_END
 

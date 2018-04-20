@@ -82,7 +82,7 @@ int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is 
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 int cached_lib_num = 0;
 
-// yiwen: global pipe buffer 
+// yiwen: global pipe buffer
 char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 int pipe_mutex[PIPE_NUM_MAX];
 int pipe_transfer_over[PIPE_NUM_MAX];
@@ -155,8 +155,11 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!DynArrayCtor(&nap->desc_tbl, 2)) {
     goto cleanup_threads;
   }
-  if (!NaClVmmapCtor(&nap->mem_map)) {
+  if (!DynArrayCtor(&nap->children, 2)) {
     goto cleanup_desc_tbl;
+  }
+  if (!NaClVmmapCtor(&nap->mem_map)) {
+    goto cleanup_children;
   }
 
   nap->mem_io_regions = (struct NaClIntervalMultiset *) malloc(
@@ -339,6 +342,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->mem_io_regions = NULL;
  cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
+ cleanup_children:
+  DynArrayDtor(&nap->children);
  cleanup_desc_tbl:
   DynArrayDtor(&nap->desc_tbl);
  cleanup_threads:
@@ -1453,3 +1458,79 @@ static void StopForDebuggerInit (uintptr_t mem_start) {
 void NaClGdbHook(struct NaClApp const *nap) {
   StopForDebuggerInit(nap->mem_start);
 }
+
+/*
+ * Passed to NaClVmmapVisit in order to copy a memory region from
+ * an NaClApp to a child process (used when forking).
+ *
+ * preconditions:
+ * * target_state must be a pointer to a valid, initialized NaClApp
+ */
+void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
+  struct NaClApp *target = target_state;
+
+  NaClVmmapAdd(&target->mem_map, entry->page_num,
+               entry->npages, entry->prot,
+               entry->flags, entry->desc,
+               entry->offset, entry->file_size);
+}
+
+/*
+ * Copy the entire address space of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child) {
+  /* copy the address space */
+  NaClVmmapVisit(&nap->mem_map, NaClVmCopyMemoryRegion, child);
+
+#ifdef _FORK_DEBUG
+  /* parent */
+  NaClLog(2, "NaClApp addr space layout (parent):\n");
+  NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+          nap->static_text_end);
+  NaClLog(2, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_start);
+  NaClLog(2, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+          nap->dynamic_text_end);
+  NaClLog(2, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+          nap->rodata_start);
+  NaClLog(2, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_start);
+  NaClLog(2, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+          nap->data_end);
+  NaClLog(2, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+          nap->break_addr);
+  NaClLog(2, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+          nap->initial_entry_pt);
+  NaClLog(2, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+          nap->user_entry_pt);
+  NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
+
+  /* child */
+  NaClLog(2, "NaClApp addr space layout (child):\n");
+  NaClLog(2, "child->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+          child->static_text_end);
+  NaClLog(2, "child->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+          child->dynamic_text_start);
+  NaClLog(2, "child->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+          child->dynamic_text_end);
+  NaClLog(2, "child->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+          child->rodata_start);
+  NaClLog(2, "child->data_start         = 0x%016"NACL_PRIxPTR"\n",
+          child->data_start);
+  NaClLog(2, "child->data_end           = 0x%016"NACL_PRIxPTR"\n",
+          child->data_end);
+  NaClLog(2, "child->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+          child->break_addr);
+  NaClLog(2, "child->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+          child->initial_entry_pt);
+  NaClLog(2, "child->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+          child->user_entry_pt);
+  NaClLog(2, "child->bundle_size        = 0x%x\n", child->bundle_size);
+#endif /* _FORK_DEBUG */
+}
+
