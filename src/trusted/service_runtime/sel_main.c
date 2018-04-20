@@ -217,6 +217,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
   struct NaClApp                state;
+  char                          *nacl_runnable;
   char                          *nacl_file = NULL;
   char                          *blob_library_file = NULL;
   int                           rpc_supplies_nexe = 0;
@@ -763,8 +764,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       NaClLog(2, "Loading nacl file %s (non-RPC)\n", nacl_file);
       // yiwen: this is where an nexe binary got loaded as an nap.
       //        we should load a second nap here.
-      nacl_file2 = (char*) malloc(22 * sizeof(char));
-      strncpy(nacl_file2, "/lib/glibc/runnable-ld.so", 22);
+      nacl_runnable = "/lib/glibc/runnable-ld.so";
+      nacl_file2 = malloc(strlen(nacl_runnable) + 1);
+      strcpy(nacl_file2, nacl_runnable);
 
       // yiwen
       // time_start = clock();
@@ -1569,17 +1571,18 @@ int NaClSelLdrMain(int argc, char **argv) {
   } */
 
   argc2 = 5;
-  argv2 = (char**) malloc(5 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char));
-  strncpy(argv2[3], "./bin/grep", 11);
-  argv2[4] = (char*) malloc(10 * sizeof(char));
-  strncpy(argv2[4], "--version", 10);
+  argv2 = malloc(6 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "naclmain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(11);
+  strcpy(argv2[3], "./bin/grep");
+  argv2[4] = malloc(10);
+  strcpy(argv2[4], "--version");
+  argv2[5] = 0;
 
   if (!NaClCreateMainThread(nap,
                             argc2,
@@ -1611,19 +1614,20 @@ int NaClSelLdrMain(int argc, char **argv) {
   pipe_transfer_over[4] = 0;
 
   argc2 = 6;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char));
-  strncpy(argv2[3], "./bin/grep", 11);
-  argv2[4] = (char*) malloc(((int)strlen("IOADDR")+1) * sizeof(char));
-  strncpy(argv2[4], "IOADDR", (int)strlen("IOADDR")+1);
-  argv2[5] = (char*) malloc(((int)strlen("./test_files/dataset01.txt")+1) * sizeof(char));
-  strncpy(argv2[5], "./test_files/dataset01.txt", (int)strlen("./test_files/dataset01.txt")+1);
+  argv2 = malloc(7 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "naclmain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(11);
+  strcpy(argv2[3], "./bin/grep");
+  argv2[4] = malloc(7);
+  strcpy(argv2[4], "IOADDR");
+  argv2[5] = malloc(27);
+  strcpy(argv2[5], "./test_files/dataset01.txt");
+  argv2[6] = 0;
 
   nacl_user_program_begin = clock();
 
@@ -1644,17 +1648,18 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2);
 
   argc2 = 5;
-  argv2 = (char**) malloc(5 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(10 * sizeof(char));
-  strncpy(argv2[3], "./bin/sed", 10);
-  argv2[4] = (char*) malloc(((int)strlen("s/.*: //")+1) * sizeof(char));
-  strncpy(argv2[4], "s/.*: //", (int)strlen("s/.*: //")+1);
+  argv2 = malloc(6 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "naclmain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(10);
+  strcpy(argv2[3], "./bin/sed");
+  argv2[4] = malloc(9);
+  strcpy(argv2[4], "s/.*: //");
+  argv2[5] = 0;
 
   if (!NaClCreateMainThread(nap3,
                             argc2,
@@ -1672,19 +1677,20 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2);
 
   argc2 = 6;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[3], "./bin/tr", 9);
-  argv2[4] = (char*) malloc(((int)strlen(" ")+1) * sizeof(char));
-  strncpy(argv2[4], " ", (int)strlen(" ")+1);
-  argv2[5] = (char*) malloc(((int)strlen("\n")+1) * sizeof(char));
-  strncpy(argv2[5], "\n", (int)strlen("\n")+1);
+  argv2 = malloc(7 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "naclmain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(9);
+  strcpy(argv2[3], "./bin/tr");
+  argv2[4] = malloc(2);
+  strcpy(argv2[4], " ");
+  argv2[5] = malloc(5);
+  strcpy(argv2[5], "'\\n'");
+  argv2[6] = 0;
 
   if (!NaClCreateMainThread(nap4,
                             argc2,
@@ -1703,15 +1709,17 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2);
 
   argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char));
-  strncpy(argv2[3], "./bin/sort", 11);
+  argv2 = malloc(5 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "NaClMain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(11);
+  strcpy(argv2[3], "./bin/sort");
+  argv2[4] = 0;
+
 
   if (!NaClCreateMainThread(nap5,
                             argc2,
@@ -1728,17 +1736,18 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2);
 
   argc2 = 5;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char));
-  strncpy(argv2[3], "./bin/uniq", 11);
-  argv2[4] = (char*) malloc(((int)strlen("-c")+1) * sizeof(char));
-  strncpy(argv2[4], "-c", (int)strlen("-c")+1);
+  argv2 = malloc(6 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "NaClMain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(11);
+  strcpy(argv2[3], "./bin/uniq");
+  argv2[4] = malloc(3);
+  strcpy(argv2[4], "-c");
+  argv2[5] = 0;
 
   if (!NaClCreateMainThread(nap6,
                             argc2,
@@ -1756,17 +1765,18 @@ int NaClSelLdrMain(int argc, char **argv) {
   free(argv2);
 
   argc2 = 5;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(11 * sizeof(char));
-  strncpy(argv2[3], "./bin/sort", 11);
-  argv2[4] = (char*) malloc(((int)strlen("-n")+1) * sizeof(char));
-  strncpy(argv2[4], "-n", (int)strlen("-n")+1);
+  argv2 = malloc(6 * sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "NaClMain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
+  argv2[3] = malloc(11);
+  strcpy(argv2[3], "./bin/sort");
+  argv2[4] = malloc(3);
+  strcpy(argv2[4], "-n");
+  argv2[5] = 0;
 
   if (!NaClCreateMainThread(nap7,
                             argc2,
