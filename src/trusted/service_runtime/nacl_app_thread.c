@@ -102,7 +102,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  NaClLog(4, "      natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  NaClLog(4, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
   NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(&natp->user));
@@ -146,7 +146,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
                                NACL_APP_THREAD_UNTRUSTED);
 
-  // yiwen: 
+  // yiwen:
   // printf("[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage! \n");
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
@@ -158,7 +158,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap;
   size_t          thread_idx;
-  
+
   /*
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
@@ -220,7 +220,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClSignalStackUnregister();
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
-  NaClLog(3, " NaClThreadExit\n"); 
+  NaClLog(3, " NaClThreadExit\n");
 
   NaClThreadExit();
   NaClLog(LOG_FATAL,
@@ -309,7 +309,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 
 // yiwen
 int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
-                           struct NaClApp *nap_child, 
+                           struct NaClApp *nap_child,
                            uintptr_t      usr_entry,
                            uintptr_t      usr_stack_ptr,
                            uint32_t       user_tls1,
@@ -322,36 +322,36 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   // size_t size_of_dynamic_text;
   /*
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
-  sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);  
+  sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   size_of_dynamic_text = nap_child->dynamic_text_end - nap_child->dynamic_text_start;
   NaClLog(LOG_WARNING, "copy size = %zd \n", size_of_dynamic_text);
   size_of_dynamic_text = 4000;
-  memcpy(sysaddr_child, sysaddr_parent, 4); 
-  memcpy(sysaddr_child, sysaddr_parent, nap_parent->dynamic_text_end - nap_parent->dynamic_text_start); 
+  memcpy(sysaddr_child, sysaddr_parent, 4);
+  memcpy(sysaddr_child, sysaddr_parent, nap_parent->dynamic_text_end - nap_parent->dynamic_text_start);
   sysaddr_child = (void *)malloc(4);
-  retval = NaClMprotect(sysaddr_parent, 
+  retval = NaClMprotect(sysaddr_parent,
                         size_of_dynamic_text,
                         PROT_READ | PROT_WRITE | PROT_EXEC);
-  retval = NaClMprotect(sysaddr_child, 
+  retval = NaClMprotect(sysaddr_child,
                         size_of_dynamic_text,
                         PROT_READ | PROT_WRITE | PROT_EXEC);
   if (retval == -1) {
      NaClLog(LOG_WARNING, "NaClMprotect failed! \n");
-  } 
-  
-  memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text); 
-  
-  retval = NaClMprotect(sysaddr_parent, 
+  }
+
+  memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+
+  retval = NaClMprotect(sysaddr_parent,
                         size_of_dynamic_text,
                         PROT_READ | PROT_EXEC);
-  retval = NaClMprotect(sysaddr_child, 
+  retval = NaClMprotect(sysaddr_child,
                         size_of_dynamic_text,
-                        PROT_READ | PROT_EXEC); 
+                        PROT_READ | PROT_EXEC);
 
   NaClPrintAddressSpaceLayout(nap_parent);
-  NaClLog(LOG_WARNING, "\n"); 
+  NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
-  NaClLog(LOG_WARNING, "\n"); 
+  NaClLog(LOG_WARNING, "\n");
   */
   nap_parent->cage_id = nap_parent->cage_id;
   #ifdef DEBUG_INFO_ENABLED
@@ -368,7 +368,7 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   natp->host_thread_is_defined = 1;
 
   // yiwen: copy memory from parent to child
-  
+
 
   if (!NaClThreadCtor(&natp->host_thread, NaClAppForkThreadLauncher, (void *) natp,
                       NACL_KERN_STACK_SIZE)) {
