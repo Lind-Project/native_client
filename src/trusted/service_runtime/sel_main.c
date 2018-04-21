@@ -1577,35 +1577,51 @@ int NaClSelLdrMain(int argc, char **argv) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
   }
+  if (!NaClCreateMainForkThread(nap,
+				nap2,
+				argc - optind,
+				argv + optind,
+				NaClEnvCleanserEnvironment(&env_cleanser))) {
+    fprintf(stderr, "creating main fork thread failed\n");
+    goto done;
+  }
   nacl_user_program_begin = clock();
 
   argc2 = 5;
   argv2 = malloc(6 * sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "NaClMain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
-  argv2[3] = malloc(10);
-  strcpy(argv2[3], "/bin/grep");
-  argv2[4] = malloc(10);
-  strcpy(argv2[4], "--version");
+  argv2[0] = "NaClMain";
+  argv2[1] = "--library-path";
+  argv2[2] = "/lib/glibc";
+  argv2[3] = "/bin/grep";
+  argv2[4] = "--version";
   argv2[5] = 0;
 
-  if (!NaClCreateMainThread(nap2,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
-     goto done;
+  if (!NaClCreateMainForkThread(nap,
+				nap3,
+				argc2,
+				argv2,
+				NaClEnvCleanserEnvironment(&env_cleanser))) {
+    fprintf(stderr, "creating second fork thread failed\n");
+    goto done;
   }
 
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2[4]);
+  /*
+   * if (!NaClCreateMainThread(nap2,
+   *                           argc2,
+   *                           argv2,
+   *                           NaClEnvCleanserEnvironment(&env_cleanser))) {
+   *    fprintf(stderr, "creating main thread failed\n");
+   *    goto done;
+   * }
+   */
+
+  /*
+   * free(argv2[0]);
+   * free(argv2[1]);
+   * free(argv2[2]);
+   * free(argv2[3]);
+   * free(argv2[4]);
+   */
   free(argv2);
 
   // ***********************************************************************
