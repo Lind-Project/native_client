@@ -553,9 +553,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
      retval = 0;
      return retval;
   }
-  
+
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
-  
+
   retval = newfd;
 
   // yiwen: debug output
@@ -591,12 +591,12 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
      fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
      retval = nap->fd;
      nap->fd++;
-  }  
+  }
   else {
      retval = -1;
   }
 
-  flags = flags;  
+  flags = flags;
   return retval;
 }
 
@@ -724,11 +724,11 @@ cleanup:
   // printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
-  //        this will be used when trying to check if a lib has been cached in our system 
+  //        this will be used when trying to check if a lib has been cached in our system
   // yiwen: do sanity check for the given fd first before our registration
   if ((fd_retval >= CACHED_LIB_NUM_MAX) || (fd_retval < 0)) {
-     // printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");  
-  } 
+     // printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");
+  }
   else {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
      nap->num_lib++;
@@ -745,7 +745,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval = -NACL_ABI_EBADF;
   struct NaClDesc *ndp;
-  
+
   // yiwen
   int fd;
 
@@ -754,10 +754,10 @@ int32_t NaClSysClose(struct NaClAppThread *natp,
 
   NaClFastMutexLock(&nap->desc_mu);
 
-  // yiwen 
+  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
   if ((fd == 8000) | (fd == 8001)) {
-     retval = 0; 
+     retval = 0;
      return retval;
   }
 
@@ -786,7 +786,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   ssize_t         getdents_ret;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
-  
+
   // yiwen
   int fd;
 
@@ -796,7 +796,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  // yiwen 
+  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -897,15 +897,15 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      read(31, string, count);
      pipe_mutex = 0;
      retval = 0;
-     printf("[Debug][Cage %d][fd = 8000] From NaCl Read Succeed! \n", nap->cage_id); 
+     printf("[Debug][Cage %d][fd = 8000] From NaCl Read Succeed! \n", nap->cage_id);
      goto cleanup;
-  } 
+  }
 
   // fd = fd_cage_table[nap->cage_id][d];
-  // printf("[Debug][Cage %d][fd = %d] From NaClSysRead! \n", nap->cage_id, fd); 
+  // printf("[Debug][Cage %d][fd = %d] From NaClSysRead! \n", nap->cage_id, fd);
   */
   // yiwen: this is the read end of my pipe
-  
+
   if (((nap->cage_id == 3)||(nap->cage_id == 4)||(nap->cage_id == 5)||(nap->cage_id == 6)
       ||(nap->cage_id == 7))&&(fd == 0)) {
      if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))
@@ -922,7 +922,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
      if (nap->cage_id == 3) {
         memcpy(string, pipe_buffer[0], count);
-        pipe_mutex[0] = 0; 
+        pipe_mutex[0] = 0;
      }
      if (nap->cage_id == 4) {
         memcpy(string, pipe_buffer[1], count);
@@ -934,11 +934,11 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      }
      if (nap->cage_id == 6) {
         memcpy(string, pipe_buffer[3], count);
-        pipe_mutex[3] = 0; 
+        pipe_mutex[3] = 0;
      }
      if (nap->cage_id == 7) {
         memcpy(string, pipe_buffer[4], count);
-        pipe_mutex[4] = 0; 
+        pipe_mutex[4] = 0;
      }
 
      // printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
@@ -947,7 +947,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
      // printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
      retval = read_data_size;
      goto cleanup;
-  } 
+  }
 
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
@@ -1036,7 +1036,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   fd = fd_cage_table[nap->cage_id][d];
 
   // printf("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
-  
+
   // yiwen: try to use the kernel pipe
   /*
   if (fd == 8001) {
@@ -1051,10 +1051,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      retval = 0;
      printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
      goto cleanup;
-  } 
+  }
   */
   // yiwen: this is the write end of my pipe
-  
+
   if (((nap->cage_id == 2)||(nap->cage_id == 3)||(nap->cage_id == 4)
       ||(nap->cage_id == 5)||(nap->cage_id == 6))&&(fd == 1)) {
      // printf("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
@@ -1074,20 +1074,20 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      if (nap->cage_id == 3) {
         memcpy(pipe_buffer[1], string, count);
         pipe_mutex[1] = 1;
-        pipe_transfer_over[1] = 1; 
+        pipe_transfer_over[1] = 1;
      }
      if (nap->cage_id == 4) {
-        memcpy(pipe_buffer[2], string, count); 
+        memcpy(pipe_buffer[2], string, count);
         pipe_mutex[2] = 1;
-        pipe_transfer_over[2] = 1; 
+        pipe_transfer_over[2] = 1;
      }
      if (nap->cage_id == 5) {
-        memcpy(pipe_buffer[3], string, count);  
+        memcpy(pipe_buffer[3], string, count);
         pipe_mutex[3] = 1;
         pipe_transfer_over[3] = 1;
      }
      if (nap->cage_id == 6) {
-        memcpy(pipe_buffer[4], string, count);  
+        memcpy(pipe_buffer[4], string, count);
         pipe_mutex[4] = 1;
         pipe_transfer_over[4] = 1;
      }
@@ -1101,7 +1101,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      // pipe_transfer_over = 1;
      retval = write_data_size;
      goto cleanup;
-  } 
+  }
 
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
@@ -1176,7 +1176,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   // yiwen
   int             fd;
-  
+
   NaClLog(3,
           ("Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n"),
@@ -4073,7 +4073,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   string_ptr = (int*)sysaddr;
 
   // return two fds to the user
-  string_ptr[0] = 8000;  
+  string_ptr[0] = 8000;
   string_ptr[1] = 8001;
 
   // fd_cage_table[1][8000] = 8000;
@@ -4088,9 +4088,9 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   /*
   string2_ptr = string2;
   pipe(string2_ptr);
-   
+
   NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
-  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);  
+  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);
   */
   retval = 0;
   return retval;
@@ -4098,16 +4098,16 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
 
 // yiwen: my in-process-fork implementation
-// Conceptually, here are the steps we need to do: 
+// Conceptually, here are the steps we need to do:
 // 1) create a new cage/nap for the child process
 // 2) create a new thread inside the new cage to run the program
 // 3) make sure that the new cage has an exact duplication of the code and data from the parent cage
 // 4) set up the return value of the child process correctly (on the stack)
 // 5) set up the context switch info correctly for the child process
-// 6) schedule the context switch to run the child process 
+// 6) schedule the context switch to run the child process
 /*
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
-  struct NaClApp *nap = natp->nap; 
+  struct NaClApp *nap = natp->nap;
   int argc2;
   char **argv2;
 
@@ -4116,13 +4116,13 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  argv2[3] = (char*) malloc(43 * sizeof(char));
   strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
 
   if (!NaClCreateMainForkThread(nap,
@@ -4132,7 +4132,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
                                 NULL)) {
     fprintf(stderr, "creating main thread failed\n");
     return 0;
-  } 
+  }
 
   free(argv2[0]);
   free(argv2[1]);
@@ -4146,7 +4146,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 // yiwen: this one below is currently working
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
-  int32_t retval;  
+  int32_t retval;
   int argc2;
   char **argv2;
   int path_len;
@@ -4157,7 +4157,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d \n", fork_num);
   #endif
 
-  if (nap->cage_id < 1000) 
+  if (nap->cage_id < 1000)
      fork_num++;
 
   if (nap->cage_id >= 1000) {
@@ -4170,23 +4170,23 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   argc2 = 3 + nap->command_num;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv2[2], "/glibc", 7);
-  // argv2[3] = (char*) malloc(29 * sizeof(char)); 
+  // argv2[3] = (char*) malloc(29 * sizeof(char));
   // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
   path_len = strlen(nap->binary_path) + 1;
-  argv2[3] = (char*) malloc(path_len * sizeof(char)); 
+  argv2[3] = (char*) malloc(path_len * sizeof(char));
   strncpy(argv2[3], nap->binary_path, path_len);
   // NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
-     argv2[4] = (char*) malloc(path_len * sizeof(char)); 
+     argv2[4] = (char*) malloc(path_len * sizeof(char));
      strncpy(argv2[4], nap->binary_command, path_len);
      // NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
@@ -4204,12 +4204,12 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       }
 
       nap->children_ids[nap->num_children] = nap0->cage_id;
-      nap->num_children++; 
+      nap->num_children++;
       retval = nap0->cage_id;
       // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
 
       return retval;
-  }  
+  }
 
   else if (fork_num == 2) {
       if (!NaClCreateMainForkThread(nap,
@@ -4224,7 +4224,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       }
 
       nap->children_ids[nap->num_children] = nap0_2->cage_id;
-      nap->num_children++; 
+      nap->num_children++;
       retval = nap0_2->cage_id;
       // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
 
@@ -4237,7 +4237,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 /*
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
-  int32_t retval;  
+  int32_t retval;
   int argc2;
   char **argv2;
   int path_len;
@@ -4252,23 +4252,23 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   argc2 = 3 + nap->command_num;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv2[2], "/glibc", 7);
-  // argv2[3] = (char*) malloc(29 * sizeof(char)); 
+  // argv2[3] = (char*) malloc(29 * sizeof(char));
   // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
   path_len = strlen(nap->binary_path) + 1;
-  argv2[3] = (char*) malloc(path_len * sizeof(char)); 
+  argv2[3] = (char*) malloc(path_len * sizeof(char));
   strncpy(argv2[3], nap->binary_path, path_len);
   NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
-     argv2[4] = (char*) malloc(path_len * sizeof(char)); 
+     argv2[4] = (char*) malloc(path_len * sizeof(char));
      strncpy(argv2[4], nap->binary_command, path_len);
      NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
@@ -4293,7 +4293,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 /*
 int32_t NaClSysFork(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
-  int32_t retval;  
+  int32_t retval;
   int argc2;
   char **argv2;
 
@@ -4307,13 +4307,13 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 
   argc2 = 4;
   argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(29 * sizeof(char)); 
+  argv2[3] = (char*) malloc(29 * sizeof(char));
   strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
   if (!NaClCreateMainForkThread(nap,
@@ -4340,7 +4340,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
 int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
-  
+
   int argc2;
   char **argv2;
 
@@ -4348,13 +4348,13 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
 
   argc2 = 4;
   argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char)); 
+  argv2[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char)); 
+  argv2[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char)); 
+  argv2[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char)); 
+  argv2[3] = (char*) malloc(43 * sizeof(char));
   strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
 
   if (!NaClCreateMainThread(nap0,
@@ -4368,11 +4368,11 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   }
 
   NaClReportExitStatus(nap, 0);  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
-  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
- 
+  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return.
+
   NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv finishes! \n");
 
-  return retval; 
+  return retval;
 }
 
 // yiwen: my implementation for execve(3) call
@@ -4385,7 +4385,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   struct NaClApp *nap = natp->nap;
   int argc_newcage;
   char **argv_newcage;
-  int32_t retval = -1; 
+  int32_t retval = -1;
   int path_len = 0;
   uintptr_t path_get;
   uintptr_t argv_get;
@@ -4398,7 +4398,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   int option_len = 0;
   int i;
 
-  // convert pointers from addresses within the cage into ones in the whole address space 
+  // convert pointers from addresses within the cage into ones in the whole address space
   // basically just adding the cage memory start address to the offset within the cage
   path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
   argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
@@ -4415,7 +4415,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
     option_len = (int) (strlen(argv_split) + 1);
     // printf ("%s \n", argv_split);
     // printf ("%d \n", option_len);
-    options[argv_num] = (char*) malloc(option_len * sizeof(char)); 
+    options[argv_num] = (char*) malloc(option_len * sizeof(char));
     strncpy(options[argv_num], argv_split, option_len - 1);
     options[argv_num][option_len - 1] = '\0';
     argv_num++;
@@ -4424,25 +4424,25 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
 
   /*
   printf ("%d \n", argv_num);
-  for (i = 0; i < argv_num; i++) { 
+  for (i = 0; i < argv_num; i++) {
     printf ("%s \n", options[i]);
   } */
 
-  // setup the arguments needed to start running a new main thread in a pre-allocated new cage 
+  // setup the arguments needed to start running a new main thread in a pre-allocated new cage
   argc_newcage = 4 + argv_num - 1;
   argv_newcage = (char**) malloc(argc_newcage * sizeof(char*));
-  argv_newcage[0] = (char*) malloc(9 * sizeof(char)); 
+  argv_newcage[0] = (char*) malloc(9 * sizeof(char));
   strncpy(argv_newcage[0], "NaClMain", 9);
-  argv_newcage[1] = (char*) malloc(15 * sizeof(char)); 
+  argv_newcage[1] = (char*) malloc(15 * sizeof(char));
   strncpy(argv_newcage[1], "--library-path", 15);
-  argv_newcage[2] = (char*) malloc(7 * sizeof(char)); 
+  argv_newcage[2] = (char*) malloc(7 * sizeof(char));
   strncpy(argv_newcage[2], "/glibc", 7);
-  argv_newcage[3] = (char*) malloc(path_len * sizeof(char)); 
+  argv_newcage[3] = (char*) malloc(path_len * sizeof(char));
   strncpy(argv_newcage[3], (char*) path_get, path_len);
 
   for (i = 1; i < argv_num; i++) {
     // printf ("%d \n", (int) strlen(options[i]));
-    argv_newcage[3 + i] = (char*) malloc((strlen(options[i]) + 1) * sizeof(char)); 
+    argv_newcage[3 + i] = (char*) malloc((strlen(options[i]) + 1) * sizeof(char));
     strncpy(argv_newcage[3 + i], (char*) options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
     // printf ("%s \n", argv_newcage[3 + i]);
@@ -4458,11 +4458,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   NaClLog(LOG_WARNING, "[NaClSysExecve] fork_num = %d \n", fork_num);
   #endif
 
-  if (fork_num == 1) { 
+  if (fork_num == 1) {
       // need to inherit children info from previous cage
       nap_ready->num_children = nap->num_children;
-      for (i = 0; i < nap->num_children; i++) { 
-          nap_ready->children_ids[i] = nap->children_ids[i]; 
+      for (i = 0; i < nap->num_children; i++) {
+          nap_ready->children_ids[i] = nap->children_ids[i];
       }
 
       // create and start running the main thread in the new cage
@@ -4479,8 +4479,8 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   else if (fork_num == 2) {
       // need to inherit children info from previous cage
       nap_ready_2->num_children = nap->num_children;
-      for (i = 0; i < nap->num_children; i++) { 
-          nap_ready_2->children_ids[i] = nap->children_ids[i]; 
+      for (i = 0; i < nap->num_children; i++) {
+          nap_ready_2->children_ids[i] = nap->children_ids[i];
       }
 
       // create and start running the main thread in the new cage
@@ -4504,8 +4504,8 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   if (nap->cage_id == 1001) {
      NaClReportExitStatus(nap0_2, 0);
   }
-  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return. 
-  return retval; 
+  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return.
+  return retval;
 }
 
 // yiwen:
@@ -4521,7 +4521,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 	stat_loc_ptr = (int *)sysaddr;
 	*stat_loc_ptr = 111;
 
-        retval = 0; 
+        retval = 0;
         if (nap->num_children > 0) {
            retval = nap->children_ids[nap->num_children-1];
 	}
