@@ -40,7 +40,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  NaClLog(4, "      natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  NaClLog(4, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
   NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(&natp->user));
