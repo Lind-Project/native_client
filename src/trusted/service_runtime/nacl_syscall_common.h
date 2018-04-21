@@ -313,6 +313,9 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp);
 int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void* envp);
 int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options);
 
+/* jp */
+int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */
