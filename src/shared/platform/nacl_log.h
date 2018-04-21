@@ -271,53 +271,19 @@ void NaClLog2(char const *module_name,
  * "naked" identifier in the macro definition, and so will take on the
  * argument list from the apparent argument list of NaClLog.
  */
-int NaClLogSetModule(char const *module_name);
+void NaClLogSetModule(char const *module_name);
 void NaClLogDoLogAndUnsetModule(int        detail_level,
                                 char const *fmt,
                                 ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 /*
- * TODO(bsy): With variadic macro support on the way, the macro below and
- * the comment following it could be improved for readability.
+ * Variadic macros are here! (jp)
  */
-
 #ifdef NACL_LOG_MODULE_NAME
-# define NaClLog                              \
-  if (NaClLogSetModule(NACL_LOG_MODULE_NAME)) \
-    ;                                         \
-  else                                        \
-    NaClLogDoLogAndUnsetModule
-
-/*
- * User code has lines of the form
- *
- * NaClLog(detail_level, format_string, ...);
- *
- * We need to be usable without variadic macros.  So, when
- * NACL_LOG_MODULE_NAME is not defined, the NaClLog statement would
- * just invoke the NaClLog function.  When NACL_LOG_MODULE_NAME *is*
- * defined, however, it expands to:
- *
- * if (NaClLogSetModule(NACL_LOG_MODULE_NAME))
- *   ;
- * else
- *   NaClLogDoLogAndUnsetModule(detail_level, format_string, ...);
- *
- * Note that this is a syntactic macro, so that if the original code had
- *
- * if (foo)
- *   if (bar)
- *     NaClLog(LOG_WARNING, "EEeeep!\n");
- *   else
- *     printf("!bar\n");
- *
- * the macro expansion for NaClLog would not cause the "else" clauses
- * to mis-bind.
- *
- * Also note that the compiler may generate a warning/suggestion to
- * use braces.  This doesn't occur in the NaCl code base (esp w/
- * -Werror), but may have an impact on untrusted code that use this
- * module.
- */
+# define NaClLog(detail_level, fmt, args...)                \
+   do {                                                     \
+    NaClLogSetModule(NACL_LOG_MODULE_NAME);                 \
+    NaClLogDoLogAndUnsetModule(detail_level, fmt, ## args); \
+   } while (0)
 #endif
 
 #define LOG_INFO    (-1)
