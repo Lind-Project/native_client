@@ -85,10 +85,10 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
                                NACL_APP_THREAD_UNTRUSTED);
 
   // yiwen: debug
-  #ifdef DEBUG_INFO_ENABLED
+#ifdef DEBUG_INFO_ENABLED
   NaClLog(LOG_WARNING, "[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
-  #endif
-  // NaClLogThreadContext(natp);
+#endif
+  NaClLogThreadContext(natp);
 
   NaClAppThreadPrintInfo(natp);
 

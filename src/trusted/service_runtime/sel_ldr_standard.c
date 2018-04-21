@@ -170,25 +170,25 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
 void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
   unsigned int *addr;
-  
+
   sysaddr = (void *)NaClUserToSys(nap, useraddr);
   addr = (unsigned int *)sysaddr;
 
   NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr);
   NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
-} 
+}
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   void *sysaddr_print;
   unsigned int *addr;
-  
+
   sysaddr_print = (void *)sysaddr;
   addr = (unsigned int *)sysaddr_print;
 
   NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr_print);
   NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
   NaClLog(LOG_WARNING, "[Memory] Memory content: %s \n", (char *) addr);
-} 
+}
 
 // yiwen: print out thread context info
 void NaClLogThreadContext(struct NaClAppThread *natp) {
@@ -197,7 +197,7 @@ void NaClLogThreadContext(struct NaClAppThread *natp) {
   NaClLog(LOG_WARNING, "[Thread Context] prog_ctr = %p \n", (void *)natp->user.prog_ctr);
   NaClLog(LOG_WARNING, "[Thread Context] new_prog_ctr = %p \n", (void *)natp->user.new_prog_ctr);
   NaClLog(LOG_WARNING, "[Thread Context] trusted_stack_ptr = %p \n\n", (void *)natp->user.trusted_stack_ptr);
-} 
+}
 
 // yiwen: print out memory layout of a nap
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
