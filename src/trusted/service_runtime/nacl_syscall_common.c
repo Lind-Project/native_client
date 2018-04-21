@@ -4169,26 +4169,26 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   }
 
   argc2 = 3 + nap->command_num;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/glibc", 7);
+  argv2 = calloc(6, sizeof *argv2);
+  argv2[0] = malloc(9);
+  strcpy(argv2[0], "NaClMain");
+  argv2[1] = malloc(15);
+  strcpy(argv2[1], "--library-path");
+  argv2[2] = malloc(11);
+  strcpy(argv2[2], "/lib/glibc");
   // argv2[3] = (char*) malloc(29 * sizeof(char));
   // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
   path_len = strlen(nap->binary_path) + 1;
-  argv2[3] = (char*) malloc(path_len * sizeof(char));
-  strncpy(argv2[3], nap->binary_path, path_len);
-  // NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+  argv2[3] = malloc(path_len);
+  strcpy(argv2[3], nap->binary_path);
+  NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
-     argv2[4] = (char*) malloc(path_len * sizeof(char));
-     strncpy(argv2[4], nap->binary_command, path_len);
-     // NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
+     argv2[4] = malloc(path_len);
+     strcpy(argv2[4], nap->binary_command);
+     NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
 
   if (fork_num == 1) {
