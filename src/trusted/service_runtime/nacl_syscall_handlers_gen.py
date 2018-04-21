@@ -83,15 +83,15 @@ static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
   }
 #endif
   printf(")\\n");
-  nacl_syscall_trace_level_counter++; 
+  nacl_syscall_trace_level_counter++;
   retval = %(name)s(natp%(arglist)s);
   nacl_syscall_trace_level_counter--;
   printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [exit][syscall_depth = %%d] \\n", nap->cage_id, nacl_syscall_trace_level_counter);
   return retval;
   #endif
-  
+
   return %(name)s(natp%(arglist)s);
-  
+
 }
 
 /*
