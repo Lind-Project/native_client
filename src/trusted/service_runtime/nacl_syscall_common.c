@@ -480,6 +480,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   return retval;
 }
 
+/* jp */
 int32_t NaClSysDup(struct NaClAppThread *natp,
                    int                  oldfd) {
   struct NaClApp  *nap = natp->nap;
@@ -497,6 +498,26 @@ int32_t NaClSysDup(struct NaClAppThread *natp,
 done:
   return retval;
 }
+
+/*
+ * int32_t NaClSysDup(struct NaClAppThread *natp,
+ *                    int                  oldfd) {
+ *   struct NaClApp  *nap = natp->nap;
+ *   int             retval;
+ *   struct NaClDesc *old_nd;
+ *
+ *   NaClLog(3, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n",
+ *           (uintptr_t) natp, oldfd);
+ *   old_nd = NaClGetDesc(nap, oldfd);
+ *   if (NULL == old_nd) {
+ *     retval = -NACL_ABI_EBADF;
+ *     goto done;
+ *   }
+ *   retval = NaClSetAvail(nap, old_nd);
+ * done:
+ *   return retval;
+ * }
+ */
 
 // yiwen: this is the old NaCl dup2 implementation
 /*

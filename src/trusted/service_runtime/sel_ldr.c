@@ -737,7 +737,7 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   struct NaClDescIoDesc *dp;
 
   NaClLog(4,
-          "NaClAddHostDescriptor: host %d as nacl desc %d, flag 0x%x\n",
+          "NaClAddHostDescriptor: host %d as nacl desc %d, flag %#x\n",
           host_os_desc,
           nacl_desc,
           flag);
@@ -745,7 +745,13 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   if (NULL == dp) {
     NaClLog(LOG_FATAL, "NaClAddHostDescriptor: NaClDescIoDescMake failed\n");
   }
-  NaClSetDesc(nap, nacl_desc, (struct NaClDesc *) dp);
+  NaClLog(LOG_WARNING, "NaClAddHostDescriptor: mapping %d to %#x\n", host_os_desc, dp);
+  NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
+  if (host_os_desc >= FILE_DESC_MAX) {
+    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large for fd_maps\n", host_os_desc);
+    return;
+  }
+  nap->fd_maps[host_os_desc] = (struct NaClDesc *)dp;
 }
 
 void NaClAddImcHandle(struct NaClApp  *nap,
