@@ -114,11 +114,14 @@ struct NaClApp {
    * the thread locks, i.e., children_mu must be acqured w/o holding
    * any thread table or per-thread lock (threads_mu or natp->mu).
    *
-   * -Joey Pabalinas
+   * -jp
    */
   struct NaClMutex          children_mu;
   struct DynArray           children;   /* NaClApp pointers */
   int                       num_children;  /* number actually running */
+
+  /* mappings of `int fd` numbers to `NaClDesc *` */
+  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
 
   // yiwen
   int                       cage_id;

@@ -26,18 +26,21 @@
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 
-// yiwen
-#define CAGING_LIB_PATH_MAX 50 
-#define CACHED_LIB_NUM_MAX 20
-#define PIPE_BUF_MAX 16*4096
-#define PIPE_NUM_MAX 10
+/* jp */
+enum {
+        CACHED_LIB_NUM_MAX = 20u,
+        CAGING_LIB_PATH_MAX = 50u,
+        PIPE_NUM_MAX = 10u,
+        PIPE_BUF_MAX = 1u << 16,
+        FILE_DESC_MAX = 1u << 8,
+};
 
-// yiwen: define struct for storing the <file_path, mem_addr> relation 
-//        which is being used by our "shared libs caching" mechanism 
+// yiwen: define struct for storing the <file_path, mem_addr> relation
+//        which is being used by our "shared libs caching" mechanism
 struct CachedLibTable {
   char path[CAGING_LIB_PATH_MAX];
-  void *mem_addr; 
-}; 
+  void *mem_addr;
+};
 
 EXTERN_C_BEGIN
 struct NaClThreadContext;
@@ -63,8 +66,8 @@ extern double time_counter;
 extern double time_start;
 extern double time_end;
 
-// yiwen: this is the lookup table used, when checking if a lib has already been loaded previously, 
-//        and will contain the shared memory address for the lib if it has been loaded before. 
+// yiwen: this is the lookup table used, when checking if a lib has already been loaded previously,
+//        and will contain the shared memory address for the lib if it has been loaded before.
 extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 extern int cached_lib_num;
 
