@@ -33,8 +33,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   uint32_t thread_idx;
 
-  // NaClLog(LOG_WARNING, "[NaClApp Fork] parent cage id = %i \n", parent->cage_id);
-  // NaClLog(LOG_WARNING, "[NaClApp Fork] child cage id = %i \n", child->cage_id);
+  /* NaClLog(LOG_WARNING, "[NaClApp Fork] parent cage id = %i \n", parent->cage_id); */
+  /* NaClLog(LOG_WARNING, "[NaClApp Fork] child cage id = %i \n", child->cage_id); */
 
   NaClLog(4, "NaClAppThreadLauncher: entered\n");
 
@@ -307,7 +307,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
 }
 
-// yiwen
+/* jp */
 int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
                            struct NaClApp *nap_child,
                            uintptr_t      usr_entry,
@@ -325,39 +325,42 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   if (!natp_child)
     return 0;
 
-/*
- *   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
- *   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
- *   size_of_dynamic_text = nap_child->dynamic_text_end - nap_child->dynamic_text_start;
- *   NaClLog(LOG_WARNING, "copy size = %zd \n", size_of_dynamic_text);
- *   size_of_dynamic_text = 4000;
- *   memcpy(sysaddr_child, sysaddr_parent, 4);
- *   memcpy(sysaddr_child, sysaddr_parent, nap_parent->dynamic_text_end - nap_parent->dynamic_text_start);
- *   sysaddr_child = (void *)malloc(4);
- *   retval = NaClMprotect(sysaddr_parent,
- *                         size_of_dynamic_text,
- *                         PROT_READ | PROT_WRITE | PROT_EXEC);
- *   retval = NaClMprotect(sysaddr_child,
- *                         size_of_dynamic_text,
- *                         PROT_READ | PROT_WRITE | PROT_EXEC);
- *   if (retval == -1) {
- *      NaClLog(LOG_WARNING, "NaClMprotect failed! \n");
- *   }
- *
- *   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
- *
- *   retval = NaClMprotect(sysaddr_parent,
- *                         size_of_dynamic_text,
- *                         PROT_READ | PROT_EXEC);
- *   retval = NaClMprotect(sysaddr_child,
- *                         size_of_dynamic_text,
- *                         PROT_READ | PROT_EXEC);
- */
-
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
   NaClLog(LOG_WARNING, "\n");
+
+  sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
+  sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
+  size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
+
+  NaClLog(LOG_WARNING, "copy size = %zd\n", size_of_dynamic_text);
+  retval = NaClMprotect(sysaddr_parent,
+			size_of_dynamic_text,
+			PROT_READ | PROT_WRITE | PROT_EXEC);
+  retval = NaClMprotect(sysaddr_child,
+			size_of_dynamic_text,
+			PROT_READ | PROT_WRITE | PROT_EXEC);
+  if (retval == -1) {
+     NaClLog(LOG_WARNING, "NaClMprotect failed! \n");
+  }
+
+  /* copy the entire address space */
+  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap_parent->mu);
+  /* NaClLog(LOG_WARNING, "copying pages to %p from %p\n", sysaddr_child, sysaddr_parent); */
+  /* NaClVmCopyAddressSpace(nap_parent, nap_child); */
+  NaClLog(LOG_WARNING, "copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
+  memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+  NaClXMutexUnlock(&nap_parent->mu);
+  NaClXMutexUnlock(&nap_child->mu);
+
+  retval = NaClMprotect(sysaddr_parent,
+			size_of_dynamic_text,
+			PROT_READ | PROT_EXEC);
+  retval = NaClMprotect(sysaddr_child,
+			size_of_dynamic_text,
+			PROT_READ | PROT_EXEC);
 
   nap_parent->cage_id = nap_parent->cage_id;
   NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
@@ -368,15 +371,8 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  /* copy the entire address space */
-  NaClXMutexLock(&nap_child->mu);
-  NaClXMutexLock(&nap_parent->mu);
-  NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClXMutexUnlock(&nap_parent->mu);
-  NaClXMutexUnlock(&nap_child->mu);
-
   if (!NaClThreadCtor(&natp_child->host_thread,
-		      NaClAppForkThreadLauncher,
+		      NaClAppThreadLauncher,
 		      (void *)natp_child,
                       NACL_KERN_STACK_SIZE)) {
     /*

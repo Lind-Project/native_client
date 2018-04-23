@@ -460,8 +460,17 @@ static void MakeDynamicCodePagesVisible(struct NaClApp *nap,
   }
 #endif
 
-  /* Sanity check:  Ensure the page is not already in use. */
-  CHECK(*writable_addr == 0);
+
+  /*
+   * Sanity check:  Ensure the page is not already in use.
+   *
+   * TODO:
+   * figure out how to re-enable this check without breaking fork()
+   *
+   * -jp
+   *
+   * CHECK(*writable_addr == 0);
+   */
 
   NaClFillMemoryRegionWithHalt(writable_addr, size);
 
