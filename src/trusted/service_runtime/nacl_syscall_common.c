@@ -291,9 +291,9 @@ cleanup_no_lock:
 int NaClAclBypassChecks = 0;
 
 void NaClInsecurelyBypassAllAclChecks(void) {
-  #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
   NaClLog(LOG_WARNING, "BYPASSING ALL ACL CHECKS\n");
-  #endif
+#endif
   NaClAclBypassChecks = 1;
 }
 
@@ -667,10 +667,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   allowed_flags = (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
                    | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
   if (0 != (flags & ~allowed_flags)) {
-    #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
     NaClLog(LOG_WARNING, "Invalid open flags 0%o, ignoring extraneous bits\n",
             flags);
-    #endif
+#endif
     flags &= allowed_flags;
   }
   if (0 != (mode & ~0600)) {
@@ -1598,10 +1598,10 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       NULL != ndp &&
       NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(nap, usraddr, length)) {
     if (!nap->enable_dyncode_syscalls) {
-      #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
       NaClLog(LOG_WARNING,
               "NaClSysMmap: PROT_EXEC when dyncode syscalls are disabled.\n");
-      #endif
+#endif
       map_result = -NACL_ABI_EINVAL;
       goto cleanup;
     }
@@ -2256,11 +2256,11 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
      * the compiler will not complain since an automatic type
      * conversion works.
      */
-    #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
     NaClLog(LOG_WARNING,
             "NaClSysMmap: NULL pointer used"
             " for offset in/out argument\n");
-    #endif
+#endif
     return -NACL_ABI_EINVAL;
   }
 
@@ -4172,25 +4172,25 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   char **argv2;
   int path_len;
 
-  // NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
+  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
 
-  #ifdef DEBUG_INFO_ENABLED
-  NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d \n", fork_num);
-  #endif
+#ifdef  _DEBUG
+  NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
+#endif
 
   if (nap->cage_id < 1000)
      fork_num++;
 
   if (nap->cage_id >= 1000) {
      retval = 0;
-     #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
      NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
-     #endif
+#endif
      return retval;
   }
 
   argc2 = 3 + nap->command_num;
-  argv2 = calloc(6, sizeof *argv2);
+  argv2 = calloc(argc2 + 1, sizeof *argv2);
   argv2[0] = malloc(9);
   strcpy(argv2[0], "NaClMain");
   argv2[1] = malloc(15);
@@ -4200,10 +4200,12 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   // argv2[3] = (char*) malloc(29 * sizeof(char));
   // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
-  path_len = strlen(nap->binary_path) + 1;
-  argv2[3] = malloc(path_len);
-  strcpy(argv2[3], nap->binary_path);
-  NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+  if (nap->binary_path) {
+    path_len = strlen(nap->binary_path) + 1;
+    argv2[3] = malloc(path_len);
+    strcpy(argv2[3], nap->binary_path);
+    NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+  }
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
@@ -4227,7 +4229,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       nap->children_ids[nap->num_children] = nap0->cage_id;
       nap->num_children++;
       retval = nap0->cage_id;
-      // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+      NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
 
       return retval;
   }
@@ -4235,7 +4237,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   else if (fork_num == 2) {
       if (!NaClCreateMainForkThread(nap,
                                     nap0_2,
-                                    argc2,
+				    argc2,
                                     argv2,
                                     NULL)) {
         fprintf(stderr, "creating main thread failed\n");
@@ -4247,7 +4249,7 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
       nap->children_ids[nap->num_children] = nap0_2->cage_id;
       nap->num_children++;
       retval = nap0_2->cage_id;
-      // NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+      NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
 
       return retval;
   }
@@ -4410,9 +4412,9 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   int path_len = 0;
   uintptr_t path_get;
   uintptr_t argv_get;
-  #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
   uintptr_t envp_get;
-  #endif
+#endif
   char *argv_split;
   int argv_num = 0;
   char **options;
@@ -4423,9 +4425,9 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   // basically just adding the cage memory start address to the offset within the cage
   path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
   argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
-  #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
   envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
-  #endif
+#endif
 
   path_len = strlen((char*) path_get);
   path_len += 1;
@@ -4473,11 +4475,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   // NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
   // NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
   envp = envp;
-  #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
   NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
   NaClLog(LOG_WARNING, "[NaClSysExecve] fork_num = %d \n", fork_num);
-  #endif
+#endif
 
   if (fork_num == 1) {
       // need to inherit children info from previous cage
@@ -4548,11 +4550,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
 	}
         UNREFERENCED_PARAMETER(pid);
         UNREFERENCED_PARAMETER(options);
-        #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
         NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
         NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
         NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
-        #endif
+#endif
 	return retval;
 }
 
@@ -4572,8 +4574,8 @@ int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
         if (nap->num_children > 0) {
            retval = nap->children_ids[nap->num_children - 1];
 	}
-        #ifdef DEBUG_INFO_ENABLED
+#ifdef  _DEBUG
         NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
-        #endif
+#endif
 	return retval;
 }

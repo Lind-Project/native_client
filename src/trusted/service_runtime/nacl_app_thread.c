@@ -314,22 +314,18 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
                            uintptr_t      usr_stack_ptr,
                            uint32_t       user_tls1,
                            uint32_t       user_tls2) {
+  int retval;
+  void *sysaddr_parent;
+  void *sysaddr_child;
+  size_t size_of_dynamic_text;
   struct NaClAppThread *natp_child;
 
-  /* copy the entire address space */
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
-  NaClXMutexLock(&nap_child->mu);
-  NaClXMutexLock(&nap_parent->mu);
-  NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClXMutexUnlock(&nap_parent->mu);
-  NaClXMutexUnlock(&nap_child->mu);
+
+  if (!natp_child)
+    return 0;
 
 /*
- *   int retval;
- *   void *sysaddr_parent;
- *   void *sysaddr_child;
- *   size_t size_of_dynamic_text;
- *
  *   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
  *   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
  *   size_of_dynamic_text = nap_child->dynamic_text_end - nap_child->dynamic_text_start;
@@ -358,18 +354,13 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
  *                         PROT_READ | PROT_EXEC);
  */
 
-  if (!natp_child)
-    return 0;
-
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
   NaClLog(LOG_WARNING, "\n");
 
   nap_parent->cage_id = nap_parent->cage_id;
-  #ifdef DEBUG_INFO_ENABLED
   NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
-  #endif
 
   /*
    * We set host_thread_is_defined assuming, for now, that
@@ -377,8 +368,12 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  // yiwen: copy memory from parent to child
-
+  /* copy the entire address space */
+  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap_parent->mu);
+  NaClVmCopyAddressSpace(nap_parent, nap_child);
+  NaClXMutexUnlock(&nap_parent->mu);
+  NaClXMutexUnlock(&nap_child->mu);
 
   if (!NaClThreadCtor(&natp_child->host_thread,
 		      NaClAppForkThreadLauncher,

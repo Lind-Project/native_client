@@ -1126,11 +1126,11 @@ int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
   CHECK((char *) p == (char *) stack_ptr + ptr_tbl_size);
 
   /* duplicate parent file descriptors */
-  NaClFastMutexLock(&nap_child->desc_mu);
-  NaClFastMutexLock(&nap_parent->desc_mu);
-  NaClGetDesc(nap_parent, 0);
-  NaClFastMutexUnlock(&nap_parent->desc_mu);
-  NaClFastMutexUnlock(&nap_child->desc_mu);
+  /* NaClFastMutexLock(&nap_child->desc_mu); */
+  /* NaClFastMutexLock(&nap_parent->desc_mu); */
+  /* NaClGetDesc(nap_parent, 0); */
+  /* NaClFastMutexUnlock(&nap_parent->desc_mu); */
+  /* NaClFastMutexUnlock(&nap_child->desc_mu); */
 
   /* now actually spawn the thread */
   NaClXMutexLock(&nap_child->mu);
