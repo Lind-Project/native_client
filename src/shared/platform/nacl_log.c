@@ -668,9 +668,8 @@ void NaClLog(int         detail_level,
   va_list ap;
 
 #if !THREAD_SAFE_DETAIL_CHECK
-  if (NACL_LIKELY(detail_level > verbosity)) {
+  if (NACL_LIKELY(detail_level > verbosity))
     return;
-  }
 #endif
 
   NaClLogLock();

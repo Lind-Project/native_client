@@ -275,8 +275,9 @@ void NaClLogSetModule(char const *module_name);
 void NaClLogDoLogAndUnsetModule(int        detail_level,
                                 char const *fmt,
                                 ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
+
 /*
- * Variadic macros are here! (jp)
+ * Variadic macros are here! -jp
  */
 #ifdef NACL_LOG_MODULE_NAME
 # define NaClLog(detail_level, fmt, args...)                \
@@ -290,6 +291,17 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #define LOG_WARNING (-2)
 #define LOG_ERROR   (-3)
 #define LOG_FATAL   (-4)
+#define LOG_DEBUG   (LOG_WARNING)
+
+#ifdef _DEBUG
+#  define DPRINTF(fmt, args...)					\
+	do {							\
+		NaClLog(LOG_DEBUG, "[%s() %s:%u] " fmt,		\
+			__func__, __FILE__, __LINE__, ## args);	\
+	} while (0)
+#else
+#  define DPRINTF(fmt, args...) do {/* noop */} while (0)
+#endif
 
 /*
  * Low-level logging code that requires manual lock manipulation.
