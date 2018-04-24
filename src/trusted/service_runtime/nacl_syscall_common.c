@@ -4126,30 +4126,23 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   return 1;
 } */
 
-// yiwen: this one below is currently working
-int32_t NaClSysFork(struct NaClAppThread  *natp) {
+/* jp */
+int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval;
   int argc2;
   char **argv2;
   int path_len;
 
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
-
-#ifdef  _DEBUG
-  NaClLog(LOG_WARNING, "[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
-#endif
-
-  if (nap->cage_id < 1000)
-     fork_num++;
+  DPRINTF("[NaClSysFork] NaCl fork starts! \n");
+  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
 
   if (nap->cage_id >= 1000) {
-     retval = 0;
-#ifdef  _DEBUG
-     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
-#endif
-     return retval;
+     DPRINTF("[NaClSysFork] This is the child of fork() \n");
+     return 0;
   }
+
+  fork_num++;
 
   argc2 = 3 + nap->command_num;
   argv2 = calloc(argc2 + 1, sizeof *argv2);
@@ -4159,63 +4152,52 @@ int32_t NaClSysFork(struct NaClAppThread  *natp) {
   strcpy(argv2[1], "--library-path");
   argv2[2] = malloc(11);
   strcpy(argv2[2], "/lib/glibc");
-  // argv2[3] = (char*) malloc(29 * sizeof(char));
-  // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
 
   if (nap->binary_path) {
-    path_len = strlen(nap->binary_path) + 1;
-    argv2[3] = malloc(path_len);
-    strcpy(argv2[3], nap->binary_path);
-    NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+     path_len = strlen(nap->binary_path) + 1;
+     argv2[3] = malloc(path_len);
+     strcpy(argv2[3], nap->binary_path);
+     DPRINTF("[NaClSysFork] binary path: %s \n\n", nap->binary_path);
   }
 
   if (nap->command_num > 1) {
      path_len = strlen(nap->binary_command) + 1;
      argv2[4] = malloc(path_len);
      strcpy(argv2[4], nap->binary_command);
-     NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
+     DPRINTF("[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
 
-  if (fork_num == 1) {
-      if (!NaClCreateMainForkThread(nap,
-                                    nap0,
-                                    argc2,
-                                    argv2,
-                                    NULL)) {
-        fprintf(stderr, "creating main thread failed\n");
-        NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
-        retval = -1;
-        return retval;
-      }
+  switch (fork_num) {
+  case 1:
+     if (!NaClCreateMainForkThread(nap, nap0, argc2, argv2, NULL)) {
+       DPRINTF("[NaClSysFork] Execv new program failed! \n");
+       retval = -1;
+       break;
+     }
+     nap->children_ids[nap->num_children] = nap0->cage_id;
+     nap->num_children++;
+     retval = nap0->cage_id;
+     DPRINTF("[NaClSysFork] retval = %d \n", retval);
+     break;
 
-      nap->children_ids[nap->num_children] = nap0->cage_id;
-      nap->num_children++;
-      retval = nap0->cage_id;
-      NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
+  case 2:
+     if (!NaClCreateMainForkThread(nap, nap0_2, argc2, argv2, NULL)) {
+       DPRINTF("[NaClSysFork] Execv new program failed! \n");
+       retval = -1;
+       break;
+     }
+     nap->children_ids[nap->num_children] = nap0_2->cage_id;
+     nap->num_children++;
+     retval = nap0_2->cage_id;
+     DPRINTF("[NaClSysFork] retval = %d \n", retval);
+     break;
 
-      return retval;
+  default:
+     retval = 0;
+     break;
   }
 
-  else if (fork_num == 2) {
-      if (!NaClCreateMainForkThread(nap,
-                                    nap0_2,
-				    argc2,
-                                    argv2,
-                                    NULL)) {
-        fprintf(stderr, "creating main thread failed\n");
-        NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
-        retval = -1;
-        return retval;
-      }
-
-      nap->children_ids[nap->num_children] = nap0_2->cage_id;
-      nap->num_children++;
-      retval = nap0_2->cage_id;
-      NaClLog(LOG_WARNING, "[NaClSysFork] retval = %d \n", retval);
-
-      return retval;
-  }
-  return 0;
+  return retval;
 }
 
 // yiwen: an improved basic working version 1.1 of my fork implementation
