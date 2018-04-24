@@ -291,7 +291,6 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #define LOG_WARNING (-2)
 #define LOG_ERROR   (-3)
 #define LOG_FATAL   (-4)
-#define LOG_DEBUG   (LOG_WARNING)
 
 #ifdef _DEBUG
 #  define DPRINTF(fmt, args...)					\
@@ -301,7 +300,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 			file++;					\
 		else						\
 			file = __FILE__;			\
-		NaClLog(LOG_DEBUG, "[%s() %s:%u] " fmt,		\
+		NaClLog(LOG_ERROR, "[%s() %s:%u] " fmt,		\
 			__func__, file, __LINE__, ## args);	\
 	} while (0)
 #else
