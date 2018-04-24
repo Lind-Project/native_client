@@ -1652,8 +1652,8 @@ int NaClSelLdrMain(int argc, char **argv) {
    * free(argv2[2]);
    * free(argv2[3]);
    * free(argv2[4]);
+   * free(argv2);
    */
-  free(argv2);
 
   // ***********************************************************************
   // yiwen: testing

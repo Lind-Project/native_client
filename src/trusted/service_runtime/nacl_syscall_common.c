@@ -481,78 +481,43 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
 }
 
 /* jp */
-int32_t NaClSysDup(struct NaClAppThread *natp,
-                   int                  oldfd) {
+int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp  *nap = natp->nap;
-  int             retval;
+  int             retval, newfd;
   struct NaClDesc *old_nd;
 
   NaClLog(3, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, oldfd);
   old_nd = NaClGetDesc(nap, oldfd);
-  if (NULL == old_nd) {
+  if (!old_nd) {
     retval = -NACL_ABI_EBADF;
     goto done;
   }
-  retval = NaClSetAvail(nap, old_nd);
-done:
-  return retval;
-}
 
-/*
- * int32_t NaClSysDup(struct NaClAppThread *natp,
- *                    int                  oldfd) {
- *   struct NaClApp  *nap = natp->nap;
- *   int             retval;
- *   struct NaClDesc *old_nd;
- *
- *   NaClLog(3, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n",
- *           (uintptr_t) natp, oldfd);
- *   old_nd = NaClGetDesc(nap, oldfd);
- *   if (NULL == old_nd) {
- *     retval = -NACL_ABI_EBADF;
- *     goto done;
- *   }
- *   retval = NaClSetAvail(nap, old_nd);
- * done:
- *   return retval;
- * }
- */
-
-// yiwen: this is the old NaCl dup2 implementation
-/*
-int32_t NaClSysDup2(struct NaClAppThread  *natp,
-                    int                   oldfd,
-                    int                   newfd) {
-  struct NaClApp  *nap = natp->nap;
-  int             retval;
-  struct NaClDesc *old_nd;
-
-  NaClLog(3, "NaClSysDup(0x%08"NACL_PRIxPTR", %d, %d)\n",
-          (uintptr_t) natp, oldfd, newfd);
-  if (newfd < 0) {
-    retval = -NACL_ABI_EINVAL;
-    goto done;
-  } */
-  /*
-   * TODO(bsy): is this a reasonable largest sane value?  The
-   * descriptor array shouldn't get too large.
-   */
-  /*
-  if (newfd >= NACL_MAX_FD) {
-    retval = -NACL_ABI_EINVAL;
-    goto done;
-  }
   old_nd = NaClGetDesc(nap, oldfd);
   if (NULL == old_nd) {
     retval = -NACL_ABI_EBADF;
     goto done;
   }
+  retval = newfd = NaClSetAvail(nap, old_nd);
   NaClSetDesc(nap, newfd, old_nd);
-  retval = newfd;
+  fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+
+  if ((oldfd == 8000) || (oldfd == 8001)) {
+     fd_cage_table[nap->cage_id][newfd] = oldfd;
+     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
+     retval = 0;
+     goto done;
+  }
+
+  // yiwen: debug output
+  DPRINTF("[dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
+  for (int i = 0; i < nap->fd; i++)
+     DPRINTF("[dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
+
 done:
   return retval;
-} */
+}
 
 // yiwen: my dup2 implementation
 int32_t NaClSysDup2(struct NaClAppThread  *natp,
@@ -563,12 +528,12 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   int             i;
 
   // yiwen: debug
-  // printf("[*** Debug ***][dup2] Entered dup2! \n");
-  // printf("[*** Debug ***][dup2] cage id = %d \n", nap->cage_id);
-  // printf("[*** Debug ***][dup2] oldfd = %d \n", oldfd);
-  // printf("[*** Debug ***][dup2] newfd = %d \n", newfd);
+  DPRINTF("[dup2] Entered dup2! \n");
+  DPRINTF("[dup2] cage id = %d \n", nap->cage_id);
+  DPRINTF("[dup2] oldfd = %d \n", oldfd);
+  DPRINTF("[dup2] newfd = %d \n", newfd);
 
-  if ((oldfd == 8000) | (oldfd == 8001)) {
+  if ((oldfd == 8000) || (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
      printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
      retval = 0;
@@ -580,10 +545,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   retval = newfd;
 
   // yiwen: debug output
-  // printf("[*** Debug ***][dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
-  for (i = 0; i < nap->fd; i++) {
-     // printf("[*** Debug ***][dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
-  }
+  DPRINTF("[dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
+  for (int i = 0; i < nap->fd; i++)
+     DPRINTF("[dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
 
   return newfd;
 }
@@ -596,28 +560,26 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval;
 
-  // printf("[*** Debug ***][dup3] Entered dup3! \n");
-  // printf("[*** Debug ***][dup3] cage id = %d \n", nap->cage_id);
-  // printf("[*** Debug ***][dup3] oldfd = %d \n", oldfd);
-  // printf("[*** Debug ***][dup3] newfd = %d \n", newfd);
+  DPRINTF("[dup3] Entered dup3! \n");
+  DPRINTF("[dup3] cage id = %d \n", nap->cage_id);
+  DPRINTF("[dup3] oldfd = %d \n", oldfd);
+  DPRINTF("[dup3] newfd = %d \n", newfd);
 
-  if ((oldfd == 8000) | (oldfd == 8001)) {
+  if ((oldfd == 8000) || (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
-     // printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
+     DPRINTF("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
      retval = 0;
      return retval;
   }
 
-  if (newfd >= nap->fd) {
-     fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
-     retval = nap->fd;
-     nap->fd++;
-  }
-  else {
-     retval = -1;
-  }
+  if (newfd < nap->fd)
+     return -1;
 
+  fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
+  retval = nap->fd;
+  nap->fd++;
   flags = flags;
+
   return retval;
 }
 

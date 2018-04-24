@@ -28,7 +28,7 @@
 #include "native_client/src/include/win/mman.h"
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
-// yiwen
+/* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   uint32_t thread_idx;
@@ -95,6 +95,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 
+/* jp */
 void WINAPI NaClAppThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   uint32_t thread_idx;
@@ -147,7 +148,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
                                NACL_APP_THREAD_UNTRUSTED);
 
   // yiwen:
-  // printf("[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage! \n");
+  DPRINTF("[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage!\n");
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 
@@ -325,6 +326,7 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   if (!natp_child)
     return 0;
 
+  NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
@@ -348,10 +350,15 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   /* copy the entire address space */
   NaClXMutexLock(&nap_child->mu);
   NaClXMutexLock(&nap_parent->mu);
-  /* NaClLog(LOG_WARNING, "copying pages to %p from %p\n", sysaddr_child, sysaddr_parent); */
-  /* NaClVmCopyAddressSpace(nap_parent, nap_child); */
-  NaClLog(LOG_WARNING, "copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
+
+  /*
+   * DPRINTF("copying pages to %p from %p\n", sysaddr_child, sysaddr_parent);
+   * NaClVmCopyAddressSpace(nap_parent, nap_child);
+   */
+
+  DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+
   NaClXMutexUnlock(&nap_parent->mu);
   NaClXMutexUnlock(&nap_child->mu);
 
