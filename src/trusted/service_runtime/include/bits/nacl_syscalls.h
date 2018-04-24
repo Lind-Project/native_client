@@ -120,6 +120,9 @@
 #define NACL_sys_dup3                   119
 #define NACL_sys_wait                   120
 
-#define NACL_MAX_SYSCALLS               121
+/* jp */
+#define NACL_sys_pipe2                  121
+
+#define NACL_MAX_SYSCALLS               122
 
 #endif

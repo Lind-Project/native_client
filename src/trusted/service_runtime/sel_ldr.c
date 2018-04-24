@@ -745,7 +745,6 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   if (NULL == dp) {
     NaClLog(LOG_FATAL, "NaClAddHostDescriptor: NaClDescIoDescMake failed\n");
   }
-  NaClLog(LOG_WARNING, "NaClAddHostDescriptor: mapping %d to %#x\n", host_os_desc, dp);
   NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
   if (host_os_desc >= FILE_DESC_MAX) {
     NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large for fd_maps\n", host_os_desc);
