@@ -296,8 +296,13 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #ifdef _DEBUG
 #  define DPRINTF(fmt, args...)					\
 	do {							\
+		char *file = strrchr(__FILE__, '/');		\
+		if (file)					\
+			file++;					\
+		else						\
+			file = __FILE__;			\
 		NaClLog(LOG_DEBUG, "[%s() %s:%u] " fmt,		\
-			__func__, __FILE__, __LINE__, ## args);	\
+			__func__, file, __LINE__, ## args);	\
 	} while (0)
 #else
 #  define DPRINTF(fmt, args...) do {/* noop */} while (0)
