@@ -959,12 +959,13 @@ cleanup:
   return retval;
 }
 
-// yiwen
-int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
-                             struct NaClApp     *nap_child,
-                             int                argc,
-                             char               **argv,
-                             char const *const  *envv) {
+/* jp */
+int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
+                             struct NaClAppThread *natp_parent,
+                             struct NaClApp       *nap_child,
+                             int                  argc,
+                             char                 **argv,
+                             char const *const    *envv) {
   /*
    * Compute size of string tables for argv and envv
    */
@@ -979,6 +980,7 @@ int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   uintptr_t             stack_ptr;
+  uint32_t              fork_entry;
 
   retval = 0;  /* fail */
   CHECK(argc >= 0);
@@ -1150,12 +1152,14 @@ int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
     memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
 
-  NaClLog(2, "system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  NaClLog(2, "  user stack ptr : %016"NACL_PRIxPTR"\n",
-          NaClSysToUserStackAddr(nap_child, stack_ptr));
+  DPRINTF("   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+  DPRINTF("     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
+  DPRINTF("   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
+  DPRINTF("      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
+                                  natp_parent,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),

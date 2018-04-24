@@ -33,17 +33,13 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   uint32_t thread_idx;
 
-  /* NaClLog(LOG_WARNING, "[NaClApp Fork] parent cage id = %i \n", parent->cage_id); */
-  /* NaClLog(LOG_WARNING, "[NaClApp Fork] child cage id = %i \n", child->cage_id); */
-
-  NaClLog(4, "NaClAppThreadLauncher: entered\n");
+  DPRINTF("NaClAppThreadLauncher: entered\n");
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  NaClLog(4, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
-  NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
-  NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
-          NaClGetThreadCtxSp(&natp->user));
+  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
+  DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
   thread_idx = NaClGetThreadIdx(natp);
   CHECK(0 < thread_idx);
@@ -82,17 +78,15 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * claim any mutexes, otherwise we risk deadlock.
    */
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
-                               NACL_APP_THREAD_UNTRUSTED);
+			       NACL_APP_THREAD_UNTRUSTED);
 
-  // yiwen: debug
-#ifdef DEBUG_INFO_ENABLED
-  NaClLog(LOG_WARNING, "[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
-#endif
+
+  DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
   NaClLogThreadContext(natp);
-
   NaClAppThreadPrintInfo(natp);
 
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
+  /* NaClSwitchToApp(natp); */
 }
 
 /* jp */
@@ -243,9 +237,10 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
     return NULL;
   }
 
-  NaClLog(4, "         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
-  NaClLog(4, "          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
-  NaClLog(4, "usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
+  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
+  DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
+  DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
 
   /*
    * Set these early, in case NaClTlsAllocate() wants to examine them.
@@ -269,6 +264,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
     NaClLog(LOG_ERROR, "No tls for thread, num_thread %d\n", nap->num_threads);
     goto cleanup_free;
   }
+
 
   NaClThreadContextCtor(&natp->user, nap, usr_entry, usr_stack_ptr, tls_idx);
 
@@ -310,6 +306,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 
 /* jp */
 int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
+                           struct NaClAppThread *natp_parent,
                            struct NaClApp *nap_child,
                            uintptr_t      usr_entry,
                            uintptr_t      usr_stack_ptr,
@@ -321,11 +318,16 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   size_t size_of_dynamic_text;
   struct NaClAppThread *natp_child;
 
+  /* usr_entry = NaClSysToUser(nap_parent, natp_parent->user.new_prog_ctr); */
+  /* natp_child = NaClAppThreadMake(nap_parent, usr_entry, usr_stack_ptr, user_tls1, user_tls2); */
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
 
   if (!natp_child)
     return 0;
 
+  /* natp_child->nap = nap_child; */
+  /* natp_child->user.prog_ctr = natp_parent->user.new_prog_ctr; */
+  /* natp_child->user.new_prog_ctr = 0; */
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(LOG_WARNING, "\n");
@@ -358,6 +360,9 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
 
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+  /* natp_child->user = natp_parent->user; */
+  /* natp_child->user.prog_ctr = natp_parent->user.new_prog_ctr; */
+  /* natp_child->user.new_prog_ctr = 0; */
 
   NaClXMutexUnlock(&nap_parent->mu);
   NaClXMutexUnlock(&nap_child->mu);
@@ -379,7 +384,7 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   natp_child->host_thread_is_defined = 1;
 
   if (!NaClThreadCtor(&natp_child->host_thread,
-		      NaClAppThreadLauncher,
+		      NaClAppForkThreadLauncher,
 		      (void *)natp_child,
                       NACL_KERN_STACK_SIZE)) {
     /*

@@ -4169,7 +4169,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   switch (fork_num) {
   case 1:
-     if (!NaClCreateMainForkThread(nap, nap0, argc2, argv2, NULL)) {
+     NaClLogThreadContext(natp);
+     if (!NaClCreateMainForkThread(nap, natp, nap0, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
        break;
@@ -4181,7 +4182,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      break;
 
   case 2:
-     if (!NaClCreateMainForkThread(nap, nap0_2, argc2, argv2, NULL)) {
+     /* comment out the break to create this forked thread */
+     retval = 0;
+     break;
+     if (!NaClCreateMainForkThread(nap, natp, nap0_2, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
        break;

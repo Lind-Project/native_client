@@ -640,12 +640,13 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                          char               **argv,
                          char const *const  *envp) NACL_WUR;
 
-// yiwen
-int NaClCreateMainForkThread(struct NaClApp     *nap_parent,
-                             struct NaClApp     *nap_child,
-                             int                argc,
-                             char               **argv,
-                             char const *const  *envp) NACL_WUR;
+/* jp */
+int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
+                             struct NaClAppThread *natp_parent,
+                             struct NaClApp       *nap_child,
+                             int                  argc,
+                             char                 **argv,
+                             char const *const    *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
