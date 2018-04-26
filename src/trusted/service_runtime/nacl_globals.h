@@ -32,7 +32,7 @@ enum {
         CAGING_LIB_PATH_MAX = 50u,
         PIPE_NUM_MAX = 10u,
         PIPE_BUF_MAX = 1u << 16,
-        FILE_DESC_MAX = 1u << 8,
+        FILE_DESC_MAX = 1u << 8
 };
 
 // yiwen: define struct for storing the <file_path, mem_addr> relation

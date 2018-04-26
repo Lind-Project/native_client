@@ -750,7 +750,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     clock_t lind_sys_begin;
     clock_t lind_sys_finish;
 
-    NaClLog(3, "Entered NaClSysLindSyscall callNum=%8u inNum=%8u outNum=%8u\n", callNum, inNum, outNum);
+    DPRINTF("Entered NaClSysLindSyscall callNum=%u inNum=%u outNum=%u\n", callNum, inNum, outNum);
 
     // yiwen: start recording time for making a Lind system call, this includes the time to parse and prepare the argument passing right now
     lind_sys_begin = clock();
