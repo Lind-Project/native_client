@@ -119,6 +119,7 @@ struct NaClApp {
   struct NaClMutex          children_mu;
   struct DynArray           children;   /* NaClApp pointers */
   int                       num_children;  /* number actually running */
+  int                       fork_num;  /* fork instances actually running */
 
   /* mappings of `int fd` numbers to `NaClDesc *` */
   struct NaClDesc           *fd_maps[FILE_DESC_MAX];

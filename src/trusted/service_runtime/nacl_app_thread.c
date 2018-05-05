@@ -324,6 +324,7 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   /* natp_child = NaClAlignedMalloc(sizeof *natp_child, __alignof(struct NaClAppThread)); */
   if (!natp_child)
     return 0;
+  natp_child->nap->fork_num = 1;
 
   /*
    * DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
@@ -456,9 +457,10 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uint32_t       user_tls2) {
   struct NaClAppThread *natp = NaClAppThreadMake(nap, usr_entry, usr_stack_ptr,
                                                  user_tls1, user_tls2);
-  if (natp == NULL) {
+  if (natp == NULL)
     return 0;
-  }
+  natp->nap->fork_num = 0;
+
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.

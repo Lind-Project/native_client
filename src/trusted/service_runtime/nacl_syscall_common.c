@@ -372,7 +372,10 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap,
 
 int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   int32_t pid;
-  UNREFERENCED_PARAMETER(natp);
+  struct NaClApp *nap = natp->nap;
+
+  /* UNREFERENCED_PARAMETER(natp); */
+  return ++nap->num_children;
 
   if (NaClAclBypassChecks) {
     pid = GETPID();
