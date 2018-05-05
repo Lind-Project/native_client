@@ -770,7 +770,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
       // yiwen
       // time_start = clock();
-      errcode = NaClAppLoadFileFromFilename(nap, nacl_file2);
+      errcode = NaClAppLoadFileFromFilename(nap, nacl_file);
       // time_end = clock();
       // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 

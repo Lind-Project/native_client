@@ -525,7 +525,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   newfd) {
   struct NaClApp  *nap = natp->nap;
   int             retval;
-  int             i;
 
   // yiwen: debug
   DPRINTF("[dup2] Entered dup2! \n");
@@ -4139,6 +4138,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   if (nap->cage_id >= 1000) {
      DPRINTF("[NaClSysFork] This is the child of fork() \n");
+     NaClAppThreadPrintInfo(natp);
+     DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+     DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
+     DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
      return 0;
   }
 
@@ -4182,6 +4185,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      break;
 
   case 2:
+     fork_num = 0;
      /* comment out the break to create this forked thread */
      retval = 0;
      break;

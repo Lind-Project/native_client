@@ -1492,7 +1492,7 @@ void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child) {
   /* copy the address space */
   NaClVmmapVisit(&nap->mem_map, NaClVmCopyMemoryRegion, child);
 
-#ifdef _FORK_DEBUG
+#ifdef _DEBUG
   /* parent */
   NaClLog(2, "NaClApp addr space layout (parent):\n");
   NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
@@ -1536,6 +1536,6 @@ void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child) {
   NaClLog(2, "child->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
           child->user_entry_pt);
   NaClLog(2, "child->bundle_size        = 0x%x\n", child->bundle_size);
-#endif /* _FORK_DEBUG */
+#endif
 }
 

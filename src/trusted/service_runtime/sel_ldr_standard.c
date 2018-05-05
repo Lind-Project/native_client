@@ -980,7 +980,6 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   uintptr_t             stack_ptr;
-  uint32_t              fork_entry;
 
   retval = 0;  /* fail */
   CHECK(argc >= 0);
@@ -1024,6 +1023,7 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
+
 
   /*
    * NaCl modules are ILP32, so the argv, envv pointers, as well as
@@ -1152,11 +1152,21 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
     memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
 
+  nap_child->initial_entry_pt = NaClSysToUser(nap_parent, natp_parent->user.new_prog_ctr);
+  /* nap_child->initial_entry_pt &= ~(nap_child->bundle_size - 1); */
+  /* nap_child->initial_entry_pt = nap_child->static_text_end - nap_child->bundle_size; */
+  /* nap_child->static_text_end = nap_child->initial_entry_pt + 1; */
+  /* nap_child->initial_entry_pt += 0x20 << 2; */
+
+  if (!NaClAddrIsValidEntryPt(nap_child, nap_child->initial_entry_pt))
+    DPRINTF("invalid entry point\n");
+
   DPRINTF("   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
   DPRINTF("     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
   DPRINTF("   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
   DPRINTF("      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
+/* #if 0 */
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
@@ -1165,6 +1175,24 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),
                                   /* user_tls1= */ (uint32_t) nap_child->break_addr,
                                   /* user_tls2= */ 0);
+/* #endif */
+
+#if 0
+  retval = !NaClCreateAdditionalThread(nap_child,
+                                      nap_child->initial_entry_pt,
+                                      stack_ptr,
+                                      /* user_tls1= */ (uint32_t) nap_child->break_addr,
+                                      /* user_tls2= */ 0);
+#endif
+
+#if 0
+  /* NaClVmCopyAddressSpace(nap_parent, nap_child); */
+  retval = NaClAppThreadSpawn(nap_child,
+                              nap_child->initial_entry_pt,
+                              NaClSysToUserStackAddr(nap_child, stack_ptr),
+                              /* user_tls1= */ (uint32_t) nap_child->break_addr,
+                              /* user_tls2= */ 0);
+#endif
 
 cleanup:
   free(argv_len);
