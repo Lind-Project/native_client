@@ -325,11 +325,8 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   natp_child->nap->fork_num = 1;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
-  sysaddr_parent_entry = (void *)NaClUserToSys(nap_parent, nap_parent->data_start);
-  sysaddr_child_entry = (void *)NaClUserToSys(nap_child, nap_child->data_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
-  size_of_static_text = nap_parent->data_end - nap_parent->data_start;
-  DPRINTF("parent: [%p] child: [%p] child_entry: [%p]\n", sysaddr_parent, sysaddr_child, sysaddr_child_entry);
+  DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("copy size = %zd\n", size_of_dynamic_text);
   nap_child->cage_id = nap_parent->cage_id;
   NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
@@ -339,16 +336,8 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
 
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
-     DPRINTF("child NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_parent_entry, size_of_static_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
-     DPRINTF("child_entry NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_child_entry, size_of_static_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
-     DPRINTF("child_entry NaClMprotect failed! \n");
-
   DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
-  NaClVmmapDtor(&nap_child->mem_map);
-  natp_child->user = natp_parent->user;
+  NaClVmCopyAddressSpace(nap_parent, nap_child);
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(LOG_WARNING, "\n");
@@ -356,15 +345,9 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   NaClLog(LOG_WARNING, "\n");
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
-
+  natp_child->user = natp_parent->user;
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
-     DPRINTF("child NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_parent_entry, size_of_static_text, PROT_READ | PROT_EXEC) == -1)
-     DPRINTF("child_entry NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_child_entry, size_of_static_text, PROT_READ | PROT_EXEC) == -1)
-     DPRINTF("child_entry NaClMprotect failed! \n");
 
   NaClXMutexUnlock(&natp_child->mu);
   NaClXMutexUnlock(&natp_parent->mu);
@@ -379,8 +362,13 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
    * After this NaClAppThreadSetSuspendState() call, we should not
    * claim any mutexes, otherwise we risk deadlock.
    */
+  NaClXMutexLock(&natp_child->suspend_mu);
+
   DPRINTF("Setting child suspend state.\n");
-  NaClAppThreadSetSuspendState(natp_child, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  natp_child->suspend_state = NACL_APP_THREAD_UNTRUSTED;
+
+  NaClXMutexUnlock(&natp_child->suspend_mu);
+
   DPRINTF("Context switching into chilld.\n");
   NaClSwitchToApp(natp_child);
 
