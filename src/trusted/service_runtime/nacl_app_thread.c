@@ -316,77 +316,26 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   void *sysaddr_child_entry;
   size_t size_of_dynamic_text;
   size_t size_of_static_text;
-  size_t dynamic_text_offset;
-  size_t static_text_offset;
   struct NaClAppThread *natp_child;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
-  /* natp_child = NaClAlignedMalloc(sizeof *natp_child, __alignof(struct NaClAppThread)); */
   if (!natp_child)
     return 0;
+
   natp_child->nap->fork_num = 1;
-
-  /*
-   * DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
-   * NaClVmmapDtor(&nap_child->mem_map);
-   * if (!NaClVmmapCtor(&nap_child->mem_map))
-   *    DPRINTF("NaClVmmapCtor() failed\n");
-   * NaClVmCopyAddressSpace(nap_parent, nap_child);
-   * NaClLog(LOG_WARNING, "\n");
-   * NaClVmmapDebug(&nap_parent->mem_map, "[*** nap_parent mem_map ***]");
-   * NaClLog(LOG_WARNING, "\n");
-   * NaClVmmapDebug(&nap_child->mem_map, "[*** nap_child mem_map ***]");
-   * NaClLog(LOG_WARNING, "\n");
-   * char *nacl_runnable = "/lib/glibc/runnable-ld.so";
-   * if (!NaClAppLoadFileFromFilename(nap_child, nacl_runnable))
-   *    DPRINTF("NaClAppLoadFileFromFilename() failed\n");
-   */
-
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-  /* natp_child->user = natp_parent->user; */
-  /* NaClAppThreadSetSuspendState(natp_child, NACL_APP_THREAD_TRUSTED, */
-  /*                              NACL_APP_THREAD_UNTRUSTED); */
-  /* NaClSwitchToApp(natp_child); */
-
-  /* memcpy(natp_child, natp_parent, sizeof *natp_child); */
-  /* natp_child->nap = nap_child; */
-  /* natp_child->user.new_prog_ctr = natp_parent->user.new_prog_ctr; */
-  /* natp_child->user = natp_parent->user; */
-
-  NaClLog(LOG_WARNING, "\n");
-  NaClPrintAddressSpaceLayout(nap_parent);
-  NaClLog(LOG_WARNING, "\n");
-  NaClPrintAddressSpaceLayout(nap_child);
-  NaClLog(LOG_WARNING, "\n");
-
-  /*
-   * FILE *f = fopen("/proc/self/maps", "r");
-   * int c;
-   * while ((c = getc(f)) != EOF)
-   * putchar(c);
-   * fclose(f);
-   * fflush(0);
-   */
-
-  dynamic_text_offset = NaClSysToUser(nap_parent, natp_parent->user.new_prog_ctr);
-  /* dynamic_text_offset = natp_parent->user.new_prog_ctr - natp_parent->user.prog_ctr; */
-  /* static_text_offset = nap_parent->dynamic_text_start - nap_parent->initial_entry_pt; */
-  dynamic_text_offset -= nap_parent->static_text_end - nap_parent->initial_entry_pt - nap_parent->bundle_size;
-  /* dynamic_text_offset <<= 5; */
-  /* dynamic_text_offset <<= NACL_PAGESHIFT; */
-
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   sysaddr_parent_entry = (void *)NaClUserToSys(nap_parent, nap_parent->data_start);
   sysaddr_child_entry = (void *)NaClUserToSys(nap_child, nap_child->data_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   size_of_static_text = nap_parent->data_end - nap_parent->data_start;
-
   DPRINTF("parent: [%p] child: [%p] child_entry: [%p]\n", sysaddr_parent, sysaddr_child, sysaddr_child_entry);
   DPRINTF("copy size = %zd\n", size_of_dynamic_text);
+  nap_child->cage_id = nap_parent->cage_id;
+  NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
+
+  NaClXMutexLock(&natp_child->mu);
+  NaClXMutexLock(&natp_parent->mu);
 
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
@@ -397,24 +346,16 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   if (NaClMprotect(sysaddr_child_entry, size_of_static_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
      DPRINTF("child_entry NaClMprotect failed! \n");
 
-  /* copy the entire address space */
-  NaClXMutexLock(&nap_child->mu);
-  NaClXMutexLock(&nap_parent->mu);
-
+  DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
+  NaClVmmapDtor(&nap_child->mem_map);
+  natp_child->user = natp_parent->user;
+  NaClLog(LOG_WARNING, "\n");
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClLog(LOG_WARNING, "\n");
+  NaClPrintAddressSpaceLayout(nap_child);
+  NaClLog(LOG_WARNING, "\n");
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
-  /* DPRINTF("copying dynamic data to %p from %p\n", sysaddr_child_entry, sysaddr_parent_entry); */
-  /* memcpy(sysaddr_child_entry, sysaddr_parent_entry, size_of_static_text); */
-  /* DPRINTF("filling child (%p) with nop for %#lx bytes\n", sysaddr_child, dynamic_text_offset); */
-  /* memset(sysaddr_child, 0x90, dynamic_text_offset); */
-  /* memset(sysaddr_child, 0x90, size_of_dynamic_text); */
-  /*
-   * DPRINTF("filling child_entry (%p) with zeros for %#lx bytes\n", sysaddr_child_entry, static_text_offset);
-   * memset(sysaddr_child_entry, 0, static_text_offset);
-   */
-
-  NaClXMutexUnlock(&nap_parent->mu);
-  NaClXMutexUnlock(&nap_child->mu);
 
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
@@ -425,8 +366,8 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   if (NaClMprotect(sysaddr_child_entry, size_of_static_text, PROT_READ | PROT_EXEC) == -1)
      DPRINTF("child_entry NaClMprotect failed! \n");
 
-  nap_child->cage_id = nap_parent->cage_id;
-  NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
+  NaClXMutexUnlock(&natp_child->mu);
+  NaClXMutexUnlock(&natp_parent->mu);
 
   /*
    * We set host_thread_is_defined assuming, for now, that
@@ -434,19 +375,32 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  if (!NaClThreadCtor(&natp_child->host_thread,
-                      NaClAppThreadLauncher,
-                      (void *)natp_child,
-                      NACL_KERN_STACK_SIZE)) {
-    /*
-     * No other thread saw the NaClAppThread, so it is OK that
-     * host_thread was not initialized despite host_thread_is_defined
-     * being set.
-     */
-    natp_child->host_thread_is_defined = 0;
-    NaClAppThreadDelete(natp_child);
-    return 0;
-  }
+  /*
+   * After this NaClAppThreadSetSuspendState() call, we should not
+   * claim any mutexes, otherwise we risk deadlock.
+   */
+  DPRINTF("Setting child suspend state.\n");
+  NaClAppThreadSetSuspendState(natp_child, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  DPRINTF("Context switching into chilld.\n");
+  NaClSwitchToApp(natp_child);
+
+  /*
+  * No other thread saw the NaClAppThread, so it is OK that
+  * host_thread was not initialized despite host_thread_is_defined
+  * being set.
+  */
+
+  /*
+   * if (!NaClThreadCtor(&natp_child->host_thread,
+   *                     NaClAppThreadLauncher,
+   *                     (void *)natp_child,
+   *                     NACL_KERN_STACK_SIZE)) {
+   *   natp_child->host_thread_is_defined = 0;
+   *   NaClAppThreadDelete(natp_child);
+   *   return 0;
+   * }
+   */
+
   return 1;
 }
 
