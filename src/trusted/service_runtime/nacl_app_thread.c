@@ -369,21 +369,15 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ | PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
 
-  NaClLog(LOG_WARNING, "Copying parent stack (%zu bytes) from %p to %p\n",
+  DPRINTF("Copying parent stack (%zu bytes) from %p to %p\n",
           (size_t)stack_size,
           (void *)stack_ptr_parent,
           (void *)stack_ptr_child);
   memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
-  NaClLog(LOG_WARNING, "Stack copy succeeded\n");
-
   DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_parent);
-  NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
-  NaClLog(LOG_WARNING, "\n");
-
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
   natp_child->user = natp_parent->user;
@@ -453,7 +447,6 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
   return 1;
 }
 
-
 void NaClAppThreadDelete(struct NaClAppThread *natp) {
   /*
    * the thread must not be still running, else this crashes the system
@@ -473,5 +466,10 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 
 // yiwen
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
-  printf("[NaClAppThreadPrintInfo] cage id = %d; user.prog_ctr = %p; user.new_prog_ctr = %p; user.sysret = %p \n", natp->nap->cage_id, (void*)natp->user.prog_ctr, (void*)natp->user.new_prog_ctr, (void*)natp->user.sysret);
+  DPRINTF("[NaClAppThreadPrintInfo] "
+          "cage id = %d; user.prog_ctr = %p; user.new_prog_ctr = %p; user.sysret = %p \n",
+          natp->nap->cage_id,
+          (void*)natp->user.prog_ctr,
+	  (void*)natp->user.new_prog_ctr,
+	  (void*)natp->user.sysret);
 }

@@ -171,11 +171,12 @@ void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
   unsigned int *addr;
 
+
   sysaddr = (void *)NaClUserToSys(nap, useraddr);
   addr = (unsigned int *)sysaddr;
 
-  NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr);
-  NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+  DPRINTF("[Memory] Memory addr: %p \n", sysaddr);
+  DPRINTF("[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
 }
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
@@ -185,68 +186,67 @@ void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   sysaddr_print = (void *)sysaddr;
   addr = (unsigned int *)sysaddr_print;
 
-  NaClLog(LOG_WARNING, "[Memory] Memory addr: %p \n", sysaddr_print);
-  NaClLog(LOG_WARNING, "[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
-  NaClLog(LOG_WARNING, "[Memory] Memory content: %s \n", (char *) addr);
+  DPRINTF("[Memory] Memory addr: %p \n", sysaddr_print);
+  DPRINTF("[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+  DPRINTF("[Memory] Memory content: %s \n", (char *) addr);
 }
 
 // yiwen: print out thread context info
 void NaClLogThreadContext(struct NaClAppThread *natp) {
-  NaClLog(LOG_WARNING, "[Thread Context] cage id = %i \n", natp->nap->cage_id);
-  NaClLog(LOG_WARNING, "[Thread Context] sysret = %p \n", (void *)natp->user.sysret);
-  NaClLog(LOG_WARNING, "[Thread Context] prog_ctr = %p \n", (void *)natp->user.prog_ctr);
-  NaClLog(LOG_WARNING, "[Thread Context] new_prog_ctr = %p \n", (void *)natp->user.new_prog_ctr);
-  NaClLog(LOG_WARNING, "[Thread Context] trusted_stack_ptr = %p \n\n", (void *)natp->user.trusted_stack_ptr);
+  DPRINTF("[Thread Context] cage id = %i \n", natp->nap->cage_id);
+  DPRINTF("[Thread Context] sysret = %p \n", (void *)natp->user.sysret);
+  DPRINTF("[Thread Context] prog_ctr = %p \n", (void *)natp->user.prog_ctr);
+  DPRINTF("[Thread Context] new_prog_ctr = %p \n", (void *)natp->user.new_prog_ctr);
+  DPRINTF("[Thread Context] trusted_stack_ptr = %p \n\n", (void *)natp->user.trusted_stack_ptr);
 }
 
 // yiwen: print out memory layout of a nap
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
-  NaClLog(LOG_WARNING, "NaClApp addr space layout:\n");
-  NaClLog(LOG_WARNING, "NaClApp cage id: %d \n", nap->cage_id);
-  NaClLog(LOG_WARNING, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("NaClApp addr space layout:\n");
+  DPRINTF("NaClApp cage id: %d \n", nap->cage_id);
+  DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
-  NaClLog(LOG_WARNING, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_start);
-  NaClLog(LOG_WARNING, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_end);
-  NaClLog(LOG_WARNING, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
           nap->rodata_start);
-  NaClLog(LOG_WARNING, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
           nap->data_start);
-  NaClLog(LOG_WARNING, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
           nap->data_end);
-  NaClLog(LOG_WARNING, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
           nap->break_addr);
-  NaClLog(LOG_WARNING, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
           nap->initial_entry_pt);
-  NaClLog(LOG_WARNING, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
           nap->user_entry_pt);
-  NaClLog(LOG_WARNING, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
+  DPRINTF("nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
 
 void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
-  NaClLog(2, "NaClApp addr space layout:\n");
-  NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("NaClApp addr space layout:\n");
+  DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
-  NaClLog(2, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_start);
-  NaClLog(2, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_end);
-  NaClLog(2, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
           nap->rodata_start);
-  NaClLog(2, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
           nap->data_start);
-  NaClLog(2, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
           nap->data_end);
-  NaClLog(2, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
           nap->break_addr);
-  NaClLog(2, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
           nap->initial_entry_pt);
-  NaClLog(2, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
           nap->user_entry_pt);
-  NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
+  DPRINTF("nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
-
 
 NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
                                   struct NaClApp *nap,
