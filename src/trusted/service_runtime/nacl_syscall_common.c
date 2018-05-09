@@ -4145,6 +4145,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
      DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
      DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
+     DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
      return 0;
   }
 
