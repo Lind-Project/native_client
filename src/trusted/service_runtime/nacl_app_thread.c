@@ -32,9 +32,31 @@
 /* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
+  struct NaClThreadContext *context;
   uint32_t thread_idx;
 
   DPRINTF("NaClAppThreadLauncher: entered\n");
+
+  /*
+   * After this NaClAppThreadSetSuspendState() call, we should not
+   * claim any mutexes, otherwise we risk deadlock.
+   */
+/*
+ *   NaClXMutexLock(&natp->suspend_mu);
+ *
+ *   DPRINTF("Setting child suspend state.\n");
+ *   natp->suspend_state = NACL_APP_THREAD_UNTRUSTED;
+ *   context = &natp->user;
+ *   context->sysret = 0;
+ *   context->r15 = natp->nap->mem_start;
+ *
+ *   NaClXMutexUnlock(&natp->suspend_mu);
+ *
+ *   DPRINTF("Context switching into chilld.\n");
+ *   NaClSwitchToApp(natp);
+ */
+
+  /* original code */
 
   NaClSignalStackRegister(natp->signal_stack);
 
@@ -168,74 +190,74 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
      * nap->threads_mu lock. Hence we must not hold threads_mu lock while
      * calling debug stub hooks.
      */
-    nap->debug_stub_callbacks->thread_exit_hook(natp);
-  }
+  nap->debug_stub_callbacks->thread_exit_hook(natp);
+}
 
-  NaClLog(3, " getting thread table lock\n");
-  NaClXMutexLock(&nap->threads_mu);
-  NaClLog(3, " getting thread lock\n");
-  NaClXMutexLock(&natp->mu);
+NaClLog(3, " getting thread table lock\n");
+NaClXMutexLock(&nap->threads_mu);
+NaClLog(3, " getting thread lock\n");
+NaClXMutexLock(&natp->mu);
 
-  /*
-   * Remove ourselves from the ldt-indexed global tables.  The ldt
-   * entry is released as part of NaClAppThreadDelete(), and if
-   * another thread is immediately created (from some other running
-   * thread) we want to be sure that any ldt-based lookups will not
-   * reach this dying thread's data.
-   */
-  thread_idx = NaClGetThreadIdx(natp);
-  /*
-   * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-   * fault if another syscall is made with this thread_idx.  In
-   * particular, thread_idx 0 is never used.
-   */
-  nacl_user[thread_idx] = NULL;
+/*
+ * Remove ourselves from the ldt-indexed global tables.  The ldt
+ * entry is released as part of NaClAppThreadDelete(), and if
+ * another thread is immediately created (from some other running
+ * thread) we want to be sure that any ldt-based lookups will not
+ * reach this dying thread's data.
+ */
+thread_idx = NaClGetThreadIdx(natp);
+/*
+ * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+ * fault if another syscall is made with this thread_idx.  In
+ * particular, thread_idx 0 is never used.
+ */
+nacl_user[thread_idx] = NULL;
 #if NACL_WINDOWS
-  nacl_thread_ids[thread_idx] = 0;
+nacl_thread_ids[thread_idx] = 0;
 #elif NACL_OSX
-  NaClClearMachThreadForThreadIndex(thread_idx);
+NaClClearMachThreadForThreadIndex(thread_idx);
 #endif
-  /*
-   * Unset the TLS variable so that if a crash occurs during thread
-   * teardown, the signal handler does not dereference a dangling
-   * NaClAppThread pointer.
-   */
-  NaClTlsSetCurrentThread(NULL);
+/*
+ * Unset the TLS variable so that if a crash occurs during thread
+ * teardown, the signal handler does not dereference a dangling
+ * NaClAppThread pointer.
+ */
+NaClTlsSetCurrentThread(NULL);
 
-  NaClLog(3, " removing thread from thread table\n");
-  /* Deallocate the ID natp->thread_num. */
-  NaClRemoveThreadMu(nap, natp->thread_num);
-  NaClLog(3, " unlocking thread\n");
-  NaClXMutexUnlock(&natp->mu);
-  NaClLog(3, " unlocking thread table\n");
-  NaClXMutexUnlock(&nap->threads_mu);
-  NaClLog(3, " unregistering signal stack\n");
-  NaClSignalStackUnregister();
-  NaClLog(3, " freeing thread object\n");
-  NaClAppThreadDelete(natp);
-  NaClLog(3, " NaClThreadExit\n");
+NaClLog(3, " removing thread from thread table\n");
+/* Deallocate the ID natp->thread_num. */
+NaClRemoveThreadMu(nap, natp->thread_num);
+NaClLog(3, " unlocking thread\n");
+NaClXMutexUnlock(&natp->mu);
+NaClLog(3, " unlocking thread table\n");
+NaClXMutexUnlock(&nap->threads_mu);
+NaClLog(3, " unregistering signal stack\n");
+NaClSignalStackUnregister();
+NaClLog(3, " freeing thread object\n");
+NaClAppThreadDelete(natp);
+NaClLog(3, " NaClThreadExit\n");
 
-  NaClThreadExit();
-  NaClLog(LOG_FATAL,
-          "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
-  /* NOTREACHED */
+NaClThreadExit();
+NaClLog(LOG_FATAL,
+  "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
+/* NOTREACHED */
 }
 
 
 struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
-                                        uintptr_t      usr_entry,
-                                        uintptr_t      usr_stack_ptr,
-                                        uint32_t       user_tls1,
-                                        uint32_t       user_tls2) {
-  struct NaClAppThread *natp;
-  uint32_t tls_idx;
+  uintptr_t      usr_entry,
+  uintptr_t      usr_stack_ptr,
+  uint32_t       user_tls1,
+  uint32_t       user_tls2) {
+ struct NaClAppThread *natp;
+ uint32_t tls_idx;
 
-  natp = NaClAlignedMalloc(sizeof *natp, __alignof(struct NaClAppThread));
-  if (natp == NULL) {
-    return NULL;
-  }
+ natp = NaClAlignedMalloc(sizeof *natp, __alignof(struct NaClAppThread));
+ if (natp == NULL) {
+  return NULL;
+ }
 
-  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+ DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
   DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
   DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
   DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
@@ -303,24 +325,24 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 }
 
 /* jp */
-int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
+int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
                            struct NaClAppThread *natp_parent,
-                           struct NaClApp *nap_child,
-                           uintptr_t      usr_entry,
-                           uintptr_t      usr_stack_ptr,
-                           uint32_t       user_tls1,
-                           uint32_t       user_tls2) {
+                           uintptr_t            stack_ptr_parent,
+                           uintptr_t            stack_ptr_child,
+                           size_t               stack_size,
+                           struct NaClApp       *nap_child,
+                           uintptr_t            usr_entry,
+                           uintptr_t            usr_stack_ptr,
+                           uint32_t             user_tls1,
+                           uint32_t             user_tls2) {
   void *sysaddr_parent;
   void *sysaddr_child;
-  void *sysaddr_parent_entry;
-  void *sysaddr_child_entry;
   size_t size_of_dynamic_text;
-  size_t size_of_static_text;
   struct NaClAppThread *natp_child;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
-    return 0;
+   return 0;
 
   natp_child->nap->fork_num = 1;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
@@ -328,14 +350,32 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("copy size = %zd\n", size_of_dynamic_text);
-  nap_child->cage_id = nap_parent->cage_id;
+  nap_child->cage_id = 1000 + nap_parent->cage_id;
   NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
 
   NaClXMutexLock(&natp_child->mu);
   NaClXMutexLock(&natp_parent->mu);
 
-  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
-     DPRINTF("parent NaClMprotect failed! \n");
+  stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
+                                            NaClGetInitialStackTop(nap_parent) - stack_size,
+                                            stack_size);
+
+  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_WRITE) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
+  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_WRITE) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
+  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ | PROT_WRITE) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
+  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ | PROT_WRITE) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
+
+  NaClLog(LOG_WARNING, "Copying parent stack (%zu bytes) from %p to %p\n",
+          (size_t)stack_size,
+          (void *)stack_ptr_parent,
+          (void *)stack_ptr_child);
+  memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
+  NaClLog(LOG_WARNING, "Stack copy succeeded\n");
+
   DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
   NaClLog(LOG_WARNING, "\n");
@@ -343,11 +383,19 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   NaClLog(LOG_WARNING, "\n");
   NaClPrintAddressSpaceLayout(nap_child);
   NaClLog(LOG_WARNING, "\n");
+
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
   natp_child->user = natp_parent->user;
+
+  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
+     DPRINTF("parent NaClMprotect failed! \n");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
+  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ | PROT_EXEC) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
+  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ | PROT_EXEC) == -1)
+   DPRINTF("parent NaClMprotect failed! \n");
 
   NaClXMutexUnlock(&natp_child->mu);
   NaClXMutexUnlock(&natp_parent->mu);
@@ -359,35 +407,18 @@ int NaClAppForkThreadSpawn(struct NaClApp *nap_parent,
   natp_child->host_thread_is_defined = 1;
 
   /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-  NaClXMutexLock(&natp_child->suspend_mu);
-
-  DPRINTF("Setting child suspend state.\n");
-  natp_child->suspend_state = NACL_APP_THREAD_UNTRUSTED;
-
-  NaClXMutexUnlock(&natp_child->suspend_mu);
-
-  DPRINTF("Context switching into chilld.\n");
-  NaClSwitchToApp(natp_child);
-
-  /*
   * No other thread saw the NaClAppThread, so it is OK that
   * host_thread was not initialized despite host_thread_is_defined
   * being set.
   */
-
-  /*
-   * if (!NaClThreadCtor(&natp_child->host_thread,
-   *                     NaClAppThreadLauncher,
-   *                     (void *)natp_child,
-   *                     NACL_KERN_STACK_SIZE)) {
-   *   natp_child->host_thread_is_defined = 0;
-   *   NaClAppThreadDelete(natp_child);
-   *   return 0;
-   * }
-   */
+  if (!NaClThreadCtor(&natp_child->host_thread,
+                      NaClAppForkThreadLauncher,
+                      (void *)natp_child,
+                      NACL_KERN_STACK_SIZE)) {
+    natp_child->host_thread_is_defined = 0;
+    NaClAppThreadDelete(natp_child);
+    return 0;
+  }
 
   return 1;
 }
