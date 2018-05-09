@@ -87,6 +87,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
 
+  sleep(5);
   NaClSwitchToApp(natp);
   /* NaClStartThreadInApp(natp, natp->user.prog_ctr); */
 }
