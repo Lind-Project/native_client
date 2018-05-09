@@ -341,13 +341,13 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
                                             NaClGetInitialStackTop(nap_parent) - stack_size,
                                             stack_size);
 
-  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_WRITE) == -1)
+  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_WRITE) == -1)
+  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ | PROT_WRITE) == -1)
+  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ|PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ | PROT_WRITE) == -1)
+  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ|PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
 
   DPRINTF("Copying parent stack (%zu bytes) from %p to %p\n",
@@ -357,19 +357,19 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
   DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClPrintAddressSpaceLayout(nap_parent);
-  NaClPrintAddressSpaceLayout(nap_child);
+  /* NaClPrintAddressSpaceLayout(nap_parent); */
+  /* NaClPrintAddressSpaceLayout(nap_child); */
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
   natp_child->user = natp_parent->user;
 
-  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
+  if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ | PROT_EXEC) == -1)
+  if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ | PROT_EXEC) == -1)
+  if (NaClMprotect((void *)stack_ptr_child, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
-  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ | PROT_EXEC) == -1)
+  if (NaClMprotect((void *)stack_ptr_parent, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
 
   NaClXMutexUnlock(&natp_child->mu);
