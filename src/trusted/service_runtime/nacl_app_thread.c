@@ -32,31 +32,10 @@
 /* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
-  struct NaClThreadContext *context;
+  struct NaClThreadContext *context = &natp->user;
   uint32_t thread_idx;
 
   DPRINTF("NaClAppThreadLauncher: entered\n");
-
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-/*
- *   NaClXMutexLock(&natp->suspend_mu);
- *
- *   DPRINTF("Setting child suspend state.\n");
- *   natp->suspend_state = NACL_APP_THREAD_UNTRUSTED;
- *   context = &natp->user;
- *   context->sysret = 0;
- *   context->r15 = natp->nap->mem_start;
- *
- *   NaClXMutexUnlock(&natp->suspend_mu);
- *
- *   DPRINTF("Context switching into chilld.\n");
- *   NaClSwitchToApp(natp);
- */
-
-  /* original code */
 
   NaClSignalStackRegister(natp->signal_stack);
 
@@ -102,12 +81,14 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    */
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
+  /* change return */
+  context->rax = 0;
   DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
 
-  /* NaClSwitchToApp(natp); */
-  NaClStartThreadInApp(natp, natp->user.prog_ctr);
+  NaClSwitchToApp(natp);
+  /* NaClStartThreadInApp(natp, natp->user.prog_ctr); */
 }
 
 void WINAPI NaClAppThreadLauncher(void *state) {
