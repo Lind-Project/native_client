@@ -99,9 +99,9 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  NaClLog(4, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
-  NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
-  NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
+  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
+  DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
+  DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(&natp->user));
 
   thread_idx = NaClGetThreadIdx(natp);
@@ -160,8 +160,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
    */
-  NaClLog(3, "NaClAppThreadTeardown(0x%08"NACL_PRIxPTR")\n",
-          (uintptr_t) natp);
+  DPRINTF("NaClAppThreadTeardown(0x%08"NACL_PRIxPTR")\n", (uintptr_t)natp);
   nap = natp->nap;
 
   if (NULL != nap->debug_stub_callbacks) {
@@ -429,11 +428,10 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
   return 1;
 }
 
+/*
+* n.b. the thread must not be still running, else this crashes the system
+*/
 void NaClAppThreadDelete(struct NaClAppThread *natp) {
-  /*
-   * the thread must not be still running, else this crashes the system
-   */
-
   if (natp->host_thread_is_defined) {
     NaClThreadDtor(&natp->host_thread);
   }
@@ -446,12 +444,12 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClAlignedFree(natp);
 }
 
-// yiwen
+/* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadPrintInfo] "
           "cage id = %d; user.prog_ctr = %p; user.new_prog_ctr = %p; user.sysret = %p \n",
           natp->nap->cage_id,
           (void*)natp->user.prog_ctr,
-	  (void*)natp->user.new_prog_ctr,
-	  (void*)natp->user.sysret);
+          (void*)natp->user.new_prog_ctr,
+          (void*)natp->user.sysret);
 }

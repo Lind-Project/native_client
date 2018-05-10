@@ -1171,18 +1171,18 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),
-                                  /* user_tls1= */ (uint32_t) nap_child->break_addr,
-                                  /* user_tls2= */ 0);
-                                  /* natp_parent->user.tls_value1, */
-                                  /* natp_parent->user.tls_value2); */
+                                  (uint32_t)nap_child->break_addr,
+                                  0);
 
-#if 0
-  retval = !NaClCreateAdditionalThread(nap_child,
-                                      nap_child->initial_entry_pt,
-                                      stack_ptr,
-                                      /* user_tls1= */ (uint32_t) nap_child->break_addr,
-                                      /* user_tls2= */ 0);
-#endif
+  /*
+   *                                 natp_parent->user.tls_value1,
+   *                                 natp_parent->user.tls_value2);
+   * retval = !NaClCreateAdditionalThread(nap_child,
+   *                                     nap_child->initial_entry_pt,
+   *                                     stack_ptr,
+   *                                     (uint32_t)nap_child->break_addr,
+   *                                     0);
+   */
 
 cleanup:
   free(argv_len);
