@@ -1152,11 +1152,6 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
     memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
 
-  /* nap_child->initial_entry_pt = NaClSysToUser(nap_parent, natp_parent->user.new_prog_ctr); */
-  /* nap_child->initial_entry_pt &= ~(nap_child->bundle_size - 1); */
-  /* nap_child->initial_entry_pt = nap_child->static_text_end - nap_child->bundle_size; */
-  /* nap_child->static_text_end = nap_child->initial_entry_pt + 1; */
-  /* nap_child->initial_entry_pt += 0x20 << 2; */
   DPRINTF("   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
   DPRINTF("     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
   DPRINTF("   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
