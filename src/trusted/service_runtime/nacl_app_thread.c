@@ -320,10 +320,14 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   size_t size_of_dynamic_text;
   size_t stack_total_size;
   struct NaClAppThread *natp_child;
+  struct NaClThreadContext ctx;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
    return 0;
+
+  /* save child trampoline addresses */
+  ctx = natp_child->user;
 
   natp_child->nap->fork_num = 1;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
@@ -362,7 +366,17 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   /* NaClPrintAddressSpaceLayout(nap_child); */
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+
+
+  /* restore child trampoline addresses and stack pointers */
+  ctx = natp_child->user;
   natp_child->user = natp_parent->user;
+  natp_child->user.rsp = ctx.rsp;
+  natp_child->user.rbp = ctx.rbp;
+  natp_child->user.r15 = ctx.r15;
+  natp_child->user.sysret = ctx.sysret;
+  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
+
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_ERROR, "nacl_user[%u] not NULL (%p)\n)",
