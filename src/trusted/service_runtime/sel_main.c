@@ -1218,29 +1218,29 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap, 1);
 
   // yiwen: debug
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
-  NaClLog(LOG_WARNING, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
+  DPRINTF("[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
+  DPRINTF("[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
+  DPRINTF("[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
 
-  nap->command_num = argc - optind - 3;
+  nap->command_num = nap0->command_num = argc - optind - 3;
 
-  nap->binary_path = (char*) malloc((strlen((argv + optind)[3]) + 1) * sizeof(char));
+  nap->binary_path = nap0->binary_path = malloc(strlen((argv + optind)[3]) + 1);
   strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
   if (nap->command_num > 1) {
-     nap->binary_command = (char*) malloc((strlen((argv + optind)[4]) + 1) * sizeof(char));
+     nap->binary_command = nap0->binary_command = malloc(strlen((argv + optind)[4]) + 1);
      strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
   }
 
-  printf("nap->command_num = %d \n", nap->command_num);
-  printf("nap->binary_path = %s \n", nap->binary_path);
+  DPRINTF("nap->command_num = %d, nap0->command_num = %d\n", nap->command_num, nap0->command_num);
+  DPRINTF("nap->binary_path = %s, nap0->binary_path = %s\n", nap->binary_path, nap0->binary_path);
 
 
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
 
   // yiwen: before the creation of the first cage
-  NaClLog(LOG_WARNING, "[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program! \n\n");
+  DPRINTF("[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program!\n\n");
 
   // yiwen: this is cage1, start a new thread with program given and run
   /*
