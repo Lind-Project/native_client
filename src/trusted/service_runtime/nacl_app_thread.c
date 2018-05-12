@@ -422,7 +422,6 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
-
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = natp_parent->user;
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
@@ -430,19 +429,14 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   /* natp_child->user.new_prog_ctr = natp_parent->user.new_prog_ctr; */
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
-  natp_child->user.r15 = ctx.r15;
+  /* natp_child->user.r15 = ctx.r15; */
   natp_child->user.sysret = ctx.sysret;
-
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_ERROR, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
-  DPRINTF("adding thread context to nacl_user[%u]: %p\n",
-                  natp_child->user.tls_idx,
-                  (void *)&natp_child->user);
-  nacl_user[natp_child->user.tls_idx] = &natp_child->user;
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");

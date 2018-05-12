@@ -1169,16 +1169,6 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
                                   (uint32_t)nap_child->break_addr,
                                   0);
 
-  /*
-   *                                 natp_parent->user.tls_value1,
-   *                                 natp_parent->user.tls_value2);
-   * retval = !NaClCreateAdditionalThread(nap_child,
-   *                                     nap_child->initial_entry_pt,
-   *                                     stack_ptr,
-   *                                     (uint32_t)nap_child->break_addr,
-   *                                     0);
-   */
-
 cleanup:
   free(argv_len);
   free(envv_len);
