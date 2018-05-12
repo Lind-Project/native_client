@@ -45,7 +45,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
-  thread_idx = NaClGetThreadIdx(natp);
+  thread_idx = NaClGetThreadIdx(natp) + nap->fork_num;
   CHECK(0 < thread_idx);
   CHECK(thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
@@ -384,7 +384,7 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   /* save child trampoline addresses */
   ctx = natp_child->user;
 
-  natp_child->nap->fork_num = 1;
+  natp_child->nap->fork_num += nap_parent->fork_num + 1;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
@@ -425,6 +425,7 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
 
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = natp_parent->user;
+  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
   /* natp_child->user.prog_ctr = natp_parent->user.prog_ctr; */
   /* natp_child->user.new_prog_ctr = natp_parent->user.new_prog_ctr; */
   natp_child->user.rsp = ctx.rsp;
