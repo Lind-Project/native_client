@@ -226,26 +226,26 @@ void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
 }
 
 void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
-  DPRINTF("NaClApp addr space layout:\n");
-  DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "NaClApp addr space layout:\n");
+  NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
-  DPRINTF("nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_start);
-  DPRINTF("nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_end);
-  DPRINTF("nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
           nap->rodata_start);
-  DPRINTF("nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
           nap->data_start);
-  DPRINTF("nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
           nap->data_end);
-  DPRINTF("nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
           nap->break_addr);
-  DPRINTF("nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
           nap->initial_entry_pt);
-  DPRINTF("nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(2, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
           nap->user_entry_pt);
-  DPRINTF("nap->bundle_size        = 0x%x\n", nap->bundle_size);
+  NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
 
 NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,

@@ -292,19 +292,30 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #define LOG_ERROR   (-3)
 #define LOG_FATAL   (-4)
 
+/*
+ * Debug version of NaClLog() that is stubbed unless _DEBUG is defined
+ *
+ * -jp
+ */
+#ifdef DPRINTF
+#  undef DPRINTF
+#endif
 #ifdef _DEBUG
 #  define DPRINTF(fmt, args...)					\
-	do {							\
-		char *file = strrchr(__FILE__, '/');		\
-		if (file)					\
-			file++;					\
-		else						\
-			file = __FILE__;			\
-		NaClLog(LOG_ERROR, "[%s() %s:%u] " fmt,		\
-			__func__, file, __LINE__, ## args);	\
-	} while (0)
+        do {							\
+                char *file = strrchr(__FILE__, '/');		\
+                if (file)					\
+                        file++;					\
+                else						\
+                        file = __FILE__;			\
+                /* too noisy when timestamp is enabled */	\
+                NaClLogDisableTimestamp();			\
+                NaClLog(LOG_ERROR, "[%s() %s:%u] "fmt,		\
+                        __func__, file, __LINE__, ## args);	\
+                NaClLogEnableTimestamp();			\
+        } while (0)
 #else
-#  define DPRINTF(fmt, args...) do {/* noop */} while (0)
+#  define DPRINTF(fmt, args...) do {/* no-op */} while (0)
 #endif
 
 /*

@@ -387,13 +387,12 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   ctx = natp_child->user;
 
   natp_child->nap->fork_num = nap_parent->fork_num + 1;
+  nap_child->cage_id = nap_parent->cage_id;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
-  DPRINTF("copy size = %zd\n", size_of_dynamic_text);
-  nap_child->cage_id = nap_parent->cage_id;
-  NaClLog(LOG_WARNING, "nap_parent cage id = %d \n", nap_parent->cage_id);
+  DPRINTF("nap_parent cage id: [%d] \n", nap_parent->cage_id);
 
   NaClXMutexLock(&natp_child->mu);
   NaClXMutexLock(&natp_parent->mu);
@@ -419,9 +418,12 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
   DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
-  /* NaClPrintAddressSpaceLayout(nap_parent); */
-  /* NaClPrintAddressSpaceLayout(nap_child); */
-  DPRINTF("copying dynamic text to %p from %p\n", sysaddr_child, sysaddr_parent);
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClPrintAddressSpaceLayout(nap_child);
+  DPRINTF("copying dynamic text (%#lx bytes) from %p to %p\n",
+          size_of_dynamic_text,
+          sysaddr_parent,
+          sysaddr_child);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
   /* restore child trampoline addresses and stack pointer */
@@ -433,7 +435,7 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   /* natp_child->user.sysret = ctx.sysret; */
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
-    NaClLog(LOG_ERROR, "nacl_user[%u] not NULL (%p)\n)",
+    NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
