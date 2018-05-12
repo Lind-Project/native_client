@@ -1468,74 +1468,40 @@ void NaClGdbHook(struct NaClApp const *nap) {
  * Passed to NaClVmmapVisit in order to copy a memory region from
  * an NaClApp to a child process (used when forking).
  *
+ * -jp
+ *
  * preconditions:
- * * target_state must be a pointer to a valid, initialized NaClApp
+ * * target_state must be a pointer to a valid, initialized NaClApp.
+ *
  */
 void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
   struct NaClApp *target = target_state;
-
-  NaClVmmapAdd(&target->mem_map, entry->page_num,
-               entry->npages, entry->prot,
-               entry->flags, entry->desc,
-               entry->offset, entry->file_size);
+  NaClVmmapAddWithOverwrite(&target->mem_map,
+                            entry->page_num,
+                            entry->npages,
+                            entry->prot,
+                            entry->flags,
+                            entry->desc,
+                            entry->offset,
+                            entry->file_size);
 }
 
 /*
- * Copy the entire address space of an NaClApp to a child
- * process.
+ * Copy the entire address space of an NaClApp to a child process.
+ *
+ * -jp
  *
  * preconditions:
- * * `child` must be a pointer to a valid, initialized NaClApp
- * * Caller must hold both the nap->mu and the child->mu mutexes
+ * * The `NaClApp *child` must be a pointer to a valid, initialized NaClApp.
+ * * Caller must hold both the nap->mu and the child->mu mutexes.
+ *
  */
 void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child) {
   /* copy the address space */
   NaClVmmapVisit(&nap->mem_map, NaClVmCopyMemoryRegion, child);
-
-#ifdef _DEBUG
-  /* parent */
-  NaClLog(2, "NaClApp addr space layout (parent):\n");
-  NaClLog(2, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
-          nap->static_text_end);
-  NaClLog(2, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
-          nap->dynamic_text_start);
-  NaClLog(2, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
-          nap->dynamic_text_end);
-  NaClLog(2, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
-          nap->rodata_start);
-  NaClLog(2, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
-          nap->data_start);
-  NaClLog(2, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
-          nap->data_end);
-  NaClLog(2, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
-          nap->break_addr);
-  NaClLog(2, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
-          nap->initial_entry_pt);
-  NaClLog(2, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
-          nap->user_entry_pt);
-  NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
-
-  /* child */
-  NaClLog(2, "NaClApp addr space layout (child):\n");
-  NaClLog(2, "child->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
-          child->static_text_end);
-  NaClLog(2, "child->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
-          child->dynamic_text_start);
-  NaClLog(2, "child->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
-          child->dynamic_text_end);
-  NaClLog(2, "child->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
-          child->rodata_start);
-  NaClLog(2, "child->data_start         = 0x%016"NACL_PRIxPTR"\n",
-          child->data_start);
-  NaClLog(2, "child->data_end           = 0x%016"NACL_PRIxPTR"\n",
-          child->data_end);
-  NaClLog(2, "child->break_addr         = 0x%016"NACL_PRIxPTR"\n",
-          child->break_addr);
-  NaClLog(2, "child->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
-          child->initial_entry_pt);
-  NaClLog(2, "child->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
-          child->user_entry_pt);
-  NaClLog(2, "child->bundle_size        = 0x%x\n", child->bundle_size);
-#endif
+  DPRINTF("nap_parent address space after copy:\n");
+  NaClPrintAddressSpaceLayout(nap);
+  DPRINTF("nap_child address space after copy:\n");
+  NaClPrintAddressSpaceLayout(child);
 }
 

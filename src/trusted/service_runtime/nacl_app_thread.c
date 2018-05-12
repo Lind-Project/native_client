@@ -294,7 +294,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
  }
 
- DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
   DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
   DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
   DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
