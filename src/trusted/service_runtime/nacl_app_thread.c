@@ -117,8 +117,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   secure_stack_ptr = secure_stack_ptr & ~0x1f;
   DPRINTF("NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
           secure_stack_ptr);
-  /* natp->user.trusted_stack_ptr = secure_stack_ptr; */
-  /* natp->user.rsp = NaClSysToUserStackAddr(nap, secure_stack_ptr); */
+  natp->user.trusted_stack_ptr = secure_stack_ptr;
 #endif
 
   /*
@@ -432,8 +431,6 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   natp_child->user.rbp = ctx.rbp;
   natp_child->user.r15 = ctx.r15;
   natp_child->user.sysret = ctx.sysret;
-  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
-  /* natp_child->user.trusted_stack_ptr = stack_ptr_child; */
 
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
