@@ -77,15 +77,9 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
-
   /* set return value and untrusted region start address */
   context->rax = 0;
-  context->r15 = nap->mem_start;
+  context->sysret &= 0x7f;
 
   /*
    * broken context switch methods
@@ -137,6 +131,12 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
+
+  /*
+   * After this NaClAppThreadSetSuspendState() call, we should not
+   * claim any mutexes, otherwise we risk deadlock.
+   */
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
 #if NACL_WINDOWS
   /* This sets up a stack containing a return address that has unwind info. */
@@ -429,7 +429,7 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   /* natp_child->user.new_prog_ctr = natp_parent->user.new_prog_ctr; */
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
-  /* natp_child->user.r15 = ctx.r15; */
+  natp_child->user.r15 = ctx.r15;
   natp_child->user.sysret = ctx.sysret;
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {

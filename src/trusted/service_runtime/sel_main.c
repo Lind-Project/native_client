@@ -244,8 +244,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
-  int argc2;
-  char **argv2;
+  /* int argc2; */
+  /* char **argv2; */
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
@@ -1577,6 +1577,7 @@ int NaClSelLdrMain(int argc, char **argv) {
      fprintf(stderr, "creating main thread failed\n");
      goto done;
   }
+  nacl_user_program_begin = clock();
 
 /*
  *   if (!NaClCreateMainForkThread(nap,
