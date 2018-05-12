@@ -77,12 +77,6 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-  /* set return value and untrusted region start address */
-  context->rax = 0;
-  /* context->sysret &= 0x7f; */
-  /* context->new_prog_ctr = context->prog_ctr; */
-  /* context->prog_ctr = context->new_prog_ctr; */
-
   /*
    * broken context switch methods
    * -jp
@@ -227,57 +221,57 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
      * nap->threads_mu lock. Hence we must not hold threads_mu lock while
      * calling debug stub hooks.
      */
-  nap->debug_stub_callbacks->thread_exit_hook(natp);
-}
+    nap->debug_stub_callbacks->thread_exit_hook(natp);
+  }
 
-NaClLog(3, " getting thread table lock\n");
-NaClXMutexLock(&nap->threads_mu);
-NaClLog(3, " getting thread lock\n");
-NaClXMutexLock(&natp->mu);
+  NaClLog(3, " getting thread table lock\n");
+  NaClXMutexLock(&nap->threads_mu);
+  NaClLog(3, " getting thread lock\n");
+  NaClXMutexLock(&natp->mu);
 
-/*
- * Remove ourselves from the ldt-indexed global tables.  The ldt
- * entry is released as part of NaClAppThreadDelete(), and if
- * another thread is immediately created (from some other running
- * thread) we want to be sure that any ldt-based lookups will not
- * reach this dying thread's data.
- */
-thread_idx = NaClGetThreadIdx(natp);
-/*
- * On x86-64 and ARM, clearing nacl_user entry ensures that we will
- * fault if another syscall is made with this thread_idx.  In
- * particular, thread_idx 0 is never used.
- */
-nacl_user[thread_idx] = NULL;
+  /*
+   * Remove ourselves from the ldt-indexed global tables.  The ldt
+   * entry is released as part of NaClAppThreadDelete(), and if
+   * another thread is immediately created (from some other running
+   * thread) we want to be sure that any ldt-based lookups will not
+   * reach this dying thread's data.
+   */
+  thread_idx = NaClGetThreadIdx(natp);
+  /*
+   * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+   * fault if another syscall is made with this thread_idx.  In
+   * particular, thread_idx 0 is never used.
+   */
+  nacl_user[thread_idx] = NULL;
 #if NACL_WINDOWS
-nacl_thread_ids[thread_idx] = 0;
+  nacl_thread_ids[thread_idx] = 0;
 #elif NACL_OSX
-NaClClearMachThreadForThreadIndex(thread_idx);
+  NaClClearMachThreadForThreadIndex(thread_idx);
 #endif
-/*
- * Unset the TLS variable so that if a crash occurs during thread
- * teardown, the signal handler does not dereference a dangling
- * NaClAppThread pointer.
- */
-NaClTlsSetCurrentThread(NULL);
+  /*
+   * Unset the TLS variable so that if a crash occurs during thread
+   * teardown, the signal handler does not dereference a dangling
+   * NaClAppThread pointer.
+   */
+  NaClTlsSetCurrentThread(NULL);
 
-NaClLog(3, " removing thread from thread table\n");
-/* Deallocate the ID natp->thread_num. */
-NaClRemoveThreadMu(nap, natp->thread_num);
-NaClLog(3, " unlocking thread\n");
-NaClXMutexUnlock(&natp->mu);
-NaClLog(3, " unlocking thread table\n");
-NaClXMutexUnlock(&nap->threads_mu);
-NaClLog(3, " unregistering signal stack\n");
-NaClSignalStackUnregister();
-NaClLog(3, " freeing thread object\n");
-NaClAppThreadDelete(natp);
-NaClLog(3, " NaClThreadExit\n");
+  NaClLog(3, " removing thread from thread table\n");
+  /* Deallocate the ID natp->thread_num. */
+  NaClRemoveThreadMu(nap, natp->thread_num);
+  NaClLog(3, " unlocking thread\n");
+  NaClXMutexUnlock(&natp->mu);
+  NaClLog(3, " unlocking thread table\n");
+  NaClXMutexUnlock(&nap->threads_mu);
+  NaClLog(3, " unregistering signal stack\n");
+  NaClSignalStackUnregister();
+  NaClLog(3, " freeing thread object\n");
+  NaClAppThreadDelete(natp);
+  NaClLog(3, " NaClThreadExit\n");
 
-NaClThreadExit();
-NaClLog(LOG_FATAL,
-  "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
-/* NOTREACHED */
+  NaClThreadExit();
+  NaClLog(LOG_FATAL,
+    "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
+  /* NOTREACHED */
 }
 
 
@@ -411,15 +405,15 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
 
+  NaClPrintAddressSpaceLayout(nap_parent);
+  DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
+  NaClVmCopyAddressSpace(nap_parent, nap_child);
+  NaClPrintAddressSpaceLayout(nap_child);
   DPRINTF("Copying parent stack (%zu bytes) from %p to %p\n",
           (size_t)stack_size,
           (void *)stack_ptr_parent,
           (void *)stack_ptr_child);
   memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
-  DPRINTF("copying pages to %p from %p\n", (void *)nap_child, (void *)nap_parent);
-  NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClPrintAddressSpaceLayout(nap_parent);
-  NaClPrintAddressSpaceLayout(nap_child);
   DPRINTF("copying dynamic text (%#lx bytes) from %p to %p\n",
           size_of_dynamic_text,
           sysaddr_parent,
@@ -432,12 +426,25 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   natp_child->user.r15 = ctx.r15;
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
+
+  /* set return value and untrusted region start address */
+  /* natp_child->user.rax = 0; */
+  natp_child->user.rax = ctx.rax;
   /* natp_child->user.sysret = ctx.sysret; */
+  /* natp_child->user.sysret &= 0x7f; */
+  /* natp_child->user.new_prog_ctr = natp_child->user.prog_ctr; */
+  /* natp_child->user.prog_ctr = natp_child->user.new_prog_ctr; */
+
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
+  }
+
+  if (mprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1) {
+    DPRINTF("mprotect() failed with errno: %s\n", strerror(errno));
+    abort();
   }
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
