@@ -51,7 +51,7 @@ void WeakRefAnchor::Abandon() {
     abandoned_ = true;
   } while (0);
 
-  NaClLog(4, "Leaving WeakRefAnchor::Abandon\n");
+  NaClLog(4, "%s\n", "Leaving WeakRefAnchor::Abandon");
 }
 
 }  // namespace nacl

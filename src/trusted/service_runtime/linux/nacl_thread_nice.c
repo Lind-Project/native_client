@@ -42,7 +42,7 @@ int nacl_thread_nice(int nacl_nice) {
   const int kNormalPriority = 0;
 
   switch (nacl_nice) {
-    case NICE_REALTIME:
+    case NICE_REALTIME: /* fallthrough */
       if (0 == setpriority(PRIO_PROCESS, 0, kRealTimePriority)) {
         return 0;  /* success */
       }

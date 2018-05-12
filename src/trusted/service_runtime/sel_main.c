@@ -11,16 +11,23 @@
 #include "native_client/src/include/portability_io.h"
 
 #if NACL_OSX
-#include <crt_externs.h>
+#  include <crt_externs.h>
 #endif
 
 #if NACL_LINUX
-#include <getopt.h>
+#  include <getopt.h>
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+#ifdef _XOPEN_SOURCE
+#  undef _XOPEN_SOURCE
+#endif
 
 #include "native_client/src/shared/gio/gio.h"
 #include "native_client/src/shared/imc/nacl_imc_c.h"
