@@ -87,10 +87,6 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   context->rax = 0;
   context->r15 = nap->mem_start;
 
-  DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
-  NaClLogThreadContext(natp);
-  NaClAppThreadPrintInfo(natp);
-
   /*
    * broken context switch methods
    * -jp
@@ -121,7 +117,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   secure_stack_ptr = secure_stack_ptr & ~0x1f;
   DPRINTF("NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
           secure_stack_ptr);
-  natp->user.trusted_stack_ptr = secure_stack_ptr;
+  /* natp->user.trusted_stack_ptr = secure_stack_ptr; */
+  /* natp->user.rsp = NaClSysToUserStackAddr(nap, secure_stack_ptr); */
 #endif
 
   /*
@@ -137,6 +134,10 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF("NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(context));
   DPRINTF("NaClStartThreadInApp: switching to untrusted code\n");
+
+  DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
+  NaClLogThreadContext(natp);
+  NaClAppThreadPrintInfo(natp);
 
 #if NACL_WINDOWS
   /* This sets up a stack containing a return address that has unwind info. */
@@ -423,14 +424,16 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
 
-  /* restore child trampoline addresses and stack pointers */
-  ctx = natp_child->user;
+  /* restore child trampoline addresses and stack pointer */
   natp_child->user = natp_parent->user;
+  /* natp_child->user.prog_ctr = natp_parent->user.prog_ctr; */
+  /* natp_child->user.new_prog_ctr = natp_parent->user.new_prog_ctr; */
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
   natp_child->user.r15 = ctx.r15;
   natp_child->user.sysret = ctx.sysret;
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
+  /* natp_child->user.trusted_stack_ptr = stack_ptr_child; */
 
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
@@ -468,7 +471,7 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   */
   if (!NaClThreadCtor(&natp_child->host_thread,
                       NaClAppForkThreadLauncher,
-                      (void *)natp_child,
+                      natp_child,
                       NACL_KERN_STACK_SIZE)) {
     natp_child->host_thread_is_defined = 0;
     NaClAppThreadDelete(natp_child);
