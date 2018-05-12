@@ -32,14 +32,16 @@
 /* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
+  struct NaClApp *nap = natp->nap;
   struct NaClThreadContext *context = &natp->user;
   uint32_t thread_idx;
+  nacl_reg_t secure_stack_ptr;
 
   DPRINTF("NaClAppThreadLauncher: entered\n");
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
+  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
   DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
@@ -81,14 +83,67 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    */
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
-  /* change return */
+  /* set return value and untrusted region start address */
   context->rax = 0;
+  context->r15 = nap->mem_start;
+
   DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
 
+  /*
+   * broken context switch methods
+   * -jp
+   *
+   * NaClSwitchToApp(natp);
+   * NaClStartThreadInApp(natp, natp->user.prog_ctr);
+   */
+
+#if !NACL_WINDOWS
+  /*
+   * Ensure stack alignment.  Stack pointer must be -8 mod 16 when no
+   * __m256 objects are passed (8 mod 32 if __m256), after the call.
+   * Note the current doc (as of 2009-12-09) at
+   *
+   *   http://www.x86-64.org/documentation/abi.pdf
+   *
+   * is wrong since it claims (%rsp-8) should be 0 mod 16 or mod 32
+   * after the call, and it should be (%rsp+8) == 0 mod 16 or 32.
+   * Clearly it makes no difference since -8 and 8 are the same mod
+   * 16, but there is a difference when mod 32.
+   *
+   * This is not suitable for Windows because we do not reserve 32
+   * bytes for the shadow space.
+   */
+  secure_stack_ptr = NaClGetStackPtr();
+  DPRINTF("NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",
+          secure_stack_ptr);
+  secure_stack_ptr = secure_stack_ptr & ~0x1f;
+  DPRINTF("NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
+          secure_stack_ptr);
+  natp->user.trusted_stack_ptr = secure_stack_ptr;
+#endif
+
+  /*
+   * don't change sysret and program count since we
+   * are context switching straight into fork() point.
+   *
+   * -jp
+   *
+   * context->new_prog_ctr = new_prog_ctr;
+   * context->sysret = 0;
+   */
+
+  DPRINTF("NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
+          NaClGetThreadCtxSp(context));
+  DPRINTF("NaClStartThreadInApp: switching to untrusted code\n");
+
+#if NACL_WINDOWS
+  /* This sets up a stack containing a return address that has unwind info. */
+  NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitchToApp);
+#else
   NaClSwitchToApp(natp);
-  /* NaClStartThreadInApp(natp, natp->user.prog_ctr); */
+#endif
 }
 
 void WINAPI NaClAppThreadLauncher(void *state) {
