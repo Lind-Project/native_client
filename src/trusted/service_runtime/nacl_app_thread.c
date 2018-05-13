@@ -271,11 +271,11 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   /* TODO: add mutex locks */
   if (nap->parent) {
     DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
-    nap->parent->num_children--;
+    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
+  } else {
+    DPRINTF("Thread has no parent\n");
   }
-
-  DPRINTF("Parent child count: %d, number of children: %d\n", nap->parent->num_children, nap->num_children);
-
+  DPRINTF("Thread child cound: %d\n", nap->num_children);
   /* busy wait for now */
   while (nap->num_children);
 
