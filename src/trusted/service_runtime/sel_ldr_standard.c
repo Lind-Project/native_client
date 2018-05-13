@@ -960,12 +960,13 @@ cleanup:
 }
 
 /* jp */
-int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
-                             struct NaClAppThread *natp_parent,
-                             struct NaClApp       *nap_child,
-                             int                  argc,
-                             char                 **argv,
-                             char const *const    *envv) {
+int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
+                             struct NaClAppThread     *natp_parent,
+                             struct NaClThreadContext *parent_ctx,
+                             struct NaClApp           *nap_child,
+                             int                      argc,
+                             char                     **argv,
+                             char const *const        *envv) {
   /*
    * Compute size of string tables for argv and envv
    */
@@ -983,7 +984,7 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
 
   retval = 0;  /* fail */
   CHECK(argc >= 0);
-  CHECK(NULL != argv || 0 == argc);
+  CHECK(parent_ctx || argv || argc);
 
   envc = 0;
   if (NULL != envv) {
@@ -1163,6 +1164,7 @@ int NaClCreateMainForkThread(struct NaClApp       *nap_parent,
                                   natp_parent->user.trusted_stack_ptr,
                                   stack_ptr,
                                   size,
+                                  parent_ctx,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),

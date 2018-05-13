@@ -4084,6 +4084,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 /* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
+  struct NaClThreadContext parent_ctx = natp->user;
   int32_t retval;
   int argc2;
   char **argv2;
@@ -4130,7 +4131,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   switch (fork_num) {
   case 1:
      NaClLogThreadContext(natp);
-     if (!NaClCreateMainForkThread(nap, natp, nap0, argc2, argv2, NULL)) {
+     if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
        break;
@@ -4152,7 +4153,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      retval = 0;
      break;
      NaClLogThreadContext(natp);
-     if (!NaClCreateMainForkThread(nap, natp, nap0_2, argc2, argv2, NULL)) {
+     if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0_2, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
        break;

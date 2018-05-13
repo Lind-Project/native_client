@@ -182,16 +182,17 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uint32_t       user_tls2) NACL_WUR;
 
 // yiwen
-int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
-                           struct NaClAppThread *natp_parent,
-                           uintptr_t            stack_ptr_parent,
-                           uintptr_t            stack_ptr_child,
-                           size_t               stack_size,
-                           struct NaClApp       *nap_child,
-                           uintptr_t            usr_entry,
-                           uintptr_t            usr_stack_ptr,
-                           uint32_t             user_tls1,
-                           uint32_t             user_tls2) NACL_WUR;
+int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
+                           struct NaClAppThread     *natp_parent,
+                           uintptr_t                stack_ptr_parent,
+                           uintptr_t                stack_ptr_child,
+                           size_t                   stack_size,
+                           struct NaClThreadContext *parent_ctx,
+                           struct NaClApp           *nap_child,
+                           uintptr_t                usr_entry,
+                           uintptr_t                usr_stack_ptr,
+                           uint32_t                 user_tls1,
+                           uint32_t                 user_tls2) NACL_WUR;
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
 

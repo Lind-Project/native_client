@@ -369,16 +369,17 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 }
 
 /* jp */
-int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
-                           struct NaClAppThread *natp_parent,
-                           uintptr_t            stack_ptr_parent,
-                           uintptr_t            stack_ptr_child,
-                           size_t               stack_size,
-                           struct NaClApp       *nap_child,
-                           uintptr_t            usr_entry,
-                           uintptr_t            usr_stack_ptr,
-                           uint32_t             user_tls1,
-                           uint32_t             user_tls2) {
+int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
+                           struct NaClAppThread     *natp_parent,
+                           uintptr_t                stack_ptr_parent,
+                           uintptr_t                stack_ptr_child,
+                           size_t                   stack_size,
+                           struct NaClThreadContext *parent_ctx,
+                           struct NaClApp           *nap_child,
+                           uintptr_t                usr_entry,
+                           uintptr_t                usr_stack_ptr,
+                           uint32_t                 user_tls1,
+                           uint32_t                 user_tls2) {
   void *sysaddr_parent;
   void *sysaddr_child;
   size_t size_of_dynamic_text;
@@ -422,31 +423,30 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
   NaClPrintAddressSpaceLayout(nap_child);
-  DPRINTF("Copying parent stack (%zu bytes) from %p to %p\n",
+  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from %p to %p\n",
+          (size_t)stack_size,
           (size_t)stack_size,
           (void *)stack_ptr_parent,
           (void *)stack_ptr_child);
   memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
-  DPRINTF("copying dynamic text (%#lx bytes) from %p to %p\n",
+  DPRINTF("copying dynamic text (%zu [%#lx] bytes) from %p to %p\n",
+          size_of_dynamic_text,
           size_of_dynamic_text,
           sysaddr_parent,
           sysaddr_child);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
   /* restore child trampoline addresses and stack pointer */
-  natp_child->user = natp_parent->user;
+  natp_child->user = *parent_ctx;
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
-  natp_child->user.r15 = ctx.r15;
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
 
   /* set return value and untrusted region start address */
-  /* natp_child->user.rax = 0; */
   natp_child->user.rbx = 0;
+  natp_child->user.r15 = ctx.r15;
   /* natp_child->user.sysret = 0; */
   /* natp_child->user.sysret &= 0x7f; */
-  /* natp_child->user.new_prog_ctr = natp_child->user.prog_ctr; */
-  /* natp_child->user.prog_ctr = natp_child->user.new_prog_ctr; */
 
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
