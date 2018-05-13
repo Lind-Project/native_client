@@ -442,8 +442,8 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
 
   /* set return value and untrusted region start address */
   /* natp_child->user.rax = 0; */
-  natp_child->user.rax = ctx.rax;
-  /* natp_child->user.sysret = ctx.sysret; */
+  natp_child->user.rbx = 0;
+  /* natp_child->user.sysret = 0; */
   /* natp_child->user.sysret &= 0x7f; */
   /* natp_child->user.new_prog_ctr = natp_child->user.prog_ctr; */
   /* natp_child->user.prog_ctr = natp_child->user.new_prog_ctr; */
