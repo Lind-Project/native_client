@@ -214,7 +214,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   nap = natp->nap;
 
   if (NULL != nap->debug_stub_callbacks) {
-    NaClLog(3, " notifying the debug stub of the thread exit\n");
+    DPRINTF(" notifying the debug stub of the thread exit\n");
     /*
      * This must happen before deallocating the ID natp->thread_num.
      * We have the invariant that debug stub lock should be acquired before
@@ -224,9 +224,9 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  NaClLog(3, " getting thread table lock\n");
+  DPRINTF(" getting thread table lock\n");
   NaClXMutexLock(&nap->threads_mu);
-  NaClLog(3, " getting thread lock\n");
+  DPRINTF(" getting thread lock\n");
   NaClXMutexLock(&natp->mu);
 
   /*
@@ -255,25 +255,38 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    */
   NaClTlsSetCurrentThread(NULL);
 
-  NaClLog(3, " removing thread from thread table\n");
+  DPRINTF(" removing thread from thread table\n");
   /* Deallocate the ID natp->thread_num. */
   NaClRemoveThreadMu(nap, natp->thread_num);
-  NaClLog(3, " unlocking thread\n");
+  DPRINTF(" unlocking thread\n");
   NaClXMutexUnlock(&natp->mu);
-  NaClLog(3, " unlocking thread table\n");
+  DPRINTF(" unlocking thread table\n");
   NaClXMutexUnlock(&nap->threads_mu);
-  NaClLog(3, " unregistering signal stack\n");
+  DPRINTF(" unregistering signal stack\n");
   NaClSignalStackUnregister();
-  NaClLog(3, " freeing thread object\n");
+  DPRINTF(" freeing thread object\n");
   NaClAppThreadDelete(natp);
-  NaClLog(3, " NaClThreadExit\n");
+  DPRINTF(" NaClThreadExit\n");
+
+  /* TODO: add mutex locks */
+  if (nap->parent) {
+    DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
+    nap->parent->num_children--;
+  }
+
+  DPRINTF("Parent child count: %d, number of children: %d\n", nap->parent->num_children, nap->num_children);
+
+  /* busy wait for now */
+  while (nap->num_children);
+
+  /* cleanup list of children */
+  free(nap->child_list);
+  nap->child_list = NULL;
 
   NaClThreadExit();
-  NaClLog(LOG_FATAL,
-    "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
+  NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
   /* NOTREACHED */
 }
-
 
 struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   uintptr_t      usr_entry,
@@ -388,8 +401,8 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("nap_parent cage id: [%d] \n", nap_parent->cage_id);
 
-  NaClXMutexLock(&natp_child->mu);
-  NaClXMutexLock(&natp_parent->mu);
+  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap_parent->mu);
 
   stack_total_size = nap_parent->stack_size;
   stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
@@ -442,11 +455,6 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
 
-  if (mprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1) {
-    DPRINTF("mprotect() failed with errno: %s\n", strerror(errno));
-    abort();
-  }
-
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
      DPRINTF("parent NaClMprotect failed! \n");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
@@ -456,8 +464,8 @@ int NaClAppForkThreadSpawn(struct NaClApp       *nap_parent,
   if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_EXEC) == -1)
    DPRINTF("parent NaClMprotect failed! \n");
 
-  NaClXMutexUnlock(&natp_child->mu);
-  NaClXMutexUnlock(&natp_parent->mu);
+  NaClXMutexUnlock(&nap_child->mu);
+  NaClXMutexUnlock(&nap_parent->mu);
 
   /*
    * We set host_thread_is_defined assuming, for now, that

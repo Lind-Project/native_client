@@ -109,6 +109,9 @@ struct NaClSpringboardInfo {
 };
 
 struct NaClApp {
+  struct NaClApp            *parent;
+  int                       parent_id;
+
   /*
    * Children table lock children_mu is higher in the locking order than
    * the thread locks, i.e., children_mu must be acqured w/o holding
@@ -117,23 +120,23 @@ struct NaClApp {
    * -jp
    */
   struct NaClMutex          children_mu;
-  struct DynArray           children;   /* NaClApp pointers */
-  int                       num_children;  /* number actually running */
-  int                       fork_num;  /* fork instances actually running */
+  /* NaClApp pointers (currently unused) */
+  struct DynArray           children;
+  /*
+   * TODO: convert child_list to DynArray
+   */
+  struct NaClApp            **child_list;
 
   /* mappings of `int fd` numbers to `NaClDesc *` */
   struct NaClDesc           *fd_maps[FILE_DESC_MAX];
-
-  // yiwen
+  int                       children_ids[10];
+  int                       num_children;
+  int                       fork_num;
   int                       cage_id;
 
   // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
   struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
   int                       num_lib;
-
-  // yiwen: store info of its children
-  int                       children_ids[10];
-
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
   int                       command_num;
   char                      *binary_path;

@@ -4081,53 +4081,6 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   return retval;
 }
 
-
-// yiwen: my in-process-fork implementation
-// Conceptually, here are the steps we need to do:
-// 1) create a new cage/nap for the child process
-// 2) create a new thread inside the new cage to run the program
-// 3) make sure that the new cage has an exact duplication of the code and data from the parent cage
-// 4) set up the return value of the child process correctly (on the stack)
-// 5) set up the context switch info correctly for the child process
-// 6) schedule the context switch to run the child process
-/*
-int32_t NaClSysFork(struct NaClAppThread  *natp) {
-  struct NaClApp *nap = natp->nap;
-  int argc2;
-  char **argv2;
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] cage id = %d \n", nap->cage_id);
-  NaClAppThreadPrintInfo(natp);
-
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char));
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
-
-  if (!NaClCreateMainForkThread(nap,
-                                nap0,
-                                argc2,
-                                argv2,
-                                NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
-    return 0;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2);
-
-  return 1;
-} */
-
 /* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
@@ -4182,7 +4135,12 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
        retval = -1;
        break;
      }
+     if (!(nap->child_list = calloc(10, sizeof *nap->child_list)))
+       NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
      nap->children_ids[nap->num_children] = nap0->cage_id;
+     nap->child_list[nap->num_children] = nap0;
+     nap0->parent_id = nap->cage_id;
+     nap0->parent = nap;
      nap->num_children++;
      retval = nap0->cage_id;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
@@ -4199,7 +4157,12 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
        retval = -1;
        break;
      }
+     if (!(nap->child_list = calloc(10, sizeof *nap->child_list)))
+       NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
      nap->children_ids[nap->num_children] = nap0_2->cage_id;
+     nap->child_list[nap->num_children] = nap0_2;
+     nap0_2->parent_id = nap->cage_id;
+     nap0_2->parent = nap;
      nap->num_children++;
      retval = nap0_2->cage_id;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
@@ -4212,106 +4175,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   return retval;
 }
-
-// yiwen: an improved basic working version 1.1 of my fork implementation
-/*
-int32_t NaClSysFork(struct NaClAppThread  *natp) {
-  struct NaClApp *nap = natp->nap;
-  int32_t retval;
-  int argc2;
-  char **argv2;
-  int path_len;
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
-
-  if (nap->cage_id == 0) {
-     retval = 0;
-     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
-     return retval;
-  }
-
-  argc2 = 3 + nap->command_num;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/glibc", 7);
-  // argv2[3] = (char*) malloc(29 * sizeof(char));
-  // strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
-
-  path_len = strlen(nap->binary_path) + 1;
-  argv2[3] = (char*) malloc(path_len * sizeof(char));
-  strncpy(argv2[3], nap->binary_path, path_len);
-  NaClLog(LOG_WARNING, "[NaClSysFork] binary path: %s \n\n", nap->binary_path);
-
-  if (nap->command_num > 1) {
-     path_len = strlen(nap->binary_command) + 1;
-     argv2[4] = (char*) malloc(path_len * sizeof(char));
-     strncpy(argv2[4], nap->binary_command, path_len);
-     NaClLog(LOG_WARNING, "[NaClSysFork] binary command: %s \n\n", nap->binary_command);
-  }
-
-  if (!NaClCreateMainForkThread(nap,
-                                nap0,
-                                argc2,
-                                argv2,
-                                NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
-    NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
-    retval = -1;
-    return retval;
-  }
-
-  retval = 0;
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
-  return retval;
-} */
-
-// yiwen: a basic working version 1.0 of my fork implementation
-/*
-int32_t NaClSysFork(struct NaClAppThread  *natp) {
-  struct NaClApp *nap = natp->nap;
-  int32_t retval;
-  int argc2;
-  char **argv2;
-
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork starts! \n");
-
-  if (nap->cage_id == 0) {
-     retval = 0;
-     NaClLog(LOG_WARNING, "[NaClSysFork] This is the child of fork() \n");
-     return retval;
-  }
-
-  argc2 = 4;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(29 * sizeof(char));
-  strncpy(argv2[3], "./test_case/fork/fork_0.nexe", 29);
-
-  if (!NaClCreateMainForkThread(nap,
-                                nap0,
-                                argc2,
-                                argv2,
-                                NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
-    NaClLog(LOG_WARNING, "[NaClSysFork] Execv new program failed! \n");
-    retval = -1;
-    return retval;
-  }
-
-  retval = 1234;
-  NaClLog(LOG_WARNING, "[NaClSysFork] NaCl fork finishes! \n");
-  return retval;
-} */
-
 
 // yiwen: my implementation for execv() call
 // a new cage is created for the new program
