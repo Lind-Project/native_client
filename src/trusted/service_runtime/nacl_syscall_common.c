@@ -4352,51 +4352,91 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   return retval;
 }
 
+#define WAIT_ANY -1
+#define WAIT_ANY_PG 0
+
 // yiwen:
 int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options) {
-	struct NaClApp *nap = natp->nap;
-	int *stat_loc_ptr;
-	uintptr_t sysaddr;
-	int retval;
+        struct NaClApp *nap = natp->nap;
+        int *stat_loc_ptr;
+        uintptr_t sysaddr;
+        int retval;
 
-	NaClLog(LOG_WARNING, "[NaClSysWaitpid] entered waitpid! \n");
+        DPRINTF("[NaClSysWaitpid] entered waitpid! \n");
 
-	sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
-	stat_loc_ptr = (int *)sysaddr;
-	*stat_loc_ptr = 111;
-
+        sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
+        stat_loc_ptr = (int *)sysaddr;
         retval = 0;
+
         if (nap->num_children > 0) {
-           retval = nap->children_ids[nap->num_children - 1];
-	}
-        UNREFERENCED_PARAMETER(pid);
-        UNREFERENCED_PARAMETER(options);
-#ifdef  _DEBUG
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] pid = %d \n", pid);
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] options = %d \n", options);
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
-#endif
-	return retval;
+                /* seconds between thread switching */
+                time_t timeout = 1;
+                size_t idx = 0;
+                size_t num_children = nap->num_children;
+                struct NaClApp *nap_child = nap->child_list[idx];
+                struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx];
+
+                /*
+                 * TODO: implement pid == WAIT_ANY_PG (0) and pid < -1 behavior
+                 *
+                 * -jp
+                 */
+                if (pid > 0 && pid < num_children) {
+                        idx = pid;
+                        nap_child = nap->child_list[idx];
+                        natp_child = nap_child->threads.ptr_array[idx];
+                        retval = NaClThreadJoin(&natp_child->host_thread);
+                        if (retval) {
+                                NaClLog(LOG_FATAL,
+                                        "NaClThreadJoin() failed: %s\n",
+                                        strerror(retval));
+                                goto out;
+                        }
+                } else {
+                        /* wait for any threads to exit */
+                        do {
+                                retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
+                                if (retval && retval != ETIMEDOUT) {
+                                        NaClLog(LOG_FATAL,
+                                                "NaClThreadTimedJoin() failed: %s\n",
+                                                strerror(retval));
+                                        goto out;
+                                }
+                                if (++idx >= num_children)
+                                        idx = 0;
+                                nap_child = nap->child_list[idx];
+                                natp_child = nap_child->threads.ptr_array[idx];
+                        } while (retval == ETIMEDOUT);
+                        pid = idx - 1;
+                }
+        }
+
+        DPRINTF("[NaClSysWaitpid] pid = %d \n", pid);
+        DPRINTF("[NaClSysWaitpid] options = %d \n", options);
+        DPRINTF("[NaClSysWaitpid] retval = %d \n", retval);
+
+out:
+        *stat_loc_ptr = retval;
+        return retval;
 }
 
 int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
-	struct NaClApp *nap = natp->nap;
-	int *stat_loc_ptr;
-	uintptr_t sysaddr;
-	int retval;
+        struct NaClApp *nap = natp->nap;
+        int *stat_loc_ptr;
+        uintptr_t sysaddr;
+        int retval;
 
-	NaClLog(LOG_WARNING, "[NaClSysWait] entered wait! \n");
+        DPRINTF("[NaClSysWait] entered wait! \n");
 
-	sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
-	stat_loc_ptr = (int *)sysaddr;
-	*stat_loc_ptr = 111;
-
+        sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
+        stat_loc_ptr = (int *)sysaddr;
         retval = 0;
-        if (nap->num_children > 0) {
-           retval = nap->children_ids[nap->num_children - 1];
-	}
-#ifdef  _DEBUG
-        NaClLog(LOG_WARNING, "[NaClSysWaitpid] retval = %d \n", retval);
-#endif
-	return retval;
+        if (nap->num_children > 0)
+                retval = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
+
+        DPRINTF("[NaClSysWait] retval = %d \n", retval);
+
+out:
+        *stat_loc_ptr = retval;
+        return retval;
 }

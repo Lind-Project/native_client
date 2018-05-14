@@ -238,7 +238,7 @@ int main(int ac, char **av) {
       case 'f':
         file_path = optarg;
         break;
-      case 'm':
+      case 'm': /* fallthrough */
         max_write_size = (size_t) STRTOULL(optarg, (char **) NULL, 0);
       case 'n':
         num_bytes = (uint64_t) STRTOULL(optarg, (char **) NULL, 0);

@@ -125,8 +125,20 @@ void NaClThreadDtor(struct NaClThread *ntp) {
   UNREFERENCED_PARAMETER(ntp);
 }
 
-void NaClThreadJoin(struct NaClThread *ntp) {
-  pthread_join(ntp->tid, NULL);
+int NaClThreadJoin(struct NaClThread *ntp) {
+  return pthread_join(ntp->tid, NULL);
+}
+
+int NaClThreadTryJoin(struct NaClThread *ntp) {
+  return pthread_tryjoin_np(ntp->tid, NULL);
+}
+
+int NaClThreadTimedJoin(struct NaClThread *ntp, time_t timeout) {
+  const struct timespec abstime = {
+	  .tv_sec = time(0) + timeout,
+	  .tv_nsec = 0
+  };
+  return pthread_timedjoin_np(ntp->tid, NULL, &abstime);
 }
 
 void NaClThreadExit(void) {
