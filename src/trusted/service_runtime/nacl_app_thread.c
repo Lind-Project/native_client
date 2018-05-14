@@ -133,6 +133,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * claim any mutexes, otherwise we risk deadlock.
    */
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  /* NaClStartThreadInApp(natp, natp->user.prog_ctr); */
 
 #if NACL_WINDOWS
   /* This sets up a stack containing a return address that has unwind info. */
@@ -386,6 +387,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_t stack_total_size;
   struct NaClAppThread *natp_child;
   struct NaClThreadContext ctx;
+  uintptr_t syscall_child_addr;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
@@ -438,15 +440,34 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
+  syscall_child_addr = natp_child->usr_syscall_args;
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
+  DPRINTF("Copying usr_syscall_args address %p (adjusted from %p)\n",
+          (void *)natp_child->usr_syscall_args,
+          (void *)syscall_child_addr);
+  DPRINTF("Copying registers [%%rsp] %p [%%rbp] %p)\n",
+          (void *)natp_child->user.rsp,
+          (void *)natp_child->user.rbp);
 
   /* set return value and untrusted region start address */
   natp_child->user.rbx = 0;
   natp_child->user.r15 = ctx.r15;
+  natp_child->user.rdi = ctx.rdi;
   /* natp_child->user.sysret = 0; */
   /* natp_child->user.sysret &= 0x7f; */
+  DPRINTF("Copying registers [%%r15] %p [%%rdi] %p)\n",
+          (void *)natp_child->user.r15,
+          (void *)natp_child->user.rdi);
+
+  /*
+   * natp_child->nap->main_exe_prevalidated = 1;
+   * natp_child->nap->enable_dyncode_syscalls = 1;
+   * natp_child->nap->running = 1;
+   * natp_child->nap->skip_validator = 1;
+   * natp_child->nap->ignore_validator_result = 1;
+   */
 
   natp_child->user.tls_idx += nap_child->cage_id;
   if (nacl_user[natp_child->user.tls_idx]) {
