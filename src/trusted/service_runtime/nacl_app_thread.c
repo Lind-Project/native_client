@@ -387,7 +387,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_t stack_total_size;
   struct NaClAppThread *natp_child;
   struct NaClThreadContext ctx;
-  uintptr_t syscall_child_addr;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
@@ -440,13 +439,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
-  syscall_child_addr = natp_child->usr_syscall_args;
-  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
+  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
-  DPRINTF("Copying usr_syscall_args address %p (adjusted from %p)\n",
+  DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
           (void *)natp_child->usr_syscall_args,
-          (void *)syscall_child_addr);
+          (void *)natp_parent->usr_syscall_args);
   DPRINTF("Copying registers [%%rsp] %p [%%rbp] %p)\n",
           (void *)natp_child->user.rsp,
           (void *)natp_child->user.rbp);
