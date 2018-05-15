@@ -437,8 +437,14 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           sysaddr_child);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
+  DPRINTF("Thread context of parent\n");
+  NaClLogThreadContext(natp_parent);
+  DPRINTF("Thread context of child before copy\n");
+  NaClLogThreadContext(natp_child);
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
+  DPRINTF("Thread context of child after copy\n");
+  NaClLogThreadContext(natp_child);
   /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   natp_child->user.rsp = ctx.rsp;
   natp_child->user.rbp = ctx.rbp;
@@ -450,9 +456,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           (void *)natp_child->user.rbp);
 
   /* set return value and untrusted region start address */
+  natp_child->user.rax = 0;
   natp_child->user.rbx = 0;
   natp_child->user.r15 = ctx.r15;
-  natp_child->user.rdi = natp_child->usr_syscall_args;
+  natp_child->user.prog_ctr = natp_child->user.prog_ctr - parent_ctx->r15 + ctx.r15;
+  natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15;
+  natp_child->user.trusted_stack_ptr = usr_stack_ptr;
+  /* natp_child->user.rdi = natp_child->usr_syscall_args - ctx.prog_ctr; */
   /* natp_child->user.rdi = ctx.rdi; */
   /* natp_child->user.sysret = 0; */
   /* natp_child->user.sysret &= 0x7f; */
