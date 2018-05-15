@@ -4100,7 +4100,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
      DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
      DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
-     return 0;
+     retval = 0;
+     goto out;
   }
 
   fork_num++;
@@ -4131,7 +4132,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   switch (fork_num) {
   case 1:
      NaClLogThreadContext(natp);
-     nap->fork_num = fork_num;
+     /* nap->fork_num = fork_num; */
      if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
@@ -4143,6 +4144,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      nap->child_list[nap->num_children] = nap0;
      nap0->parent_id = nap->cage_id;
      nap0->parent = nap;
+     nap0->num_children = 0;
+     nap0->child_list = NULL;
+     nap->debug_stub_callbacks = NULL;
      nap->num_children++;
      retval = nap0->cage_id;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
@@ -4175,6 +4179,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      break;
   }
 
+out:
   return retval;
 }
 
@@ -4437,7 +4442,6 @@ int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
 
         DPRINTF("[NaClSysWait] retval = %d \n", retval);
 
-out:
         *stat_loc_ptr = retval;
         return retval;
 }

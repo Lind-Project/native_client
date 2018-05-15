@@ -225,6 +225,34 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   DPRINTF("NaClAppThreadTeardown(0x%08"NACL_PRIxPTR")\n", (uintptr_t)natp);
   nap = natp->nap;
 
+  /* TODO: add mutex locks */
+  if (nap->parent) {
+    DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
+    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
+    /* busy wait for now */
+    /*
+     * for (;;) {
+     *   NaClThreadYield();
+     *   sleep(1);
+     * }
+     */
+    goto out;
+  }
+
+  DPRINTF("Thread has no parent\n");
+
+  /* busy wait for now */
+  while (nap->num_children) {
+    sleep(1);
+    DPRINTF("Thread child count: %d\n", nap->num_children);
+  }
+
+  /* cleanup list of children */
+  free(nap->child_list);
+  nap->child_list = NULL;
+
+  nap->debug_stub_callbacks = NULL;
+
   if (NULL != nap->debug_stub_callbacks) {
     DPRINTF(" notifying the debug stub of the thread exit\n");
     /*
@@ -280,19 +308,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClAppThreadDelete(natp);
   DPRINTF(" NaClThreadExit\n");
 
-  /* TODO: add mutex locks */
-  if (nap->parent) {
-    DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
-    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
-  } else {
-    DPRINTF("Thread has no parent\n");
-  }
-  DPRINTF("Thread child count: %d\n", nap->num_children);
-
-  /* cleanup list of children */
-  free(nap->child_list);
-  nap->child_list = NULL;
-
+out:
   NaClThreadExit();
   NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
   /* NOTREACHED */
@@ -398,22 +414,24 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClThreadContext ctx;
 
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
-  if (!natp_child)
-   return 0;
+
+  if (!natp_child || !nap_parent->running)
+    return 0;
+
+  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap_parent->mu);
+
 
   /* save child trampoline addresses */
   ctx = natp_child->user;
 
-  natp_child->nap->fork_num = nap_parent->fork_num + 1;
-  nap_child->cage_id = nap_parent->cage_id;
+  natp_child->nap->fork_num = parent_ctx->tls_idx + 1;
+  nap_child->cage_id = nap_parent->cage_id + 1000;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("nap_parent cage id: [%d] \n", nap_parent->cage_id);
-
-  NaClXMutexLock(&nap_child->mu);
-  NaClXMutexLock(&nap_parent->mu);
 
   stack_total_size = nap_parent->stack_size;
   stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
@@ -446,14 +464,18 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           sysaddr_child);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
 
-  DPRINTF("Thread context of parent\n");
-  NaClLogThreadContext(natp_parent);
-  DPRINTF("Thread context of child before copy\n");
-  NaClLogThreadContext(natp_child);
+  /*
+   * DPRINTF("Thread context of parent\n");
+   * NaClLogThreadContext(natp_parent);
+   * DPRINTF("Thread context of child before copy\n");
+   * NaClLogThreadContext(natp_child);
+   */
   /* restore child trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
-  DPRINTF("Thread context of child after copy\n");
-  NaClLogThreadContext(natp_child);
+  /*
+   * DPRINTF("Thread context of child after copy\n");
+   * NaClLogThreadContext(natp_child);
+   */
   /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   natp_child->user.rsp = ctx.rsp;
   /* natp_child->user.rbp = ctx.rbp; */
@@ -463,7 +485,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   DPRINTF("Copying registers [%%rsp] %p [%%rbp] %p)\n",
           (void *)natp_child->user.rsp,
           (void *)natp_child->user.rbp);
-
   /* set return value and untrusted region start address */
   natp_child->user.rax = 0;
   natp_child->user.rbx = 0;
@@ -475,17 +496,22 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* natp_child->user.rdi = natp_child->usr_syscall_args - ctx.prog_ctr; */
   /* natp_child->user.rdi = ctx.rdi; */
 
-  /* testing: keep memory mapping */
+  /* testing: keep parent's memory mapping */
   natp_child->user = *parent_ctx;
+  nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
+  nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
+  nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
   nap_child->mem_start = natp_child->user.r15;
   /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
-  natp_child->user.rsp = ctx.rsp;
+  /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
+  /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rbp = ctx.rbp; */
   /* natp_child->user.rax = ctx.rax; */
-  natp_child->user.rax = 0;
-  natp_child->user.rbx = 0;
+  /* natp_child->user.rax = 0; */
+  /* natp_child->user.rbx = 0; */
   natp_child->user.sysret = 0;
   /* natp_child->user.sysret &= 0x7f; */
+  /* natp_child->user.trusted_stack_ptr = stack_ptr; */
   DPRINTF("Copying registers [%%r15] %p [%%rdi] %p)\n",
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
@@ -498,7 +524,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * natp_child->nap->ignore_validator_result = 1;
    */
 
-  natp_child->user.tls_idx += nap_child->cage_id;
+  natp_child->user.tls_idx = nap_child->fork_num;
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
@@ -534,6 +560,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    *                               &natp_child->user,
    *                               NACL_KERN_STACK_SIZE)) {
    */
+  /* if (!NaClThreadCreate(&natp_child->host_thread, */
   if (!NaClThreadCreateJoinable(&natp_child->host_thread,
                                 NaClAppForkThreadLauncher,
                                 natp_child,
