@@ -452,7 +452,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* set return value and untrusted region start address */
   natp_child->user.rbx = 0;
   natp_child->user.r15 = ctx.r15;
-  natp_child->user.rdi = ctx.rdi;
+  natp_child->user.rdi = natp_child->usr_syscall_args;
+  /* natp_child->user.rdi = ctx.rdi; */
   /* natp_child->user.sysret = 0; */
   /* natp_child->user.sysret &= 0x7f; */
   DPRINTF("Copying registers [%%r15] %p [%%rdi] %p)\n",
@@ -558,7 +559,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 /* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadPrintInfo] "
-          "cage id = %d; user.prog_ctr = %p; user.new_prog_ctr = %p; user.sysret = %p \n",
+          "cage id = %d, prog_ctr = %p, new_prog_ctr = %p, sysret = %p\n",
           natp->nap->cage_id,
           (void*)natp->user.prog_ctr,
           (void*)natp->user.new_prog_ctr,
