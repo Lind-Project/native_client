@@ -251,8 +251,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   free(nap->child_list);
   nap->child_list = NULL;
 
-  nap->debug_stub_callbacks = NULL;
-
   if (NULL != nap->debug_stub_callbacks) {
     DPRINTF(" notifying the debug stub of the thread exit\n");
     /*
@@ -494,15 +492,16 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15;
   /* natp_child->user.r10 = natp_child->user.new_prog_ctr; */
   /* natp_child->user.rdi = natp_child->usr_syscall_args - ctx.prog_ctr; */
-  /* natp_child->user.rdi = ctx.rdi; */
 
-  /* testing: keep parent's memory mapping */
+  /*
+   * testing: keep parent's memory mapping
+   */
   natp_child->user = *parent_ctx;
   nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
   nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
   nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
+  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
   nap_child->mem_start = natp_child->user.r15;
-  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
   /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rbp = ctx.rbp; */
@@ -510,7 +509,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
   natp_child->user.sysret = 0;
-  /* natp_child->user.sysret &= 0x7f; */
   /* natp_child->user.trusted_stack_ptr = stack_ptr; */
   DPRINTF("Copying registers [%%r15] %p [%%rdi] %p)\n",
           (void *)natp_child->user.r15,
