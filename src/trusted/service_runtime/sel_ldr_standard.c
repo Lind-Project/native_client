@@ -193,11 +193,27 @@ void NaClLogSysMemoryContent(uintptr_t sysaddr) {
 
 // yiwen: print out thread context info
 void NaClLogThreadContext(struct NaClAppThread *natp) {
-  DPRINTF("[Thread Context] cage id = %i \n", natp->nap->cage_id);
-  DPRINTF("[Thread Context] sysret = %p \n", (void *)natp->user.sysret);
-  DPRINTF("[Thread Context] prog_ctr = %p \n", (void *)natp->user.prog_ctr);
-  DPRINTF("[Thread Context] new_prog_ctr = %p \n", (void *)natp->user.new_prog_ctr);
-  DPRINTF("[Thread Context] trusted_stack_ptr = %p \n\n", (void *)natp->user.trusted_stack_ptr);
+  struct NaClThreadContext *ctx = &natp->user;
+  DPRINTF("\n");
+  DPRINTF("[Thread Context] cage id           = %i \n", natp->nap->cage_id);
+  DPRINTF("[Thread Context] sysret            = %p \n", (void *)ctx->sysret);
+  DPRINTF("[Thread Context] prog_ctr (%%rip)  = %p \n", (void *)ctx->prog_ctr);
+  DPRINTF("[Thread Context] new_prog_ctr      = %p \n", (void *)ctx->new_prog_ctr);
+  DPRINTF("[Thread Context] trusted_stack_ptr = %p \n", (void *)ctx->trusted_stack_ptr);
+  DPRINTF("[Thread Context] registers:\n"
+          "                 %%tls_idx = %#x, %%tls_value1  = %#x, %%tls_value2 = %#x\n"
+          "                 %%rax     = %#x, %%rbx         = %#x, %%rcx = %#x, %%rdx     = %#x\n"
+          "                 %%rbp     = %#x, %%rsi         = %#x, %%rdi = %#x, %%rsp     = %#x\n"
+          "                 %%r8      = %#x, %%r9          = %#x, %%r10 = %#x, %%r11     = %#x\n"
+          "                 %%r12     = %#x, %%r13         = %#x, %%r14 = %#x, %%r15     = %#x\n"
+          "                 %%mxcsr   = %#x, %%sys_mxcsr   = %#x, %%fcw = %#x, %%sys_fcw = %#x\n",
+          ctx->tls_idx, ctx->tls_value1, ctx->tls_value2,
+          ctx->rax, ctx->rbx, ctx->rcx, ctx->rdx,
+          ctx->rbp, ctx->rsi, ctx->rdi, ctx->rsp,
+          ctx->r8, ctx->r9, ctx->r10, ctx->r11,
+          ctx->r12, ctx->r13, ctx->r14, ctx->r15,
+          ctx->mxcsr, ctx->sys_mxcsr, ctx->fcw, ctx->sys_fcw);
+  DPRINTF("\n");
 }
 
 // yiwen: print out memory layout of a nap
