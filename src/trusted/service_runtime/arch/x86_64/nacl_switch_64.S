@@ -41,56 +41,7 @@
 # define MACROARG2      \arg2
 #endif
 
-#ifndef __ASM__
-#define  __ASM__
 
-/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
-#ifndef ASM_NL
-#define ASM_NL		 ;
-#endif
-
-#ifndef __ALIGN
-#define __ALIGN		.align 4,0x90
-#define __ALIGN_STR	".align 4,0x90"
-#endif
-
-#ifndef LINKER_SCRIPT
-#define ALIGN __ALIGN
-#define ALIGN_STR __ALIGN_STR
-
-#ifndef ENTRY
-#define ENTRY(name) \
-	.globl name ASM_NL \
-	ALIGN ASM_NL \
-	name:
-#endif
-
-#ifndef WEAK
-#define WEAK(name)	   \
-	.weak name ASM_NL   \
-	name:
-#endif
-
-#ifndef END
-#define END(name) \
-	.size name, .-name
-#endif
-
-/* If symbol 'name' is treated as a subroutine (gets called, and returns)
- * then please use ENDPROC to mark 'name' as STT_FUNC for the benefit of
- * static analysis tools such as stack depth analyzer.
- */
-#ifndef ENDPROC
-	.type name, @function ASM_NL \
-#define ENDPROC(name) \
-	END(name)
-#endif
-#endif /* LINKER_SCRIPT */
-#endif
-
-
-
-ENTRY(swi)
 MACRO(switcher)
 MACROENTRY
 #if NACL_WINDOWS
@@ -173,7 +124,6 @@ MACROENTRY
         movq    NACL_THREAD_CONTEXT_OFFSET_NEW_PROG_CTR(%r11), %r11
         jmp     *%r11
 ENDMACRO
-END(swi)
 
         switcher NaClSwitchSSE, 0
         switcher NaClSwitchAVX, 1
@@ -193,4 +143,3 @@ END(swi)
         .balign 64
 fxrstor_default_state:
         .space 512
-
