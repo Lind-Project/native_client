@@ -37,7 +37,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   uint32_t thread_idx;
   nacl_reg_t secure_stack_ptr;
 
-  DPRINTF("NaClAppThreadLauncher: entered\n");
+  DPRINTF("NaClAppForkThreadLauncher: entered\n");
 
   NaClSignalStackRegister(natp->signal_stack);
 
@@ -76,6 +76,10 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   if (NULL != natp->nap->debug_stub_callbacks) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
+
+  /* NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED); */
+  /* NaClSwitchFork(&natp->user); */
+  /* NaClStartThreadInApp(natp, natp->user.new_prog_ctr); */
 
   /*
    * broken context switch methods
@@ -133,7 +137,6 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * claim any mutexes, otherwise we risk deadlock.
    */
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
-  /* NaClStartThreadInApp(natp, natp->user.prog_ctr); */
 
 #if NACL_WINDOWS
   /* This sets up a stack containing a return address that has unwind info. */
@@ -208,6 +211,14 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   size_t          thread_idx;
 
   /*
+   * if (nap->parent) {
+   *   DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
+   *   DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
+   *   NaClThreadExit();
+   * }
+   */
+
+  /*
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
    */
@@ -276,9 +287,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   } else {
     DPRINTF("Thread has no parent\n");
   }
-  DPRINTF("Thread child cound: %d\n", nap->num_children);
-  /* busy wait for now */
-  while (nap->num_children);
+  DPRINTF("Thread child count: %d\n", nap->num_children);
 
   /* cleanup list of children */
   free(nap->child_list);
@@ -447,7 +456,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClLogThreadContext(natp_child);
   /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   natp_child->user.rsp = ctx.rsp;
-  natp_child->user.rbp = ctx.rbp;
+  /* natp_child->user.rbp = ctx.rbp; */
   DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
@@ -458,13 +467,24 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* set return value and untrusted region start address */
   natp_child->user.rax = 0;
   natp_child->user.rbx = 0;
+  natp_child->user.rcx = ctx.rcx;
   natp_child->user.r15 = ctx.r15;
   natp_child->user.prog_ctr = natp_child->user.prog_ctr - parent_ctx->r15 + ctx.r15;
   natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15;
-  natp_child->user.trusted_stack_ptr = usr_stack_ptr;
+  /* natp_child->user.r10 = natp_child->user.new_prog_ctr; */
   /* natp_child->user.rdi = natp_child->usr_syscall_args - ctx.prog_ctr; */
   /* natp_child->user.rdi = ctx.rdi; */
-  /* natp_child->user.sysret = 0; */
+
+  /* testing: keep memory mapping */
+  natp_child->user = *parent_ctx;
+  nap_child->mem_start = natp_child->user.r15;
+  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
+  natp_child->user.rsp = ctx.rsp;
+  /* natp_child->user.rbp = ctx.rbp; */
+  /* natp_child->user.rax = ctx.rax; */
+  natp_child->user.rax = 0;
+  natp_child->user.rbx = 0;
+  natp_child->user.sysret = 0;
   /* natp_child->user.sysret &= 0x7f; */
   DPRINTF("Copying registers [%%r15] %p [%%rdi] %p)\n",
           (void *)natp_child->user.r15,
@@ -508,6 +528,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   * host_thread was not initialized despite host_thread_is_defined
   * being set.
   */
+  /*
+   * if (!NaClThreadCreateJoinable(&natp_child->host_thread,
+   *                               NaClSwitchFork,
+   *                               &natp_child->user,
+   *                               NACL_KERN_STACK_SIZE)) {
+   */
   if (!NaClThreadCreateJoinable(&natp_child->host_thread,
                                 NaClAppForkThreadLauncher,
                                 natp_child,
@@ -529,7 +555,7 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                                                  user_tls1, user_tls2);
   if (natp == NULL)
     return 0;
-  natp->nap->fork_num = 0;
+  natp->nap->fork_num = 1;
 
   /*
    * We set host_thread_is_defined assuming, for now, that
