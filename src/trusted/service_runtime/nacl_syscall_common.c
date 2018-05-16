@@ -4145,25 +4145,24 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   NaClLogThreadContext(natp);
+  if (fork_num < 2) {
+    nap0->num_children = 0;
+    nap0->child_list = NULL;
+  }
   nap0->parent_id = nap->cage_id;
   nap0->parent = nap;
-  nap0->num_children = 0;
-  nap0->child_list = NULL;
-  /* nap0->debug_stub_callbacks = NULL; */
   if (!(nap->child_list = calloc(10, sizeof *nap->child_list)))
     NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
   nap->child_list[nap->num_children] = nap0;
+  nap->children_ids[nap->num_children] = nap->cage_id + 1000;
   nap->num_children++;
-  /* nap->debug_stub_callbacks = NULL; */
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0, argc2, argv2, NULL)) {
     DPRINTF("[NaClSysFork] Execv new program failed! \n");
     retval = -1;
     goto out;
   }
-  nap->children_ids[nap->num_children] = nap0->cage_id;
   retval = nap0->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
-  sleep(1);
   NaClThreadYield();
 
 out:
