@@ -413,6 +413,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClAppThread *natp_child;
   struct NaClThreadContext ctx;
 
+  UNREFERENCED_PARAMETER(ctx);
+
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
 
   if (!natp_child || !nap_parent->running)
@@ -473,39 +475,31 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user = *parent_ctx;
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
+
   /*
    * set return value and untrusted region start address
    */
   /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
   /* natp_child->user.rcx = ctx.rcx; */
-  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
+  /* natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr; */
   /* natp_child->user.trusted_stack_ptr = stack_ptr_child; */
-  natp_child->user.r15 = ctx.r15;
-  natp_child->user.rsp = ctx.rsp;
-  natp_child->user.rbp = natp_child->user.rbp - parent_ctx->r15 + ctx.r15;
+  /* natp_child->user.r15 = ctx.r15; */
+  /* natp_child->user.rsp = ctx.rsp; */
+  /* natp_child->user.rbp = natp_child->user.rbp - parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.rdi = natp_child->usr_syscall_args - ctx.prog_ctr; */
-  natp_child->user.prog_ctr = natp_child->user.prog_ctr - parent_ctx->r15 + ctx.r15;
-  natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15;
+  /* natp_child->user.prog_ctr = natp_child->user.prog_ctr - parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.r10 = natp_child->user.new_prog_ctr; */
-  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
-  /* nap_child->break_addr = nap_parent->break_addr; */
-  DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
-          (void *)natp_child->usr_syscall_args,
-          (void *)natp_parent->usr_syscall_args);
-  DPRINTF("Copying registers [%%rsp] %p [%%rbp] %p)\n",
-          (void *)natp_child->user.rsp,
-          (void *)natp_child->user.rbp);
 
-/* #if 0 */
   /*
-   * testing: keep parent's memory mapping
+   * use parent's memory mapping
    */
-  natp_child->user = *parent_ctx;
-  nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
-  nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
-  nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
-  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
+  nap_child->break_addr = nap_parent->break_addr;
+  /* nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr; */
+  /* nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr; */
+  /* nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr; */
+  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   nap_child->mem_start = natp_child->user.r15;
   /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
@@ -513,14 +507,19 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
   /* natp_child->user.rbp = ctx.rbp; */
   /* natp_child->user.rbp = natp_child->user.rbp - parent_ctx->r15 + ctx.r15; */
-/* #endif */
 
-  /* set return value for fork() */
-  natp_child->user.sysret = 0;
-
+  DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
+          (void *)natp_child->usr_syscall_args,
+          (void *)natp_parent->usr_syscall_args);
+  DPRINTF("Registers after copy [%%rsp] %p [%%rbp] %p)\n",
+          (void *)natp_child->user.rsp,
+          (void *)natp_child->user.rbp);
   DPRINTF("Registers after copy [%%r15] %p [%%rdi] %p)\n",
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
+
+  /* set return value for fork() */
+  natp_child->user.sysret = 0;
 
   /*
    * natp_child->nap->main_exe_prevalidated = 1;

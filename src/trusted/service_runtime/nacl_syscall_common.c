@@ -4170,11 +4170,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      break;
 
   case 2:
-     /* comment out the break to create this forked thread */
-     fork_num = 0;
-     retval = 0;
-     break;
      NaClLogThreadContext(natp);
+     /* nap->fork_num = fork_num; */
      if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0_2, argc2, argv2, NULL)) {
        DPRINTF("[NaClSysFork] Execv new program failed! \n");
        retval = -1;
@@ -4184,13 +4181,22 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
        NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
      nap->children_ids[nap->num_children] = nap0_2->cage_id;
      nap->child_list[nap->num_children] = nap0_2;
+     nap->debug_stub_callbacks = NULL;
      nap0_2->parent_id = nap->cage_id;
      nap0_2->parent = nap;
+     nap0_2->num_children = 0;
+     nap0_2->child_list = NULL;
+     nap0_2->debug_stub_callbacks = NULL;
      nap->num_children++;
      retval = nap0_2->cage_id;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
+     sleep(1);
+     NaClThreadYield();
      break;
 
+  /*
+   * TODO: figure out sane handling of additional NaClApps
+   */
   default:
      retval = 0;
      break;
