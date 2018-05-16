@@ -84,6 +84,12 @@ struct NaClAppThread {
   int                       thread_num;  /* index into nap->threads */
 
   /*
+   * Whether or not current thread is a child of fork(). Flag
+   * is reset after forking.
+   */
+  int                       is_fork_child;
+
+  /*
    * If host_thread_is_defined is true, host_thread is initialized and
    * owned by the NaClAppThread such that it will be freed by
    * NaClAppThreadDelete().

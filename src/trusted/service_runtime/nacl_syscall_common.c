@@ -4107,13 +4107,14 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   DPRINTF("[NaClSysFork] NaCl fork starts! \n");
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
 
-  if (nap->cage_id >= 1000) {
+  if (natp->is_fork_child) {
      DPRINTF("[NaClSysFork] This is the child of fork() \n");
      NaClAppThreadPrintInfo(natp);
      DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
      DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
      DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
      DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
+     natp->is_fork_child = 0;
      retval = 0;
      goto out;
   }

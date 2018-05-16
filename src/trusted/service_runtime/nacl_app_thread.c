@@ -426,6 +426,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* save child trampoline addresses */
   ctx = natp_child->user;
 
+  natp_child->is_fork_child = 1;
   natp_child->nap->fork_num = parent_ctx->tls_idx + 1;
   nap_child->cage_id = nap_parent->cage_id + 1000;
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
