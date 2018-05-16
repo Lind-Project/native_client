@@ -76,7 +76,14 @@ struct NaClApp *nap0_2;
 
 int fork_num = 0;
 
-int fd_cage_table[2000][2000]; // fd_cage_table[cage_id][fd] = real fd; [fd] is the virtual fd visible to the cages
+/*
+ * `fd_cage_table[cage_id][fd] = real fd`
+ *
+ * The [fd] idx is the virtual fd visible to the cages.
+ *
+ * -jp
+ */
+int fd_cage_table[2000][2000];
 
 // yiwen: lookup table for <file_path, mem_addr>
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
