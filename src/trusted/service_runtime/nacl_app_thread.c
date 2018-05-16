@@ -213,14 +213,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   size_t          thread_idx;
 
   /*
-   * if (nap->parent) {
-   *   DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
-   *   DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
-   *   NaClThreadExit();
-   * }
-   */
-
-  /*
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
    */
@@ -245,8 +237,12 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
 
   /* busy wait for now */
   while (nap->num_children) {
+    while (nap->child_list[0]->num_children) {
+      sleep(1);
+      DPRINTF("Thread child children count: %d\n", nap->num_children);
+    }
     sleep(1);
-    DPRINTF("Thread child count: %d\n", nap->num_children);
+    DPRINTF("Thread children count: %d\n", nap->num_children);
   }
 
   /* cleanup list of children */
