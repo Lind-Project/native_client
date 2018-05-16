@@ -4,11 +4,25 @@
  * found in the LICENSE file.
  */
 
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+#ifdef _XOPEN_SOURCE
+#  undef _XOPEN_SOURCE
+#endif
+
 /*
  * NaCl service run-time, non-platform specific system call helper routines.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+#ifdef _XOPEN_SOURCE
+#  undef _XOPEN_SOURCE
+#endif
 
 #include <stdio.h>
 #include <Python.h>
