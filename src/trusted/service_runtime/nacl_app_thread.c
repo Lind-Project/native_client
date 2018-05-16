@@ -447,8 +447,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    DPRINTF("%s\n", "parent NaClMprotect failed!");
 
   NaClPrintAddressSpaceLayout(nap_parent);
-  /* DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child); */
-  /* NaClVmCopyAddressSpace(nap_parent, nap_child); */
+  DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
+  NaClVmCopyAddressSpace(nap_parent, nap_child);
   NaClPrintAddressSpaceLayout(nap_child);
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from %p to %p\n",
           (size_t)stack_size,
@@ -478,7 +478,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    */
   /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
-  natp_child->user.sysret = 0;
   /* natp_child->user.rcx = ctx.rcx; */
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   /* natp_child->user.trusted_stack_ptr = stack_ptr_child; */
@@ -489,8 +488,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.prog_ctr = natp_child->user.prog_ctr - parent_ctx->r15 + ctx.r15;
   natp_child->user.new_prog_ctr = natp_child->user.new_prog_ctr - parent_ctx->r15 + ctx.r15;
   /* natp_child->user.r10 = natp_child->user.new_prog_ctr; */
-  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
-  nap_child->break_addr = nap_parent->break_addr;
+  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
+  /* nap_child->break_addr = nap_parent->break_addr; */
   DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
@@ -508,15 +507,18 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
   nap_child->mem_start = natp_child->user.r15;
-  /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
-  /* natp_child->user.rsp = ctx.rsp; */
-  /* natp_child->user.rbp = ctx.rbp; */
-  /* natp_child->user.rax = ctx.rax; */
   /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
+  /* natp_child->user.rsp = ctx.rsp; */
+  /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
+  /* natp_child->user.rbp = ctx.rbp; */
+  /* natp_child->user.rbp = natp_child->user.rbp - parent_ctx->r15 + ctx.r15; */
 /* #endif */
 
-  DPRINTF("Registers after copy [%%r16] %p [%%rdi] %p)\n",
+  /* set return value for fork() */
+  natp_child->user.sysret = 0;
+
+  DPRINTF("Registers after copy [%%r15] %p [%%rdi] %p)\n",
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
 

@@ -115,7 +115,6 @@ MACROENTRY
         .byte   0xc5, 0xf8, 0x77
 .endif
 
-.if MACROARG2 < 2
         /*
          * Load the return address into %r11 rather than doing
          * "jmp *XXX(%r11)" so that we do not leak the address of the
@@ -124,19 +123,10 @@ MACROENTRY
          */
         movq    NACL_THREAD_CONTEXT_OFFSET_NEW_PROG_CTR(%r11), %r11
         jmp     *%r11
-.endif
-
-	/*
-	 * if context switching from fork load the adjusted program counter
-	 * from %r10 into %r11 instead
-	 */
-        movq    NACL_THREAD_CONTEXT_OFFSET_R10(%r11), %r11
-        jmp     *%r11
 ENDMACRO
 
         switcher NaClSwitchSSE, 0
         switcher NaClSwitchAVX, 1
-        switcher NaClSwitchFork, 2
 
         NACL_RODATA
         /*
