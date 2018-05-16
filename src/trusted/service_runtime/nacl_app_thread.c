@@ -498,8 +498,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr; */
   /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   nap_child->mem_start = natp_child->user.r15;
-  /* natp_child->user.rax = 0; */
-  /* natp_child->user.rbx = 0; */
   /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_child, stack_ptr_child); */
   /* natp_child->user.rbp = ctx.rbp; */
@@ -515,8 +513,17 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
 
-  /* set return value for fork() */
+  /*
+   * set return value for fork().
+   *
+   * n.b. fork() return value is stored in %rdx
+   * instead of %rax like other syscalls.
+   */
   natp_child->user.sysret = 0;
+  /* natp_child->user.rax = 0; */
+  /* natp_child->user.rbx = 0; */
+  /* natp_child->user.rcx = 0; */
+  natp_child->user.rdx = 0;
 
   /*
    * natp_child->nap->main_exe_prevalidated = 1;
