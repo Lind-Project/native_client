@@ -413,8 +413,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   UNREFERENCED_PARAMETER(ctx);
   UNREFERENCED_PARAMETER(usr_entry);
 
-  entry_point = usr_entry;
-  /* entry_point = parent_ctx->new_prog_ctr; */
+  /* entry_point = usr_entry; */
+  entry_point = parent_ctx->new_prog_ctr;
   natp_child = NaClAppThreadMake(nap_child, entry_point, usr_stack_ptr, user_tls1, user_tls2);
 
   if (!natp_child || !nap_parent->running)
@@ -435,20 +435,25 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("nap_parent cage id: [%d] \n", nap_parent->cage_id);
 
-  stack_size = nap_parent->stack_size;
   stack_total_size = nap_parent->stack_size;
+  if (stack_size < stack_total_size) {
+    stack_ptr_child = NaClUserToSysAddrRange(nap_child,
+                                       NaClGetInitialStackTop(nap_child) - stack_total_size,
+                                       stack_total_size);
+    nap_child->stack_size = stack_size = stack_total_size;
+  }
   stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
-                                            NaClGetInitialStackTop(nap_parent) - stack_size,
-                                            stack_size);
+                                            NaClGetInitialStackTop(nap_parent) - stack_total_size,
+                                            stack_total_size);
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect((void *)stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
 
   NaClPrintAddressSpaceLayout(nap_parent);
   DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
@@ -456,11 +461,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClPrintAddressSpaceLayout(nap_child);
 
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from %p to %p\n",
-          (size_t)stack_size,
-          (size_t)stack_size,
+          (size_t)stack_total_size,
+          (size_t)stack_total_size,
           (void *)stack_ptr_parent,
           (void *)stack_ptr_child);
-  memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_size);
+  memcpy((void *)stack_ptr_child, (void *)stack_ptr_parent, stack_total_size);
   DPRINTF("copying dynamic text (%zu [%#lx] bytes) from %p to %p\n",
           size_of_dynamic_text,
           size_of_dynamic_text,
@@ -482,24 +487,16 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * use parent's memory mapping
    */
-  natp_child->user.r15 = ctx.r15;
-  /* natp_child->user.r15 = parent_ctx->r15; */
-  nap_child->mem_start = ctx.r15;
-  /* nap_child->mem_start = parent_ctx->r15; */
+  natp_child->user.r15 = parent_ctx->r15;
+  nap_child->mem_start = parent_ctx->r15;
+  /* natp_child->user.r15 = ctx.r15; */
+  /* nap_child->mem_start = ctx.r15; */
   nap_child->break_addr = nap_parent->break_addr;
   nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
   nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
   nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
-
-  /*
-   * restore trampolines and adjust %rip
-   */
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
-  /* natp_child->user.rbp = ctx.rbp; */
-  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
 
   /*
    * set return value for fork().
@@ -530,8 +527,15 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.rdx = 0;
   /* natp_child->user.rsi = 0; */
   /* natp_child->user.rdi = 0; */
-  natp_child->user.rsp = ctx.rsp;
-  /* natp_child->user.rsp = NaClSysToUserStackAddr(nap_parent, usr_stack_ptr); */
+
+  /*
+   * restore trampolines and adjust %rip
+   */
+  /* natp_child->user.rbp = ctx.rbp; */
+  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp = ctx.rsp; */
 
   /*
    * natp_child->nap->main_exe_prevalidated = 1;
@@ -559,13 +563,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           (void *)natp_child->user.rdi);
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
-     DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
-     DPRINTF("%s\n", "parent NaClMprotect failed!");
-  if (NaClMprotect((void *)stack_ptr_child, stack_total_size, PROT_READ|PROT_EXEC) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
-  if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_EXEC) == -1)
-   DPRINTF("%s\n", "parent NaClMprotect failed!");
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
+  if (NaClMprotect((void *)stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
+  if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
 
   NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap_parent->mu);

@@ -4163,6 +4163,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
   retval = nap0->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
+  sleep(1);
   NaClThreadYield();
 
 out:
