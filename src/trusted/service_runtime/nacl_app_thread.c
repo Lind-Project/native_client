@@ -310,10 +310,10 @@ out:
 }
 
 struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
-  uintptr_t      usr_entry,
-  uintptr_t      usr_stack_ptr,
-  uint32_t       user_tls1,
-  uint32_t       user_tls2) {
+                                        uintptr_t      usr_entry,
+                                        uintptr_t      usr_stack_ptr,
+                                        uint32_t       user_tls1,
+                                        uint32_t       user_tls2) {
  struct NaClAppThread *natp;
  uint32_t tls_idx;
 
@@ -601,13 +601,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   * host_thread was not initialized despite host_thread_is_defined
   * being set.
   */
-  /*
-   * if (!NaClThreadCreateJoinable(&natp_child->host_thread,
-   *                               NaClSwitchFork,
-   *                               &natp_child->user,
-   *                               NACL_KERN_STACK_SIZE)) {
-   */
-  /* if (!NaClThreadCreate(&natp_child->host_thread, */
   if (!NaClThreadCreateJoinable(&natp_child->host_thread,
                                 NaClAppForkThreadLauncher,
                                 natp_child,

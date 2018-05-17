@@ -8,6 +8,13 @@
 #ifndef LIND_PLATFORM_H_
 #define LIND_PLATFORM_H_
 
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+#ifdef _XOPEN_SOURCE
+#  undef _XOPEN_SOURCE
+#endif
+
 #include <sys/types.h>
 #if NACL_LINUX
 #include <sys/statfs.h>
