@@ -4116,6 +4116,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
      natp->is_fork_child = 0;
      retval = 0;
+     DPRINTF("[NaClSysFork] retval = %d \n", retval);
      goto out;
   }
 
@@ -4159,10 +4160,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap->child_list[nap->num_children] = nap0;
   nap->children_ids[nap->num_children] = nap0->cage_id;
   nap->num_children++;
+  sleep(5);
+  NaClThreadYield();
   retval = nap0->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
-  sleep(1);
-  NaClThreadYield();
 
 out:
   return retval;

@@ -544,6 +544,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.sysret = 0;
   /* don't segfault on add %al, (%rax)` instructions (0x00) */
   /* natp_child->user.rax = ctx.rsp - 8; */
+  /* natp_child->user.rax = 0; */
   /* natp_child->user.rbx = 0; */
   /* natp_child->user.rcx = 0; */
   natp_child->user.rdx = 0;
