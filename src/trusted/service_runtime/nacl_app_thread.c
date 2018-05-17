@@ -410,6 +410,9 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClAppThread *natp_child;
   struct NaClThreadContext ctx;
 
+  if (!nap_parent->running)
+   return 0;
+
   NaClXMutexLock(&nap_child->mu);
   NaClXMutexLock(&nap_parent->mu);
 
@@ -429,9 +432,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, stack_ptr_child);
 
   entry_point = usr_entry;
-  natp_child = NaClAppThreadMake(nap_child, entry_point, usr_stack_ptr, user_tls1, user_tls2);
+  /* natp_child = NaClAppThreadMake(nap_child, entry_point, usr_stack_ptr, user_tls1, user_tls2); */
+  natp_child = NaClAppThreadMake(nap_parent, entry_point, usr_stack_ptr, user_tls1, user_tls2);
 
-  if (!natp_child || !nap_parent->running)
+  if (!natp_child)
     return 0;
 
   /* save child trampoline addresses */
@@ -487,10 +491,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * use parent's memory mapping
    */
-  natp_child->user.r15 = parent_ctx->r15;
-  nap_child->mem_start = parent_ctx->r15;
-  /* natp_child->user.r15 = ctx.r15; */
-  /* nap_child->mem_start = ctx.r15; */
+  /* natp_child->user.r15 = parent_ctx->r15; */
+  /* nap_child->mem_start = parent_ctx->r15; */
+  natp_child->user.r15 = ctx.r15;
+  nap_child->mem_start = ctx.r15;
   nap_child->break_addr = nap_parent->break_addr;
   nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
   nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
@@ -532,10 +536,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp = ctx.rsp - 8; */
+  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.rsp = ctx.rsp - 8;
 
   /*
    * natp_child->nap->main_exe_prevalidated = 1;
