@@ -393,8 +393,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 /* jp */
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
-                           uintptr_t                stack_ptr_parent,
-                           uintptr_t                stack_ptr_child,
                            size_t                   stack_size,
                            struct NaClThreadContext *parent_ctx,
                            struct NaClApp           *nap_child,
@@ -407,21 +405,34 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_t size_of_dynamic_text;
   size_t stack_total_size;
   uintptr_t entry_point;
+  uintptr_t stack_ptr_parent;
+  uintptr_t stack_ptr_child;
   struct NaClAppThread *natp_child;
   struct NaClThreadContext ctx;
+
+  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap_parent->mu);
 
   UNREFERENCED_PARAMETER(ctx);
   UNREFERENCED_PARAMETER(usr_entry);
 
-  /* entry_point = usr_entry; */
-  entry_point = parent_ctx->new_prog_ctr;
+  stack_total_size = nap_parent->stack_size;
+  if (stack_size < stack_total_size)
+    nap_child->stack_size = stack_size = stack_total_size;
+
+  stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
+                                            NaClGetInitialStackTop(nap_parent) - stack_total_size,
+                                            stack_total_size);
+  stack_ptr_child = NaClUserToSysAddrRange(nap_child,
+                                           NaClGetInitialStackTop(nap_child) - stack_total_size,
+                                           stack_total_size);
+  usr_stack_ptr = NaClSysToUserStackAddr(nap_child, stack_ptr_child);
+
+  entry_point = usr_entry;
   natp_child = NaClAppThreadMake(nap_child, entry_point, usr_stack_ptr, user_tls1, user_tls2);
 
   if (!natp_child || !nap_parent->running)
     return 0;
-
-  NaClXMutexLock(&nap_child->mu);
-  NaClXMutexLock(&nap_parent->mu);
 
   /* save child trampoline addresses */
   ctx = natp_child->user;
@@ -434,17 +445,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   DPRINTF("parent: [%p] child: [%p]\n", sysaddr_parent, sysaddr_child);
   DPRINTF("nap_parent cage id: [%d] \n", nap_parent->cage_id);
-
-  stack_total_size = nap_parent->stack_size;
-  if (stack_size < stack_total_size) {
-    stack_ptr_child = NaClUserToSysAddrRange(nap_child,
-                                       NaClGetInitialStackTop(nap_child) - stack_total_size,
-                                       stack_total_size);
-    nap_child->stack_size = stack_size = stack_total_size;
-  }
-  stack_ptr_parent = NaClUserToSysAddrRange(nap_parent,
-                                            NaClGetInitialStackTop(nap_parent) - stack_total_size,
-                                            stack_total_size);
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
     DPRINTF("%s\n", "parent NaClMprotect failed!");
@@ -521,7 +521,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * -jp
    */
   natp_child->user.sysret = 0;
-  /* natp_child->user.rax = 0; */
+  /* don't segfault on add %al, (%rax)` instructions (0x00) */
+  /* natp_child->user.rax = ctx.rsp - 8; */
   /* natp_child->user.rbx = 0; */
   /* natp_child->user.rcx = 0; */
   natp_child->user.rdx = 0;
@@ -531,11 +532,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  /* natp_child->user.rbp = ctx.rbp; */
   /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp = ctx.rsp; */
+  /* natp_child->user.rsp = ctx.rsp - 8; */
 
   /*
    * natp_child->nap->main_exe_prevalidated = 1;

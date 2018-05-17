@@ -1194,8 +1194,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
-                                  natp_parent->user.trusted_stack_ptr,
-                                  stack_ptr,
                                   size,
                                   parent_ctx,
                                   nap_child,

@@ -190,8 +190,6 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
 // yiwen
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
-                           uintptr_t                stack_ptr_parent,
-                           uintptr_t                stack_ptr_child,
                            size_t                   stack_size,
                            struct NaClThreadContext *parent_ctx,
                            struct NaClApp           *nap_child,
