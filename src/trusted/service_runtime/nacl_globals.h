@@ -28,11 +28,12 @@
 
 /* jp */
 enum {
-        CACHED_LIB_NUM_MAX = 20u,
-        CAGING_LIB_PATH_MAX = 50u,
-        PIPE_NUM_MAX = 10u,
-        PIPE_BUF_MAX = 1u << 16,
-        FILE_DESC_MAX = 1u << 8
+        PIPE_NUM_MAX = 1u << 4,
+        CACHED_LIB_NUM_MAX = 1u << 5,
+        CAGING_LIB_PATH_MAX = 1u << 6,
+        FILE_DESC_MAX = 1u << 8,
+        CHILD_NUM_MAX = 1u << 8,
+        PIPE_BUF_MAX = 1u << 16
 };
 
 // yiwen: define struct for storing the <file_path, mem_addr> relation

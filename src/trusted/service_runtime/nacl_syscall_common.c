@@ -4149,18 +4149,16 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     nap0->num_children = 0;
     nap0->child_list = NULL;
   }
-  nap0->parent_id = nap->cage_id;
-  nap0->parent = nap;
-  if (!(nap->child_list = calloc(10, sizeof *nap->child_list)))
+  if (!(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
     NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
-  nap->child_list[nap->num_children] = nap0;
-  nap->children_ids[nap->num_children] = nap->cage_id + 1000;
-  nap->num_children++;
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0, argc2, argv2, NULL)) {
     DPRINTF("[NaClSysFork] Execv new program failed! \n");
     retval = -1;
     goto out;
   }
+  nap->child_list[nap->num_children] = nap0;
+  nap->children_ids[nap->num_children] = nap0->cage_id;
+  nap->num_children++;
   retval = nap0->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
   sleep(1);
@@ -4223,20 +4221,23 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   int argc_newcage;
   char **argv_newcage;
   int32_t retval = -1;
-  int path_len = 0;
+  unsigned path_len = 0;
   uintptr_t path_get;
   uintptr_t argv_get;
 #ifdef  _DEBUG
   uintptr_t envp_get;
 #endif
   char *argv_split;
-  int argv_num = 0;
+  unsigned argv_num = 0;
   char **options;
-  int option_len = 0;
-  int i;
+  unsigned option_len = 0;
+  unsigned i;
 
-  // convert pointers from addresses within the cage into ones in the whole address space
-  // basically just adding the cage memory start address to the offset within the cage
+  /*
+   * convert pointers from addresses within the cage into ones
+   * in the whole address space basically just adding the cage
+   * memory start address to the offset within the cage.
+   */
   path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
   argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
 #ifdef  _DEBUG

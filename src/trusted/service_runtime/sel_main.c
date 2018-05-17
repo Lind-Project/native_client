@@ -1214,24 +1214,30 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
 
-  // yiwen: set up cage 0 (currently used by fork and execv)
-  // right now, nap0 is reserved for fork()
-  InitializeCage(nap0, 1000);
-  InitializeCage(nap_ready, 1000);
-  InitializeCage(nap0_2, 1001);
-  InitializeCage(nap_ready_2, 1001);
-
+  /*
+   * yiwen: set up cage 0 (currently used by fork
+   * and execv) right now, nap0 is reserved for
+   * fork().
+   */
+  InitializeCage(nap0, 2);
+  InitializeCage(nap_ready, 2);
+  InitializeCage(nap0_2, 3);
+  InitializeCage(nap_ready_2, 3);
   // yiwen: set up cage 1
   InitializeCage(nap, 1);
+  InitializeCage(nap2, 2);
+  InitializeCage(nap3, 3);
+  InitializeCage(nap4, 4);
+  InitializeCage(nap5, 5);
+  InitializeCage(nap6, 6);
+  InitializeCage(nap7, 7);
 
   // yiwen: debug
   DPRINTF("[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   DPRINTF("[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   DPRINTF("[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
-
   nap->command_num = nap0->command_num = argc - optind - 3;
-
   nap->binary_path = nap0->binary_path = malloc(strlen((argv + optind)[3]) + 1);
   strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
   if (nap->command_num > 1) {
@@ -1242,340 +1248,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   DPRINTF("nap->command_num = %d, nap0->command_num = %d\n", nap->command_num, nap0->command_num);
   DPRINTF("nap->binary_path = %s, nap0->binary_path = %s\n", nap->binary_path, nap0->binary_path);
 
-
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
 
   // yiwen: before the creation of the first cage
-  DPRINTF("[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program!\n\n");
-
-  // yiwen: this is cage1, start a new thread with program given and run
-  /*
-  if (!NaClCreateMainThread(nap,
-                            argc - optind,
-                            argv + optind,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  } */
-  // NaClPrintAddressSpaceLayout(nap);
-
-  // yiwen: here we tries to create a second thread to run nap2
-  /* yiwen: arg setup for running grep.nexe
-  argc2 = 6;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(36 * sizeof(char));
-  strncpy(argv2[3], "./test_case/pipe/cat_grep/grep.nexe", 36);
-  argv2[4] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[4], "testfile", 9);
-  argv2[5] = (char*) malloc(34 * sizeof(char));
-  strncpy(argv2[5], "./test_case/files/testfile_01.txt", 34);
-
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char));
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-
-  argc2 = 6;
-  argv2 = (char**) malloc(6 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(25 * sizeof(char));
-  strncpy(argv2[3], "./test_case/cat/cat.nexe", 25);
-  argv2[4] = (char*) malloc(34 * sizeof(char));
-  strncpy(argv2[4], "./test_case/files/testfile_01.txt", 34);
-  argv2[5] = (char*) malloc(34 * sizeof(char));
-  strncpy(argv2[5], "./test_case/files/testfile_02.txt", 34); */
-
-  // yiwen: set up cage 2
-  /*
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char));
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_2.nexe", 43);
-
-  InitializeCage(nap2, 2);
-  */
-  // yiwen: debug
-  // NaClLog(LOG_WARNING, "[NaCl Main][Cage 2] executable path: %s \n\n", argv2[3]);
-  /*
-  if (!NaClCreateMainThread(nap2,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  } */
-
-  // yiwen: for gdb debug purpose only
-  /*
-  while(1) {
-  } */
-
-  /*
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2);
-  */
-  // yiwen: here we have an empty cage nap2
-  //        let's try to use mmap to do memory mapping between nap2 and a memory cache region
-  /*
-  InitializeCage(nap2, 2);
-  data_size = 8;
-  reg1_ptr = (void*) 0x5000000; // this is a NaCl sys_addr, outside of any cage
-  reg2_ptr = (void *) NaClUserToSys(nap2, 0x11030000); // this is addr inside of cage 2
-
-  printf(" \n");
-  printf("*************************************************************************************** \n");
-  printf("Testing shared memory mapping starts! \n\n");
-  NaClLog(LOG_WARNING, "[Shm] reg1_ptr = %p \n", reg1_ptr);
-  NaClLog(LOG_WARNING, "[Shm] reg2_ptr = %p \n", reg2_ptr); */
-
-  // yiwen: permission in the memory at this moment
-  // 596c11030000-596c11040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226 (226, '/lib/glibc/tls/libgcc_s.so.1')
-  // 596c11040000-596c11050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
-  // 78e410050000-78e4ff000000 ---p 00000000 00:00 0
-  /*
-  shmid = shmget(IPC_PRIVATE, data_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-
-  reg1 = (char *) shmat (shmid,  reg1_ptr, 0);
-  reg2 = (char *) shmat (shmid,  reg2_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
-  */
-  // yiwen: permission of the shared memory in cage 2, changed after the shmat(, , SHM_REMAP)
-  // 1db011030000-1db011031000 rw-s 00000000 00:04 31260749                   /SYSV00000000 (deleted)
-  /*
-  printf("Successfully created regions at %p and %p of length %d \n", reg1, reg2, data_size);
-  reg1[0] = 'X';
-  printf("Initial data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
-  reg1[0] = 'Y';
-  printf("Write new data 'Y' to reg1[0] \n");
-  printf("New data value: reg1[0] = '%c', reg2[0] = '%c' \n", reg1[0], reg2[0]);
-
-  reg3_ptr = (void *) NaClUserToSys(nap3, 0x11030000); // this is addr inside of cage 3
-  NaClLog(LOG_WARNING, "[Shm] reg3_ptr = %p \n", reg3_ptr);
-  reg3 = (char *) shmat (shmid,  reg3_ptr, SHM_REMAP); // need to remap the memory because this region in the cage has already been mapped before but with content 0
-  printf("Successfully created region at %p of length %d \n", reg3, data_size);
-  printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
-  reg3[0] = 'Z';
-  printf("Write new data 'Z' to reg3[0] \n");
-  printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
-  printf("Change permission of reg3 to READ_ONLY! \n");
-  mprotect(reg3, data_size, PROT_READ);
-  printf("The shared memory for reg3 should still work fine. \n");
-  reg1[0] = 'Q';
-  printf("Write new data 'Q' to reg1[0] \n");
-  printf("Current data value: reg1[0] = '%c', reg2[0] = '%c', reg3[0] = '%c' \n", reg1[0], reg2[0], reg3[0]);
-  printf("But trying to write to reg3 now should fail and cause a crash. \n");
-  */
-  // reg3[0] = 'P';
-  /*
-  printf(" \n");
-  printf("Testing shared memory mapping ends! \n");
-  printf("*************************************************************************************** \n\n");
-  */
-  // printf("errno = %s\n", strerror(errno));
-
-  // yiwen: testing cow shared memory mapping here
-  /*
-  printf(" \n");
-  printf("*************************************************************************************** \n");
-  printf("Testing cow mapping starts! \n\n");
-
-  cage1_ptr = (void *) NaClUserToSys(nap2, 0x11040000); // this is addr inside of cage 2
-  NaClLog(LOG_WARNING, "[Shm] cage1_ptr = %p \n", cage1_ptr);
-
-  munmap(cage1_ptr, SHM_SIZE); // need to remap the memory because this region in the cage has already been mapped before but with content 0
-
-  shm_fd = shm_open("/tmpmem", O_RDWR | O_CREAT, 0666);
-  shm_buf1 = mmap((void*) 0x1000000, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-  shm_buf2 = mmap((void*) cage1_ptr, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE, shm_fd, 0);
-  shm_buf1[0] = 41;
-  shm_buf1[1] = 42;
-  printf("buf1 = %p, buf2 = %p \n", shm_buf1, shm_buf2);
-  printf("buf1[0]: %i, buf1[1]: %i, buf2[0]: %i, buf2[1]: %i \n",
-      shm_buf1[0],
-      shm_buf1[1],
-      shm_buf2[0],
-      shm_buf2[1]);
-
-  shm_buf2[0] = 43;
-  shm_buf2[1] = 44;
-  printf("buf1 = %p, buf2 = %p \n", shm_buf1, shm_buf2);
-  printf("buf1[0]: %i, buf1[1]: %i, buf2[0]: %i, buf2[1]: %i \n",
-      shm_buf1[0],
-      shm_buf1[1],
-      shm_buf2[0],
-      shm_buf2[1]);
-
-  printf(" \n");
-  printf("Testing cow mapping ends! \n");
-  printf("*************************************************************************************** \n\n");
-  */
-  /* yiwen: we try to map memory of a shared lib, libgcc_s.so.1
-  7a3911030000-7a3911040000 r--p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
-  7a3911040000-7a3911050000 rw-p 00020000 08:01 16452000                   /usr/lind_project/repy/repy/linddata.226
-  */
-
-  // yiwen: for gdb debug purpose only
-  /*
-  while(1) {
-  } */
-
-  // yiwen: development testing, using nap2 and nap3 here.
-  /*
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/lib/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char));
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
-
-  InitializeCage(nap2, 2);
-
-  if (!NaClCreateMainThread(nap2,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  }
-
-  InitializeCage(nap3, 3);
-
-  if (!NaClCreateMainThread(nap3,
-                            argc2,
-                            argv2,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-    fprintf(stderr, "creating main thread failed\n");
-    goto done;
-  }
-
-  free(argv2[0]);
-  free(argv2[1]);
-  free(argv2[2]);
-  free(argv2[3]);
-  free(argv2); */
-
-  // InitializeCage(nap0, 0);
-
-  InitializeCage(nap, 1);
-  InitializeCage(nap2, 2);
-  InitializeCage(nap3, 3);
-  InitializeCage(nap4, 4);
-  InitializeCage(nap5, 5);
-  InitializeCage(nap6, 6);
-  InitializeCage(nap7, 7);
-// ******************************************************************************************************************************
-  // yiwen: run our loader as a background daemon, which takes in command-line parameters and starts the user program in our cages
-  // ******************************************************************************************************************************
-  /*
-  myfifo = (char*) malloc(12 * sizeof(char));
-  strncpy(myfifo, "/tmp/myfifo", 12);
-
-  mkfifo(myfifo, 0666);
-
-  while (1)
-  {
-     myfifo_fd = open(myfifo, O_RDONLY);
-     read(myfifo_fd, user_input, sizeof(user_input));
-
-     printf("User input: %s \n", user_input);
-     printf("User input length: %d \n", (int)strlen(user_input));
-     close(myfifo_fd);
-
-     if (user_input[0] == '0') {
-        break;
-     }
-
-     argc2 = 4;
-     argv2 = (char**) malloc(4 * sizeof(char*));
-     argv2[0] = (char*) malloc(9 * sizeof(char));
-     strncpy(argv2[0], "NaClMain", 9);
-     argv2[1] = (char*) malloc(15 * sizeof(char));
-     strncpy(argv2[1], "--library-path", 15);
-     argv2[2] = (char*) malloc(7 * sizeof(char));
-     strncpy(argv2[2], "/lib/glibc", 7);
-     argv2[3] = (char*) malloc(strlen(user_input) * sizeof(char));
-
-     is_new_argument = 1;
-     k = 0;
-
-     for (j = 0; j < (int)(strlen(user_input)) - 1; j++) {
-        if (user_input[j] == ' ') {
-           if (is_new_argument == 1) {
-              continue;
-           }
-           else {
-              is_new_argument = 1;
-              argv2[argc2 - 1][k] = '\0';
-              k = 0;
-              argv2[argc2] = (char*) malloc(strlen(user_input) * sizeof(char));
-              argc2++;
-              continue;
-           }
-        }
-        else {
-           is_new_argument = 0;
-           argv2[argc2 - 1][k] = user_input[j];
-           k++;
-        }
-     }
-
-     argv2[argc2 - 1][k] = '\0';
-     printf("program args: %s \n", argv2[argc2 - 1]);
-
-     nap->command_num = argc2 - 3;
-     nap->binary_path = (char*) malloc((strlen(argv2[3]) + 1) * sizeof(char));
-     strncpy(nap->binary_path, argv2[3], strlen(argv2[3]) + 1);
-     if (nap->command_num > 1) {
-        nap->binary_command = (char*) malloc((strlen(argv2[4]) + 1) * sizeof(char));
-        strncpy(nap->binary_command, argv2[4], strlen(argv2[4]) + 1);
-     }
-
-     if (!NaClCreateMainThread(nap,
-                               argc2,
-                               argv2,
-                               NaClEnvCleanserEnvironment(&env_cleanser))) {
-        fprintf(stderr, "creating main thread failed\n");
-        goto done;
-     }
-
-     free(argv2[0]);
-     free(argv2[1]);
-     free(argv2[2]);
-     free(argv2[3]);
-     free(argv2);
-
-     ret_code = NaClWaitForMainThreadToExit(nap);
-  } */
+  DPRINTF("%s\n\n", "[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program!");
 
   if (!NaClCreateMainThread(nap,
                             argc - optind,
@@ -1585,83 +1262,6 @@ int NaClSelLdrMain(int argc, char **argv) {
      goto done;
   }
   nacl_user_program_begin = clock();
-
-/*
- *   if (!NaClCreateMainForkThread(nap,
- *                                 nap2,
- *                                 argc - optind,
- *                                 argv + optind,
- *                                 NaClEnvCleanserEnvironment(&env_cleanser))) {
- *     fprintf(stderr, "creating main fork thread failed\n");
- *     goto done;
- *   }
- *   nacl_user_program_begin = clock();
- *
- *   argc2 = 5;
- *   argv2 = malloc(6 * sizeof *argv2);
- *   argv2[0] = "NaClMain";
- *   argv2[1] = "--library-path";
- *   argv2[2] = "/lib/glibc";
- *   argv2[3] = "/bin/grep";
- *   argv2[4] = "--version";
- *   argv2[5] = 0;
- *
- *   if (!NaClCreateMainForkThread(nap,
- *                                 nap3,
- *                                 argc2,
- *                                 argv2,
- *                                 NaClEnvCleanserEnvironment(&env_cleanser))) {
- *     fprintf(stderr, "creating second fork thread failed\n");
- *     goto done;
- *   }
- */
-
-/*
- *   if (!NaClCreateMainThread(nap2,
- *                             argc - optind,
- *                             argv + optind,
- *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *     fprintf(stderr, "creating main fork thread failed\n");
- *     goto done;
- *   }
- *   nacl_user_program_begin = clock();
- *
- *   argc2 = 5;
- *   argv2 = malloc(6 * sizeof *argv2);
- *   argv2[0] = "NaClMain";
- *   argv2[1] = "--library-path";
- *   argv2[2] = "/lib/glibc";
- *   argv2[3] = "/bin/grep";
- *   argv2[4] = "--version";
- *   argv2[5] = 0;
- *
- *   if (!NaClCreateMainThread(nap3,
- *                             argc2,
- *                             argv2,
- *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *     fprintf(stderr, "creating second fork thread failed\n");
- *     goto done;
- *   }
- */
-
-  /*
-   * if (!NaClCreateMainThread(nap2,
-   *                           argc2,
-   *                           argv2,
-   *                           NaClEnvCleanserEnvironment(&env_cleanser))) {
-   *    fprintf(stderr, "creating main thread failed\n");
-   *    goto done;
-   * }
-   */
-
-  /*
-   * free(argv2[0]);
-   * free(argv2[1]);
-   * free(argv2[2]);
-   * free(argv2[3]);
-   * free(argv2[4]);
-   * free(argv2);
-   */
 
   // ***********************************************************************
   // yiwen: testing

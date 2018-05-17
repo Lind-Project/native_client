@@ -109,39 +109,35 @@ struct NaClSpringboardInfo {
 };
 
 struct NaClApp {
-  struct NaClApp            *parent;
-  int                       parent_id;
-
   /*
-   * Children table lock children_mu is higher in the locking order than
+   * children table lock children_mu is higher in the locking order than
    * the thread locks, i.e., children_mu must be acqured w/o holding
    * any thread table or per-thread lock (threads_mu or natp->mu).
    *
    * -jp
    */
   struct NaClMutex          children_mu;
-  /* NaClApp pointers (currently unused) */
-  struct DynArray           children;
   /*
    * TODO: convert child_list to DynArray
    */
   struct NaClApp            **child_list;
-
-  /* mappings of `int fd` numbers to `NaClDesc *` */
-  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
-  int                       children_ids[10];
-  int                       num_children;
-  int                       fork_num;
-  int                       cage_id;
-
+  /* NaClApp pointers (currently unused) */
+  struct DynArray           children;
   // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
   struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
-  int                       num_lib;
+  /* mappings of `int fd` numbers to `NaClDesc *` */
+  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
+
+  unsigned                  children_ids[CHILD_NUM_MAX];
+  unsigned                  num_children;
+  unsigned                  fork_num;
+  unsigned                  cage_id;
+  unsigned                  num_lib;
+
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
   int                       command_num;
   char                      *binary_path;
   char                      *binary_command;
-
   // yiwen: record the current fd number(largest) assigned by this cage
   int                       fd;
 
