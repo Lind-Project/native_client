@@ -113,9 +113,9 @@ static void NaClDumpElfHeader(int loglevel, Elf_Ehdr *elf_hdr) {
                                   #m " = %" f "\n",             \
                                   elf_hdr->m); } while (0)
 
-  NaClLog(loglevel, "=================================================\n");
-  NaClLog(loglevel, "Elf header\n");
-  NaClLog(loglevel, "==================================================\n");
+  DPRINTF("%s\n", "=================================================");
+  DPRINTF("%s\n", "Elf header");
+  DPRINTF("%s\n", "==================================================");
 
   DUMP(e_ident+1, ".3s");
   DUMP(e_type, "#x");
@@ -163,17 +163,17 @@ NaClErrorCode NaClElfImageValidateElfHeader(struct NaClElfImage *image) {
   const Elf_Ehdr *hdr = &image->ehdr;
 
   if (memcmp(hdr->e_ident, ELFMAG, SELFMAG)) {
-    NaClLog(LOG_ERROR, "bad elf magic\n");
+    DPRINTF("%s\n", "bad elf magic");
     return LOAD_BAD_ELF_MAGIC;
   }
 
   if (ELFCLASS32 != hdr->e_ident[EI_CLASS]) {
-    NaClLog(LOG_ERROR, "bad elf class\n");
+    DPRINTF("%s\n", "bad elf class");
     return LOAD_NOT_32_BIT;
   }
 
   if (ET_EXEC != hdr->e_type) {
-    NaClLog(LOG_ERROR, "non executable\n");
+    DPRINTF("%s\n", "non executable");
     return LOAD_NOT_EXEC;
   }
 
@@ -230,7 +230,7 @@ NaClErrorCode NaClElfImageValidateProgramHeaders(
       /*
        * We will not load this segment.
        */
-      NaClLog(3, "Ignoring empty segment\n");
+      DPRINTF("%s\n", "Ignoring empty segment");
       continue;
     }
 
@@ -257,7 +257,7 @@ NaClErrorCode NaClElfImageValidateProgramHeaders(
     seen_seg[j] = 1;
 
     if (PCA_IGNORE == nacl_phdr_check_data[j].action) {
-      NaClLog(3, "Ignoring\n");
+      DPRINTF("%s\n", "Ignoring");
       continue;
     }
 
@@ -374,7 +374,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
   read_ret = (*NACL_VTBL(NaClDesc, ndp)->PRead)(ndp, &ehdr, sizeof ehdr, 0);
   if (NaClSSizeIsNegErrno(&read_ret) || (size_t) read_ret != sizeof ehdr) {
     *err_code = LOAD_READ_ERROR;
-    NaClLog(2, "could not load elf headers\n");
+    DPRINTF("%s\n", "could not load elf headers");
     return 0;
   }
 
@@ -393,7 +393,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
         ehdr.ehdr64.e_phoff > 0xffffffffU ||
         ehdr.ehdr64.e_shoff > 0xffffffffU) {
       *err_code = LOAD_EHDR_OVERFLOW;
-      NaClLog(2, "ELFCLASS64 file header fields overflow 32 bits\n");
+      DPRINTF("%s\n", "ELFCLASS64 file header fields overflow 32 bits");
       return 0;
     }
     image.ehdr.e_entry = (Elf32_Addr) ehdr.ehdr64.e_entry;
@@ -427,7 +427,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
   /* read program headers */
   if (image.ehdr.e_phnum > NACL_MAX_PROGRAM_HEADERS) {
     *err_code = LOAD_TOO_MANY_PROG_HDRS;
-    NaClLog(2, "too many prog headers\n");
+    DPRINTF("%s\n", "too many prog headers");
     return 0;
   }
 
@@ -440,7 +440,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
 
     if (ehdr.ehdr64.e_phentsize != sizeof(Elf64_Phdr)) {
       *err_code = LOAD_BAD_PHENTSIZE;
-      NaClLog(2, "bad prog headers size\n");
+      DPRINTF("%s\n", "bad prog headers size");
       NaClLog(2, " ehdr64.e_phentsize = 0x%"NACL_PRIxElf_Half"\n",
               ehdr.ehdr64.e_phentsize);
       NaClLog(2, "  sizeof(Elf64_Phdr) = 0x%"NACL_PRIxS"\n",
@@ -460,7 +460,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
     if (NaClSSizeIsNegErrno(&read_ret) ||
         (size_t) read_ret != image.ehdr.e_phnum * sizeof phdr64[0]) {
       *err_code = LOAD_READ_ERROR;
-      NaClLog(2, "cannot load tp prog headers\n");
+      DPRINTF("%s\n", "cannot load tp prog headers");
       return 0;
     }
 
@@ -472,7 +472,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
           phdr64[cur_ph].p_memsz > 0xffffffffU ||
           phdr64[cur_ph].p_align > 0xffffffffU) {
         *err_code = LOAD_PHDR_OVERFLOW;
-        NaClLog(2, "ELFCLASS64 program header fields overflow 32 bits\n");
+        DPRINTF("%s\n", "ELFCLASS64 program header fields overflow 32 bits");
         return 0;
       }
       image.phdrs[cur_ph].p_type = phdr64[cur_ph].p_type;
@@ -489,7 +489,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
   {
     if (image.ehdr.e_phentsize != sizeof image.phdrs[0]) {
       *err_code = LOAD_BAD_PHENTSIZE;
-      NaClLog(2, "bad prog headers size\n");
+      DPRINTF("%s\n", "bad prog headers size");
       NaClLog(2, " image.ehdr.e_phentsize = 0x%"NACL_PRIxElf_Half"\n",
               image.ehdr.e_phentsize);
       NaClLog(2, "  sizeof image.phdrs[0] = 0x%"NACL_PRIxS"\n",
@@ -505,14 +505,14 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
     if (NaClSSizeIsNegErrno(&read_ret) ||
         (size_t) read_ret != image.ehdr.e_phnum * sizeof image.phdrs[0]) {
       *err_code = LOAD_READ_ERROR;
-      NaClLog(2, "cannot load tp prog headers\n");
+      DPRINTF("%s\n", "cannot load tp prog headers");
       return 0;
     }
   }
 
-  NaClLog(2, "=================================================\n");
-  NaClLog(2, "Elf Program headers\n");
-  NaClLog(2, "==================================================\n");
+  DPRINTF("%s\n", "=================================================");
+  DPRINTF("%s\n", "Elf Program headers");
+  DPRINTF("%s\n", "==================================================");
   for (cur_ph = 0; cur_ph <  image.ehdr.e_phnum; ++cur_ph) {
     NaClDumpElfProgramHeader(2, &image.phdrs[cur_ph]);
   }
@@ -521,7 +521,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
   result = malloc(sizeof image);
   if (result == 0) {
     *err_code = LOAD_NO_MEMORY;
-    NaClLog(LOG_FATAL, "no enough memory for image meta data\n");
+    DPRINTF("%s\n", "no enough memory for image meta data");
     return 0;
   }
   memcpy(result, &image, sizeof image);
@@ -595,9 +595,9 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
    */
   switch (p_flags) {
     case PF_R | PF_X:
-      NaClLog(4,
+      DPRINTF("%s\n",
               "NaClElfFileMapSegment: text segment and"
-              " file is safe for mmap\n");
+              " file is safe for mmap");
       if (NACL_VTBL(NaClDesc, ndp)->typeTag != NACL_DESC_HOST_IO) {
         NaClLog(4, "NaClElfFileMapSegment: not supported type, got %d\n",
                 NACL_VTBL(NaClDesc, ndp)->typeTag);
@@ -613,7 +613,7 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
        * majority) will remain file-backed and not require swap
        * space, even if we had to fault in every page.
        */
-      NaClLog(1, "NaClElfFileMapSegment: mapping for validation\n");
+      DPRINTF("%s\n", "NaClElfFileMapSegment: mapping for validation");
       image_sys_addr = (*NACL_VTBL(NaClDesc, ndp)->
                         Map)(ndp,
                              NaClDescEffectorTrustedMem(),
@@ -623,9 +623,9 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
                              NACL_ABI_MAP_PRIVATE,
                              file_offset);
       if (NaClPtrIsNegErrno(&image_sys_addr)) {
-        NaClLog(LOG_INFO,
+        DPRINTF("%s\n",
                 "NaClElfFileMapSegment: Could not make scratch mapping,"
-                " falling back to reading\n");
+                " falling back to reading");
         return LOAD_STATUS_UNKNOWN;
       }
       /* ask validator / validation cache */
@@ -655,14 +655,14 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
       NACL_MAKE_MEM_UNDEFINED((void *) paddr, rounded_filesz);
 
       if (NaClValidationSucceeded != validator_status) {
-        NaClLog(3,
-                ("NaClElfFileMapSegment: readonly_text validation for mmap"
-                 " failed.  Will retry validation allowing HALT stubbing out"
-                 " of unsupported instruction extensions.\n"));
+        DPRINTF("%s\n",
+                "NaClElfFileMapSegment: readonly_text validation for mmap"
+                " failed.  Will retry validation allowing HALT stubbing out"
+                " of unsupported instruction extensions.");
         return LOAD_STATUS_UNKNOWN;
       }
 
-      NaClLog(1, "NaClElfFileMapSegment: mapping into code space\n");
+      DPRINTF("%s\n", "NaClElfFileMapSegment: mapping into code space");
       /*
        * Windows appears to not allow RWX mappings.  This interferes
        * with HALT_SLED and having to HALT pad the last page.  We
@@ -677,7 +677,7 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
        * and must be logged at a level that is less than or equal to
        * the requested verbosity level there.
        */
-      NaClLog(1, "NaClElfFileMapSegment: EXERCISING MMAP LOAD PATH\n");
+      DPRINTF("%s\n", "NaClElfFileMapSegment: EXERCISING MMAP LOAD PATH");
       nap->main_exe_prevalidated = 1;
       break;
 
@@ -716,25 +716,24 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
       read_last_page_if_partial_allocation_page) {
     uintptr_t tail_offset = rounded_filesz - NACL_MAP_PAGESIZE;
     size_t tail_size = segment_size - tail_offset;
-    NaClLog(4, "NaClElfFileMapSegment: pread tail\n");
+    DPRINTF("%s\n", "NaClElfFileMapSegment: pread tail");
     read_ret = (*NACL_VTBL(NaClDesc, ndp)->
                 PRead)(ndp,
                        (void *) (paddr + tail_offset),
                        tail_size,
                        (nacl_off64_t) (file_offset + tail_offset));
     if (NaClSSizeIsNegErrno(&read_ret) || (size_t) read_ret != tail_size) {
-      NaClLog(LOG_ERROR,
-              "NaClElfFileMapSegment: pread load of page tail failed\n");
+      DPRINTF("%s\n", "NaClElfFileMapSegment: pread load of page tail failed");
       return LOAD_SEGMENT_BAD_PARAM;
     }
     rounded_filesz -= NACL_MAP_PAGESIZE;
   }
   /* mmap in */
   if (rounded_filesz == 0) {
-    NaClLog(4,
+    DPRINTF("%s\n",
             "NaClElfFileMapSegment: no pages to map, probably because"
             " the segment was a partial page, so it was processed by"
-            " reading.\n");
+            " reading.");
   } else {
     NaClLog(4,
             "NaClElfFileMapSegment: mapping %"NACL_PRIdS" (0x%"
@@ -787,14 +786,14 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
     NaClLog(2, "loading segment %d\n", segnum);
 
     if (0 == php->p_filesz) {
-      NaClLog(4, "zero-sized segment.  ignoring...\n");
+      DPRINTF("%s\n", "zero-sized segment.  ignoring...");
       continue;
     }
 
     end_vaddr = php->p_vaddr + php->p_filesz;
     /* integer overflow? */
     if (end_vaddr < php->p_vaddr) {
-      NaClLog(LOG_FATAL, "parameter error should have been detected already\n");
+      DPRINTF("%s\n", "parameter error should have been detected already");
     }
     /*
      * is the end virtual address within the NaCl application's
@@ -802,7 +801,7 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
      * address is also.
      */
     if (end_vaddr >= ((uintptr_t) 1U << nap->addr_bits)) {
-      NaClLog(LOG_FATAL, "parameter error should have been detected already\n");
+      DPRINTF("%s\n", "parameter error should have been detected already");
     }
 
     vaddr = NaClTruncAllocPage(php->p_vaddr);
@@ -813,20 +812,20 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
      * Check NaClDescIsSafeForMmap(ndp) to see if it might be okay to
      * mmap.
      */
-    NaClLog(4, "NaClElfImageLoad: checking descriptor mmap safety\n");
+    DPRINTF("%s\n", "NaClElfImageLoad: checking descriptor mmap safety");
     safe_for_mmap = NaClDescIsSafeForMmap(ndp);
     if (safe_for_mmap) {
-      NaClLog(4, "NaClElfImageLoad: safe-for-mmap\n");
+      DPRINTF("%s\n", "NaClElfImageLoad: safe-for-mmap");
     }
 
     if (!safe_for_mmap &&
         NACL_FI("ELF_LOAD_BYPASS_DESCRIPTOR_SAFETY_CHECK", 0, 1)) {
-      NaClLog(LOG_WARNING, "WARNING: BYPASSING DESCRIPTOR SAFETY CHECK\n");
+      DPRINTF("%s\n", "WARNING: BYPASSING DESCRIPTOR SAFETY CHECK");
       safe_for_mmap = 1;
     }
     if (safe_for_mmap) {
       NaClErrorCode map_status;
-      NaClLog(4, "NaClElfImageLoad: safe-for-mmap\n");
+      DPRINTF("%s\n", "NaClElfImageLoad: safe-for-mmap");
       map_status = NaClElfFileMapSegment(nap, ndp, php->p_flags,
                                          offset, filesz, vaddr, paddr);
       /*
@@ -875,11 +874,10 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
 }
 
 
-NaClErrorCode NaClElfImageLoadDynamically(
-    struct NaClElfImage *image,
-    struct NaClApp *nap,
-    struct NaClDesc *ndp,
-    struct NaClValidationMetadata *metadata) {
+NaClErrorCode NaClElfImageLoadDynamically(struct NaClElfImage *image,
+                                          struct NaClApp *nap,
+                                          struct NaClDesc *ndp,
+                                          struct NaClValidationMetadata *metadata) {
   ssize_t read_ret;
   int segnum;
   for (segnum = 0; segnum < image->ehdr.e_phnum; ++segnum) {
@@ -912,7 +910,7 @@ NaClErrorCode NaClElfImageLoadDynamically(
        */
       char *code_copy = malloc(filesz);
       if (NULL == code_copy) {
-        NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: malloc failed\n");
+        DPRINTF("%s\n", "NaClElfImageLoadDynamically: malloc failed");
         return LOAD_NO_MEMORY;
       }
       read_ret = (*NACL_VTBL(NaClDesc, ndp)->
@@ -920,8 +918,9 @@ NaClErrorCode NaClElfImageLoadDynamically(
       if (NaClSSizeIsNegErrno(&read_ret) ||
           (size_t) read_ret != filesz) {
         free(code_copy);
-        NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: "
-                "failed to read code segment\n");
+        DPRINTF("%s\n",
+            "NaClElfImageLoadDynamically: "
+                "failed to read code segment");
         return LOAD_READ_ERROR;
       }
       if (NULL != metadata) {
@@ -931,8 +930,9 @@ NaClErrorCode NaClElfImageLoadDynamically(
                                      code_copy, (uint32_t) filesz, metadata);
       free(code_copy);
       if (0 != result) {
-        NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: "
-                "failed to load code segment\n");
+        DPRINTF("%s\n",
+            "NaClElfImageLoadDynamically: "
+                "failed to load code segment");
         return LOAD_UNLOADABLE;
       }
     } else {
@@ -953,16 +953,18 @@ NaClErrorCode NaClElfImageLoadDynamically(
           NACL_ABI_MAP_ANONYMOUS | NACL_ABI_MAP_PRIVATE,
           -1, 0);
       if ((int32_t) vaddr != result) {
-        NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: "
-                "failed to map data segment\n");
+        DPRINTF("%s\n",
+            "NaClElfImageLoadDynamically: "
+                "failed to map data segment");
         return LOAD_UNLOADABLE;
       }
       read_ret = (*NACL_VTBL(NaClDesc, ndp)->
                   PRead)(ndp, paddr, filesz, (nacl_off64_t) offset);
       if (NaClSSizeIsNegErrno(&read_ret) ||
           (size_t) read_ret != filesz) {
-        NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: "
-                "failed to read data segment\n");
+        DPRINTF("%s\n",
+            "NaClElfImageLoadDynamically: "
+                "failed to read data segment");
         return LOAD_READ_ERROR;
       }
       /*
@@ -976,8 +978,9 @@ NaClErrorCode NaClElfImageLoadDynamically(
         /* Handle read-only data segment. */
         int rc = NaClMprotect(paddr, mapping_size, NACL_ABI_PROT_READ);
         if (0 != rc) {
-          NaClLog(LOG_ERROR, "NaClElfImageLoadDynamically: "
-                  "failed to mprotect read-only data segment\n");
+          DPRINTF("%s\n",
+            "NaClElfImageLoadDynamically: "
+                  "failed to mprotect read-only data segment");
           return LOAD_MPROTECT_FAIL;
         }
 

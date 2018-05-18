@@ -517,10 +517,9 @@ NaClErrorCode NaClAppLoadFile(struct NaClDesc *ndp,
   return NaClAppLoadFileAslr(ndp, nap, NACL_ENABLE_ASLR);
 }
 
-NaClErrorCode NaClAppLoadFileDynamically(
-    struct NaClApp *nap,
-    struct NaClDesc *ndp,
-    struct NaClValidationMetadata *metadata) {
+NaClErrorCode NaClAppLoadFileDynamically(struct NaClApp *nap,
+                                         struct NaClDesc *ndp,
+                                         struct NaClValidationMetadata *metadata) {
   struct NaClElfImage *image = NULL;
   NaClErrorCode ret = LOAD_INTERNAL;
 
