@@ -632,7 +632,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * so hence forth, testing !rpc_supplies_nexe suffices for
    * establishing NULL != nacl_file.
    */
-  CHECK(!nacl_file && !rpc_supplies_nexe);
+  CHECK(!!nacl_file != !!rpc_supplies_nexe);
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
