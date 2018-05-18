@@ -105,39 +105,30 @@ void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
   g_enable_outer_sandbox_func = func;
 }
 
-static void VmentryPrinter(void           *state,
-                    struct NaClVmmapEntry *vmep) {
+static void VmentryPrinter(void *state, struct NaClVmmapEntry *vmep) {
   UNREFERENCED_PARAMETER(state);
   printf("page num 0x%06x\n", (uint32_t)vmep->page_num);
   printf("num pages %d\n", (uint32_t)vmep->npages);
   printf("prot bits %x\n", vmep->prot);
-  fflush(stdout);
+  fflush(NULL);
 }
 
-static void PrintVmmap(struct NaClApp  *nap) {
-  printf("In PrintVmmap\n");
-  fflush(stdout);
+static void PrintVmmap(struct NaClApp *nap) {
+  puts("In PrintVmmap\n");
+  fflush(NULL);
   NaClXMutexLock(&nap->mu);
-  NaClVmmapVisit(&nap->mem_map, VmentryPrinter, (void *) 0);
-
+  NaClVmmapVisit(&nap->mem_map, VmentryPrinter, NULL);
   NaClXMutexUnlock(&nap->mu);
 }
 
-
 struct redir {
-  struct redir  *next;
-  int           nacl_desc;
-  enum {
-    HOST_DESC,
-    IMC_DESC
-  }             tag;
+  struct redir                  *next;
+  int                           nacl_desc;
+  enum { HOST_DESC, IMC_DESC }  tag;
   union {
-    struct {
-      int d;
-      int mode;
-    }                         host;
-    NaClHandle                handle;
-    struct NaClSocketAddress  addr;
+    struct { int d; int mode; } host;
+    NaClHandle                  handle;
+    struct NaClSocketAddress    addr;
   } u;
 };
 
@@ -150,9 +141,7 @@ int ImportModeMap(char opt) {
     case 'w':
       return O_WRONLY;
   }
-  fprintf(stderr, ("option %c not understood as a host descriptor"
-                   " import mode\n"),
-          opt);
+  fprintf(stderr, "option %c not understood as a host descriptor import mode\n", opt);
   exit(1);
   /* NOTREACHED */
 }
@@ -201,7 +190,6 @@ static void PrintUsage(void) {
           );  /* easier to add new flags/lines */
 }
 
-#if NACL_LINUX
 static const struct option longopts[] = {
   { "r_debug", required_argument, NULL, 'D' },
   { "reserved_at_zero", required_argument, NULL, 'z' },
@@ -211,8 +199,8 @@ static const struct option longopts[] = {
 static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   return getopt_long(argc, argv, shortopts, longopts, NULL);
 }
-#else
-#define my_getopt getopt
+#if NACL_LINUX
+# define getopt my_getopt
 #endif
 
 int NaClSelLdrMain(int argc, char **argv) {
@@ -351,6 +339,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: nap0 is shared with nacl_syscall_common.c
   // we use it to store the snapshot of an initial cage, which is ready to run a program(create a thread)
   // this snapshot is used by execv()
+
+  if (!DynArrayCtor(&nap->children, 16))
+    NaClLog(LOG_FATAL, "Failed to initialize children list\n");
+
   nap0 = &state0;
   nap0_2 = &state0_2;
   nap_ready = &state_ready;
@@ -374,7 +366,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClPerfCounterCtor(&time_all_main, "SelMain");
 
-  fflush((FILE *) NULL);
+  fflush(NULL);
 
   NaClDebugExceptionHandlerStandaloneHandleArgs(argc, argv);
 
@@ -433,11 +425,14 @@ int NaClSelLdrMain(int argc, char **argv) {
    * consumed by getopt.  This makes the behavior of the Linux build
    * of sel_ldr consistent with the Windows and OSX builds.
    */
-  while ((opt = my_getopt(argc, argv,
 #if NACL_LINUX
-                       "+D:z:"
+  const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+#else
+# define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
+# define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
+  const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
 #endif
-                       "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z")) != -1) {
+  while ((opt = getopt(argc, argv, optstring)) != -1) {
     switch (opt) {
       case 'a':
         fprintf(stderr, "DEBUG MODE ENABLED (bypass acl)\n");
@@ -449,11 +444,9 @@ int NaClSelLdrMain(int argc, char **argv) {
       case 'c':
         ++debug_mode_ignore_validator;
         break;
-#if NACL_LINUX
       case 'D':
         NaClHandleRDebug(optarg, argv[0]);
         break;
-#endif
       case 'e':
         nap->enable_exception_handling = 1;
         break;
@@ -486,19 +479,19 @@ int NaClSelLdrMain(int argc, char **argv) {
         enable_debug_stub = 1;
         break;
 
-      case 'h':
-      case 'r':
+      case 'h': /* fallthrough */
+      case 'r': /* fallthrough */
       case 'w':
         /* import host descriptor */
         entry = malloc(sizeof *entry);
-        if (NULL == entry) {
+        if (!entry) {
           fprintf(stderr, "No memory for redirection queue\n");
-          exit(1);
+          exit(EXIT_FAILURE);
         }
         entry->next = NULL;
         entry->nacl_desc = strtol(optarg, &rest, 0);
         entry->tag = HOST_DESC;
-        entry->u.host.d = strtol(rest+1, (char **) 0, 0);
+        entry->u.host.d = strtol(rest + 1, NULL, 0);
         entry->u.host.mode = ImportModeMap(opt);
         *redir_qend = entry;
         redir_qend = &entry->next;
@@ -513,7 +506,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         entry->next = NULL;
         entry->nacl_desc = strtol(optarg, &rest, 0);
         entry->tag = IMC_DESC;
-        entry->u.handle = (NaClHandle) strtol(rest+1, (char **) 0, 0);
+        entry->u.handle = (NaClHandle)strtol(rest + 1, NULL, 0);
         *redir_qend = entry;
         redir_qend = &entry->next;
         break;
@@ -530,12 +523,10 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       /* case 'r':  with 'h' and 'w' above */
       case 's':
-        if (nap->validator->stubout_mode_implemented) {
+        if (nap->validator->stubout_mode_implemented)
           nap->validator_stub_out_mode = 1;
-        } else {
-           NaClLog(LOG_WARNING,
-                   "stub_out_mode is not supported, disabled\n");
-        }
+        else
+           NaClLog(LOG_WARNING, "stub_out_mode is not supported, disabled\n");
         break;
       case 'S':
         handle_signals = 1;
@@ -546,29 +537,25 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       /* case 'w':  with 'h' and 'r' above */
       case 'X':
-        export_addr_to = strtol(optarg, (char **) 0, 0);
+        export_addr_to = strtol(optarg, NULL, 0);
         break;
-#if NACL_LINUX
       case 'z':
         NaClHandleReservedAtZero(optarg);
         break;
-#endif
       case 'Z':
         if (nap->validator->readonly_text_implemented) {
           NaClLog(LOG_WARNING, "Enabling Fixed-Feature CPU Mode\n");
           nap->fixed_feature_cpu_mode = 1;
           if (!nap->validator->FixCPUFeatures(nap->cpu_features)) {
-            NaClLog(LOG_ERROR,
-                    "This CPU lacks features required by "
-                    "fixed-function CPU mode.\n");
-            exit(1);
+            NaClLog(LOG_ERROR, "This CPU lacks features required by fixed-function CPU mode.\n");
+            exit(EXIT_FAILURE);
           }
         } else {
-           NaClLog(LOG_ERROR,
-                   "fixed_feature_cpu_mode is not supported\n");
-           exit(1);
+           NaClLog(LOG_ERROR, "fixed_feature_cpu_mode is not supported\n");
+           exit(EXIT_FAILURE);
         }
         break;
+
       default:
         fprintf(stderr, "ERROR: unknown option: [%c]\n\n", opt);
         PrintUsage();
@@ -579,7 +566,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // time_start = clock();
   if(!LindPythonInit()) {
       fflush(NULL);
-      exit(1);
+      exit(EXIT_FAILURE);
   }
   // time_end = clock();
   // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
@@ -616,25 +603,23 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   if (rpc_supplies_nexe) {
-    if (NULL != nacl_file) {
-      fprintf(stderr,
-              "sel_ldr: mutually exclusive flags -f and -R both used\n");
-      exit(1);
+    if (nacl_file) {
+      fprintf(stderr, "sel_ldr: mutually exclusive flags -f and -R both used\n");
+      exit(EXIT_FAILURE);
     }
     /* post: NULL == nacl_file */
     if (export_addr_to < 0) {
-      fprintf(stderr,
-              "sel_ldr: -R requires -X to set up secure command channel\n");
-      exit(1);
+      fprintf(stderr, "sel_ldr: -R requires -X to set up secure command channel\n");
+      exit(EXIT_FAILURE);
     }
   } else {
-    if (NULL == nacl_file && optind < argc) {
+    if (!nacl_file && optind < argc) {
       nacl_file = argv[optind];
       ++optind;
     }
-    if (NULL == nacl_file) {
+    if (!nacl_file) {
       fprintf(stderr, "No nacl file specified\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     /* post: NULL != nacl_file */
   }
@@ -647,10 +632,10 @@ int NaClSelLdrMain(int argc, char **argv) {
    * so hence forth, testing !rpc_supplies_nexe suffices for
    * establishing NULL != nacl_file.
    */
-  CHECK((NULL == nacl_file) == rpc_supplies_nexe);
+  CHECK(!nacl_file && !rpc_supplies_nexe);
 
   /* to be passed to NaClMain, eventually... */
-  argv[--optind] = (char *) "NaClMain";
+  argv[--optind] = "NaClMain";
 
   state.ignore_validator_result = (debug_mode_ignore_validator > 0);
   state.skip_validator = (debug_mode_ignore_validator > 1);
@@ -752,7 +737,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     if (NULL == blob_file) {
       perror("sel_main");
       fprintf(stderr, "Cannot open \"%s\".\n", blob_library_file);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     NaClPerfCounterMark(&time_all_main, "SnapshotBlob");
     NaClPerfCounterIntervalLast(&time_all_main);
@@ -971,7 +956,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
 
     if (fuzzing_quit_after_load) {
-      exit(0);
+      exit(EXIT_SUCCESS);
     }
   }
 
