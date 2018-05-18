@@ -201,8 +201,14 @@ static const struct option longopts[] = {
 static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   return getopt_long(argc, argv, shortopts, longopts, NULL);
 }
+
 #if NACL_LINUX
 # define getopt my_getopt
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+#else
+# define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
+# define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
+  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
 #endif
 
 int NaClSelLdrMain(int argc, char **argv) {
@@ -211,7 +217,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct redir                  *entry;
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
-
 
   struct NaClApp                state;
   char                          *nacl_runnable;
@@ -425,13 +430,6 @@ int NaClSelLdrMain(int argc, char **argv) {
    * consumed by getopt.  This makes the behavior of the Linux build
    * of sel_ldr consistent with the Windows and OSX builds.
    */
-#if NACL_LINUX
-  const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
-#else
-# define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
-# define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
-#endif
   while ((opt = getopt(argc, argv, optstring)) != -1) {
     switch (opt) {
       case 'a':
@@ -709,7 +707,8 @@ int NaClSelLdrMain(int argc, char **argv) {
       nap->module_load_status = pq_error;
       // yiwen
       nap2->module_load_status = pq_error;
-      fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+      fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
+              __LINE__,
               !nacl_file ? nacl_file : "(no file, to-be-supplied-via-RPC)",
               NaClErrorString(errcode));
     }
