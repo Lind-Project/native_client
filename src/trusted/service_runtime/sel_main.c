@@ -71,7 +71,7 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE 4096*2
+#define SHM_SIZE (1u << 13)
 
 extern int nacl_syscall_counter;
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
