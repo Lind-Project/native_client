@@ -1123,7 +1123,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       NaClPerfCounterIntervalLast(&time_all_main);
     }
 
-    NaClDescUnref(blob_file);
+    /* NaClDescUnref(blob_file); */
     if (verbosity) {
       gprintf((struct Gio *) &gout, "printing post-IRT NaClApp details\n");
       NaClAppPrintDetails(nap, (struct Gio *) &gout);
