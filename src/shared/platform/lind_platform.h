@@ -97,6 +97,10 @@ int lind_syscall_counter;
 int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
+/* jp */
+struct NaClDesc *blob_file;
+char *blob_library_file;
+
 struct select_results {
     struct timeval used_t;
     fd_set r;

@@ -80,6 +80,8 @@ extern int lind_syscall_counter;
 extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 extern int nacl_syscall_trace_level_counter;
+extern struct NaClDesc *blob_file;
+extern char *blob_library_file;
 
 // yiwen
 // set up the cage id
@@ -214,7 +216,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClApp                state;
   char                          *nacl_runnable;
   char                          *nacl_file = NULL;
-  char                          *blob_library_file = NULL;
   int                           rpc_supplies_nexe = 0;
   int                           export_addr_to = -1;
 
@@ -244,7 +245,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   struct GioFile                gout;
   NaClErrorCode                 errcode = LOAD_INTERNAL;
-  struct NaClDesc               *blob_file = NULL;
 
   int                           ret_code;
   struct DynArray               env_vars;
