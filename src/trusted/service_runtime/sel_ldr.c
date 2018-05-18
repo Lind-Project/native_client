@@ -197,6 +197,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!NaClMutexCtor(&nap->dynamic_load_mutex)) {
     goto cleanup_effp_free;
   }
+  if (!NaClMutexCtor(&nap->children_mu)) {
+    goto cleanup_dynamic_load_mutex;
+  }
   nap->dynamic_page_bitmap = NULL;
 
   nap->dynamic_regions = NULL;
@@ -228,7 +231,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
       NACL_REVERSE_CHANNEL_UNINITIALIZED;
 
   if (!NaClMutexCtor(&nap->mu)) {
-    goto cleanup_dynamic_load_mutex;
+    goto cleanup_children_mutex;
   }
   if (!NaClCondVarCtor(&nap->cv)) {
     goto cleanup_mu;
@@ -340,6 +343,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   NaClCondVarDtor(&nap->cv);
  cleanup_mu:
   NaClMutexDtor(&nap->mu);
+ cleanup_children_mutex:
+  NaClMutexDtor(&nap->children_mu);
  cleanup_dynamic_load_mutex:
   NaClMutexDtor(&nap->dynamic_load_mutex);
  cleanup_effp_free:

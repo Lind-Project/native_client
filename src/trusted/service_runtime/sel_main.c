@@ -764,7 +764,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       NaClLog(2, "Loading nacl file %s (non-RPC)\n", nacl_file);
       // yiwen: this is where an nexe binary got loaded as an nap.
       //        we should load a second nap here.
-      nacl_runnable = "/lib/glibc/runnable-ld.so";
+      nacl_runnable = LD_FILE;
       nacl_file2 = malloc(strlen(nacl_runnable) + 1);
       strcpy(nacl_file2, nacl_runnable);
 
@@ -775,7 +775,8 @@ int NaClSelLdrMain(int argc, char **argv) {
       // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
+                __LINE__,
                 nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,

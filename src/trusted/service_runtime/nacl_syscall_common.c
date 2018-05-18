@@ -4098,6 +4098,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 /* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
+  struct NaClApp *nap_child;
   struct NaClThreadContext parent_ctx = natp->user;
   int32_t retval;
   int argc2;
@@ -4108,6 +4109,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
 
   if (natp->is_fork_child) {
+     NaClXMutexLock(&nap->mu);
      DPRINTF("[NaClSysFork] This is the child of fork() \n");
      NaClAppThreadPrintInfo(natp);
      DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
@@ -4117,6 +4119,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      natp->is_fork_child = 0;
      retval = 0;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
+     NaClXMutexUnlock(&nap->mu);
      goto out;
   }
 
@@ -4146,23 +4149,34 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   NaClLogThreadContext(natp);
-  if (fork_num < 2) {
-    nap0->num_children = 0;
-    nap0->child_list = NULL;
-  }
-  if (!(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
+  /*
+   * if (fork_num < 2) {
+   *   nap0->num_children = 0;
+   *   nap0->child_list = NULL;
+   * }
+   */
+  nap_child = NaClChildNapCtor(natp);
+  if (!nap->child_list && !(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
     NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
-  if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap0, argc2, argv2, NULL)) {
+  if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, argc2, argv2, NULL)) {
     DPRINTF("[NaClSysFork] Execv new program failed! \n");
     retval = -1;
     goto out;
   }
-  nap->child_list[nap->num_children] = nap0;
-  nap->children_ids[nap->num_children] = nap0->cage_id;
+  NaClXMutexLock(&nap->children_mu);
+  NaClXMutexLock(&nap->mu);
+  NaClXMutexLock(&nap_child->mu);
+  nap->child_list[nap->num_children] = nap_child;
+  nap->children_ids[nap->num_children] = nap_child->cage_id;
   nap->num_children++;
-  sleep(5);
-  NaClThreadYield();
-  retval = nap0->cage_id;
+  NaClXMutexUnlock(&nap->children_mu);
+  NaClXMutexUnlock(&nap->mu);
+  NaClXMutexUnlock(&nap_child->mu);
+  /*
+   * sleep(1);
+   * NaClThreadYield();
+   */
+  retval = nap_child->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
 
 out:
