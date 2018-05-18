@@ -109,6 +109,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
 
   DPRINTF("%s\n", "NaClAppForkThreadLauncher: entered");
 
+  NaClXMutexLock(&nap->mu);
+
   NaClSignalStackRegister(natp->signal_stack);
 
   DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
@@ -127,14 +129,18 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
 #endif
 
   /*
-   * We have to hold the threads_mu lock until after thread_num field
-   * in this thread has been initialized.  All other threads can only
-   * find and examine this natp through the threads table, so the fact
-   * that natp is not consistent (no thread_num) will not be visible.
+   * We have to hold the threads_mu and children_mu locks until
+   * after thread_num field in this thread has been initialized.
+   * All other threads can only find and examine this natp through
+   * the threads table, so the fact that natp is not consistent (no
+   * thread_num) will not be visible.
    */
-  NaClXMutexLock(&natp->nap->threads_mu);
-  natp->thread_num = NaClAddThreadMu(natp->nap, natp);
-  NaClXMutexUnlock(&natp->nap->threads_mu);
+  NaClXMutexLock(&nap->threads_mu);
+  NaClXMutexLock(&nap->children_mu);
+  natp->thread_num = NaClAddThreadMu(nap, natp);
+  NaClXMutexUnlock(&nap->threads_mu);
+  NaClXMutexUnlock(&nap->children_mu);
+  natp->thread_num = NaClAddThreadMu(nap, natp);
 
   NaClVmHoleThreadStackIsSafe(natp->nap);
 
@@ -201,6 +207,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch. \n", natp->nap->cage_id);
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
+
+  NaClXMutexLock(&nap->mu);
 
   /*
    * After this NaClAppThreadSetSuspendState() call, we should not
