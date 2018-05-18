@@ -41,24 +41,39 @@ extern char *blob_library_file;
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
-  NaClErrorCode *errcode;
+  NaClErrorCode *mod_status;
 
   CHECK(nap);
   CHECK(nap_child);
-  errcode = &nap_child->module_load_status;
+
+  DPRINTF("%s\n", "Entered NaClChildNapCtor()");
+  mod_status = &nap_child->module_load_status;
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
   NaClAppInitialDescriptorHookup(nap_child);
-  if ((*errcode = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
+  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
             LD_FILE,
-            NaClErrorString(*errcode));
+            NaClErrorString(*mod_status));
     DPRINTF("%s\n%s\n",
             "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-  if ((*errcode = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
+
+  DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
+  NaClPrintAddressSpaceLayout(nap);
+  NaClVmCopyAddressSpace(nap, nap_child);
+  NaClPrintAddressSpaceLayout(nap_child);
+
+  DPRINTF("Loading blob file %s\n", blob_library_file);
+  if ((*mod_status = NaClAppLoadFileDynamically(nap_child, blob_file, NULL)) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "Error while loading \"%s\": %s\n",
+            blob_library_file,
+            NaClErrorString(*mod_status));
+  }
+  nap->irt_loaded = 1;
+  if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
   nap_child->command_num = nap->command_num;
   nap_child->binary_path = nap->binary_path;
