@@ -31,6 +31,45 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 /* jp */
+#define LD_FILE "/lib/glibc/runnable-ld.so"
+
+/* jp */
+extern struct NaClDesc *blob_file;
+extern char *blob_library_file;
+
+/* jp */
+struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
+  struct NaClApp *nap = natp->nap;
+  struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
+  NaClErrorCode *errcode;
+
+  CHECK(nap);
+  CHECK(nap_child);
+  errcode = &nap_child->module_load_status;
+  if (!NaClAppCtor(nap_child))
+    NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
+  NaClAppInitialDescriptorHookup(nap_child);
+  if ((*errcode = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
+    DPRINTF("Error while loading \"%s\": %s\n",
+            LD_FILE,
+            NaClErrorString(*errcode));
+    DPRINTF("%s\n%s\n",
+            "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+            "or a corrupt nexe file may be responsible for this error.");
+    exit(EXIT_FAILURE);
+  }
+  if ((*errcode = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
+    NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
+  nap_child->command_num = nap->command_num;
+  nap_child->binary_path = nap->binary_path;
+  nap_child->binary_command = nap->binary_command;
+  if (!DynArraySet(&nap->children, nap->num_children++, nap_child))
+    NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children - 1);
+
+  return nap_child;
+}
+
+/* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   struct NaClApp *nap = natp->nap;
