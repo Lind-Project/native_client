@@ -31,7 +31,7 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 /* jp */
-#define LD_FILE "/lib/glibc/runnable-ld.so"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 /* jp */
 extern struct NaClDesc *blob_file;
@@ -45,6 +45,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
 
   CHECK(nap);
   CHECK(nap_child);
+  CHECK(blob_file);
+  CHECK(blob_library_file);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
   mod_status = &nap_child->module_load_status;

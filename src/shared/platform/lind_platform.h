@@ -92,14 +92,17 @@
 // yiwen: we should define the MAX system call number
 #define LIND_MAX_SYSCALLS               110
 
-// yiwen
-int lind_syscall_counter;
-int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
-double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
+/* jp */
+#define LD_FILE                         "/lib/glibc/runnable-ld.so"
 
 /* jp */
 struct NaClDesc *blob_file;
 char *blob_library_file;
+
+// yiwen
+int lind_syscall_counter;
+int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 struct select_results {
     struct timeval used_t;
