@@ -655,6 +655,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   state.ignore_validator_result = (debug_mode_ignore_validator > 0);
   state.skip_validator = (debug_mode_ignore_validator > 1);
 
+#if NACL_OSX
+# define _HOST_OSX 1
+#else
+# define _HOST_OSX 0
+#endif
   if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING") != NULL) {
     state.enable_exception_handling = 1;
   }
@@ -663,7 +668,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * OS X, and remove handle_signals and sel_ldr's "-S" option.
    */
   if (state.enable_exception_handling || enable_debug_stub ||
-      (handle_signals && NACL_OSX)) {
+      (handle_signals && _HOST_OSX)) {
 #if NACL_WINDOWS
     state.attach_debug_exception_handler_func =
         NaClDebugExceptionHandlerStandaloneAttach;
@@ -677,6 +682,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #else
 # error Unknown host OS
 #endif
+#undef _HOST_OSX
   }
 
   errcode = LOAD_OK;
@@ -1076,6 +1082,11 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClGdbHook(&state);
   }
 
+#if NACL_OSX
+# define _HOST_OSX 1
+#else
+# define _HOST_OSX 0
+#endif
   /*
    * Tell the debug stub to bind a TCP port before enabling the outer
    * sandbox.  This is only needed on Mac OS X since that is the only
@@ -1084,11 +1095,12 @@ int NaClSelLdrMain(int argc, char **argv) {
    * XP seems to have some problems when we do bind()/listen() on a
    * separate thread from accept().
    */
-  if (enable_debug_stub && NACL_OSX) {
+  if (enable_debug_stub && _HOST_OSX) {
     if (!NaClDebugBindSocket()) {
       exit(1);
     }
   }
+#undef _HOST_OSX
 
   /*
    * Enable the outer sandbox, if one is defined.  Do this as soon as
