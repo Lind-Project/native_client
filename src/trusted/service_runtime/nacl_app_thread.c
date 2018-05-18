@@ -51,6 +51,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
   NaClAppInitialDescriptorHookup(nap_child);
+  DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
+  NaClPrintAddressSpaceLayout(nap);
+  NaClVmCopyAddressSpace(nap, nap_child);
+  NaClPrintAddressSpaceLayout(nap_child);
+
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
             LD_FILE,
@@ -60,24 +65,30 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-
-  DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
-  NaClPrintAddressSpaceLayout(nap);
-  NaClVmCopyAddressSpace(nap, nap_child);
-  NaClPrintAddressSpaceLayout(nap_child);
-
   DPRINTF("Loading blob file %s\n", blob_library_file);
   if ((*mod_status = NaClAppLoadFileDynamically(nap_child, blob_file, NULL)) != LOAD_OK) {
     NaClLog(LOG_FATAL, "Error while loading \"%s\": %s\n",
             blob_library_file,
             NaClErrorString(*mod_status));
   }
-  nap->irt_loaded = 1;
+
+  nap_child->irt_loaded = 1;
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
   nap_child->command_num = nap->command_num;
   nap_child->binary_path = nap->binary_path;
   nap_child->binary_command = nap->binary_command;
+  nap_child->enable_exception_handling = nap->enable_exception_handling;
+  nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
+  if (!nap_child->validator->readonly_text_implemented)
+    NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
+  DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
+  nap_child->fixed_feature_cpu_mode = 1;
+  if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features))
+    NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
+  if (!NaClAppLaunchServiceThreads(nap_child))
+    NaClLog(LOG_FATAL, "Launch service threads failed\n");
+
   if (!DynArraySet(&nap->children, nap->num_children++, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children - 1);
 
