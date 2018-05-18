@@ -637,32 +637,30 @@ int NaClSelLdrMain(int argc, char **argv) {
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
 
-  state.ignore_validator_result = (debug_mode_ignore_validator > 0);
-  state.skip_validator = (debug_mode_ignore_validator > 1);
+  state.ignore_validator_result = debug_mode_ignore_validator > 0;
+  state.skip_validator = debug_mode_ignore_validator > 1;
 
 #if NACL_OSX
 # define _HOST_OSX 1
 #else
 # define _HOST_OSX 0
 #endif
-  if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING") != NULL) {
+  if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING")) {
     state.enable_exception_handling = 1;
   }
   /*
    * TODO(mseaborn): Always enable the Mach exception handler on Mac
    * OS X, and remove handle_signals and sel_ldr's "-S" option.
    */
-  if (state.enable_exception_handling || enable_debug_stub ||
-      (handle_signals && _HOST_OSX)) {
+  if (state.enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
 #if NACL_WINDOWS
-    state.attach_debug_exception_handler_func =
-        NaClDebugExceptionHandlerStandaloneAttach;
+    state.attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
 #elif NACL_LINUX
     /* NaCl's signal handler is always enabled on Linux. */
 #elif NACL_OSX
     if (!NaClInterceptMachExceptions()) {
       fprintf(stderr, "ERROR setting up Mach exception interception.\n");
-      return -1;
+      exit(-1);
     }
 #else
 # error Unknown host OS
@@ -686,28 +684,33 @@ int NaClSelLdrMain(int argc, char **argv) {
    * NACL_DANGEROUS_SKIP_QUALIFICATION_TEST is used by tsan / memcheck
    * (see src/third_party/valgrind/).
    */
-  if (!skip_qualification &&
-      getenv("NACL_DANGEROUS_SKIP_QUALIFICATION_TEST") != NULL) {
+  if (!skip_qualification && getenv("NACL_DANGEROUS_SKIP_QUALIFICATION_TEST")) {
     fprintf(stderr, "PLATFORM QUALIFICATION DISABLED BY ENVIRONMENT - "
             "Native Client's sandbox will be unreliable!\n");
     skip_qualification = 1;
   }
 
   if (!skip_qualification) {
-    // yiwen: temporarily skip this(caused gdb segmentation fault, the seg fault signal was ignored somehow when not running gdb.)
-    // NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
-    //                                     NaClRunSelQualificationTests());
-    // yiwen: temporarily define pq_error here, and assume that everything is Okay.
+    /*
+     * yiwen: temporarily skip this (caused gdb segmentation
+     * fault, the seg fault signal was ignored somehow when
+     * not running gdb.)
+     *
+     * NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
+     *                                      NaClRunSelQualificationTests());
+     */
+
+    /*
+     * yiwen: temporarily define pq_error here, and assume that everything is Okay.
+     */
     NaClErrorCode pq_error = LOAD_OK;
     if (LOAD_OK != pq_error) {
       errcode = pq_error;
       nap->module_load_status = pq_error;
       // yiwen
       nap2->module_load_status = pq_error;
-
       fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-              NULL != nacl_file ? nacl_file
-                                : "(no file, to-be-supplied-via-RPC)",
+              !nacl_file ? nacl_file : "(no file, to-be-supplied-via-RPC)",
               NaClErrorString(errcode));
     }
   }
