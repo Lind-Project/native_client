@@ -4110,6 +4110,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   if (natp->is_fork_child) {
      NaClXMutexLock(&nap->mu);
+     NaClXMutexLock(&nap->threads_mu);
+     NaClXMutexLock(&natp->mu);
      DPRINTF("[NaClSysFork] This is the child of fork() \n");
      NaClAppThreadPrintInfo(natp);
      DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
@@ -4119,7 +4121,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      natp->is_fork_child = 0;
      retval = 0;
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
+     NaClXCondVarSignal(&nap->cv);
      NaClXMutexUnlock(&nap->mu);
+     NaClXMutexUnlock(&nap->threads_mu);
+     NaClXMutexUnlock(&natp->mu);
      goto out;
   }
 
@@ -4149,34 +4154,27 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   NaClLogThreadContext(natp);
-  /*
-   * if (fork_num < 2) {
-   *   nap0->num_children = 0;
-   *   nap0->child_list = NULL;
-   * }
-   */
   nap_child = NaClChildNapCtor(natp);
-  if (!nap->child_list && !(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
-    NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, argc2, argv2, NULL)) {
     DPRINTF("[NaClSysFork] Execv new program failed! \n");
     retval = -1;
     goto out;
   }
-  NaClXMutexLock(&nap->children_mu);
   NaClXMutexLock(&nap->mu);
+  NaClXMutexLock(&nap->children_mu);
   NaClXMutexLock(&nap_child->mu);
+  NaClXCondVarWait(&nap_child->cv, &nap_child->mu);
   nap->child_list[nap->num_children] = nap_child;
   nap->children_ids[nap->num_children] = nap_child->cage_id;
   nap->num_children++;
-  NaClXMutexUnlock(&nap->children_mu);
+  retval = nap_child->cage_id;
   NaClXMutexUnlock(&nap->mu);
+  NaClXMutexUnlock(&nap->children_mu);
   NaClXMutexUnlock(&nap_child->mu);
   /*
    * sleep(1);
    * NaClThreadYield();
    */
-  retval = nap_child->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
 
 out:
@@ -4366,85 +4364,69 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
 
 // yiwen:
 int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options) {
-        struct NaClApp *nap = natp->nap;
-        int *stat_loc_ptr;
-        uintptr_t sysaddr;
-        int retval;
+  struct NaClApp *nap = natp->nap;
+  uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
+  int *stat_loc_ptr = (int *)sysaddr;
+  size_t idx = 0;
+  int retval = 0;
 
-        DPRINTF("[NaClSysWaitpid] entered waitpid! \n");
+  DPRINTF("[NaClSysWaitpid] entered waitpid! \n");
 
-        sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
-        stat_loc_ptr = (int *)sysaddr;
-        retval = 0;
+  if (nap->num_children > 0) {
+    /* seconds between thread switching */
+    time_t timeout = 1;
+    size_t num_children = nap->num_children;
+    struct NaClApp *nap_child = nap->child_list[idx];
+    struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx];
 
-        if (nap->num_children > 0) {
-                /* seconds between thread switching */
-                time_t timeout = 1;
-                size_t idx = 0;
-                size_t num_children = nap->num_children;
-                struct NaClApp *nap_child = nap->child_list[idx];
-                struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx];
+    /*
+     * TODO: implement pid == WAIT_ANY_PG (0) and pid < -1 behavior
+     *
+     * -jp
+     */
+    if (pid > 0 && pid < num_children) {
+      idx = pid;
+      nap_child = nap->child_list[idx];
+      natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
+      retval = NaClThreadJoin(&natp_child->host_thread);
+      if (retval)
+        NaClLog(LOG_FATAL, "NaClThreadJoin() failed: %s\n", strerror(retval));
+    } else {
+      /* wait for any threads to exit */
+      for (;;) {
+        retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
+        if (!retval)
+          break;
+        if (retval != ETIMEDOUT)
+          NaClLog(LOG_FATAL, "NaClThreadTimedJoin() failed: %s\n", strerror(retval));
+        if (++idx >= num_children)
+          idx = 0;
+        nap_child = nap->child_list[idx];
+        natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
+      }
+    }
+  }
 
-                /*
-                 * TODO: implement pid == WAIT_ANY_PG (0) and pid < -1 behavior
-                 *
-                 * -jp
-                 */
-                if (pid > 0 && pid < num_children) {
-                        idx = pid;
-                        nap_child = nap->child_list[idx];
-                        natp_child = nap_child->threads.ptr_array[idx];
-                        retval = NaClThreadJoin(&natp_child->host_thread);
-                        if (retval) {
-                                NaClLog(LOG_FATAL,
-                                        "NaClThreadJoin() failed: %s\n",
-                                        strerror(retval));
-                                goto out;
-                        }
-                } else {
-                        /* wait for any threads to exit */
-                        do {
-                                retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
-                                if (retval && retval != ETIMEDOUT) {
-                                        NaClLog(LOG_FATAL,
-                                                "NaClThreadTimedJoin() failed: %s\n",
-                                                strerror(retval));
-                                        goto out;
-                                }
-                                if (++idx >= num_children)
-                                        idx = 0;
-                                nap_child = nap->child_list[idx];
-                                natp_child = nap_child->threads.ptr_array[idx];
-                        } while (retval == ETIMEDOUT);
-                        pid = idx - 1;
-                }
-        }
+  *stat_loc_ptr = retval;
+  DPRINTF("[NaClSysWaitpid] pid = %zu \n", idx);
+  DPRINTF("[NaClSysWaitpid] options = %d \n", options);
+  DPRINTF("[NaClSysWaitpid] retval = %d \n", retval);
 
-        DPRINTF("[NaClSysWaitpid] pid = %d \n", pid);
-        DPRINTF("[NaClSysWaitpid] options = %d \n", options);
-        DPRINTF("[NaClSysWaitpid] retval = %d \n", retval);
-
-out:
-        *stat_loc_ptr = retval;
-        return retval;
+  return retval;
 }
 
 int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
-        struct NaClApp *nap = natp->nap;
-        int *stat_loc_ptr;
-        uintptr_t sysaddr;
-        int retval;
+  struct NaClApp *nap = natp->nap;
+  uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
+  int *stat_loc_ptr = (int *)sysaddr;
+  int retval = 0;
 
-        DPRINTF("[NaClSysWait] entered wait! \n");
+  DPRINTF("%s\n", "[NaClSysWait] entered wait! \n");
+  CHECK(nap->num_children < NACL_THREAD_MAX);
+  if (nap->num_children)
+    retval = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
+  *stat_loc_ptr = retval;
+  DPRINTF("[NaClSysWait] retval = %d \n", retval);
 
-        sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
-        stat_loc_ptr = (int *)sysaddr;
-        retval = 0;
-        if (nap->num_children > 0)
-                retval = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
-
-        DPRINTF("[NaClSysWait] retval = %d \n", retval);
-
-        *stat_loc_ptr = retval;
-        return retval;
+  return retval;
 }

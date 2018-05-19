@@ -58,6 +58,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
 
+  NaClAppInitialDescriptorHookup(nap_child);
   NaClXMutexLock(&nap->mu);
   NaClXMutexLock(&nap_child->mu);
   DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
@@ -74,13 +75,10 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-  NaClXCondVarBroadcast(&nap_child->cv);
-  NaClXMutexUnlock(&nap_child->mu);
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
   DPRINTF("Loading blob file %s\n", nap_child->nacl_file);
-  NaClAppInitialDescriptorHookup(nap_child);
   if (!nap_child->validator->readonly_text_implemented)
     NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
   DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
@@ -94,7 +92,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!DynArraySet(&nap->children, nap->num_children, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
   nap->num_children++;
+  NaClXCondVarBroadcast(&nap_child->cv);
   NaClXMutexUnlock(&nap->children_mu);
+  NaClXMutexUnlock(&nap_child->mu);
 
   return nap_child;
 }
@@ -210,7 +210,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
 
-  NaClXMutexLock(&nap->mu);
+  NaClXMutexUnlock(&nap->mu);
 
   /*
    * After this NaClAppThreadSetSuspendState() call, we should not
@@ -528,8 +528,9 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * find the first unused slot in the nacl_user array
    */
-  nap_child->fork_num = 1;
+  nap_child->fork_num = 2;
   while (nacl_user[++nap_child->fork_num]) /* no-op */;
+  /* nap_child->fork_num = nap_parent->fork_num + 1; */
   /* nap_child->fork_num = parent_ctx->tls_idx + 1; */
   natp_child->user.tls_idx = nap_child->fork_num;
   if (nacl_user[natp_child->user.tls_idx]) {
@@ -554,10 +555,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE) == -1)
     DPRINTF("%s\n", "parent NaClMprotect failed!");
 
-  NaClPrintAddressSpaceLayout(nap_parent);
-  DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
-  NaClVmCopyAddressSpace(nap_parent, nap_child);
-  NaClPrintAddressSpaceLayout(nap_child);
+  /*
+   * NaClPrintAddressSpaceLayout(nap_parent);
+   * DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
+   * NaClVmCopyAddressSpace(nap_parent, nap_child);
+   * NaClPrintAddressSpaceLayout(nap_child);
+   */
 
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from %p to %p\n",
           (size_t)stack_total_size,
@@ -632,10 +635,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp = ctx.rsp; */
+  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.rsp = ctx.rsp;
   /* natp_child->user.rsp -= 0x8; */
 
   /*
@@ -700,6 +703,7 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                                                  user_tls1, user_tls2);
   if (natp == NULL)
     return 0;
+  nap->fork_num = 1;
   natp->parent = NULL;
   natp->is_fork_child = 0;
   /*

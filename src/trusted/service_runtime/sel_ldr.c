@@ -156,50 +156,42 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->initial_entry_pt = 0;
   nap->user_entry_pt = 0;
 
-  if (!DynArrayCtor(&nap->threads, 2)) {
+  if (!(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
+    NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
+  if (!DynArrayCtor(&nap->threads, 2))
     goto cleanup_cpu_features;
-  }
-  if (!DynArrayCtor(&nap->desc_tbl, 2)) {
+  if (!DynArrayCtor(&nap->desc_tbl, 2))
     goto cleanup_threads;
-  }
-  if (!DynArrayCtor(&nap->children, 2)) {
+  if (!DynArrayCtor(&nap->children, 2))
     goto cleanup_desc_tbl;
-  }
-  if (!NaClVmmapCtor(&nap->mem_map)) {
+  if (!NaClVmmapCtor(&nap->mem_map))
     goto cleanup_children;
-  }
 
   nap->mem_io_regions = (struct NaClIntervalMultiset *) malloc(
       sizeof(struct NaClIntervalRangeTree));
-  if (NULL == nap->mem_io_regions) {
+  if (!nap->mem_io_regions)
     goto cleanup_mem_map;
-  }
 
-  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *)
-                                 nap->mem_io_regions)) {
+  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *) nap->mem_io_regions)) {
     free(nap->mem_io_regions);
     nap->mem_io_regions = NULL;
     goto cleanup_mem_map;
   }
 
   effp = (struct NaClDescEffectorLdr *) malloc(sizeof *effp);
-  if (NULL == effp) {
+  if (!effp)
     goto cleanup_mem_io_regions;
-  }
-  if (!NaClDescEffectorLdrCtor(effp, nap)) {
+  if (!NaClDescEffectorLdrCtor(effp, nap))
     goto cleanup_effp_free;
-  }
   nap->effp = (struct NaClDescEffector *) effp;
 
   nap->enable_dyncode_syscalls = ShouldEnableDyncodeSyscalls();
   nap->use_shm_for_dynamic_text = ShouldEnableDynamicLoading();
   nap->text_shm = NULL;
-  if (!NaClMutexCtor(&nap->dynamic_load_mutex)) {
+  if (!NaClMutexCtor(&nap->dynamic_load_mutex))
     goto cleanup_effp_free;
-  }
-  if (!NaClMutexCtor(&nap->children_mu)) {
+  if (!NaClMutexCtor(&nap->children_mu))
     goto cleanup_dynamic_load_mutex;
-  }
   nap->dynamic_page_bitmap = NULL;
 
   nap->dynamic_regions = NULL;
@@ -223,19 +215,16 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->manifest_proxy = NULL;
   nap->kernel_service = NULL;
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
-  if (!NaClResourceNaClAppInit(&nap->resources, nap)) {
+  if (!NaClResourceNaClAppInit(&nap->resources, nap))
     goto cleanup_dynamic_load_mutex;
-  }
   nap->reverse_client = NULL;
   nap->reverse_channel_initialization_state =
       NACL_REVERSE_CHANNEL_UNINITIALIZED;
 
-  if (!NaClMutexCtor(&nap->mu)) {
+  if (!NaClMutexCtor(&nap->mu))
     goto cleanup_children_mutex;
-  }
-  if (!NaClCondVarCtor(&nap->cv)) {
+  if (!NaClCondVarCtor(&nap->cv))
     goto cleanup_mu;
-  }
 
 #if NACL_WINDOWS
   nap->vm_hole_may_exist = 0;
@@ -632,7 +621,7 @@ void NaClSetDescMu(struct NaClApp   *nap,
 
   if (!DynArraySet(&nap->desc_tbl, d, ndp)) {
     NaClLog(LOG_FATAL,
-            "NaClSetDesc: could not set descriptor %d to 0x%08"
+            "NaClSetDesc: could not set descriptor %d to 0x%#08"
             NACL_PRIxPTR"\n",
             d,
             (uintptr_t) ndp);
@@ -826,17 +815,16 @@ static void NaClProcessRedirControl(struct NaClApp *nap) {
   for (ix = 0; ix < NACL_ARRAY_SIZE(g_nacl_redir_control); ++ix) {
     ndp = NULL;
     if (NULL != (env = getenv(g_nacl_redir_control[ix].env_name))) {
-      NaClLog(4, "getenv(%s) -> %s\n", g_nacl_redir_control[ix].env_name, env);
+      DPRINTF("getenv(%s) -> %s\n", g_nacl_redir_control[ix].env_name, env);
       ndp = NaClResourceOpen((struct NaClResource *) &nap->resources,
                              env,
                              g_nacl_redir_control[ix].nacl_flags,
                              g_nacl_redir_control[ix].mode);
-      NaClLog(4, " NaClResourceOpen returned %"NACL_PRIxPTR"\n",
-              (uintptr_t) ndp);
+      DPRINTF(" NaClResourceOpen returned %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     }
 
     if (NULL != ndp) {
-      NaClLog(4, "Setting descriptor %d\n", (int) ix);
+      DPRINTF("Setting descriptor %d\n", (int) ix);
       NaClSetDesc(nap, (int) ix, ndp);
     } else if (NACL_RESOURCE_PHASE_START == nap->resource_phase) {
       /*
