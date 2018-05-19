@@ -100,8 +100,10 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     struct NaClDesc *old_nd;
     int newfd;
     old_nd = NaClGetDesc(nap, i);
-    if (!old_nd)
-      NaClLog(LOG_FATAL, "NaClGetDesc() Failed\n");
+    if (!old_nd) {
+      DPRINTF("NaClGetDesc() Failed at idx: [%zu]\n", i);
+      exit(EXIT_FAILURE);
+    }
     newfd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, newfd, old_nd);
     /* fd_cage_table[nap->cage_id][i] = fd_cage_table[nap->cage_id][i]; */
@@ -335,8 +337,8 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
 
   /* TODO: add mutex locks */
   if (nap->parent) {
-    DPRINTF("Decrementing parent child count for cage id: %d\n", natp->parent->cage_id);
-    DPRINTF("Parent new child count: %d\n", --natp->parent->num_children);
+    DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
+    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     /*
      * sleep(1);
      * NaClThreadYield();
