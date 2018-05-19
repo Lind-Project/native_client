@@ -4116,9 +4116,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      retval = 0;
      /* NaClXMutexUnlock(&natp->parent->mu); */
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
-     NaClXMutexLock(&nap->mu);
-     NaClXCondVarSignal(&nap->cv);
-     NaClXMutexUnlock(&nap->mu);
+     /* NaClXMutexLock(&nap->mu); */
+     /* NaClXCondVarSignal(&nap->cv); */
+     /* NaClXMutexUnlock(&nap->mu); */
      goto out;
   }
 
