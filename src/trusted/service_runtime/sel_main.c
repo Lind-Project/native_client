@@ -80,8 +80,6 @@ extern int lind_syscall_counter;
 extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 extern int nacl_syscall_trace_level_counter;
-extern struct NaClDesc *blob_file;
-extern char *blob_library_file;
 
 // yiwen
 // set up the cage id
@@ -223,6 +221,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   char                          *nacl_file = NULL;
   int                           rpc_supplies_nexe = 0;
   int                           export_addr_to = -1;
+  struct NaClDesc               *blob_file = NULL;
+  char                          *blob_library_file = NULL;
 
   struct NaClApp                *nap = &state;
 
@@ -1124,7 +1124,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       NaClPerfCounterIntervalLast(&time_all_main);
     }
 
-    /* NaClDescUnref(blob_file); */
+    NaClDescUnref(blob_file);
     if (verbosity) {
       gprintf((struct Gio *) &gout, "printing post-IRT NaClApp details\n");
       NaClAppPrintDetails(nap, (struct Gio *) &gout);

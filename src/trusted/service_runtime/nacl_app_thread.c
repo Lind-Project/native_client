@@ -32,31 +32,35 @@
 
 /* jp */
 #include "native_client/src/shared/platform/lind_platform.h"
-
-/* jp */
-extern struct NaClDesc *blob_file;
-extern char *blob_library_file;
+#include "native_client/src/trusted/desc/nacl_desc_io.h"
+#include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
 /* jp */
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
+  struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
+  struct NaClDesc *blob_file;
+
   NaClErrorCode *mod_status;
 
   CHECK(nap);
   CHECK(nap_child);
-  CHECK(blob_file);
-  CHECK(blob_library_file);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
+  memset(nap_child, 0, sizeof *nap_child);
   mod_status = &nap_child->module_load_status;
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
-  NaClAppInitialDescriptorHookup(nap_child);
-  DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
-  NaClPrintAddressSpaceLayout(nap);
-  NaClVmCopyAddressSpace(nap, nap_child);
-  NaClPrintAddressSpaceLayout(nap_child);
+
+  NaClXMutexLock(&nap->mu);
+  NaClXMutexLock(&nap_child->mu);
+
+  /*
+   * DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
+   * NaClPrintAddressSpaceLayout(nap);
+   * NaClVmCopyAddressSpace(nap, nap_child);
+   * NaClPrintAddressSpaceLayout(nap_child);
+   */
 
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
@@ -67,16 +71,29 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-  DPRINTF("Loading blob file %s\n", blob_library_file);
-  if ((*mod_status = NaClAppLoadFileDynamically(nap_child, blob_file, NULL)) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "Error while loading \"%s\": %s\n",
-            blob_library_file,
-            NaClErrorString(*mod_status));
-  }
+  NaClXCondVarBroadcast(&nap->cv);
+  NaClXCondVarBroadcast(&nap_child->cv);
+  NaClXMutexUnlock(&nap->mu);
+  NaClXMutexUnlock(&nap_child->mu);
 
-  nap_child->irt_loaded = 1;
+  NaClXMutexLock(&nap_child->mu);
+  NaClXCondVarBroadcast(&nap_child->cv);
+  NaClXMutexUnlock(&nap_child->mu);
+
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
+  DPRINTF("Loading blob file %s\n", LD_FILE);
+  blob_file = (struct NaClDesc *)NaClDescIoDescOpen(LD_FILE, NACL_ABI_O_RDONLY, 0);
+  CHECK(blob_file);
+  if ((*mod_status = NaClAppLoadFileDynamically(nap_child, blob_file, NULL)) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "Error while loading \"%s\": %s\n",
+            LD_FILE,
+            NaClErrorString(*mod_status));
+  }
+  nap_child->irt_loaded = 1;
+  NaClDescUnref(blob_file);
+  NaClAppInitialDescriptorHookup(nap_child);
+
   nap_child->command_num = nap->command_num;
   nap_child->binary_path = nap->binary_path;
   nap_child->binary_command = nap->binary_command;

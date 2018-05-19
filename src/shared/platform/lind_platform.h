@@ -95,10 +95,6 @@
 /* jp */
 #define LD_FILE                         "/lib/glibc/runnable-ld.so"
 
-/* jp */
-struct NaClDesc *blob_file;
-char *blob_library_file;
-
 // yiwen
 int lind_syscall_counter;
 int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];

@@ -930,9 +930,10 @@ NaClErrorCode NaClElfImageLoadDynamically(struct NaClElfImage *image,
                                      code_copy, (uint32_t) filesz, metadata);
       free(code_copy);
       if (0 != result) {
-        DPRINTF("%s\n",
-            "NaClElfImageLoadDynamically: "
-                "failed to load code segment");
+        DPRINTF("%s [%d]\n",
+            "NaClElfImageLoadDynamically:"
+            " failed to load code segment",
+            result);
         return LOAD_UNLOADABLE;
       }
     } else {
