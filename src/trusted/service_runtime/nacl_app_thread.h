@@ -80,16 +80,8 @@ struct NaClAppThread {
    * long as a thread is still alive.
    */
   struct NaClApp            *nap;
-  struct NaClApp            *parent;
 
   int                       thread_num;  /* index into nap->threads */
-
-  /*
-   * Whether or not current thread is a child of fork(). Flag
-   * is reset after forking.
-   */
-  unsigned                  is_fork_child;
-  unsigned                  parent_id;
 
   /*
    * If host_thread_is_defined is true, host_thread is initialized and

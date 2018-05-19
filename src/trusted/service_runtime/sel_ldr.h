@@ -134,6 +134,14 @@ struct NaClApp {
   unsigned                  cage_id;
   unsigned                  num_lib;
 
+  /*
+   * Whether or not current thread is a child of fork(). Flag
+   * is reset after forking.
+   */
+  unsigned                  is_fork_child;
+  unsigned                  parent_id;
+  struct NaClApp            *parent;
+
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
   int                       command_num;
   char                      *binary_path;

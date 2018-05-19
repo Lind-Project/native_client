@@ -83,7 +83,7 @@ int fork_num = 0;
  *
  * -jp
  */
-int fd_cage_table[2000][2000];
+int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 
 // yiwen: lookup table for <file_path, mem_addr>
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];

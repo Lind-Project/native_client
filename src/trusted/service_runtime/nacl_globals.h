@@ -33,6 +33,7 @@ enum {
         CAGING_LIB_PATH_MAX = 1u << 6,
         FILE_DESC_MAX = 1u << 8,
         CHILD_NUM_MAX = 1u << 8,
+        CAGING_FD_NUM  = 1u << 8,
         PIPE_BUF_MAX = 1u << 16
 };
 
@@ -52,7 +53,7 @@ struct NaClApp;
 // yiwen
 extern int cage;
 extern int fork_num;
-extern int fd_cage_table[2000][2000];
+extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern struct NaClApp state_ready;
 extern struct NaClApp *nap_ready;
 extern struct NaClApp state_ready_2;
