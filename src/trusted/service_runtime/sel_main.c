@@ -218,7 +218,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   struct NaClApp                state;
   char                          *nacl_runnable;
-  char                          *nacl_file = NULL;
   int                           rpc_supplies_nexe = 0;
   int                           export_addr_to = -1;
   struct NaClDesc               *blob_file = NULL;
@@ -467,7 +466,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         }
         break;
       case 'f':
-        nacl_file = optarg;
+        nap->nacl_file = optarg;
         break;
       case 'F':
         fuzzing_quit_after_load = 1;
@@ -601,36 +600,36 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   if (rpc_supplies_nexe) {
-    if (nacl_file) {
+    if (nap->nacl_file) {
       fprintf(stderr, "sel_ldr: mutually exclusive flags -f and -R both used\n");
       exit(EXIT_FAILURE);
     }
-    /* post: NULL == nacl_file */
+    /* post: NULL == nap->nacl_file */
     if (export_addr_to < 0) {
       fprintf(stderr, "sel_ldr: -R requires -X to set up secure command channel\n");
       exit(EXIT_FAILURE);
     }
   } else {
-    if (!nacl_file && optind < argc) {
-      nacl_file = argv[optind];
+    if (!nap->nacl_file && optind < argc) {
+      nap->nacl_file = argv[optind];
       ++optind;
     }
-    if (!nacl_file) {
+    if (!nap->nacl_file) {
       fprintf(stderr, "No nacl file specified\n");
       exit(EXIT_FAILURE);
     }
-    /* post: NULL != nacl_file */
+    /* post: NULL != nap->nacl_file */
   }
   /*
    * post condition established by the above code (in Hoare logic
    * terminology):
    *
-   * NULL == nacl_file iff rpc_supplies_nexe
+   * NULL == nap->nacl_file iff rpc_supplies_nexe
    *
    * so hence forth, testing !rpc_supplies_nexe suffices for
-   * establishing NULL != nacl_file.
+   * establishing NULL != nap->nacl_file.
    */
-  CHECK(!!nacl_file != !!rpc_supplies_nexe);
+  CHECK(!!nap->nacl_file != !!rpc_supplies_nexe);
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
@@ -709,7 +708,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       nap2->module_load_status = pq_error;
       fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
               __LINE__,
-              !nacl_file ? nacl_file : "(no file, to-be-supplied-via-RPC)",
+              !nap->nacl_file ? nap->nacl_file : "(no file, to-be-supplied-via-RPC)",
               NaClErrorString(errcode));
     }
   }
@@ -761,7 +760,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {
-      NaClLog(2, "Loading nacl file %s (non-RPC)\n", nacl_file);
+      NaClLog(2, "Loading nacl file %s (non-RPC)\n", nap->nacl_file);
       // yiwen: this is where an nexe binary got loaded as an nap.
       //        we should load a second nap here.
       nacl_runnable = LD_FILE;
@@ -770,14 +769,14 @@ int NaClSelLdrMain(int argc, char **argv) {
 
       // yiwen
       // time_start = clock();
-      errcode = NaClAppLoadFileFromFilename(nap, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap, nap->nacl_file);
       // time_end = clock();
       // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
                 __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -787,10 +786,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap2
-      errcode = NaClAppLoadFileFromFilename(nap2, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap2, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -800,10 +799,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap3
-      errcode = NaClAppLoadFileFromFilename(nap3, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap3, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -813,10 +812,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap4
-      errcode = NaClAppLoadFileFromFilename(nap4, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap4, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -826,10 +825,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap5
-      errcode = NaClAppLoadFileFromFilename(nap5, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap5, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -839,10 +838,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap6
-      errcode = NaClAppLoadFileFromFilename(nap6, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap6, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -852,10 +851,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap7
-      errcode = NaClAppLoadFileFromFilename(nap7, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap7, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -865,10 +864,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap0
-      errcode = NaClAppLoadFileFromFilename(nap0, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap0, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -878,10 +877,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap0_2
-      errcode = NaClAppLoadFileFromFilename(nap0_2, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap0_2, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -891,10 +890,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap_ready
-      errcode = NaClAppLoadFileFromFilename(nap_ready, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap_ready, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"
@@ -904,10 +903,10 @@ int NaClSelLdrMain(int argc, char **argv) {
       }
 
       // yiwen: load NaCl file to nap_ready_2
-      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nacl_file);
+      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nap->nacl_file);
       if (LOAD_OK != errcode) {
         fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                nacl_file,
+                nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
                 ("Using the wrong type of nexe (nacl-x86-32"

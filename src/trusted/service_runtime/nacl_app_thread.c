@@ -39,8 +39,6 @@
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
-  struct NaClDesc *blob_file;
-
   NaClErrorCode *mod_status;
 
   CHECK(nap);
@@ -48,57 +46,41 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
   memset(nap_child, 0, sizeof *nap_child);
-  mod_status = &nap_child->module_load_status;
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
+  mod_status = &nap_child->module_load_status;
+  nap_child->command_num = nap->command_num;
+  nap_child->binary_path = nap->binary_path;
+  nap_child->binary_command = nap->binary_command;
+  nap_child->nacl_file = nap->nacl_file;
+  nap_child->enable_exception_handling = nap->enable_exception_handling;
+  nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
+  if (!nap_child->nacl_file)
+    nap_child->nacl_file = LD_FILE;
 
   NaClXMutexLock(&nap->mu);
   NaClXMutexLock(&nap_child->mu);
-
-  /*
-   * DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
-   * NaClPrintAddressSpaceLayout(nap);
-   * NaClVmCopyAddressSpace(nap, nap_child);
-   * NaClPrintAddressSpaceLayout(nap_child);
-   */
-
-  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, LD_FILE)) != LOAD_OK) {
+  DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
+  NaClPrintAddressSpaceLayout(nap);
+  NaClVmCopyAddressSpace(nap, nap_child);
+  NaClPrintAddressSpaceLayout(nap_child);
+  NaClXMutexUnlock(&nap->mu);
+  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
-            LD_FILE,
+            nap_child->nacl_file,
             NaClErrorString(*mod_status));
     DPRINTF("%s\n%s\n",
             "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-  NaClXCondVarBroadcast(&nap->cv);
-  NaClXCondVarBroadcast(&nap_child->cv);
-  NaClXMutexUnlock(&nap->mu);
-  NaClXMutexUnlock(&nap_child->mu);
-
-  NaClXMutexLock(&nap_child->mu);
   NaClXCondVarBroadcast(&nap_child->cv);
   NaClXMutexUnlock(&nap_child->mu);
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
-  DPRINTF("Loading blob file %s\n", LD_FILE);
-  blob_file = (struct NaClDesc *)NaClDescIoDescOpen(LD_FILE, NACL_ABI_O_RDONLY, 0);
-  CHECK(blob_file);
-  if ((*mod_status = NaClAppLoadFileDynamically(nap_child, blob_file, NULL)) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "Error while loading \"%s\": %s\n",
-            LD_FILE,
-            NaClErrorString(*mod_status));
-  }
-  nap_child->irt_loaded = 1;
-  NaClDescUnref(blob_file);
+  DPRINTF("Loading blob file %s\n", nap_child->nacl_file);
   NaClAppInitialDescriptorHookup(nap_child);
-
-  nap_child->command_num = nap->command_num;
-  nap_child->binary_path = nap->binary_path;
-  nap_child->binary_command = nap->binary_command;
-  nap_child->enable_exception_handling = nap->enable_exception_handling;
-  nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
   if (!nap_child->validator->readonly_text_implemented)
     NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
   DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
@@ -108,8 +90,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!NaClAppLaunchServiceThreads(nap_child))
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
 
-  if (!DynArraySet(&nap->children, nap->num_children++, nap_child))
-    NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children - 1);
+  NaClXMutexLock(&nap->children_mu);
+  if (!DynArraySet(&nap->children, nap->num_children, nap_child))
+    NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
+  nap->num_children++;
+  NaClXMutexUnlock(&nap->children_mu);
 
   return nap_child;
 }

@@ -138,6 +138,7 @@ struct NaClApp {
   int                       command_num;
   char                      *binary_path;
   char                      *binary_command;
+  char                      *nacl_file;
   // yiwen: record the current fd number(largest) assigned by this cage
   int                       fd;
 
