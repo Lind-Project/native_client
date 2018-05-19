@@ -39,7 +39,8 @@
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
-  NaClErrorCode *mod_status;
+  NaClErrorCode *mod_status = NULL;
+  int newfd = 0;
 
   CHECK(nap);
   CHECK(nap_child);
@@ -61,9 +62,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->is_fork_child = 1;
   nap_child->num_children = 0;
   nap_child->num_lib = 3;
-  fd_cage_table[nap_child->cage_id][0] = 0;
-  fd_cage_table[nap_child->cage_id][1] = 1;
-  fd_cage_table[nap_child->cage_id][2] = 2;
   /* fd will start with 3, since 0, 1, 2 are reserved */
   nap_child->fd = 3;
   if (!nap_child->nacl_file)
@@ -95,21 +93,26 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!NaClAppLaunchServiceThreads(nap_child))
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
 
+  /*
+   * fd_cage_table[nap_child->cage_id][0] = 0;
+   * fd_cage_table[nap_child->cage_id][1] = 1;
+   * fd_cage_table[nap_child->cage_id][2] = 2;
+   */
+  /* memcpy(fd_cage_table[nap->cage_id], fd_cage_table[nap->cage_id], sizeof fd_cage_table[0]); */
+
   /* duplicate parent file descriptors */
-  for (size_t i = 3; i < CAGING_FD_NUM; i++) {
+  for (int oldfd = 0; oldfd < CAGING_FD_NUM; oldfd++) {
     struct NaClDesc *old_nd;
-    int newfd;
-    old_nd = NaClGetDesc(nap, i);
+    old_nd = NaClGetDesc(nap, oldfd);
     if (!old_nd) {
-      DPRINTF("NaClGetDesc() Failed at idx: [%zu]\n", i);
-      exit(EXIT_FAILURE);
+      DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", oldfd - 1, newfd);
+      break;
     }
     newfd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, newfd, old_nd);
     /* fd_cage_table[nap->cage_id][i] = fd_cage_table[nap->cage_id][i]; */
-    fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][i];
+    fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   }
-  /* memcpy(fd_cage_table[nap->cage_id], fd_cage_table[nap->cage_id], sizeof fd_cage_table[0]); */
 
   /*
    * NaClXMutexLock(&nap_child->mu);
