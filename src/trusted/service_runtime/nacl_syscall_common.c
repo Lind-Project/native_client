@@ -539,7 +539,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   int             retval;
 
   // yiwen: debug
-  DPRINTF("[dup2] Entered dup2! \n");
+  DPRINTF("%s\n", "[dup2] Entered dup2!");
   DPRINTF("[dup2] cage id = %d \n", nap->cage_id);
   DPRINTF("[dup2] oldfd = %d \n", oldfd);
   DPRINTF("[dup2] newfd = %d \n", newfd);
@@ -560,7 +560,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   for (int i = 0; i < nap->fd; i++)
      DPRINTF("[dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
 
-  return newfd;
+  return retval;
 }
 
 // yiwen: my dup3 implementation
@@ -571,7 +571,7 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval;
 
-  DPRINTF("[dup3] Entered dup3! \n");
+  DPRINTF("%s\n", "[dup3] Entered dup3!");
   DPRINTF("[dup3] cage id = %d \n", nap->cage_id);
   DPRINTF("[dup3] oldfd = %d \n", oldfd);
   DPRINTF("[dup3] newfd = %d \n", newfd);
@@ -589,7 +589,6 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
   retval = nap->fd;
   nap->fd++;
-  flags = flags;
 
   return retval;
 }
@@ -2770,7 +2769,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
                           struct NaClAbiNaClImcMsgHdr *nanimhp,
                           int                          flags) {
   struct NaClApp                *nap = natp->nap;
-  int32_t                       retval = -NACL_ABI_EINVAL;
+  int32_t                       retval;
   ssize_t                       ssize_retval;
   uintptr_t                     sysaddr;
   /* copy of user-space data for validation */
@@ -2852,7 +2851,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
    * make things easier for cleaup exit processing
    */
   memset(kern_desc, 0, sizeof kern_desc);
-  retval = -NACL_ABI_EINVAL;
+  /* retval = -NACL_ABI_EINVAL; */
 
   kern_msg_hdr.iov = kern_iov;
   kern_msg_hdr.iov_length = kern_nanimh.iov_length;
@@ -4100,11 +4099,11 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   char **argv2;
   int path_len;
 
-  DPRINTF("[NaClSysFork] NaCl fork starts! \n");
+  DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
 
-  if (natp->is_fork_child) {
-     DPRINTF("[NaClSysFork] This is the child of fork() \n");
+  if (nap->is_fork_child) {
+     DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
      NaClAppThreadPrintInfo(natp);
      DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
      DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
@@ -4112,7 +4111,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
      /* NaClXMutexLock(&natp->parent->mu); */
      /* NaClXCondVarSignal(&natp->parent->cv); */
-     natp->is_fork_child = 0;
+     nap->is_fork_child = 0;
      retval = 0;
      /* NaClXMutexUnlock(&natp->parent->mu); */
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
@@ -4148,9 +4147,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(nap, natp);
+  nap_child = NaClChildNapCtor(natp);
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, argc2, argv2, NULL)) {
-    DPRINTF("[NaClSysFork] Execv new program failed! \n");
+    DPRINTF("%s\n", "[NaClSysFork] Execv new program failed!");
     retval = -1;
     goto out;
   }
@@ -4365,7 +4364,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat
   size_t idx = 0;
   int retval = 0;
 
-  DPRINTF("[NaClSysWaitpid] entered waitpid! \n");
+  DPRINTF("%s\n", "[NaClSysWaitpid] entered waitpid!");
 
   if (nap->num_children > 0) {
     /* seconds between thread switching */
