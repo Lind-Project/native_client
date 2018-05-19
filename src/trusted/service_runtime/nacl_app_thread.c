@@ -58,14 +58,17 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
 
-  NaClAppInitialDescriptorHookup(nap_child);
-  NaClXMutexLock(&nap->mu);
   NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap->mu);
   DPRINTF("copying page table from %p to %p\n", (void *)nap, (void *)nap_child);
   NaClPrintAddressSpaceLayout(nap);
   NaClVmCopyAddressSpace(nap, nap_child);
   NaClPrintAddressSpaceLayout(nap_child);
+  NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap->mu);
+
+  NaClXMutexLock(&nap_child->mu);
+  NaClAppInitialDescriptorHookup(nap_child);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
             nap_child->nacl_file,
@@ -75,6 +78,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
+  NaClXCondVarBroadcast(&nap_child->cv);
+  NaClXMutexUnlock(&nap_child->mu);
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
@@ -88,13 +93,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!NaClAppLaunchServiceThreads(nap_child))
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
 
+  NaClXMutexLock(&nap->mu);
   NaClXMutexLock(&nap->children_mu);
   if (!DynArraySet(&nap->children, nap->num_children, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
   nap->num_children++;
-  NaClXCondVarBroadcast(&nap_child->cv);
+  NaClXMutexUnlock(&nap->mu);
   NaClXMutexUnlock(&nap->children_mu);
-  NaClXMutexUnlock(&nap_child->mu);
 
   return nap_child;
 }
@@ -111,7 +116,10 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
 
   DPRINTF("%s\n", "NaClAppForkThreadLauncher: entered");
 
-  NaClXMutexLock(&nap->mu);
+  /* NaClXMutexLock(&natp->parent->mu); */
+  /* NaClXCondVarSignal(&natp->parent->cv); */
+  /* NaClXMutexUnlock(&natp->parent->mu); */
+  /* NaClXMutexLock(&nap->mu); */
 
   NaClSignalStackRegister(natp->signal_stack);
 
@@ -142,7 +150,6 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   natp->thread_num = NaClAddThreadMu(nap, natp);
   NaClXMutexUnlock(&nap->threads_mu);
   NaClXMutexUnlock(&nap->children_mu);
-  natp->thread_num = NaClAddThreadMu(nap, natp);
 
   NaClVmHoleThreadStackIsSafe(natp->nap);
 
@@ -210,7 +217,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
 
-  NaClXMutexUnlock(&nap->mu);
+  /* NaClXCondVarSignal(&nap->cv); */
+  /* NaClXMutexUnlock(&nap->mu); */
 
   /*
    * After this NaClAppThreadSetSuspendState() call, we should not
@@ -490,8 +498,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   if (!nap_parent->running)
    return 0;
 
-  NaClXMutexLock(&nap_child->mu);
   NaClXMutexLock(&nap_parent->mu);
+  NaClXMutexLock(&nap_child->mu);
 
   UNREFERENCED_PARAMETER(ctx);
   UNREFERENCED_PARAMETER(usr_entry);
@@ -522,16 +530,18 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     DPRINTF("%s\n", "natp_child->nap != nap_child");
     nap_child = natp_child->nap;
   }
-  nap_child->cage_id = nap_parent->cage_id + 1;
+  nap_child->fork_num  = nap_child->cage_id = nap_parent->cage_id + 1;
+  /* nap_child->cage_id = nap_parent->cage_id + 1; */
   natp_child->is_fork_child = 1;
 
   /*
    * find the first unused slot in the nacl_user array
    */
-  nap_child->fork_num = 2;
-  while (nacl_user[++nap_child->fork_num]) /* no-op */;
+  /* nap_child->fork_num = 1; */
+  /* while (nacl_user[++nap_child->fork_num]); */
   /* nap_child->fork_num = nap_parent->fork_num + 1; */
   /* nap_child->fork_num = parent_ctx->tls_idx + 1; */
+  /* nap_child->fork_num = nap_child->cage_id; */
   natp_child->user.tls_idx = nap_child->fork_num;
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
@@ -589,16 +599,15 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * use parent's memory mapping
    */
-  natp_child->user.r15 = parent_ctx->r15;
-  nap_child->mem_start = parent_ctx->r15;
-  /* natp_child->user.r15 = ctx.r15; */
   /* nap_child->mem_start = ctx.r15; */
-  nap_child->break_addr = nap_parent->break_addr;
-  nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr;
-  nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr;
-  nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr;
-  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
+  nap_child->mem_start = parent_ctx->r15;
+  /* nap_child->break_addr = nap_parent->break_addr; */
+  /* nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr; */
+  /* nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr; */
+  /* nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr; */
+  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
+  natp_child->user.r15 = nap_child->mem_start;
 
   /*
    * set return value for fork().
@@ -635,10 +644,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.rsp = ctx.rsp;
+  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rsp -= 0x8; */
 
   /*
@@ -663,19 +672,23 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
     DPRINTF("%s\n", "parent NaClMprotect failed!");
-  if (NaClMprotect((void *)stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
-  if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
-
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap_parent->mu);
+  /*
+   * if (NaClMprotect((void *)stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
+   *   DPRINTF("%s\n", "parent NaClMprotect failed!");
+   * if (NaClMprotect((void *)stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE|PROT_EXEC) == -1)
+   *   DPRINTF("%s\n", "parent NaClMprotect failed!");
+   */
 
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.
    */
   natp_child->host_thread_is_defined = 1;
+
+  /* NaClXCondVarSignal(&nap_child->cv); */
+  /* NaClXCondVarSignal(&nap_parent->cv); */
+  NaClXMutexUnlock(&nap_parent->mu);
+  NaClXMutexUnlock(&nap_child->mu);
 
   /*
   * No other thread saw the NaClAppThread, so it is OK that
@@ -703,9 +716,9 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                                                  user_tls1, user_tls2);
   if (natp == NULL)
     return 0;
-  nap->fork_num = 1;
   natp->parent = NULL;
   natp->is_fork_child = 0;
+  nap->fork_num = nap->cage_id;
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.
