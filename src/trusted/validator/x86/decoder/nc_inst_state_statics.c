@@ -46,7 +46,7 @@ static void NaClInstStateInit(NaClInstIter* iter, NaClInstState* state) {
   }
   state->length_limit = (uint8_t) limit;
   DEBUG(NaClLog(LOG_INFO,
-                "length limit = %"NACL_PRIu8"\n", state->length_limit));
+                "length limit = %" NACL_PRIu8 "\n", state->length_limit));
   state->num_prefix_bytes = 0;
   state->opcode_prefix = 0;
   state->num_opcode_bytes = 0;
@@ -85,6 +85,7 @@ static int NaClExtractOpSize(NaClInstState* state) {
   if (NaClHasBit(state->inst->flags, NACL_IFLAG(OperandSize_b))) {
     return 1;
   }
+#if NACL_TARGET_SUBARCH == 64
   if (NACL_TARGET_SUBARCH == 64) {
     if (NaClRexW(state->rexprefix)) {
       if (NACL_PREFIX_INST_DATA66(state))
@@ -106,21 +107,22 @@ static int NaClExtractOpSize(NaClInstState* state) {
       return 8;
     else
       return 4;
-  } else if (NACL_PREFIX_INST_DATA66(state))
-    return 2;
-  else
+#else
+    if (NACL_PREFIX_INST_DATA66(state))
+        return 2;
+
     return 4;
+#endif
 }
 
 /* Computes the number of bits defined for addresses of the matched
  * instruction of the given state.
  */
 static int NaClExtractAddressSize(NaClInstState* state) {
-  if (NACL_TARGET_SUBARCH == 64) {
+#if NACL_TARGET_SUBARCH == 64
     return NaClHasBit(state->prefix_mask, kPrefixADDR16) ? 32 : 64;
-  } else {
+#endif
     return NaClHasBit(state->prefix_mask, kPrefixADDR16) ? 16 : 32;
-  }
 }
 
 /* Manual implies only 4 bytes is allowed, but I have found up to 6.
@@ -155,37 +157,38 @@ static Bool NaClConsumePrefixBytes(NaClInstState* state) {
     prefix_form = state->decoder_tables->prefix_mask[next_byte];
     if (prefix_form == 0) break;
     next_byte = NCInstBytesReadInline(&state->bytes);
-    DEBUG(NaClLog(LOG_INFO,
-                  "Consume prefix[%d]: %02"NACL_PRIx8" => %"NACL_PRIx32"\n",
-                  i, next_byte, prefix_form));
+    NaClLog(LOG_INFO, "Consume prefix[%d]: %02"NACL_PRIx8 " => %" NACL_PRIx32 "\n",
+            i, next_byte, prefix_form);
     /* Before updating prefix mask, determine if the prefix byte is
      * a duplicate.
      */
     if ((state->prefix_mask & prefix_form)) {
       state->has_prefix_duplicates = TRUE;
       DEBUG(NaClLog(LOG_INFO,
-                    "duplicate prefix %02"NACL_PRIx8" detected.\n", next_byte));
+                    "duplicate prefix %02"NACL_PRIx8 " detected.\n", next_byte));
     } else if ((prefix_form & segment_prefix_forms) &&
                (state->prefix_mask & segment_prefix_forms)) {
       state->has_ambig_segment_prefixes = TRUE;
       DEBUG(NaClLog(LOG_INFO,
-                    "ambiguos segment prefix %02"NACL_PRIx8" detected.\n",
+                    "ambiguos segment prefix %02"NACL_PRIx8 " detected.\n",
                     next_byte));
     }
     state->prefix_mask |= prefix_form;
     ++state->num_prefix_bytes;
     DEBUG(NaClLog(LOG_INFO,
-                  "  prefix mask: %08"NACL_PRIx32"\n", state->prefix_mask));
+                  "  prefix mask: %08"NACL_PRIx32 "\n", state->prefix_mask));
 
     /* If the prefix byte is a REX prefix, record its value, since
      * bits 5-8 of this prefix bit may be needed later.
      */
-    if ((NACL_TARGET_SUBARCH == 64) && prefix_form == kPrefixREX) {
+#if NACL_TARGET_SUBARCH == 64
+    if (prefix_form == kPrefixREX) {
       state->rexprefix = next_byte;
       DEBUG(NaClLog(LOG_INFO,
-                    "  rexprefix = %02"NACL_PRIx8"\n", state->rexprefix));
+                    "  rexprefix = %02"NACL_PRIx8 "\n", state->rexprefix));
       ++state->num_rex_prefixes;
     }
+#endif
   }
   return TRUE;
 }
@@ -205,7 +208,7 @@ static void NaClConsume0F38XXNaClInstBytes(NaClInstState* state,
   }
 
   desc->opcode_byte = NCInstBytesReadInline(&state->bytes);
-  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8".\n",
+  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8 ".\n",
                 desc->opcode_byte));
   if (NaClExcludesBit(state->prefix_mask, kPrefixREP)) {
     if (NaClHasBit(state->prefix_mask, kPrefixREPNE)) {
@@ -241,7 +244,7 @@ static void NaClConsume0F3AXXNaClInstBytes(NaClInstState* state,
   }
 
   desc->opcode_byte = NCInstBytesReadInline(&state->bytes);
-  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8".\n",
+  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8 ".\n",
                 desc->opcode_byte));
   if (NaClExcludesBit(state->prefix_mask, kPrefixREP) &&
       NaClExcludesBit(state->prefix_mask, kPrefixREPNE)) {
@@ -303,7 +306,7 @@ static void NaClConsumeX87NaClInstBytes(NaClInstState* state,
         (NaClInstPrefix) (PrefixD8 +
                           (((unsigned) desc->opcode_byte) - 0xD8));
     desc->opcode_byte = NCInstBytesReadInline(&state->bytes);
-    DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8".\n",
+    DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8 ".\n",
                   desc->opcode_byte));
     return;
   }
@@ -329,13 +332,13 @@ static void NaClConsumeInstBytes(NaClInstState* state,
   if (state->bytes.length >= state->length_limit) return;
 
   desc->opcode_byte = NCInstBytesReadInline(&state->bytes);
-  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8".\n",
+  DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8 ".\n",
                 desc->opcode_byte));
   switch (desc->opcode_byte) {
     case 0x0F:
       if (state->bytes.length >= state->length_limit) return;
       desc->opcode_byte = NCInstBytesReadInline(&state->bytes);
-      DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8".\n",
+      DEBUG(NaClLog(LOG_INFO, "Consume inst byte %02"NACL_PRIx8 ".\n",
                     desc->opcode_byte));
       switch (desc->opcode_byte) {
         case 0x38:
@@ -376,7 +379,7 @@ static Bool NaClConsumeAndCheckOperandSize(NaClInstState* state) {
   /* Get and check that operand size is defined. */
   state->operand_size = NaClExtractOpSize(state);
   DEBUG(NaClLog(LOG_INFO,
-                "operand size = %"NACL_PRIu8"\n", state->operand_size));
+                "operand size = %" NACL_PRIu8 "\n", state->operand_size));
   if (0 == state->operand_size) {
     DEBUG(NaClLog(LOG_INFO,
                   "Fails: operand size is zero.\n"));
@@ -409,7 +412,7 @@ static Bool NaClConsumeAndCheckOperandSize(NaClInstState* state) {
        * allow the computed sizes, abort the  match of the instruction.
        */
       DEBUG(NaClLog(LOG_INFO,
-                    "Operand size %"NACL_PRIu8
+                    "Operand size %" NACL_PRIu8
                     " doesn't match flag requirement!\n",
                     state->operand_size));
       return FALSE;
@@ -447,7 +450,7 @@ static Bool NaClConsumeAndCheckOperandSize(NaClInstState* state) {
 static Bool NaClConsumeAndCheckAddressSize(NaClInstState* state) {
   state->address_size = NaClExtractAddressSize(state);
   DEBUG(NaClLog(LOG_INFO,
-                "Address size = %"NACL_PRIu8"\n", state->address_size));
+                "Address size = %" NACL_PRIu8 "\n", state->address_size));
   if (state->inst->flags &
       (NACL_IFLAG(AddressSize_w) | NACL_IFLAG(AddressSize_v) |
        NACL_IFLAG(AddressSize_o))) {
@@ -471,7 +474,7 @@ static Bool NaClConsumeAndCheckAddressSize(NaClInstState* state) {
        * allow the computed sizes, abort the  match of the instruction.
        */
       DEBUG(NaClLog(LOG_INFO,
-                    "Address size %"NACL_PRIu8
+                    "Address size %" NACL_PRIu8
                     " doesn't match flag requirement!\n",
                     state->address_size));
       return FALSE;
@@ -529,7 +532,7 @@ static Bool NaClConsumeModRm(NaClInstState* state) {
     state->first_disp_byte = 0;
     state->sib = 0;
     state->has_sib = FALSE;
-    DEBUG(NaClLog(LOG_INFO, "consume modrm = %02"NACL_PRIx8"\n", state->modrm));
+    DEBUG(NaClLog(LOG_INFO, "consume modrm = %02"NACL_PRIx8 "\n", state->modrm));
 
     /* Consume the remaining opcode value in the mod/rm byte
      * if applicable.
@@ -540,7 +543,7 @@ static Bool NaClConsumeModRm(NaClInstState* state) {
           NaClGetOpcodeInModRm(inst->opcode_ext)) {
         DEBUG(
             NaClLog(LOG_INFO,
-                    "Discarding, opcode in mrm byte (%02"NACL_PRIx8") "
+                    "Discarding, opcode in mrm byte (%02"NACL_PRIx8 ") "
                     "does not match\n",
                     modrm_opcodeInline(state->modrm)));
         return FALSE;
@@ -549,7 +552,7 @@ static Bool NaClConsumeModRm(NaClInstState* state) {
         if (modrm_rmInline(state->modrm) !=
             NaClGetOpcodeInModRmRm(inst->opcode_ext)) {
           DEBUG(NaClLog(LOG_INFO,
-                        "Discarding, opcode in mrm rm field (%02"NACL_PRIx8") "
+                        "Discarding, opcode in mrm rm field (%02"NACL_PRIx8 ") "
                         "does not match\n",
                         modrm_rmInline(state->modrm)));
           return FALSE;
@@ -590,7 +593,7 @@ static Bool NaClConsumeSib(NaClInstState* state) {
     }
     /* Read the SIB byte and record. */
     state->sib = NCInstBytesReadInline(&state->bytes);
-    DEBUG(NaClLog(LOG_INFO, "sib = %02"NACL_PRIx8"\n", state->sib));
+    DEBUG(NaClLog(LOG_INFO, "sib = %02"NACL_PRIx8 "\n", state->sib));
     if (sib_base(state->sib) == 0x05 && modrm_modInline(state->modrm) > 2) {
       DEBUG(NaClLog(LOG_INFO,
                     "Sib byte implies modrm.mod field <= 2, match fails\n"));
@@ -651,7 +654,7 @@ static Bool NaClConsumeDispBytes(NaClInstState* state) {
    */
   state->num_disp_bytes = NaClGetNumDispBytes(state);
   DEBUG(NaClLog(LOG_INFO,
-                "num disp bytes = %"NACL_PRIu8"\n", state->num_disp_bytes));
+                "num disp bytes = %" NACL_PRIu8 "\n", state->num_disp_bytes));
   state->first_disp_byte = state->bytes.length;
   if (state->num_disp_bytes > 0) {
     int new_length = state->bytes.length + state->num_disp_bytes;
@@ -728,7 +731,7 @@ static Bool NaClConsumeImmediateBytes(NaClInstState* state) {
   /* find out how many immediate bytes are expected. */
   state->num_imm_bytes = NaClGetNumImmedBytes(state);
   DEBUG(NaClLog(LOG_INFO,
-                "num immediate bytes = %"NACL_PRIu8"\n", state->num_imm_bytes));
+                "num immediate bytes = %" NACL_PRIu8 "\n", state->num_imm_bytes));
   state->first_imm_byte = 0;
   if (state->num_imm_bytes > 0) {
     int new_length;
@@ -746,7 +749,7 @@ static Bool NaClConsumeImmediateBytes(NaClInstState* state) {
   }
   /* Before returning, see if second immediate value specified. */
   state->num_imm2_bytes = NaClGetNumImmed2Bytes(state);
-  DEBUG(NaClLog(LOG_INFO, "num immediate 2 bytes = %"NACL_PRIu8"\n",
+  DEBUG(NaClLog(LOG_INFO, "num immediate 2 bytes = %" NACL_PRIu8 "\n",
                 state->num_imm2_bytes));
   if (state->num_imm2_bytes > 0) {
     int new_length;
@@ -796,9 +799,9 @@ static Bool NaClValidatePrefixFlags(NaClInstState* state) {
       return FALSE;
     }
   }
-  /* Check REX prefix assumptions. */
-  if (NACL_TARGET_SUBARCH == 64 &&
-      (state->prefix_mask & kPrefixREX)) {
+/* Check REX prefix assumptions. */
+#if NACL_TARGET_SUBARCH == 64
+  if (state->prefix_mask & kPrefixREX) {
     if (state->inst->flags &
         (NACL_IFLAG(OpcodeUsesRexW) | NACL_IFLAG(OpcodeHasRexR) |
          NACL_IFLAG(OpcodeRex))) {
@@ -811,6 +814,7 @@ static Bool NaClValidatePrefixFlags(NaClInstState* state) {
       }
     }
   }
+#endif
   return TRUE;
 }
 
@@ -959,7 +963,7 @@ static Bool NaClConsumeHardCodedNop(NaClInstState* state) {
   while (NULL != next) {
     if (next_byte == next->matching_byte) {
       DEBUG(NaClLog(LOG_INFO,
-                    "NaClConsume opcode char: %"NACL_PRIx8"\n", next_byte));
+                    "NaClConsume opcode char: %" NACL_PRIx8 "\n", next_byte));
       next_length++;
       if (NACL_OPCODE_NULL_OFFSET != next->matching_inst) {
         matching_inst = NaClGetOpcodeInst(state->decoder_tables,

@@ -576,6 +576,8 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   DPRINTF("[dup3] oldfd = %d \n", oldfd);
   DPRINTF("[dup3] newfd = %d \n", newfd);
 
+  UNREFERENCED_PARAMETER(flags);
+
   if ((oldfd == 8000) || (oldfd == 8001)) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
      DPRINTF("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
@@ -868,6 +870,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   int             fd;
   int             read_data_size;
 
+  UNREFERENCED_PARAMETER(read_data_size);
+  UNREFERENCED_PARAMETER(string);
+
   NaClLog(3,
           ("Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
@@ -899,48 +904,64 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   */
   // yiwen: this is the read end of my pipe
 
-  if (((nap->cage_id == 3)||(nap->cage_id == 4)||(nap->cage_id == 5)||(nap->cage_id == 6)
-      ||(nap->cage_id == 7))&&(fd == 0)) {
-     if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))
-              ||((pipe_transfer_over[2] == 1)&&(nap->cage_id == 5))||((pipe_transfer_over[3] == 1)&&(nap->cage_id == 6))||((pipe_transfer_over[4] == 1)&&(nap->cage_id == 7)))  {
-             retval = 0;
-             goto cleanup;
-     }
-     while (((nap->cage_id == 3)&&(pipe_mutex[0] != 1))||((nap->cage_id == 4)&&(pipe_mutex[1] != 1))
-            ||((nap->cage_id == 5)&&(pipe_mutex[2] != 1))||((nap->cage_id == 6)&&(pipe_mutex[3] != 1))
-            ||((nap->cage_id == 7)&&(pipe_mutex[4] != 1))) {
-     }
+  if (nap->cage_id == 1 || fd == STDIN_FILENO) {
+     NaClXMutexLock(&pipe_table[0].mu);
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
-     // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
-     if (nap->cage_id == 3) {
-        memcpy(string, pipe_buffer[0], count);
-        pipe_mutex[0] = 0;
-     }
-     if (nap->cage_id == 4) {
-        memcpy(string, pipe_buffer[1], count);
-        pipe_mutex[1] = 0;
-     }
-     if (nap->cage_id == 5) {
-        memcpy(string, pipe_buffer[2], count);
-        pipe_mutex[2] = 0;
-     }
-     if (nap->cage_id == 6) {
-        memcpy(string, pipe_buffer[3], count);
-        pipe_mutex[3] = 0;
-     }
-     if (nap->cage_id == 7) {
-        memcpy(string, pipe_buffer[4], count);
-        pipe_mutex[4] = 0;
-     }
-
-     // printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
-     // printf("[Debug][Cage %d] From NaCl Read Data: \n %s \n", nap->cage_id, string);
+     DPRINTF("[NaClSysRead] string = %s \n", buffer_ptr);
+     memcpy(string, pipe_table[0].pipe_buf, count);
+     NaClXCondVarBroadcast(&pipe_table[0].cv);
+     NaClXMutexUnlock(&pipe_table[0].mu);
      read_data_size = strlen(string);
-     // printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
+     DPRINTF("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
      retval = read_data_size;
      goto cleanup;
   }
+
+  /*
+   * if (((nap->cage_id == 3)||(nap->cage_id == 4)||(nap->cage_id == 5)||(nap->cage_id == 6)
+   *     ||(nap->cage_id == 7))&&(fd == 0)) {
+   *    if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))
+   *             ||((pipe_transfer_over[2] == 1)&&(nap->cage_id == 5))||((pipe_transfer_over[3] == 1)&&(nap->cage_id == 6))||((pipe_transfer_over[4] == 1)&&(nap->cage_id == 7)))  {
+   *            retval = 0;
+   *            goto cleanup;
+   *    }
+   *    while (((nap->cage_id == 3)&&(pipe_mutex[0] != 1))||((nap->cage_id == 4)&&(pipe_mutex[1] != 1))
+   *           ||((nap->cage_id == 5)&&(pipe_mutex[2] != 1))||((nap->cage_id == 6)&&(pipe_mutex[3] != 1))
+   *           ||((nap->cage_id == 7)&&(pipe_mutex[4] != 1))) {
+   *    }
+   *    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+   *    string = (char*)sysaddr;
+   *    // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
+   *    if (nap->cage_id == 3) {
+   *       memcpy(string, pipe_buffer[0], count);
+   *       pipe_mutex[0] = 0;
+   *    }
+   *    if (nap->cage_id == 4) {
+   *       memcpy(string, pipe_buffer[1], count);
+   *       pipe_mutex[1] = 0;
+   *    }
+   *    if (nap->cage_id == 5) {
+   *       memcpy(string, pipe_buffer[2], count);
+   *       pipe_mutex[2] = 0;
+   *    }
+   *    if (nap->cage_id == 6) {
+   *       memcpy(string, pipe_buffer[3], count);
+   *       pipe_mutex[3] = 0;
+   *    }
+   *    if (nap->cage_id == 7) {
+   *       memcpy(string, pipe_buffer[4], count);
+   *       pipe_mutex[4] = 0;
+   *    }
+   */
+
+     // printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
+     // printf("[Debug][Cage %d] From NaCl Read Data: \n %s \n", nap->cage_id, string);
+     /* read_data_size = strlen(string); */
+     // printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
+     /* retval = read_data_size; */
+     /* goto cleanup; */
+  /* } */
 
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
@@ -1048,17 +1069,24 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   */
   // yiwen: this is the write end of my pipe
 
-  if (((nap->cage_id == 2)||(nap->cage_id == 3)||(nap->cage_id == 4)
-      ||(nap->cage_id == 5)||(nap->cage_id == 6))&&(fd == 1)) {
-     // printf("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
-     while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))
-            ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
-            ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
-          // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
-     }
+  /*
+   * if (((nap->cage_id == 2)||(nap->cage_id == 3)||(nap->cage_id == 4)
+   *     ||(nap->cage_id == 5)||(nap->cage_id == 6))&&(fd == 1)) {
+   *    while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))
+   *           ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
+   *           ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
+   *         // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+   *    }
+   */
+  if (0) {
+  /* if (nap->cage_id > 1 || fd == STDOUT_FILENO) { */
+     NaClXMutexLock(&pipe_table[nap->cage_id - 2].mu);
+     NaClXCondVarWait(&pipe_table[nap->cage_id - 2].cv, &pipe_table[nap->cage_id - 2].mu);
+     NaClXMutexUnlock(&pipe_table[nap->cage_id - 2].mu);
+     DPRINTF("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
-     // NaClLog(LOG_WARNING, "[NaClSysWrite] string = %s \n", string);
+     DPRINTF("[NaClSysWrite] string = %s \n", string);
      if (nap->cage_id == 2) {
         memcpy(pipe_buffer[0], string, count);
         pipe_mutex[0] = 1;
@@ -4075,7 +4103,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   // fd_cage_table[2][8001] = 8001;
 
   // we initialize our pipe buffer
-  pipe_mutex[0] = 0; // at the initialization, the pipe should be empty, allow write but not read
+  /* pipe_mutex[0] = 0; // at the initialization, the pipe should be empty, allow write but not read */
 
   // let's try to use the kernel pipes
   /*
@@ -4115,9 +4143,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      retval = 0;
      /* NaClXMutexUnlock(&natp->parent->mu); */
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
-     /* NaClXMutexLock(&nap->mu); */
-     /* NaClXCondVarSignal(&nap->cv); */
-     /* NaClXMutexUnlock(&nap->mu); */
+     NaClXMutexLock(&nap->mu);
+     NaClXCondVarSignal(&nap->cv);
+     NaClXMutexUnlock(&nap->mu);
      goto out;
   }
 
@@ -4165,9 +4193,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
   NaClXMutexUnlock(&nap->children_mu);
   /* NaClXMutexUnlock(&nap->mu); */
-  /* NaClXMutexLock(&nap_child->mu); */
-  /* NaClXCondVarWait(&nap_child->cv, &nap_child->mu); */
-  /* NaClXMutexUnlock(&nap_child->mu); */
+  NaClXMutexLock(&nap_child->mu);
+  NaClXCondVarWait(&nap_child->cv, &nap_child->mu);
+  NaClXMutexUnlock(&nap_child->mu);
   sleep(1);
   NaClThreadYield();
 
