@@ -82,10 +82,8 @@ static void NaClInstStateInit(NaClInstIter* iter, NaClInstState* state) {
  * not be computed, due to ambiguities in the prefix bytes.
  */
 static int NaClExtractOpSize(NaClInstState* state) {
-  if (NaClHasBit(state->inst->flags, NACL_IFLAG(OperandSize_b))) {
+  if (NaClHasBit(state->inst->flags, NACL_IFLAG(OperandSize_b)))
     return 1;
-  }
-#if NACL_TARGET_SUBARCH == 64
   if (NACL_TARGET_SUBARCH == 64) {
     if (NaClRexW(state->rexprefix)) {
       if (NACL_PREFIX_INST_DATA66(state))
@@ -107,12 +105,11 @@ static int NaClExtractOpSize(NaClInstState* state) {
       return 8;
     else
       return 4;
-#else
-    if (NACL_PREFIX_INST_DATA66(state))
+  } else if (NACL_PREFIX_INST_DATA66(state)) {
         return 2;
-
+  } else {
     return 4;
-#endif
+  }
 }
 
 /* Computes the number of bits defined for addresses of the matched
