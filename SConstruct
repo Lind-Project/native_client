@@ -2620,23 +2620,39 @@ def MakeLinuxEnv():
   #              personality flag, which disables NX page protection.
   linux_env.Prepend(
       CCFLAGS=[
+          '-fno-common',
+          '-fno-plt',
+          '-fno-strict-aliasing',
+          '-Wno-cast-function-type',
           '-Wno-cpp',
           '-O2',
       ],
       CFLAGS=[
+          '-fno-common',
+          '-fno-plt',
+          '-fno-strict-aliasing',
+          '-Wno-cast-function-type',
           '-Wno-cpp',
           '-O2',
       ],
       CXXFLAGS=[
+          '-fno-common',
+          '-fno-plt',
+          '-fno-strict-aliasing',
+          '-Wno-cast-function-type',
           '-Wno-cpp',
+          '-Wno-c++11-compat',
           '-O2',
       ],
       CPPDEFINES=[[
           '-D_FORTIFY_SOURCE','2',
       ]],
       LINKFLAGS=[
+          '-fno-common',
+          '-fno-plt',
+          '-fno-strict-aliasing',
           '-pie',
-          '-Wl,-O2,-zrelro,-znow,-znoexecstack',
+          '-Wl,-O2,-z,relro,-z,now,-z,noexecstack',
       ],
   )
   # The ARM toolchain has a linker that doesn't handle the code its

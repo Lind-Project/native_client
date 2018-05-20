@@ -85,8 +85,8 @@
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
 
 #if NACL_WINDOWS
-#include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
-#include "native_client/src/shared/platform/win/xlate_system_error.h"
+#  include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
+#  include "native_client/src/shared/platform/win/xlate_system_error.h"
 #endif
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
@@ -1078,10 +1078,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
    *           ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
    *           ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
    *         // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+   *         }
    *    }
    */
+
   if (0) {
-  /* if (nap->cage_id > 1 || fd == STDOUT_FILENO) { */
      NaClXMutexLock(&pipe_table[nap->cage_id - 2].mu);
      NaClXCondVarWait(&pipe_table[nap->cage_id - 2].cv, &pipe_table[nap->cage_id - 2].mu);
      NaClXMutexUnlock(&pipe_table[nap->cage_id - 2].mu);
@@ -1675,7 +1676,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     file_size                = kMaxUsableFileSize;
     file_bytes               = kMaxUsableFileSize;
     host_rounded_file_bytes  = kMaxUsableFileSize;
-    alloc_rounded_file_bytes = kMaxUsableFileSize;
+    /* alloc_rounded_file_bytes = kMaxUsableFileSize; */
   } else {
     /*
      * We stat the file to figure out its actual size.
@@ -4080,20 +4081,20 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 }
 
 // yiwen
-int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
+int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   struct NaClApp *nap = natp->nap;
   int32_t   retval = -NACL_ABI_EINVAL;
-  uintptr_t       sysaddr;
+  uintptr_t sysaddr;
   int size;
-  int string[2];
-  int* string_ptr;
+  /* int string[2]; */
+  int *string_ptr;
   // int string2[2];
   // int* string2_ptr;
 
   size = 8;
-  string_ptr = string;
+  /* string_ptr = string; */
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) pipedes, size);
-  string_ptr = (int*)sysaddr;
+  string_ptr = (int *)sysaddr;
 
   // return two fds to the user
   string_ptr[0] = 8000;
@@ -4253,7 +4254,7 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
 // the old cage and the runnging main thread inside that cage will be torn down
 // on success, this function will not return
 // on failure, this function will return -1
-int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void* envp)  {
+int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp)  {
   struct NaClApp *nap = natp->nap;
   int argc_newcage;
   char **argv_newcage;
@@ -4281,16 +4282,16 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
 #endif
 
-  path_len = strlen((char*) path_get);
+  path_len = strlen((char *)path_get);
   path_len += 1;
 
-  options = (char**) malloc(3 * sizeof(char*));
-  argv_split = strtok((char*)argv_get, " ");
+  options = malloc(3 * sizeof *options);
+  argv_split = strtok((char *)argv_get, " ");
   while (argv_split != NULL) {
-    option_len = (int) (strlen(argv_split) + 1);
+    option_len = strlen(argv_split) + 1;
     // printf ("%s \n", argv_split);
     // printf ("%d \n", option_len);
-    options[argv_num] = (char*) malloc(option_len * sizeof(char));
+    options[argv_num] = malloc(option_len);
     strncpy(options[argv_num], argv_split, option_len - 1);
     options[argv_num][option_len - 1] = '\0';
     argv_num++;
@@ -4305,20 +4306,20 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
 
   // setup the arguments needed to start running a new main thread in a pre-allocated new cage
   argc_newcage = 4 + argv_num - 1;
-  argv_newcage = (char**) malloc(argc_newcage * sizeof(char*));
-  argv_newcage[0] = (char*) malloc(9 * sizeof(char));
+  argv_newcage = malloc(argc_newcage * sizeof *argv_newcage);
+  argv_newcage[0] = malloc(9);
   strncpy(argv_newcage[0], "NaClMain", 9);
-  argv_newcage[1] = (char*) malloc(15 * sizeof(char));
+  argv_newcage[1] = malloc(15);
   strncpy(argv_newcage[1], "--library-path", 15);
-  argv_newcage[2] = (char*) malloc(7 * sizeof(char));
+  argv_newcage[2] = malloc(7);
   strncpy(argv_newcage[2], "/glibc", 7);
-  argv_newcage[3] = (char*) malloc(path_len * sizeof(char));
-  strncpy(argv_newcage[3], (char*) path_get, path_len);
+  argv_newcage[3] = malloc(path_len);
+  strncpy(argv_newcage[3], (char *)path_get, path_len);
 
   for (i = 1; i < argv_num; i++) {
     // printf ("%d \n", (int) strlen(options[i]));
-    argv_newcage[3 + i] = (char*) malloc((strlen(options[i]) + 1) * sizeof(char));
-    strncpy(argv_newcage[3 + i], (char*) options[i], strlen(options[i]));
+    argv_newcage[3 + i] = malloc(strlen(options[i]) + 1);
+    strncpy(argv_newcage[3 + i], (char *)options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
     // printf ("%s \n", argv_newcage[3 + i]);
   }
@@ -4326,7 +4327,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
   // NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   // NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
   // NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
-  envp = envp;
+  //
+  UNREFERENCED_PARAMETER(envp);
+  free(options);
+
 #ifdef  _DEBUG
   NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
   NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
@@ -4369,25 +4373,38 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void*
       }
   }
 
-  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
-  if (nap->cage_id == 1) {
-     NaClReportExitStatus(nap, 0);
-  }
-  if (nap->cage_id == 1000) {
+  free(argv_newcage);
+
+  /*
+   * need to report the exit status of the old cage,
+   * otherwise the main process will hang, waiting
+   * for this cage to exit.
+   */
+  switch (nap->cage_id) {
+  case 1000:
      NaClReportExitStatus(nap0, 0);
-  }
-  if (nap->cage_id == 1001) {
+     break;
+  case 1001:
      NaClReportExitStatus(nap0_2, 0);
+     break;
+  case 1: /* fallthrough */
+  default:
+    NaClReportExitStatus(nap, 0);
   }
-  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return.
+
+  /* now tear down the old running thread, so that it will not return. */
+  NaClAppThreadTeardown(natp);
   return retval;
 }
 
+/* jp */
 #define WAIT_ANY -1
 #define WAIT_ANY_PG 0
 
-// yiwen:
-int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options) {
+int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
+                       uint32_t pid,
+                       uint32_t *stat_loc,
+                       uint32_t options) {
   struct NaClApp *nap = natp->nap;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = (int *)sysaddr;
