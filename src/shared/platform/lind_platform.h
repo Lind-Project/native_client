@@ -11,6 +11,7 @@
 #ifdef _POSIX_C_SOURCE
 #  undef _POSIX_C_SOURCE
 #endif
+
 #ifdef _XOPEN_SOURCE
 #  undef _XOPEN_SOURCE
 #endif
@@ -95,10 +96,9 @@
 /* jp */
 #define LD_FILE                         "/lib/glibc/runnable-ld.so"
 
-// yiwen
-int lind_syscall_counter;
-int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
-double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
+extern int lind_syscall_counter;
+extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 struct select_results {
     struct timeval used_t;

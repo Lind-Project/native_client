@@ -811,7 +811,7 @@ int TestNaClSocket(int rep_count) {
 
 void ListTests() {
   for (size_t ix = 0; ix < NACL_ARRAY_SIZE(test_fn); ++ix) {
-    printf("%3"NACL_PRIdS": %s\n", ix, test_fn[ix].name);
+    printf("%3" NACL_PRIdS ": %s\n", ix, test_fn[ix].name);
     if (test_fn[ix].flakey) {
       printf(" NB: known to be flakey on this platform\n");
     }

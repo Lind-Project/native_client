@@ -801,7 +801,7 @@ static Bool NaClValidatePrefixFlags(NaClInstState* state) {
   }
 /* Check REX prefix assumptions. */
 #if NACL_TARGET_SUBARCH == 64
-  if (state->prefix_mask & kPrefixREX)) {
+  if (state->prefix_mask & kPrefixREX) {
     if (state->inst->flags &
         (NACL_IFLAG(OpcodeUsesRexW) | NACL_IFLAG(OpcodeHasRexR) |
          NACL_IFLAG(OpcodeRex))) {

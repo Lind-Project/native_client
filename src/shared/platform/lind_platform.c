@@ -5,21 +5,30 @@
  *      Author: sji
  */
 
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+
 #include <Python.h>
 #include <errno.h>
 
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 
-PyObject* repylib = NULL;
-PyObject* code = NULL;
-PyObject* context = NULL;
+// yiwen
+int lind_syscall_counter;
+int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
-static int initialized = 0;
+PyObject* repylib;
+PyObject* code;
+PyObject* context;
+
+static int initialized;
 
 #define REPY_RELPATH "../repy/"
 
-#define GOTO_ERROR_IF_NULL(x) if(!(x)) {goto error;}
+#define GOTO_ERROR_IF_NULL(x) do { if (!(x)) goto error; } while (0)
 
 PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args)
 {
