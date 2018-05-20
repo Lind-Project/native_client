@@ -28,6 +28,8 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_
 #define NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_ 1
 
+#include <stdbool.h>
+
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/include/portability.h"
@@ -65,7 +67,7 @@ EXTERN_C_BEGIN
 #define NACL_SERVICE_PORT_DESCRIPTOR    3
 #define NACL_SERVICE_ADDRESS_DESCRIPTOR 4
 
-#define NACL_DEFAULT_STACK_MAX  (16 << 20)  /* main thread stack */
+#define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
 
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
@@ -76,6 +78,19 @@ struct NaClSignalContext;
 struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
+
+/* jp */
+struct NaClPipe {
+    bool xfer_done;
+    unsigned char pipe_buf[PIPE_BUF_MAX];
+    struct NaClMutex mu;
+    struct NaClCondVar cv;
+};
+
+extern struct NaClPipe pipe_table[PIPE_NUM_MAX];
+extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
+extern int fork_num;
+extern int cached_lib_num;
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);

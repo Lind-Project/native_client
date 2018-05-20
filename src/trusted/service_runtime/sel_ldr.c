@@ -74,8 +74,6 @@ struct NaClApp *nap0;
 struct NaClApp state0_2;
 struct NaClApp *nap0_2;
 
-int fork_num = 0;
-
 /*
  * `fd_cage_table[cage_id][fd] = real fd`
  *
@@ -83,16 +81,13 @@ int fork_num = 0;
  *
  * -jp
  */
+struct NaClPipe pipe_table[PIPE_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
+int fork_num;
 
 // yiwen: lookup table for <file_path, mem_addr>
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
-int cached_lib_num = 0;
-
-// yiwen: global pipe buffer
-char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
-int pipe_mutex[PIPE_NUM_MAX];
-int pipe_transfer_over[PIPE_NUM_MAX];
+int cached_lib_num;
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);
@@ -132,13 +127,10 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->mem_start = 0;
 
-#if (NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 \
-     && NACL_BUILD_SUBARCH == 32)
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   nap->pcrel_thunk = 0;
   nap->pcrel_thunk_end = 0;
-#endif
-#if (NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 \
-     && NACL_BUILD_SUBARCH == 64)
+#elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   nap->nacl_syscall_addr = 0;
   nap->get_tls_fast_path1_addr = 0;
   nap->get_tls_fast_path2_addr = 0;
@@ -169,13 +161,13 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!nap->mem_io_regions)
     goto cleanup_mem_map;
 
-  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *) nap->mem_io_regions)) {
+  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *)nap->mem_io_regions)) {
     free(nap->mem_io_regions);
     nap->mem_io_regions = NULL;
     goto cleanup_mem_map;
   }
 
-  effp = (struct NaClDescEffectorLdr *) malloc(sizeof *effp);
+  effp = malloc(sizeof *effp);
   if (!effp)
     goto cleanup_mem_io_regions;
   if (!NaClDescEffectorLdrCtor(effp, nap))

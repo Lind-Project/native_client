@@ -1247,6 +1247,13 @@ int NaClSelLdrMain(int argc, char **argv) {
   DPRINTF("nap->command_num = %d, nap0->command_num = %d\n", nap->command_num, nap0->command_num);
   DPRINTF("nap->binary_path = %s, nap0->binary_path = %s\n", nap->binary_path, nap0->binary_path);
 
+  /* jp */
+  DPRINTF("%s\n", "Initializing pipe table mutexes and conditional variables.");
+  for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
+    NaClXMutexCtor(&pipe_table[i].mu);
+    NaClXCondVarCtor(&pipe_table[i].cv);
+  }
+
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
 
@@ -1265,16 +1272,19 @@ int NaClSelLdrMain(int argc, char **argv) {
   // ***********************************************************************
   // yiwen: testing
   // ***********************************************************************
-  pipe_mutex[0] = 0;
-  pipe_mutex[1] = 0;
-  pipe_mutex[2] = 0;
-  pipe_mutex[3] = 0;
-  pipe_mutex[4] = 0;
-  pipe_transfer_over[0] = 0;
-  pipe_transfer_over[1] = 0;
-  pipe_transfer_over[2] = 0;
-  pipe_transfer_over[3] = 0;
-  pipe_transfer_over[4] = 0;
+
+  /*
+   * pipe_mutex[0] = 0;
+   * pipe_mutex[1] = 0;
+   * pipe_mutex[2] = 0;
+   * pipe_mutex[3] = 0;
+   * pipe_mutex[4] = 0;
+   * pipe_transfer_over[0] = 0;
+   * pipe_transfer_over[1] = 0;
+   * pipe_transfer_over[2] = 0;
+   * pipe_transfer_over[3] = 0;
+   * pipe_transfer_over[4] = 0;
+   */
 
 /*
  *   argc2 = 6;

@@ -4,6 +4,10 @@
  * found in the LICENSE file.
  */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
 /*
  * NaCl Server Runtime threads implementation layer.
  */
@@ -24,8 +28,8 @@
  * PTHREAD_STACK_MIN should come from pthread.h as documented, but is
  * actually pulled in by limits.h.
  */
-
 #include "native_client/src/include/portability.h"
+#include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_threads.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
@@ -78,7 +82,7 @@ static int NaClThreadCreate(struct NaClThread  *ntp,
   }
   if (0 != (code = pthread_create(&ntp->tid,
                                   &attr,
-                                  (void *(*)(void *)) start_fn,
+                                  (void *(*)(void *))start_fn,
                                   state))) {
     NaClLog(LOG_ERROR,
             "nacl_thread: pthread_create returned %d (%s)",
@@ -134,11 +138,14 @@ int NaClThreadTryJoin(struct NaClThread *ntp) {
 }
 
 int NaClThreadTimedJoin(struct NaClThread *ntp, time_t timeout) {
-  const struct timespec abstime = {
-	  .tv_sec = time(0) + timeout,
-	  .tv_nsec = 0
-  };
-  return pthread_timedjoin_np(ntp->tid, NULL, &abstime);
+  int ret = 0;
+  struct timespec *abstime = malloc(sizeof *abstime);
+  CHECK(abstime);
+  abstime->tv_sec = time(0) + timeout;
+  abstime->tv_nsec = 0;
+  ret = pthread_timedjoin_np(ntp->tid, NULL, abstime);
+  free(abstime);
+  return ret;
 }
 
 void NaClThreadExit(void) {
