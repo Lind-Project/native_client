@@ -104,7 +104,7 @@ static size_t const kdefault_io_buffer_bytes_to_log = 64;
 
 // yiwen: my data for the in-process-pipe
 // char pipe_buffer[16*4096];
-// char* buffer_ptr;
+char *buffer_ptr;
 // int pipe_mutex; // 0: pipe is empty, ready to write, cannot read; 1: pipe is full, ready to read, cannot write.
                    // at initialization, it should be set to 0.
 
