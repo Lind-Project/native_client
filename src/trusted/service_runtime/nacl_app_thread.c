@@ -163,7 +163,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   CHECK(0 < thread_idx);
   CHECK(thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
-  nacl_user[thread_idx] = &natp->user;
+  /* nacl_user[thread_idx] = &natp->user; */
 #if NACL_WINDOWS
   nacl_thread_ids[thread_idx] = GetCurrentThreadId();
 #elif NACL_OSX
@@ -534,20 +534,16 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClXMutexLock(&nap_child->mu);
 
   stack_total_size = nap_parent->stack_size;
-  /* stack_size = stack_total_size; */
-  stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
+  stack_size = stack_total_size;
+  /* stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK; */
+  /* stack_size += 0x10; */
   nap_child->stack_size = stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
                                             NaClGetInitialStackTop(nap_parent) - stack_total_size,
                                             stack_total_size);
   stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
-                                           NaClGetInitialStackTop(nap_child) - stack_size,
-                                           stack_size);
-  if (NaClMprotect(stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
-  if (NaClMprotect(stack_ptr_parent, stack_size, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
-
+                                           NaClGetInitialStackTop(nap_child) - stack_total_size,
+                                           stack_total_size);
   /*
    * For x86, we adjust the stack pointer down to push a dummy return
    * address.  This happens after the stack pointer alignment.
@@ -590,6 +586,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     DPRINTF("%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
     DPRINTF("%s\n", "parent NaClMprotect failed!");
+  if (NaClMprotect(stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
+  if (NaClMprotect(stack_ptr_parent, stack_size, PROT_READ|PROT_WRITE) == -1)
+    DPRINTF("%s\n", "parent NaClMprotect failed!");
 
   NaClPrintAddressSpaceLayout(nap_parent);
   DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
@@ -631,8 +631,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
-  /* nacl_user[natp_child->user.tls_idx] = &natp_child->user; */
-  NaClThreadContextCtor(&natp_child->user, nap_child, usr_entry, usr_stack_ptr, natp_child->user.tls_idx);
+  nacl_user[natp_child->user.tls_idx] = &natp_child->user;
+  /* NaClThreadContextCtor(&natp_child->user, nap_child, usr_entry, usr_stack_ptr, natp_child->user.tls_idx); */
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
 
@@ -684,11 +684,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
+  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
   natp_child->user.rsp += -parent_ctx->r15 + ctx.r15;
-  /* natp_child->user.rsp = ctx.rsp; */
+  natp_child->user.rsp = ctx.rsp;
   /* natp_child->user.rsp -= 0x8; */
 
   for (size_t i = 0; i < 5; i++) {
