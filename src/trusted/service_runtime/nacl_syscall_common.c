@@ -3976,15 +3976,15 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type) {
   UNREFERENCED_PARAMETER(natp);
 
   switch (crash_type) {
-    case NACL_TEST_CRASH_MEMORY:
-      *p = 0;
-      break;
-    case NACL_TEST_CRASH_LOG_FATAL:
-      NaClLog(LOG_FATAL, "NaClSysTestCrash: This is a test error\n");
-      break;
-    case NACL_TEST_CRASH_CHECK_FAILURE:
-      CHECK(0);
-      break;
+  case NACL_TEST_CRASH_MEMORY:
+    *p = 0;
+    break;
+  case NACL_TEST_CRASH_LOG_FATAL:
+    NaClLog(LOG_FATAL, "NaClSysTestCrash: This is a test error\n");
+    break;
+  case NACL_TEST_CRASH_CHECK_FAILURE:
+    CHECK(0);
+    break;
   }
   return -NACL_ABI_EINVAL;
 }
@@ -4128,7 +4128,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   int32_t retval = 9;
   int argc2;
   char **argv2;
-  int path_len;
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
@@ -4140,11 +4139,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
      DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
      DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
-     /* NaClXMutexLock(&natp->parent->mu); */
-     /* NaClXCondVarSignal(&natp->parent->cv); */
      nap->is_fork_child = 0;
      retval = 0;
-     /* NaClXMutexUnlock(&natp->parent->mu); */
      DPRINTF("[NaClSysFork] retval = %d \n", retval);
      NaClXMutexLock(&nap->mu);
      NaClXCondVarSignal(&nap->cv);
@@ -4153,27 +4149,19 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   fork_num++;
-
   argc2 = 3 + nap->command_num;
   argv2 = calloc(argc2 + 1, sizeof *argv2);
-  argv2[0] = malloc(9);
-  strcpy(argv2[0], "NaClMain");
-  argv2[1] = malloc(15);
-  strcpy(argv2[1], "--library-path");
-  argv2[2] = malloc(11);
-  strcpy(argv2[2], "/lib/glibc");
+  argv2[0] = "NaClMain";
+  argv2[1] = "--library-path";
+  argv2[2] = "/lib/glibc";
 
   if (nap->binary_path) {
-     path_len = strlen(nap->binary_path) + 1;
-     argv2[3] = malloc(path_len);
-     strcpy(argv2[3], nap->binary_path);
+     argv2[3] = nap->binary_path;
      DPRINTF("[NaClSysFork] binary path: %s \n\n", nap->binary_path);
   }
 
   if (nap->command_num > 1) {
-     path_len = strlen(nap->binary_command) + 1;
-     argv2[4] = malloc(path_len);
-     strcpy(argv2[4], nap->binary_command);
+     argv2[4] = nap->binary_command;
      DPRINTF("[NaClSysFork] binary command: %s \n\n", nap->binary_command);
   }
 
@@ -4184,10 +4172,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     retval = -1;
     goto out;
   }
-  /* NaClXCondVarSignal(&nap->cv); */
-  /* NaClXCondVarSignal(&nap_child->cv); */
-  /* NaClXMutexLock(&nap->mu); */
-  /* NaClXCondVarWait(&nap->cv, &nap->mu); */
+
   NaClXMutexLock(&nap->children_mu);
   nap->child_list[nap->num_children] = nap_child;
   nap->children_ids[nap->num_children] = nap_child->cage_id;
@@ -4195,12 +4180,13 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   retval = nap_child->cage_id;
   DPRINTF("[NaClSysFork] retval = %d \n", retval);
   NaClXMutexUnlock(&nap->children_mu);
-  /* NaClXMutexUnlock(&nap->mu); */
+
+  /*
+   * n.b. MUST wait for child to finish initialization
+   */
   NaClXMutexLock(&nap_child->mu);
   NaClXCondVarWait(&nap_child->cv, &nap_child->mu);
   NaClXMutexUnlock(&nap_child->mu);
-  sleep(1);
-  NaClThreadYield();
 
 out:
   return retval;
