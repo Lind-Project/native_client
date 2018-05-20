@@ -95,7 +95,7 @@ int pipe_mutex[PIPE_NUM_MAX];
 int pipe_transfer_over[PIPE_NUM_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
-  return NULL != getenv(env_name);
+  return !!getenv(env_name);
 }
 
 static int ShouldEnableDyncodeSyscalls(void) {
@@ -108,7 +108,7 @@ static int ShouldEnableDynamicLoading(void) {
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
                                 struct NaClSyscallTableEntry *table) {
-  struct NaClDescEffectorLdr  *effp;
+  struct NaClDescEffectorLdr  *effp = NULL;
 
   /* The validation cache will be injected later, if it exists. */
   nap->validation_cache = NULL;
@@ -117,11 +117,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
-  nap->cpu_features = (NaClCPUFeatures *) malloc(
-      nap->validator->CPUFeatureSize);
-  if (NULL == nap->cpu_features) {
+  nap->cpu_features = malloc(nap->validator->CPUFeatureSize);
+  if (!nap->cpu_features)
     goto cleanup_none;
-  }
   nap->validator->GetCurrentCPUFeatures(nap->cpu_features);
   nap->fixed_feature_cpu_mode = 0;
 
@@ -167,8 +165,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!NaClVmmapCtor(&nap->mem_map))
     goto cleanup_children;
 
-  nap->mem_io_regions = (struct NaClIntervalMultiset *) malloc(
-      sizeof(struct NaClIntervalRangeTree));
+  nap->mem_io_regions = malloc(sizeof *nap->mem_io_regions);
   if (!nap->mem_io_regions)
     goto cleanup_mem_map;
 
@@ -807,32 +804,40 @@ static struct {
  * that the redirection succeeded in *some* phase.
  */
 static void NaClProcessRedirControl(struct NaClApp *nap) {
+  char const      *env = NULL;
+  struct NaClDesc *ndp = NULL;
+  int d = 0;
+  char const *env_name = NULL;
+  int nacl_flags = 0;
+  int mode = 0;
 
-  size_t          ix;
-  char const      *env;
-  struct NaClDesc *ndp;
+  for (size_t ix = 0; ix < NACL_ARRAY_SIZE(g_nacl_redir_control); ix++, ndp = NULL) {
+    CHECK(ix < INT_MAX);
+    d = g_nacl_redir_control[ix].d;
+    env_name = g_nacl_redir_control[ix].env_name;
+    nacl_flags = g_nacl_redir_control[ix].nacl_flags;
+    mode = g_nacl_redir_control[ix].mode;
 
-  for (ix = 0; ix < NACL_ARRAY_SIZE(g_nacl_redir_control); ++ix) {
-    ndp = NULL;
-    if (NULL != (env = getenv(g_nacl_redir_control[ix].env_name))) {
-      DPRINTF("getenv(%s) -> %s\n", g_nacl_redir_control[ix].env_name, env);
-      ndp = NaClResourceOpen((struct NaClResource *) &nap->resources,
+    if ((env = getenv(env_name))) {
+      DPRINTF("getenv(%s) -> %s\n", env_name, env);
+      ndp = NaClResourceOpen((struct NaClResource *)&nap->resources,
                              env,
-                             g_nacl_redir_control[ix].nacl_flags,
-                             g_nacl_redir_control[ix].mode);
+                             nacl_flags,
+                             mode);
       DPRINTF(" NaClResourceOpen returned %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     }
 
-    if (NULL != ndp) {
-      DPRINTF("Setting descriptor %d\n", (int) ix);
-      NaClSetDesc(nap, (int) ix, ndp);
-    } else if (NACL_RESOURCE_PHASE_START == nap->resource_phase) {
-      /*
-       * Environment not set or redirect failed -- handle default inheritance.
-       */
-      NaClAddHostDescriptor(nap, g_nacl_redir_control[ix].d,
-                            g_nacl_redir_control[ix].nacl_flags, (int) ix);
+    if (ndp) {
+      DPRINTF("Setting descriptor %d\n", (int)ix);
+      NaClSetDesc(nap, (int)ix, ndp);
+      continue;
     }
+
+     /*
+      * Environment not set or redirect failed -- handle default inheritance.
+      */
+    if (NACL_RESOURCE_PHASE_START == nap->resource_phase)
+      NaClAddHostDescriptor(nap, d, nacl_flags, (int)ix);
   }
 }
 
@@ -858,8 +863,8 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
-  struct NaClDesc *secure_pair[2];
-  struct NaClDesc *pair[2];
+  struct NaClDesc *secure_pair[2] = {0};
+  struct NaClDesc *pair[2] = {0};
 
   NaClLog(3, "Entered NaClCreateServiceSocket\n");
 
@@ -867,12 +872,7 @@ void NaClCreateServiceSocket(struct NaClApp *nap) {
                          0 != NaClCommonDescMakeBoundSock(secure_pair))) {
     NaClLog(LOG_FATAL, "Cound not create secure service socket\n");
   }
-  NaClLog(4,
-          "got bound socket at 0x%08"NACL_PRIxPTR", "
-          "addr at 0x%08"NACL_PRIxPTR"\n",
-          (uintptr_t) secure_pair[0],
-          (uintptr_t) secure_pair[1]);
-
+  DPRINTF("got bound socket at %p, addr at %p\n", (void *)secure_pair[0], (void *)secure_pair[1]);
   NaClDescSafeUnref(nap->secure_service_port);
   nap->secure_service_port = secure_pair[0];
 
@@ -911,13 +911,12 @@ void NaClCreateServiceSocket(struct NaClApp *nap) {
  */
 void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
                                NaClHandle      inherited_desc) {
-  struct NaClDescImcDesc      *channel;
-  struct NaClImcTypedMsgHdr   hdr;
-  struct NaClDesc             *descs[2];
-  ssize_t                     rv;
+  struct NaClDescImcDesc      *channel = NULL;
+  struct NaClImcTypedMsgHdr   hdr = {0};
+  struct NaClDesc             *descs[2] = {0};
+  ssize_t                     rv = 0;
 
-  NaClLog(4,
-          "NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
+  DPRINTF("NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
           (uintptr_t) nap,
           (uintptr_t) inherited_desc);
 
@@ -953,8 +952,9 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
   hdr.ndescv = descs;
   hdr.ndesc_length = NACL_ARRAY_SIZE(descs);
 
-  rv = (*NACL_VTBL(NaClDesc, channel)->SendMsg)((struct NaClDesc *) channel,
-                                                &hdr, 0);
+  if (!channel)
+    return;
+  rv = NACL_VTBL(NaClDesc, channel)->SendMsg((struct NaClDesc *) channel, &hdr, 0);
   NaClXMutexLock(&nap->mu);
   if (NULL != nap->bootstrap_channel) {
     NaClLog(LOG_FATAL,
@@ -1155,12 +1155,12 @@ static void NaClSecureChannelStartModuleRpc(struct NaClSrpcRpc     *rpc,
 
   NaClXMutexLock(&nap->mu);
   if (nap->module_may_start) {
-    NaClLog(LOG_ERROR, "Duplicate StartModule RPC?!?\n");
     status = LOAD_DUP_START_MODULE;
+    NaClLog(LOG_ERROR, "Duplicate StartModule RPC?!? status: [%u]\n", status);
   } else {
     nap->module_may_start = 1;
   }
-  NaClLog(4, "NaClSecureChannelStartModuleRpc: broadcasting\n");
+  DPRINTF("%s\n", "NaClSecureChannelStartModuleRpc: broadcasting");
   NaClXCondVarBroadcast(&nap->cv);
   NaClXMutexUnlock(&nap->mu);
 
@@ -1499,9 +1499,9 @@ void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
 void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child) {
   /* copy the address space */
   NaClVmmapVisit(&nap->mem_map, NaClVmCopyMemoryRegion, child);
-  DPRINTF("nap_parent address space after copy:\n");
+  DPRINTF("%s\n", "nap_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap);
-  DPRINTF("nap_child address space after copy:\n");
+  DPRINTF("%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(child);
 }
 

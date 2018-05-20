@@ -147,7 +147,7 @@ static inline void *NaClArrayCheckHelper(void *arg) {
 }
 
 #  define NACL_ARRAY_SIZE(arr)                                         \
-  (NaClArrayCheckHelper(                                               \
+  (NaClArrayCheckHelper((void *)                                       \
       __builtin_types_compatible_p(__typeof__(&arr[0]),                \
                                    __typeof__(arr))),                  \
   NACL_ARRAY_SIZE_UNSAFE(arr))
