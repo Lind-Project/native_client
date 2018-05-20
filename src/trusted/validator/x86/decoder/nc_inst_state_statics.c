@@ -82,10 +82,8 @@ static void NaClInstStateInit(NaClInstIter* iter, NaClInstState* state) {
  * not be computed, due to ambiguities in the prefix bytes.
  */
 static int NaClExtractOpSize(NaClInstState* state) {
-  if (NaClHasBit(state->inst->flags, NACL_IFLAG(OperandSize_b))) {
+  if (NaClHasBit(state->inst->flags, NACL_IFLAG(OperandSize_b)))
     return 1;
-  }
-#if NACL_TARGET_SUBARCH == 64
   if (NACL_TARGET_SUBARCH == 64) {
     if (NaClRexW(state->rexprefix)) {
       if (NACL_PREFIX_INST_DATA66(state))
@@ -107,21 +105,19 @@ static int NaClExtractOpSize(NaClInstState* state) {
       return 8;
     else
       return 4;
-#else
-    if (NACL_PREFIX_INST_DATA66(state))
+  } else if (NACL_PREFIX_INST_DATA66(state)) {
         return 2;
-
+  } else {
     return 4;
-#endif
+  }
 }
 
 /* Computes the number of bits defined for addresses of the matched
  * instruction of the given state.
  */
 static int NaClExtractAddressSize(NaClInstState* state) {
-#if NACL_TARGET_SUBARCH == 64
-    return NaClHasBit(state->prefix_mask, kPrefixADDR16) ? 32 : 64;
-#endif
+    if (NACL_TARGET_SUBARCH == 64)
+        return NaClHasBit(state->prefix_mask, kPrefixADDR16) ? 32 : 64;
     return NaClHasBit(state->prefix_mask, kPrefixADDR16) ? 16 : 32;
 }
 
@@ -181,14 +177,12 @@ static Bool NaClConsumePrefixBytes(NaClInstState* state) {
     /* If the prefix byte is a REX prefix, record its value, since
      * bits 5-8 of this prefix bit may be needed later.
      */
-#if NACL_TARGET_SUBARCH == 64
-    if (prefix_form == kPrefixREX) {
+    if ((NACL_TARGET_SUBARCH == 64) && prefix_form == kPrefixREX) {
       state->rexprefix = next_byte;
       DEBUG(NaClLog(LOG_INFO,
                     "  rexprefix = %02"NACL_PRIx8 "\n", state->rexprefix));
       ++state->num_rex_prefixes;
     }
-#endif
   }
   return TRUE;
 }
@@ -799,9 +793,8 @@ static Bool NaClValidatePrefixFlags(NaClInstState* state) {
       return FALSE;
     }
   }
-/* Check REX prefix assumptions. */
-#if NACL_TARGET_SUBARCH == 64
-  if (state->prefix_mask & kPrefixREX) {
+  /* Check REX prefix assumptions. */
+  if (NACL_TARGET_SUBARCH == 64 && (state->prefix_mask & kPrefixREX)) {
     if (state->inst->flags &
         (NACL_IFLAG(OpcodeUsesRexW) | NACL_IFLAG(OpcodeHasRexR) |
          NACL_IFLAG(OpcodeRex))) {
@@ -814,7 +807,6 @@ static Bool NaClValidatePrefixFlags(NaClInstState* state) {
       }
     }
   }
-#endif
   return TRUE;
 }
 
