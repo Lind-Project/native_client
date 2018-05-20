@@ -684,11 +684,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * restore trampolines and adjust %rip
    */
-  natp_child->user.rbp += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.rsp += -parent_ctx->r15 + ctx.r15;
-  natp_child->user.rsp = ctx.rsp;
+  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rsp -= 0x8; */
 
   for (size_t i = 0; i < 5; i++) {
