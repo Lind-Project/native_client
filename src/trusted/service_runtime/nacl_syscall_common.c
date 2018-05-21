@@ -4122,12 +4122,15 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
 
 /* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
-  struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child;
-  struct NaClThreadContext parent_ctx = natp->user;
-  int32_t retval = 9;
-  int argc2;
-  char **argv2;
+  static THREAD struct NaClApp *nap;
+  static THREAD struct NaClApp *nap_child;
+  static THREAD struct NaClThreadContext parent_ctx;
+  static THREAD int retval;
+  static THREAD int child_argc;
+  static THREAD char **child_argv;
+
+  nap = natp->nap;
+  parent_ctx = natp->user;
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
