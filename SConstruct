@@ -2625,6 +2625,7 @@ def MakeLinuxEnv():
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
+          '-Wno-unused-const-variable',
           '-O2',
       ],
       CFLAGS=[
@@ -2633,6 +2634,7 @@ def MakeLinuxEnv():
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
+          '-Wno-unused-const-variable',
           '-O2',
       ],
       CXXFLAGS=[
@@ -2642,6 +2644,8 @@ def MakeLinuxEnv():
           '-Wno-cast-function-type',
           '-Wno-cpp',
           '-Wno-c++11-compat',
+          '-Wno-unused-const-variable',
+          '-Wno-unused-function',
           '-O2',
       ],
       CPPDEFINES=[[
