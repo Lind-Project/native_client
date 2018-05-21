@@ -143,18 +143,18 @@ struct NaClApp {
   /* mappings of `int fd` numbers to `NaClDesc *` */
   struct NaClDesc           *fd_maps[FILE_DESC_MAX];
 
-  unsigned                  children_ids[CHILD_NUM_MAX];
-  unsigned                  num_children;
-  unsigned                  fork_num;
-  unsigned                  cage_id;
-  unsigned                  num_lib;
+  int                       children_ids[CHILD_NUM_MAX];
+  int                       num_children;
+  int                       fork_num;
+  int                       cage_id;
+  int                       num_lib;
 
   /*
    * Whether or not current thread is a child of fork(). Flag
    * is reset after forking.
    */
-  unsigned                  is_fork_child;
-  unsigned                  parent_id;
+  int                       is_fork_child;
+  int                       parent_id;
   struct NaClApp            *parent;
 
   // yiwen: store the path of the execuable running inside this cage(as the main thread)

@@ -4174,17 +4174,18 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   NaClXMutexLock(&nap->children_mu);
-  nap->child_list[nap->num_children] = nap_child;
-  nap->children_ids[nap->num_children] = nap_child->cage_id;
-  nap->num_children++;
+  nap->child_list[nap_child->cage_id] = nap_child;
+  nap->children_ids[nap->num_children++] = nap_child->cage_id;
   retval = nap_child->cage_id;
-  DPRINTF("[NaClSysFork] retval = %d \n", retval);
   NaClXMutexUnlock(&nap->children_mu);
+  DPRINTF("[NaClSysFork] retval = %d \n", retval);
 
   /*
-   * n.b. MUST wait for child to finish initialization
+   * n.b. parent MUST wait for child to finish
+   * initialization before continuing
    */
   NaClXMutexLock(&nap_child->mu);
+  DPRINTF("%s\n", "Waiting for child to finish initialization...");
   NaClXCondVarWait(&nap_child->cv, &nap_child->mu);
   NaClXMutexUnlock(&nap_child->mu);
 
@@ -4245,17 +4246,16 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   int argc_newcage;
   char **argv_newcage;
   int32_t retval = -1;
-  unsigned path_len = 0;
+  int path_len = 0;
   uintptr_t path_get;
   uintptr_t argv_get;
 #ifdef  _DEBUG
   uintptr_t envp_get;
 #endif
   char *argv_split;
-  unsigned argv_num = 0;
+  int argv_num = 0;
   char **options;
-  unsigned option_len = 0;
-  unsigned i;
+  int option_len = 0;
 
   /*
    * convert pointers from addresses within the cage into ones
@@ -4302,10 +4302,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   argv_newcage[3] = malloc(path_len);
   strncpy(argv_newcage[3], (char *)path_get, path_len);
 
-  for (i = 1; i < argv_num; i++) {
+  for (int i = 1; i < argv_num; i++) {
     // printf ("%d \n", (int) strlen(options[i]));
     argv_newcage[3 + i] = malloc(strlen(options[i]) + 1);
-    strncpy(argv_newcage[3 + i], (char *)options[i], strlen(options[i]));
+    strncpy(argv_newcage[3 + i], options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
     // printf ("%s \n", argv_newcage[3 + i]);
   }
@@ -4326,7 +4326,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   if (fork_num == 1) {
       // need to inherit children info from previous cage
       nap_ready->num_children = nap->num_children;
-      for (i = 0; i < nap->num_children; i++) {
+      for (int i = 0; i < nap->num_children; i++) {
           nap_ready->children_ids[i] = nap->children_ids[i];
       }
 
@@ -4344,7 +4344,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   else if (fork_num == 2) {
       // need to inherit children info from previous cage
       nap_ready_2->num_children = nap->num_children;
-      for (i = 0; i < nap->num_children; i++) {
+      for (int i = 0; i < nap->num_children; i++) {
           nap_ready_2->children_ids[i] = nap->children_ids[i];
       }
 
@@ -4384,7 +4384,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
 }
 
 /* jp */
-#define WAIT_ANY -1
+#define WAIT_ANY (-1)
 #define WAIT_ANY_PG 0
 
 int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
