@@ -47,9 +47,10 @@
 #include "native_client/src/trusted/service_runtime/sel_util.h"
 #include "native_client/src/trusted/service_runtime/sel_addrspace.h"
 
-#if !defined(SIZE_T_MAX)
-# define SIZE_T_MAX     (~(size_t) 0)
+#ifndef SIZE_T_MAX
+# define SIZE_T_MAX (~(size_t)0)
 #endif
+#define ARG_LIMIT (1u << 12)
 
 /*
  * Fill from static_text_end to end of that page with halt
@@ -759,8 +760,6 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap) {
    */
   return ((uintptr_t) 1U << nap->addr_bits) - NACL_MAP_PAGESIZE;
 }
-
-#define ARG_LIMIT 4096
 
 /*
  * preconditions:

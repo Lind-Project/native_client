@@ -462,14 +462,14 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            uintptr_t                usr_stack_ptr,
                            uint32_t                 user_tls1,
                            uint32_t                 user_tls2) {
-  void *sysaddr_parent;
-  void *sysaddr_child;
-  void *stack_ptr_parent;
-  void *stack_ptr_child;
-  size_t size_of_dynamic_text;
-  size_t stack_total_size;
-  struct NaClAppThread *natp_child;
-  struct NaClThreadContext ctx;
+  static THREAD void *sysaddr_parent;
+  static THREAD void *sysaddr_child;
+  static THREAD void *stack_ptr_parent;
+  static THREAD void *stack_ptr_child;
+  static THREAD size_t size_of_dynamic_text;
+  static THREAD size_t stack_total_size;
+  static THREAD struct NaClAppThread *natp_child;
+  static THREAD struct NaClThreadContext ctx;
 
   if (!nap_parent->running)
    return 0;
@@ -481,11 +481,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   stack_size = stack_total_size;
   nap_child->stack_size = stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
-                                            NaClGetInitialStackTop(nap_parent) - stack_total_size,
-                                            stack_total_size);
+                                                    NaClGetInitialStackTop(nap_parent) - stack_total_size,
+                                                    stack_total_size);
   stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
-                                           NaClGetInitialStackTop(nap_child) - stack_total_size,
-                                           stack_total_size);
+                                                   NaClGetInitialStackTop(nap_child) - stack_total_size,
+                                                   stack_total_size);
   DPRINTF("system stack ptr : %p\n", stack_ptr_child);
   DPRINTF("  user stack ptr : %#lx\n", NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child));
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
@@ -576,11 +576,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   nap_child->mem_start = parent_ctx->r15;
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   natp_child->user.r15 = nap_child->mem_start;
+  /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp = ctx.rsp; */
 
   /*
    * find the first unused slot in the nacl_user array
