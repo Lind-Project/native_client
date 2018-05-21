@@ -31,8 +31,9 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 /* jp */
-#include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
+#include "native_client/src/shared/platform/lind_platform.h"
+#include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
 /* jp */
@@ -453,6 +454,16 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 }
 
 /* jp */
+#define NaClLogSysMemoryContentType(TYPE, NDIG, ADDR)						\
+ do {												\
+  unsigned char *addr = (unsigned char *)(ADDR);						\
+  UNREFERENCED_PARAMETER(addr);									\
+  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);			\
+  DPRINTF("[Memory] Memory content (byte-swapped): %#0" #NDIG "lx\n", LE_VAL_64(addr));	\
+  DPRINTF("[Memory] Memory content (raw):          %#0" #NDIG "lx\n", *(TYPE *)addr);	\
+ } while (0)
+
+/* jp */
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
                            size_t                   stack_size,
@@ -486,8 +497,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
                                                    NaClGetInitialStackTop(nap_child) - stack_total_size,
                                                    stack_total_size);
-  DPRINTF("system stack ptr : %p\n", stack_ptr_child);
-  DPRINTF("  user stack ptr : %#lx\n", NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child));
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
@@ -511,26 +520,47 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   CHECK(nap_child->dynamic_text_end - nap_child->dynamic_text_start == size_of_dynamic_text);
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(stack_ptr_parent, stack_size, PROT_READ|PROT_WRITE) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
 
-  NaClPrintAddressSpaceLayout(nap_parent);
-  DPRINTF("copying page table from %p to %p\n", (void *)nap_parent, (void *)nap_child);
+  DPRINTF("copying page table from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
+  DPRINTF("copying stack page from (%p)\n", stack_ptr_child);
+  NaClVmmapAdd(&nap_child->mem_map,
+               NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT,
+               nap_child->stack_size >> NACL_PAGESHIFT,
+               NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+               NACL_ABI_MAP_PRIVATE,
+               NULL,
+               0,
+               0);
+  NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
+  DPRINTF("system stack ptr : %p\n", stack_ptr_child);
+  DPRINTF("  user vmmap ptr : %#lx\n", NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child));
 
-  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from %p to %p\n",
+  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_total_size,
           (size_t)stack_total_size,
           stack_ptr_parent,
           stack_ptr_child);
   memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size);
-  DPRINTF("copying dynamic text (%zu [%#lx] bytes) from %p to %p\n",
+  memset(stack_ptr_child, 0, sizeof (nacl_reg_t));
+  for (size_t i = 0; i < 8; i++) {
+    DPRINTF("child_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(nacl_reg_t, sizeof(nacl_reg_t) >> 1, &((nacl_reg_t *)stack_ptr_child)[i]);
+  }
+  for (size_t i = 0; i < 8; i++) {
+    DPRINTF("parent_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(nacl_reg_t, sizeof(nacl_reg_t) >> 1, &((nacl_reg_t *)stack_ptr_parent)[i]);
+  }
+
+  DPRINTF("copying dynamic text (%zu [%#lx] bytes) from (%p) to (%p)\n",
           size_of_dynamic_text,
           size_of_dynamic_text,
           sysaddr_parent,
@@ -577,7 +607,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   natp_child->user.r15 = nap_child->mem_start;
   /* natp_child->user.rsp = ctx.rsp; */
-  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rbp = ctx.rbp */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
 
@@ -596,20 +626,20 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
 
-  DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
+  DPRINTF("usr_syscall_args address child: (%p) parent: (%p))\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
-  DPRINTF("Registers after copy [%%rsp] %p [%%rbp] %p)\n",
+  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p))\n",
           (void *)natp_child->user.rsp,
           (void *)natp_child->user.rbp);
-  DPRINTF("Registers after copy [%%r15] %p [%%rdi] %p)\n",
+  DPRINTF("Registers after copy (%%r15: %p) (%%rdi: %p))\n",
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
 
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
   if (NaClMprotect(sysaddr_parent, size_of_dynamic_text, PROT_READ|PROT_EXEC) == -1)
-    DPRINTF("%s\n", "parent NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "parent NaClMprotect failed!");
 
   /*
    * We set host_thread_is_defined assuming, for now, that

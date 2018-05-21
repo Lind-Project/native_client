@@ -22,6 +22,7 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_time.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 #include "native_client/src/shared/srpc/nacl_srpc.h"
 
@@ -47,10 +48,11 @@
 #include "native_client/src/trusted/service_runtime/sel_util.h"
 #include "native_client/src/trusted/service_runtime/sel_addrspace.h"
 
+/* snprintf length limit for each argv string */
+#define ARG_LIMIT (1u << 12)
 #ifndef SIZE_T_MAX
 # define SIZE_T_MAX (~(size_t)0)
 #endif
-#define ARG_LIMIT (1u << 12)
 
 /*
  * Fill from static_text_end to end of that page with halt
@@ -169,20 +171,23 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
 // yiwen: print out memory content for debug purpose
 void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
-  unsigned int *addr;
+  unsigned char *addr;
   sysaddr = (void *)NaClUserToSys(nap, useraddr);
-  addr = (unsigned int *)sysaddr;
+  addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
-  DPRINTF("[Memory] Memory addr: %p \n", sysaddr);
-  DPRINTF("[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
+  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", LE_VAL_64(addr));
+  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
+  DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
 }
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
-  unsigned int *addr = (unsigned int *)sysaddr;
+  unsigned char *addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
-  DPRINTF("[Memory] Memory addr: %p \n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content: %04x \n", addr[0] | addr[1] << 8);
-  DPRINTF("[Memory] Memory content: %s \n", (char *) addr);
+  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
+  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", LE_VAL_64(addr));
+  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
+  DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
 }
 
 /* jp */
