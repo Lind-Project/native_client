@@ -41,16 +41,15 @@
 #include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 #include "native_client/src/trusted/service_runtime/nacl_text.h"
-#include "native_client/src/trusted/service_runtime/sel_memory.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr_thread_interface.h"
+#include "native_client/src/trusted/service_runtime/sel_memory.h"
 #include "native_client/src/trusted/service_runtime/sel_util.h"
 #include "native_client/src/trusted/service_runtime/sel_addrspace.h"
 
 #if !defined(SIZE_T_MAX)
 # define SIZE_T_MAX     (~(size_t) 0)
 #endif
-
 
 /*
  * Fill from static_text_end to end of that page with halt
@@ -170,72 +169,48 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
 void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
   unsigned int *addr;
-
-
   sysaddr = (void *)NaClUserToSys(nap, useraddr);
   addr = (unsigned int *)sysaddr;
-
+  UNREFERENCED_PARAMETER(addr);
   DPRINTF("[Memory] Memory addr: %p \n", sysaddr);
   DPRINTF("[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
 }
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
-  void *sysaddr_print;
-  unsigned int *addr;
-
-  sysaddr_print = (void *)sysaddr;
-  addr = (unsigned int *)sysaddr_print;
-
-  DPRINTF("[Memory] Memory addr: %p \n", sysaddr_print);
-  DPRINTF("[Memory] Memory content: %04x \n", (unsigned int) addr[0] | (unsigned int) addr[1] << 8);
+  unsigned int *addr = (unsigned int *)sysaddr;
+  UNREFERENCED_PARAMETER(addr);
+  DPRINTF("[Memory] Memory addr: %p \n", (void *)sysaddr);
+  DPRINTF("[Memory] Memory content: %04x \n", addr[0] | addr[1] << 8);
   DPRINTF("[Memory] Memory content: %s \n", (char *) addr);
 }
 
 // yiwen: print out thread context info
 void NaClLogThreadContext(struct NaClAppThread *natp) {
   struct NaClThreadContext *ctx = &natp->user;
-  DPRINTF("\n");
+  UNREFERENCED_PARAMETER(ctx);
   DPRINTF("[Thread Context] cage id           = %i \n", natp->nap->cage_id);
   DPRINTF("[Thread Context] sysret            = %p \n", (void *)ctx->sysret);
   DPRINTF("[Thread Context] prog_ctr (%%rip)  = %p \n", (void *)ctx->prog_ctr);
   DPRINTF("[Thread Context] new_prog_ctr      = %p \n", (void *)ctx->new_prog_ctr);
   DPRINTF("[Thread Context] trusted_stack_ptr = %p \n", (void *)ctx->trusted_stack_ptr);
   DPRINTF("[Thread Context] registers:\n"
-          "\t%%tls_idx = %#x\n"
-          "\t%%tls_value1 = %#x\n"
-          "\t%%tls_value2 = %#x\n"
-          "\t%%rax = %#lx\n"
-          "\t%%rbx = %#lx\n"
-          "\t%%rcx = %#lx\n"
-          "\t%%rdx = %#lx\n"
-          "\t%%rbp = %#lx\n"
-          "\t%%rsi = %#lx\n"
-          "\t%%rdi = %#lx\n"
-          "\t%%rsp = %#lx\n"
-          "\t%%r8 = %#lx\n"
-          "\t%%r9 = %#lx\n"
-          "\t%%r10 = %#lx\n"
-          "\t%%r11 = %#lx\n"
-          "\t%%r12 = %#lx\n"
-          "\t%%r13 = %#lx\n"
-          "\t%%r14 = %#lx\n"
-          "\t%%r15 = %#lx\n"
-          "\t%%fcw = %#hx\n"
-          "\t%%sys_fcw = %#hx\n"
-          "\t%%mxcsr = %#x\n"
-          "\t%%sys_mxcsr = %#x\n",
+          "\t%%tls_idx [%#x], %%tls_value1 [%#x], %%tls_value2 [%#x],\n"
+          "\t%%rax [%#lx], %%rbx [%#lx], %%rcx [%#lx], %%rdx [%#lx],\n"
+          "\t%%rbp [%#lx], %%rsi [%#lx], %%rdi [%#lx], %%rsp [%#lx],\n"
+          "\t%%r8 [%#lx], %%r9 [%#lx], %%r10 [%#lx], %%r11 [%#lx],\n"
+          "\t%%r12 [%#lx], %%r13 [%#lx], %%r14 [%#lx], %%r15 [%#lx],\n"
+          "\t%%fcw [%#hx], %%sys_fcw [%#hx], %%mxcsr [%#x], %%sys_mxcsr [%#x],\n",
           ctx->tls_idx, ctx->tls_value1, ctx->tls_value2,
           ctx->rax, ctx->rbx, ctx->rcx, ctx->rdx,
           ctx->rbp, ctx->rsi, ctx->rdi, ctx->rsp,
           ctx->r8, ctx->r9, ctx->r10, ctx->r11,
           ctx->r12, ctx->r13, ctx->r14, ctx->r15,
           ctx->fcw, ctx->sys_fcw, ctx->mxcsr, ctx->sys_mxcsr);
-  DPRINTF("\n");
 }
 
 // yiwen: print out memory layout of a nap
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
-  DPRINTF("NaClApp addr space layout:\n");
+  DPRINTF("%s\n", "NaClApp addr space layout:");
   DPRINTF("NaClApp cage id: %d \n", nap->cage_id);
   DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
