@@ -797,8 +797,8 @@ int NaClCreateMainThread(struct NaClApp     *nap,
     }
   }
   envv_len = 0;
-  argv_len = malloc(argc * sizeof argv_len[0]);
-  envv_len = malloc(envc * sizeof envv_len[0]);
+  argv_len = !argc ? NULL : malloc(argc * sizeof argv_len[1]);
+  envv_len = !envc ? NULL : malloc(envc * sizeof envv_len[0]);
   if (NULL == argv_len) {
     goto cleanup;
   }
@@ -819,7 +819,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc; ++i) {
+  for (i = 0; i < argc && argv; ++i) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
@@ -902,10 +902,10 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc; ++i) {
+  for (i = 0; i < argc && argv; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t) strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
-            i, argv[i], strp);
+            i, (void *)argv[i], (void *)strp);
     strcpy(strp, argv[i]);
     strp += argv_len[i];
   }
@@ -914,7 +914,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   for (i = 0; i < envc; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t) strp);
     NaClLog(2, "copying env %d  %p -> %p\n",
-            i, envv[i], strp);
+            i, (void *)envv[i], (void *)strp);
     strcpy(strp, envv[i]);
     strp += envv_len[i];
   }
@@ -1001,8 +1001,8 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
     }
   }
   envv_len = 0;
-  argv_len = malloc(argc * sizeof argv_len[0]);
-  envv_len = malloc(envc * sizeof envv_len[0]);
+  argv_len = !argc ? NULL : malloc(argc * sizeof argv_len[0]);
+  envv_len = !envc ? NULL : malloc(envc * sizeof envv_len[0]);
   if (NULL == argv_len) {
     goto cleanup;
   }
@@ -1023,7 +1023,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc; ++i) {
+  for (i = 0; i < argc && argv; ++i) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
@@ -1110,7 +1110,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   for (i = 0; i < argc; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
-            i, argv[i], strp);
+            i, (void *)argv[i], (void *)strp);
     strcpy(strp, argv[i]);
     strp += argv_len[i];
   }
@@ -1119,7 +1119,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   for (i = 0; i < envc; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) strp);
     NaClLog(2, "copying env %d  %p -> %p\n",
-            i, envv[i], strp);
+            i, (void *)envv[i], (void *)strp);
     strcpy(strp, envv[i]);
     strp += envv_len[i];
   }

@@ -614,12 +614,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* natp_child->user.rsp = ctx.rsp; */
   /* natp_child->user.rsp -= 0x8; */
 
-  for (size_t i = 0; i < 5; i++) {
-    DPRINTF("Above stack child: %#lx, parent: %#lx\n",
-            ((uint64_t *)stack_ptr_child)[i],
-            ((uint64_t *)stack_ptr_parent)[i]);
-  }
-
   DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
@@ -712,7 +706,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 /* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadPrintInfo] "
-          "cage id = %d, prog_ctr = %p, new_prog_ctr = %p, sysret = %p\n",
+          "cage id = %d, prog_ctr = %#x, new_prog_ctr = %#x, sysret = %p\n",
           natp->nap->cage_id,
           (void*)natp->user.prog_ctr,
           (void*)natp->user.new_prog_ctr,
