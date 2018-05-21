@@ -93,23 +93,6 @@
 // yiwen: we should define the MAX system call number
 #define LIND_MAX_SYSCALLS               110
 
-/* jp */
-#define LD_FILE                         "/lib/glibc/runnable-ld.so"
-
-/* extract uint64_t object representation */
-#define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[1] << (1 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[2] << (2 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[3] << (3 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[4] << (4 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[5] << (5 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
-                     | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
-
-extern int lind_syscall_counter;
-extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
-extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
-
 struct select_results {
     struct timeval used_t;
     fd_set r;

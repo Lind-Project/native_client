@@ -36,7 +36,14 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
-/* jp */
+
+/*
+ * always points at original program context
+ *
+ * -jp
+ */
+struct NaClThreadContext *master_ctx;
+
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
@@ -479,8 +486,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   static THREAD void *stack_ptr_child;
   static THREAD size_t size_of_dynamic_text;
   static THREAD size_t stack_total_size;
+  static THREAD size_t stack_ptr_offset;
+  static THREAD size_t base_ptr_offset;
   static THREAD struct NaClAppThread *natp_child;
   static THREAD struct NaClThreadContext ctx;
+
+  UNREFERENCED_PARAMETER(stack_ptr_offset);
+  UNREFERENCED_PARAMETER(base_ptr_offset);
 
   if (!nap_parent->running)
    return 0;
@@ -488,6 +500,9 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
 
+  /*
+   * make space to copy the parent stack
+   */
   stack_total_size = nap_parent->stack_size;
   nap_child->stack_size = stack_total_size;
   /* align the child stack correctly */
@@ -498,10 +513,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
                                                    NaClGetInitialStackTop(nap_child) - stack_size,
                                                    stack_size);
-  if (NaClMprotect(stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-    NaClLog(LOG_FATAL, "%s\n", "parent stack NaClMprotect failed!");
-  if (NaClMprotect(stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
-    NaClLog(LOG_FATAL, "%s\n", "child stack NaClMprotect failed!");
+  stack_ptr_offset = parent_ctx->rsp - (uintptr_t)stack_ptr_parent;
+  base_ptr_offset = parent_ctx->rbp - (uintptr_t)stack_ptr_parent;
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
@@ -515,7 +528,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     DPRINTF("%s\n", "natp_child->nap != nap_child");
     nap_child = natp_child->nap;
   }
-
   sysaddr_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   sysaddr_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   size_of_dynamic_text = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
@@ -528,7 +540,14 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
   if (NaClMprotect(sysaddr_child, size_of_dynamic_text, PROT_READ|PROT_WRITE) == -1)
     NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
+  if (NaClMprotect(stack_ptr_parent, stack_total_size, PROT_READ|PROT_WRITE) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "parent stack NaClMprotect failed!");
+  if (NaClMprotect(stack_ptr_child, stack_total_size, PROT_READ|PROT_WRITE) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "child stack NaClMprotect failed!");
 
+  /* copy parent page tables and execution context */
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClPrintAddressSpaceLayout(nap_child);
   DPRINTF("copying page table from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClVmCopyAddressSpace(nap_parent, nap_child);
   DPRINTF("copying stack page from (%p)\n", stack_ptr_child);
@@ -540,41 +559,22 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                NULL,
                0,
                0);
-  NaClPrintAddressSpaceLayout(nap_parent);
-  NaClPrintAddressSpaceLayout(nap_child);
-  DPRINTF("stack ptr : %p\n", stack_ptr_child);
-  DPRINTF("vmmap ptr : %#lx\n", NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT);
-
-#define ITERATIONS 8
-#define TYPE_TO_EXAMINE nacl_reg_t
-  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
-          (size_t)stack_total_size,
-          (size_t)stack_total_size,
-          stack_ptr_parent,
-          stack_ptr_child);
-  memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size);
-  /* memset(stack_ptr_child, 0, sizeof(TYPE_TO_EXAMINE)); */
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    DPRINTF("parent_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
-  }
-  for (size_t i = 0; i < ITERATIONS; i++) {
-    DPRINTF("child_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-  }
-#undef ITERATIONS
-#undef TYPE_TO_EXAMINE
-
+  DPRINTF("child stack ptr : %p\n", stack_ptr_child);
+  DPRINTF("child vmmap ptr : %#lx\n",
+          NaClSysToUser(nap_child,
+          (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT);
+  DPRINTF("parent stack ptr : %p\n", stack_ptr_child);
+  DPRINTF("parent vmmap ptr : %#lx\n",
+          NaClSysToUser(nap_parent,
+          (uintptr_t)stack_ptr_parent) >> NACL_PAGESHIFT);
   DPRINTF("copying dynamic text (%zu [%#lx] bytes) from (%p) to (%p)\n",
           size_of_dynamic_text,
           size_of_dynamic_text,
           sysaddr_parent,
           sysaddr_child);
   memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
-
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
-  /* restore parent trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
@@ -608,36 +608,58 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * adjust trampolines and %rip
    */
-  nap_child->mem_start = parent_ctx->r15;
+  /* nap_child->mem_start = ctx.r15; */
+  /* nap_child->mem_start = parent_ctx->r15; */
+  nap_child->mem_start = master_ctx->r15;
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   natp_child->user.r15 = nap_child->mem_start;
-  /* natp_child->user.rsp = ctx.rsp; */
-  /* natp_child->user.rbp = ctx.rbp; */
+  /* natp_child->user.rsp = ctx.rsp + stack_ptr_offset; */
+  /* natp_child->user.rbp = ctx.rbp + base_ptr_offset; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+
+#define ITERATIONS 8
+#define TYPE_TO_EXAMINE nacl_reg_t
+  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
+          (size_t)stack_total_size,
+          (size_t)stack_total_size,
+          stack_ptr_parent,
+          stack_ptr_child);
+  memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size);
+  /* memset((void *)ctx.rsp, 0, sizeof(TYPE_TO_EXAMINE)); */
+  for (size_t i = 0; i < ITERATIONS; i++) {
+    DPRINTF("child_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
+    DPRINTF("parent_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+    DPRINTF("child_rsp[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i]);
+    DPRINTF("parent_rsp[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i]);
+    DPRINTF("master_rsp[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)master_ctx->rsp)[i]);
+  }
+#undef ITERATIONS
+#undef TYPE_TO_EXAMINE
 
   /*
    * find the first unused slot in the nacl_user array
    */
   natp_child->user.tls_idx = nap_child->fork_num;
-  natp_child->user.tls_value1 = ctx.tls_value1;
-  natp_child->user.tls_value2 = ctx.tls_value2;
+  NaClTlsSetTlsValue1(natp_child, user_tls1);
+  NaClTlsSetTlsValue2(natp_child, user_tls2);
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
-  NaClTlsSetTlsValue1(natp_child, user_tls1);
-  NaClTlsSetTlsValue2(natp_child, user_tls2);
-
   DPRINTF("usr_syscall_args address child: (%p) parent: (%p))\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
-  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p))\n",
+  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p) (%%r15: %p) (%%rdi: %p)\n",
           (void *)natp_child->user.rsp,
-          (void *)natp_child->user.rbp);
-  DPRINTF("Registers after copy (%%r15: %p) (%%rdi: %p))\n",
+          (void *)natp_child->user.rbp,
           (void *)natp_child->user.r15,
           (void *)natp_child->user.rdi);
 
@@ -685,6 +707,13 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
   nap->parent = NULL;
   nap->is_fork_child = 0;
   nap->fork_num = nap->cage_id;
+
+  /*
+   * save master thread context pointer
+   */
+  if (nap->cage_id == 1)
+    master_ctx = &natp->user;
+
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.

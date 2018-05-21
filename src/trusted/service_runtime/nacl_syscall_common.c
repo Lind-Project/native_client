@@ -338,8 +338,9 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
     NaClLog(0, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
     NaClLog(0, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
     NaClLog(0, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
-#define FLOG(VAR, BIT) do {\
-      NaClLog(1, "%s: %s\n", #BIT, (VAR & BIT) ? "yes" : "no");\
+#define FLOG(VAR, BIT)							\
+    do {								\
+      NaClLog(1, "%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no");	\
     } while (0)
     FLOG(flags, NACL_ABI_O_CREAT);
     FLOG(flags, NACL_ABI_O_TRUNC);
@@ -1992,14 +1993,13 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
        * validator to patch in place.
        */
 
-      image_sys_addr = (*NACL_VTBL(NaClDesc, ndp)->
-                        Map)(ndp,
-                             NaClDescEffectorTrustedMem(),
-                             (void *) NULL,
-                             length,
-                             NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-                             NACL_ABI_MAP_PRIVATE,
-                             offset);
+      image_sys_addr = NACL_VTBL(NaClDesc, ndp)->Map(ndp,
+                                                     NaClDescEffectorTrustedMem(),
+                                                     NULL,
+                                                     length,
+                                                     NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+                                                     NACL_ABI_MAP_PRIVATE,
+                                                     offset);
       if (NaClPtrIsNegErrno(&image_sys_addr)) {
         map_result = image_sys_addr;
         goto cleanup;
@@ -2355,8 +2355,10 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length) {
   UNREFERENCED_PARAMETER(nap);
-  NaClLog(3, "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n",
-          (uintptr_t) sysaddr, length);
+  NaClLog(3,
+          "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n",
+          sysaddr,
+          length);
   /*
    * Overwrite current mapping with inaccessible, anonymous
    * zero-filled pages, which should be copy-on-write and thus
@@ -2372,7 +2374,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
     return -NaClXlateErrno(errno);
   }
   NaClVmmapRemove(&nap->mem_map,
-                  NaClSysToUser(nap, (uintptr_t) sysaddr) >> NACL_PAGESHIFT,
+                  NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
   return 0;
 }

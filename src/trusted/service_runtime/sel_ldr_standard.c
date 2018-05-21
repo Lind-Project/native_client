@@ -48,12 +48,6 @@
 #include "native_client/src/trusted/service_runtime/sel_util.h"
 #include "native_client/src/trusted/service_runtime/sel_addrspace.h"
 
-/* snprintf length limit for each argv string */
-#define ARG_LIMIT (1u << 12)
-#ifndef SIZE_T_MAX
-# define SIZE_T_MAX (~(size_t)0)
-#endif
-
 /*
  * Fill from static_text_end to end of that page with halt
  * instruction, which is at least NACL_HALT_LEN in size when no

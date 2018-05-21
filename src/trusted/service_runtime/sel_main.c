@@ -71,16 +71,6 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE (1u << 13)
-
-extern int nacl_syscall_counter;
-extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
-extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
-extern int lind_syscall_counter;
-extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
-extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
-extern int nacl_syscall_trace_level_counter;
-
 // yiwen
 // set up the cage id
 // set up the fd table for the cage
@@ -216,8 +206,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
 
-  struct NaClApp                state;
-  char                          *nacl_runnable;
+  struct NaClApp                state = {0};
   int                           rpc_supplies_nexe = 0;
   int                           export_addr_to = -1;
   struct NaClDesc               *blob_file = NULL;
@@ -227,19 +216,19 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: added a second nap(cage), call it nap2.
   // we need to set up both state2 and nap2 properly, before loading file into nap2.
-  struct NaClApp                state2;
+  struct NaClApp                state2 = {0};
   struct NaClApp                *nap2 = &state2;
 
   // yiwen: added a third cage, nap3.
-  struct NaClApp                state3;
+  struct NaClApp                state3 = {0};
   struct NaClApp                *nap3 = &state3;
-  struct NaClApp                state4;
+  struct NaClApp                state4 = {0};
   struct NaClApp                *nap4 = &state4;
-  struct NaClApp                state5;
+  struct NaClApp                state5 = {0};
   struct NaClApp                *nap5 = &state5;
-  struct NaClApp                state6;
+  struct NaClApp                state6 = {0};
   struct NaClApp                *nap6 = &state6;
-  struct NaClApp                state7;
+  struct NaClApp                state7 = {0};
   struct NaClApp                *nap7 = &state7;
 
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
@@ -264,9 +253,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct NaClPerfCounter        time_all_main;
   const char                    **envp;
   struct NaClEnvCleanser        env_cleanser;
-
-  // yiwen
-  char                          *nacl_file2 = NULL;
 
   // yiwen: define variables for doing evaluation measurement
   clock_t 			nacl_main_begin;
@@ -337,9 +323,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_queue = NULL;
   redir_qend = &redir_queue;
 
-  memset(&state, 0, sizeof state);
-  // yiwen: my code, setting up nap2(cage2)
-  memset(&state2, 0, sizeof state2);
   // yiwen: nap0 is shared with nacl_syscall_common.c
   // we use it to store the snapshot of an initial cage, which is ready to run a program(create a thread)
   // this snapshot is used by execv()
@@ -351,16 +334,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   nap0_2 = &state0_2;
   nap_ready = &state_ready;
   nap_ready_2 = &state_ready_2;
-  memset(&state0, 0, sizeof state0);
-  memset(&state0_2, 0, sizeof state0_2);
-  // yiwen: my code, setting up nap3(cage3)
-  memset(&state_ready, 0, sizeof state_ready);
-  memset(&state_ready_2, 0, sizeof state_ready_2);
-  memset(&state3, 0, sizeof state3);
-  memset(&state4, 0, sizeof state4);
-  memset(&state5, 0, sizeof state5);
-  memset(&state6, 0, sizeof state6);
-  memset(&state7, 0, sizeof state7);
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
@@ -761,11 +734,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {
       NaClLog(2, "Loading nacl file %s (non-RPC)\n", nap->nacl_file);
-      // yiwen: this is where an nexe binary got loaded as an nap.
-      //        we should load a second nap here.
-      nacl_runnable = LD_FILE;
-      nacl_file2 = malloc(strlen(nacl_runnable) + 1);
-      strcpy(nacl_file2, nacl_runnable);
 
       // yiwen
       // time_start = clock();
@@ -1046,15 +1014,50 @@ int NaClSelLdrMain(int argc, char **argv) {
        * (currently) a no-op.
        */
       errcode = NaClAppPrepareToLaunch(nap);
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
+
       // yiwen: my code
       errcode = NaClAppPrepareToLaunch(nap2);
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
       errcode = NaClAppPrepareToLaunch(nap3);
-      // yiwen
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
       errcode = NaClAppPrepareToLaunch(nap0);
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
       errcode = NaClAppPrepareToLaunch(nap_ready);
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
       errcode = NaClAppPrepareToLaunch(nap0_2);
+      if (LOAD_OK != errcode) {
+        nap->module_load_status = errcode;
+        // yiwen: my code
+        nap2->module_load_status = errcode;
+        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+      }
       errcode = NaClAppPrepareToLaunch(nap_ready_2);
-
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
@@ -1290,17 +1293,17 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 6;
  *   argv2 = malloc(7 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "naclmain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "naclmain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(11);
- *   strcpy(argv2[3], "./bin/grep");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/grep");
  *   argv2[4] = malloc(7);
- *   strcpy(argv2[4], "IOADDR");
+ *   snprintf(argv2[4], ARG_LIMIT, "%s", "IOADDR");
  *   argv2[5] = malloc(27);
- *   strcpy(argv2[5], "./test_files/dataset01.txt");
+ *   snprintf(argv2[5], ARG_LIMIT, "%s", "./test_files/dataset01.txt");
  *   argv2[6] = 0;
  *
  *   nacl_user_program_begin = clock();
@@ -1324,15 +1327,15 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 5;
  *   argv2 = malloc(6 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "naclmain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "naclmain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(10);
- *   strcpy(argv2[3], "./bin/sed");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/sed");
  *   argv2[4] = malloc(9);
- *   strcpy(argv2[4], "s/.*: //");
+ *   snprintf(argv2[4], ARG_LIMIT, "%s", "s/.*: //");
  *   argv2[5] = 0;
  *
  *   if (!NaClCreateMainThread(nap3,
@@ -1353,17 +1356,17 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 6;
  *   argv2 = malloc(7 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "naclmain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "naclmain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(9);
- *   strcpy(argv2[3], "./bin/tr");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/tr");
  *   argv2[4] = malloc(2);
- *   strcpy(argv2[4], " ");
+ *   snprintf(argv2[4], ARG_LIMIT, "%s", " ");
  *   argv2[5] = malloc(5);
- *   strcpy(argv2[5], "'\\n'");
+ *   snprintf(argv2[5], ARG_LIMIT, "%s", "'\\n'");
  *   argv2[6] = 0;
  *
  *   if (!NaClCreateMainThread(nap4,
@@ -1385,13 +1388,13 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 4;
  *   argv2 = malloc(5 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "NaClMain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "NaClMain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(11);
- *   strcpy(argv2[3], "./bin/sort");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/sort");
  *   argv2[4] = 0;
  *
  *
@@ -1412,15 +1415,15 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 5;
  *   argv2 = malloc(6 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "NaClMain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "NaClMain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(11);
- *   strcpy(argv2[3], "./bin/uniq");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/uniq");
  *   argv2[4] = malloc(3);
- *   strcpy(argv2[4], "-c");
+ *   snprintf(argv2[4], ARG_LIMIT, "%s", "-c");
  *   argv2[5] = 0;
  *
  *   if (!NaClCreateMainThread(nap6,
@@ -1441,15 +1444,15 @@ int NaClSelLdrMain(int argc, char **argv) {
  *   argc2 = 5;
  *   argv2 = malloc(6 * sizeof *argv2);
  *   argv2[0] = malloc(9);
- *   strcpy(argv2[0], "NaClMain");
+ *   snprintf(argv2[0], ARG_LIMIT, "%s", "NaClMain");
  *   argv2[1] = malloc(15);
- *   strcpy(argv2[1], "--library-path");
+ *   snprintf(argv2[1], ARG_LIMIT, "%s", "--library-path");
  *   argv2[2] = malloc(11);
- *   strcpy(argv2[2], "/lib/glibc");
+ *   snprintf(argv2[2], ARG_LIMIT, "%s", "/lib/glibc");
  *   argv2[3] = malloc(11);
- *   strcpy(argv2[3], "./bin/sort");
+ *   snprintf(argv2[3], ARG_LIMIT, "%s", "./bin/sort");
  *   argv2[4] = malloc(3);
- *   strcpy(argv2[4], "-n");
+ *   snprintf(argv2[4], ARG_LIMIT, "%s", "-n");
  *   argv2[5] = 0;
  *
  *   if (!NaClCreateMainThread(nap7,
@@ -1479,19 +1482,22 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  ret_code = NaClWaitForMainThreadToExit(nap2);
-  ret_code = NaClWaitForMainThreadToExit(nap3);
-  ret_code = NaClWaitForMainThreadToExit(nap4);
-  ret_code = NaClWaitForMainThreadToExit(nap5);
-  ret_code = NaClWaitForMainThreadToExit(nap6);
-  ret_code = NaClWaitForMainThreadToExit(nap7);
-  nacl_user_program_finish = clock();
-  ret_code = NaClWaitForMainThreadToExit(nap0);
-  ret_code = NaClWaitForMainThreadToExit(nap_ready);
-  if (fork_num == 2) {
-      ret_code = NaClWaitForMainThreadToExit(nap0_2);
-      ret_code = NaClWaitForMainThreadToExit(nap_ready_2);
+  ret_code |= NaClWaitForMainThreadToExit(nap2);
+  ret_code |= NaClWaitForMainThreadToExit(nap3);
+  ret_code |= NaClWaitForMainThreadToExit(nap4);
+  ret_code |= NaClWaitForMainThreadToExit(nap5);
+  ret_code |= NaClWaitForMainThreadToExit(nap6);
+  ret_code |= NaClWaitForMainThreadToExit(nap7);
+  switch (fork_num) {
+  case 1:
+    ret_code |= NaClWaitForMainThreadToExit(nap0);
+    ret_code |= NaClWaitForMainThreadToExit(nap_ready);
+    /* fallthrough */
+  case 2:
+    ret_code |= NaClWaitForMainThreadToExit(nap0_2);
+    ret_code |= NaClWaitForMainThreadToExit(nap_ready_2);
   }
+  nacl_user_program_finish = clock();
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);

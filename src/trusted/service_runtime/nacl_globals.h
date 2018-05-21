@@ -24,9 +24,30 @@
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
+#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 /* jp */
+EXTERN_C_BEGIN
+/* snprintf length limit for each argv string */
+#define ARG_LIMIT (1u << 12)
+#define SHM_SIZE (1u << 13)
+#ifndef SIZE_T_MAX
+# define SIZE_T_MAX (~(size_t)0)
+#endif
+#define LD_FILE "/lib/glibc/runnable-ld.so"
+
+/* extract uint64_t object representation */
+#define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[1] << (1 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[2] << (2 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[3] << (3 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[4] << (4 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[5] << (5 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
+
 enum {
         PIPE_NUM_MAX = 1u << 4,
         CACHED_LIB_NUM_MAX = 1u << 5,
@@ -44,11 +65,23 @@ struct CachedLibTable {
   void *mem_addr;
 };
 
-EXTERN_C_BEGIN
 struct NaClThreadContext;
 struct NaClAppThread;
 struct NaClMutex;
 struct NaClApp;
+
+/*
+ * always points at original program context
+ */
+extern struct NaClThreadContext *master_ctx;
+
+extern int nacl_syscall_counter;
+extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
+extern int nacl_syscall_trace_level_counter;
+extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
+extern int lind_syscall_counter;
+extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
+extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 // yiwen
 extern int cage;
