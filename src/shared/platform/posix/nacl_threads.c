@@ -38,6 +38,9 @@
 # error "NaCl service runtime stack size is smaller than PTHREAD_STACK_MIN"
 #endif
 
+int pthread_tryjoin_np(pthread_t thread, void **retval);
+int pthread_timedjoin_np(pthread_t thread, void **retval, const struct timespec *abstime);
+
 static int NaClThreadCreate(struct NaClThread  *ntp,
                             void               (*start_fn)(void *),
                             void               *state,
@@ -94,7 +97,7 @@ static int NaClThreadCreate(struct NaClThread  *ntp,
   }
   rv = 1;
  done_attr_dtor:
-  (void) pthread_attr_destroy(&attr);  /* often a noop */
+  (void)pthread_attr_destroy(&attr);  /* often a noop */
  done:
   return rv;
 }

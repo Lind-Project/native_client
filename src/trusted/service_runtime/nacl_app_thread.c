@@ -539,10 +539,48 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
-  /* restore child trampoline addresses and stack pointer */
+  /* restore parent trampoline addresses and stack pointer */
   natp_child->user = *parent_ctx;
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
+
+  /*
+   * set return value for fork().
+   *
+   * linux is a unix-like system. however, its kernel uses the
+   * microsoft system-call convention of passing parameters in
+   * registers. as with the unix convention, the function number
+   * is placed in eax. the parameters, however, are not passed on
+   * the stack but in %rbx, %rcx, %rdx, %rsi, %rdi, %rbp:
+   *
+   * ; SYS_open's syscall number is 5
+   * open:
+   *	mov	$5, %eax
+   *	mov	$path, %ebx
+   *	mov	$flags, %ecx
+   *	mov	$mode, %edx
+   *	int	$0x80
+   *
+   * n.b. fork() return value is stored in %rdx
+   * instead of %rax like other syscalls, but
+   * thankfully in NaCl we only need to set %sysret
+   * in order to change the return value.
+   *
+   * -jp
+   */
+  natp_child->user.sysret = 0;
+
+  /*
+   * adjust trampolines and %rip
+   */
+  nap_child->mem_start = parent_ctx->r15;
+  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
+  natp_child->user.r15 = nap_child->mem_start;
+  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp += -parent_ctx->r15 + ctx.r15; */
+  /* natp_child->user.rsp = ctx.rsp; */
 
   /*
    * find the first unused slot in the nacl_user array
@@ -558,61 +596,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
-
-  /*
-   * use parent's memory mapping
-   */
-  /* nap_child->mem_start = ctx.r15; */
-  nap_child->mem_start = parent_ctx->r15;
-  /* nap_child->break_addr = nap_parent->break_addr; */
-  /* nap_child->nacl_syscall_addr = nap_parent->nacl_syscall_addr; */
-  /* nap_child->get_tls_fast_path1_addr = nap_parent->get_tls_fast_path1_addr; */
-  /* nap_child->get_tls_fast_path2_addr = nap_parent->get_tls_fast_path2_addr; */
-  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
-  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
-  natp_child->user.r15 = nap_child->mem_start;
-
-  /*
-   * set return value for fork().
-   *
-   * linux is a unix-like system. however, its kernel uses the
-   * microsoft system-call convention of passing parameters in
-   * registers. as with the unix convention, the function number
-   * is placed in eax. the parameters, however, are not passed on
-   * the stack but in %rbx, %rcx, %rdx, %rsi, %rdi, %rbp:
-   *
-   * # SYS_open's syscall number is 5
-   * open:
-   *	mov	$5, %eax
-   *	mov	$path, %ebx
-   *	mov	$flags, %ecx
-   *	mov	$mode, %edx
-   *	int	$0x80
-   *
-   * n.b. fork() return value is stored in %rdx
-   * instead of %rax like other syscalls.
-   *
-   * -jp
-   */
-  natp_child->user.sysret = 0;
-  /* don't segfault on add %al, (%rax)` instructions (0x00) */
-  /* natp_child->user.rax = ctx.rsp - 8; */
-  /* natp_child->user.rax = 0; */
-  /* natp_child->user.rbx = 0; */
-  /* natp_child->user.rcx = 0; */
-  natp_child->user.rdx = 0;
-  /* natp_child->user.rsi = 0; */
-  /* natp_child->user.rdi = 0; */
-
-  /*
-   * restore trampolines and adjust %rip
-   */
-  /* natp_child->user.rbp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.rsp = ctx.rsp; */
-  /* natp_child->user.rsp -= 0x8; */
 
   DPRINTF("usr_syscall_args address child: %p parent: %p)\n",
           (void *)natp_child->usr_syscall_args,
@@ -663,7 +646,7 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uint32_t       user_tls2) {
   struct NaClAppThread *natp = NaClAppThreadMake(nap, usr_entry, usr_stack_ptr,
                                                  user_tls1, user_tls2);
-  if (natp == NULL)
+  if (!natp)
     return 0;
   nap->parent = NULL;
   nap->is_fork_child = 0;
@@ -706,9 +689,9 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 /* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadPrintInfo] "
-          "cage id = %d, prog_ctr = %#x, new_prog_ctr = %#x, sysret = %p\n",
+          "cage id = %d, prog_ctr = %#lx, new_prog_ctr = %#lx, sysret = %#lx\n",
           natp->nap->cage_id,
-          (void*)natp->user.prog_ctr,
-          (void*)natp->user.new_prog_ctr,
-          (void*)natp->user.sysret);
+          (long unsigned)natp->user.prog_ctr,
+          (long unsigned)natp->user.new_prog_ctr,
+          (long unsigned)natp->user.sysret);
 }

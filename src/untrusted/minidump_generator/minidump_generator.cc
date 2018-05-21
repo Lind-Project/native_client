@@ -456,3 +456,5 @@ void nacl_minidump_set_module_build_id(
   memcpy(&g_module_build_id, data, NACL_MINIDUMP_BUILD_ID_SIZE);
   g_module_build_id_set = 1;
 }
+
+// vi:ft=cpp:
