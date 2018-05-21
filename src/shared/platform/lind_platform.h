@@ -96,15 +96,15 @@
 /* jp */
 #define LD_FILE                         "/lib/glibc/runnable-ld.so"
 
-/* extract little-endian encoded value */
-#define LE_VAL_64(X)  ((((uint64_t)(X)[0]) << 0)	\
-                     | (((uint64_t)(X)[1]) << 8)	\
-                     | (((uint64_t)(X)[2]) << 16)	\
-                     | (((uint64_t)(X)[3]) << 24)	\
-                     | (((uint64_t)(X)[4]) << 32)	\
-                     | (((uint64_t)(X)[5]) << 40)	\
-                     | (((uint64_t)(X)[6]) << 48)	\
-                     | (((uint64_t)(X)[7]) << 52))
+/* extract uint64_t object representation */
+#define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[1] << (1 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[2] << (2 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[3] << (3 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[4] << (4 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[5] << (5 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
 
 extern int lind_syscall_counter;
 extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];

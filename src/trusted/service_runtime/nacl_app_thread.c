@@ -459,8 +459,8 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   unsigned char *addr = (unsigned char *)(ADDR);						\
   UNREFERENCED_PARAMETER(addr);									\
   DPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);			\
-  DPRINTF("[Memory] Memory content (byte-swapped): %#0" #NDIG "lx\n", LE_VAL_64(addr));	\
-  DPRINTF("[Memory] Memory content (raw):          %#0" #NDIG "lx\n", *(TYPE *)addr);	\
+  DPRINTF("[Memory] Memory content (byte-swapped): 0x%0" #NDIG "lx\n", OBJ_REP_64(addr));	\
+  DPRINTF("[Memory] Memory content (raw):          0x%0" #NDIG "lx\n", *(TYPE *)addr);		\
  } while (0)
 
 /* jp */
@@ -546,22 +546,24 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   DPRINTF("vmmap ptr : %#lx\n", NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT);
 
 #define ITERATIONS 8
+#define TYPE_TO_EXAMINE nacl_reg_t
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_total_size,
           (size_t)stack_total_size,
           stack_ptr_parent,
           stack_ptr_child);
   memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size);
-  memset(stack_ptr_child, 0, sizeof(nacl_reg_t));
+  /* memset(stack_ptr_child, 0, sizeof(TYPE_TO_EXAMINE)); */
   for (size_t i = 0; i < ITERATIONS; i++) {
     DPRINTF("parent_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(nacl_reg_t, 16, &((nacl_reg_t *)stack_ptr_parent)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
   }
   for (size_t i = 0; i < ITERATIONS; i++) {
     DPRINTF("child_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(nacl_reg_t, 16, &((nacl_reg_t *)stack_ptr_child)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
   }
 #undef ITERATIONS
+#undef TYPE_TO_EXAMINE
 
   DPRINTF("copying dynamic text (%zu [%#lx] bytes) from (%p) to (%p)\n",
           size_of_dynamic_text,
@@ -610,7 +612,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   natp_child->user.r15 = nap_child->mem_start;
   /* natp_child->user.rsp = ctx.rsp; */
-  /* natp_child->user.rbp = ctx.rbp */
+  /* natp_child->user.rbp = ctx.rbp; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
 

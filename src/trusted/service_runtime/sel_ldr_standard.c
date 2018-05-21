@@ -176,7 +176,7 @@ void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
   DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", LE_VAL_64(addr));
+  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
   DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
   DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
 }
@@ -185,7 +185,7 @@ void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   unsigned char *addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
   DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", LE_VAL_64(addr));
+  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
   DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
   DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
 }
