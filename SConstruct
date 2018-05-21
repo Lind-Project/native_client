@@ -2650,6 +2650,7 @@ def MakeLinuxEnv():
       ],
       CPPDEFINES=[[
           '-D_FORTIFY_SOURCE','2',
+          '-D_GNU_SOURCE','1',
       ]],
       LINKFLAGS=[
           '-fno-common',
