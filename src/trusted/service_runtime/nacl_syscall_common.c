@@ -4135,13 +4135,12 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   if (nap->is_fork_child) {
      DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
      NaClAppThreadPrintInfo(natp);
-     DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
-     DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
-     DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", natp->user.new_prog_ctr);
-     DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", natp->user.trusted_stack_ptr);
+     DPRINTF("         natp = %p\n", (void *)natp);
+     DPRINTF("          nap = %p\n", (void *)nap);
+     DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
+     DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
      nap->is_fork_child = 0;
      retval = 0;
-     DPRINTF("[NaClSysFork] retval = %d \n", retval);
      NaClXMutexLock(&nap->mu);
      NaClXCondVarSignal(&nap->cv);
      NaClXMutexUnlock(&nap->mu);
@@ -4149,36 +4148,32 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   fork_num++;
-  argc2 = 3 + nap->command_num;
-  argv2 = calloc(argc2 + 1, sizeof *argv2);
-  argv2[0] = "NaClMain";
-  argv2[1] = "--library-path";
-  argv2[2] = "/lib/glibc";
+  child_argc = 3 + nap->command_num;
+  child_argv = calloc(child_argc + 1, sizeof *child_argv);
+  child_argv[0] = "NaClMain";
+  child_argv[1] = "--library-path";
+  child_argv[2] = "/lib/glibc";
 
   if (nap->binary_path) {
-     argv2[3] = nap->binary_path;
-     DPRINTF("[NaClSysFork] binary path: %s \n\n", nap->binary_path);
+     child_argv[3] = nap->binary_path;
+     DPRINTF("[NaClSysFork] binary path: %s \n", nap->binary_path);
   }
 
   if (nap->command_num > 1) {
-     argv2[4] = nap->binary_command;
-     DPRINTF("[NaClSysFork] binary command: %s \n\n", nap->binary_command);
+     child_argv[4] = nap->binary_command;
+     DPRINTF("[NaClSysFork] binary command: %s \n", nap->binary_command);
   }
 
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp);
-  if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, argc2, argv2, NULL)) {
-    DPRINTF("%s\n", "[NaClSysFork] Execv new program failed!");
-    retval = -1;
-    goto out;
-  }
-
-  NaClXMutexLock(&nap->children_mu);
   nap->child_list[nap_child->cage_id] = nap_child;
   nap->children_ids[nap->num_children++] = nap_child->cage_id;
   retval = nap_child->cage_id;
-  NaClXMutexUnlock(&nap->children_mu);
-  DPRINTF("[NaClSysFork] retval = %d \n", retval);
+  if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, child_argc, child_argv, NULL)) {
+    DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
+    retval = -1;
+    goto out;
+  }
 
   /*
    * n.b. parent MUST wait for child to finish
@@ -4190,6 +4185,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&nap_child->mu);
 
 out:
+  DPRINTF("[NaClSysFork] retval = %d \n", retval);
   return retval;
 }
 
@@ -4201,25 +4197,24 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
 
-  int argc2;
-  char **argv2;
+  int child_argc;
+  char **child_argv;
 
   NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv starts! \n");
 
-  argc2 = 4;
-  argv2 = (char**) malloc(4 * sizeof(char*));
-  argv2[0] = (char*) malloc(9 * sizeof(char));
-  strncpy(argv2[0], "NaClMain", 9);
-  argv2[1] = (char*) malloc(15 * sizeof(char));
-  strncpy(argv2[1], "--library-path", 15);
-  argv2[2] = (char*) malloc(7 * sizeof(char));
-  strncpy(argv2[2], "/glibc", 7);
-  argv2[3] = (char*) malloc(43 * sizeof(char));
-  strncpy(argv2[3], "./test_case/hello_world/hello_world_1.nexe", 43);
+  child_argc = 4;
+  child_argv = calloc(child_argc + 1, sizeof *child_argv);
+  child_argv[0] = "NaClMain";
+  child_argv[1] = "--library-path";
+  child_argv[2] = "/lib/glibc";
+  /*
+   * TODO: implement execve()
+   */
+  child_argv[3] =  "/test_case/jp/hello.nexe";
 
   if (!NaClCreateMainThread(nap0,
-                            argc2,
-                            argv2,
+                            child_argc,
+                            child_argv,
                             NULL)) {
     fprintf(stderr, "creating main thread failed\n");
     NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");

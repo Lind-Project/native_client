@@ -194,12 +194,12 @@ void NaClLogThreadContext(struct NaClAppThread *natp) {
   DPRINTF("[Thread Context] new_prog_ctr      = %p \n", (void *)ctx->new_prog_ctr);
   DPRINTF("[Thread Context] trusted_stack_ptr = %p \n", (void *)ctx->trusted_stack_ptr);
   DPRINTF("[Thread Context] registers:\n"
-          "\t%%tls_idx [%#x], %%tls_value1 [%#x], %%tls_value2 [%#x],\n"
-          "\t%%rax [%#lx], %%rbx [%#lx], %%rcx [%#lx], %%rdx [%#lx],\n"
-          "\t%%rbp [%#lx], %%rsi [%#lx], %%rdi [%#lx], %%rsp [%#lx],\n"
-          "\t%%r8 [%#lx], %%r9 [%#lx], %%r10 [%#lx], %%r11 [%#lx],\n"
-          "\t%%r12 [%#lx], %%r13 [%#lx], %%r14 [%#lx], %%r15 [%#lx],\n"
-          "\t%%fcw [%#hx], %%sys_fcw [%#hx], %%mxcsr [%#x], %%sys_mxcsr [%#x],\n",
+          "\t%%tls_idx (%#x), %%tls_value1 (%#x), %%tls_value2 (%#x),\n"
+          "\t%%rax (%#lx), %%rbx (%#lx), %%rcx (%#lx), %%rdx (%#lx),\n"
+          "\t%%rbp (%#lx), %%rsi (%#lx), %%rdi (%#lx), %%rsp (%#lx),\n"
+          "\t%%r8 (%#lx), %%r9 (%#lx), %%r10 (%#lx), %%r11 (%#lx),\n"
+          "\t%%r12 (%#lx), %%r13 (%#lx), %%r14 (%#lx), %%r15 (%#lx),\n"
+          "\t%%fcw (%#hx), %%sys_fcw (%#hx), %%mxcsr (%#x), %%sys_mxcsr (%#x),\n",
           ctx->tls_idx, ctx->tls_value1, ctx->tls_value2,
           ctx->rax, ctx->rbx, ctx->rcx, ctx->rdx,
           ctx->rbp, ctx->rsi, ctx->rdi, ctx->rsp,
