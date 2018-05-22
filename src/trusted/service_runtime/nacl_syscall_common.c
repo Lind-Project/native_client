@@ -389,15 +389,21 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   int32_t pid;
   struct NaClApp *nap = natp->nap;
 
-  /* UNREFERENCED_PARAMETER(natp); */
-  return ++nap->num_children;
+  /*
+   * UNREFERENCED_PARAMETER(natp);
+   * return ++nap->num_children;
+   */
 
-  if (NaClAclBypassChecks) {
-    pid = GETPID();
-  } else {
-    pid = -NACL_ABI_EACCES;
-  }
-  NaClLog(4, "NaClSysGetpid: returning %d\n", pid);
+  /*
+   * if (NaClAclBypassChecks) {
+   *   pid = GETPID();
+   * } else {
+   *   pid = -NACL_ABI_EACCES;
+   * }
+   */
+
+  pid = nap->cage_id;
+  DPRINTF("NaClSysGetpid: returning %d\n", pid);
 
   return pid;
 }
@@ -4144,9 +4150,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("          nap = %p\n", (void *)nap);
      DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
      DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
+     NaClXMutexLock(&nap->mu);
      nap->is_fork_child = 0;
      retval = 0;
-     NaClXMutexLock(&nap->mu);
      NaClXCondVarSignal(&nap->cv);
      NaClXMutexUnlock(&nap->mu);
      goto out;
@@ -4414,7 +4420,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     if (pid > 0 && pid < num_children) {
       idx = pid;
       nap_child = nap->child_list[idx];
+      if (!nap_child)
+        goto out;
       natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
+      if (!natp_child)
+        goto out;
       retval = NaClThreadJoin(&natp_child->host_thread);
       if (retval)
         NaClLog(LOG_FATAL, "NaClThreadJoin() failed: %s\n", strerror(retval));
@@ -4423,7 +4433,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
       for (;;) {
         retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
         if (!retval)
-          break;
+          goto out;
         if (retval != ETIMEDOUT)
           NaClLog(LOG_FATAL, "NaClThreadTimedJoin() failed: %s\n", strerror(retval));
         if (++idx >= num_children)
@@ -4434,6 +4444,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     }
   }
 
+out:
   *stat_loc_ptr = retval;
   DPRINTF("[NaClSysWaitpid] pid = %zu \n", idx);
   DPRINTF("[NaClSysWaitpid] options = %d \n", options);
