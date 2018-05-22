@@ -50,12 +50,16 @@ GIT_BASE_URL = https://chromium.googlesource.com/native_client
 VERSION_TEST := $(MAKE_VERSION:4.%=)
 ifeq ($(VERSION_TEST),)
 	MAKE_COMPAT != \
-		find -H /bin /sbin /usr/bin /usr/sbin \
+		find -H \
+			/bin /sbin /usr/bin /usr/sbin \
 			-type f \
-			-a -name "make" \
-			-o -name "make-[[:digit:]]*" 2>/dev/null | \
-			sort | \
-			tail -n1
+			-a \( \
+				-name "make" \
+				-o -name "make-[0-9]*" \
+			\) \
+			2>/dev/null \
+			| sort \
+			| tail -n1
 # No need run find if the version is compatible
 else
 	MAKE_COMPAT := make
@@ -74,7 +78,7 @@ DESTDIR ?=
 
 # We can't use CFLAGS and LDFLAGS since they are passed to sub-makes and
 # those override configure parameters.
-USER_CFLAGS = -O2 -g
+USER_CFLAGS = -O2 -g -Wno-implicit-fallthrough -Wno-unused-but-set-variable
 USER_LDFLAGS = -s
 
 # By default all toolchain executables are x86-32 executables, use
