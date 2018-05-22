@@ -682,7 +682,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
 	    BUILD_CC="gcc -O2 -g" \
 	    CC="$(GLIBC_CC) -m64" \
-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
 	    libc_cv_c_cleanup=yes \
 	    libc_cv_slibdir=/lib \
@@ -700,7 +700,7 @@ updateglibc:
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
 	    BUILD_CC="gcc -O2 -g " \
 	    CC="$(GLIBC_CC) -m64" \
-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
 	    libc_cv_c_cleanup=yes \
 	    libc_cv_slibdir=/lib \
