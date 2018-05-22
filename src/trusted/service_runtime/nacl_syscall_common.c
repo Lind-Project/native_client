@@ -4172,7 +4172,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp);
   nap->child_list[nap_child->cage_id] = nap_child;
-  nap->children_ids[nap->num_children++] = nap_child->cage_id;
+  nap->children_ids[nap->num_children] = nap_child->cage_id;
   retval = nap_child->cage_id;
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");

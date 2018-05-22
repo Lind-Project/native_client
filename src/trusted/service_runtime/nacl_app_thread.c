@@ -66,7 +66,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
   nap_child->fork_num  = nap_child->cage_id = nap->cage_id + 1;
   nap_child->parent_id = nap->cage_id;
-  nap_child->parent = nap_child;
+  nap_child->parent = nap;
   nap_child->is_fork_child = 1;
   nap_child->num_children = 0;
   nap_child->num_lib = 3;
