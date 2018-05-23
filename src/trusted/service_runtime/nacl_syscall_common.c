@@ -4136,6 +4136,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   static THREAD int retval;
   static THREAD int child_argc;
   static THREAD char **child_argv;
+  NACL_TIMESPEC_T const timeout = {1, 0};
 
   nap = natp->nap;
   parent_ctx = natp->user;
@@ -4192,7 +4193,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
    */
   NaClXMutexLock(&nap_child->mu);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
-  NaClXCondVarWait(&nap_child->cv, &nap_child->mu);
+  NaClXCondVarTimedWaitRelative(&nap_child->cv, &nap_child->mu, &timeout);
   NaClXMutexUnlock(&nap_child->mu);
 
 out:

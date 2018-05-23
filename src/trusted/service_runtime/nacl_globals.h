@@ -33,6 +33,10 @@ EXTERN_C_BEGIN
 /* snprintf length limit for each argv string */
 #define ARG_LIMIT (1u << 12)
 #define SHM_SIZE (1u << 13)
+#define NACL_UNTRUSTED_ADDR_MASK 0xffffffff
+#define PROT_RW (NACL_ABI_PROT_READ|NACL_ABI_PROT_WRITE)
+#define PRoT_RX (NACL_ABI_PROT_READ|NACL_ABI_PROT_EXEC)
+#define F_ANON_PRIV (NACL_ABI_MAP_PRIVATE|NACL_ABI_MAP_ANONYMOUS)
 #ifndef SIZE_T_MAX
 # define SIZE_T_MAX (~(size_t)0)
 #endif

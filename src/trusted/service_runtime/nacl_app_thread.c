@@ -613,14 +613,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* nap_child->mem_start = ctx.r15; */
   /* nap_child->mem_start = parent_ctx->r15; */
   nap_child->mem_start = master_ctx->r15;
-  natp_child->user.trusted_stack_ptr = ctx.trusted_stack_ptr;
   natp_child->user.r15 = nap_child->mem_start;
   /* natp_child->user.rsp = ctx.rsp + stack_ptr_offset; */
   /* natp_child->user.rbp = ctx.rbp + base_ptr_offset; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
 
-#define ITERATIONS 8
+#define ITERATIONS 1
 #define TYPE_TO_EXAMINE nacl_reg_t
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_total_size,
