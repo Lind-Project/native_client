@@ -546,33 +546,34 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     NaClLog(LOG_FATAL, "%s\n", "child stack NaClMprotect failed!");
 
   /* copy parent page tables and execution context */
-  NaClPrintAddressSpaceLayout(nap_parent);
-  NaClPrintAddressSpaceLayout(nap_child);
-  DPRINTF("copying page table from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
-  NaClVmCopyAddressSpace(nap_parent, nap_child);
-  DPRINTF("copying stack page from (%p)\n", stack_ptr_child);
-  NaClVmmapAdd(&nap_child->mem_map,
-               NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT,
-               nap_child->stack_size >> NACL_PAGESHIFT,
-               NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-               NACL_ABI_MAP_PRIVATE,
-               NULL,
-               0,
-               0);
-  DPRINTF("child stack ptr : %p\n", stack_ptr_child);
-  DPRINTF("child vmmap ptr : %#lx\n",
-          NaClSysToUser(nap_child,
-          (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT);
-  DPRINTF("parent stack ptr : %p\n", stack_ptr_child);
-  DPRINTF("parent vmmap ptr : %#lx\n",
-          NaClSysToUser(nap_parent,
-          (uintptr_t)stack_ptr_parent) >> NACL_PAGESHIFT);
-  DPRINTF("copying dynamic text (%zu [%#lx] bytes) from (%p) to (%p)\n",
-          size_of_dynamic_text,
-          size_of_dynamic_text,
-          sysaddr_parent,
-          sysaddr_child);
-  memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+  NaClCopyExecutionContext(nap_parent, nap_child);
+  /*
+   * NaClVmCopyAddressSpace(nap_parent, nap_child);
+   * DPRINTF("copying stack page from (%p)\n", stack_ptr_child);
+   * NaClVmmapAdd(&nap_child->mem_map,
+   *              NaClSysToUser(nap_child, (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT,
+   *              nap_child->stack_size >> NACL_PAGESHIFT,
+   *              NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+   *              NACL_ABI_MAP_PRIVATE,
+   *              NULL,
+   *              0,
+   *              0);
+   * DPRINTF("child stack ptr : %p\n", stack_ptr_child);
+   * DPRINTF("child vmmap ptr : %#lx\n",
+   *         NaClSysToUser(nap_child,
+   *         (uintptr_t)stack_ptr_child) >> NACL_PAGESHIFT);
+   * DPRINTF("parent stack ptr : %p\n", stack_ptr_child);
+   * DPRINTF("parent vmmap ptr : %#lx\n",
+   *         NaClSysToUser(nap_parent,
+   *         (uintptr_t)stack_ptr_parent) >> NACL_PAGESHIFT);
+   * DPRINTF("copying dynamic text (%zu [%#lx] bytes) from (%p) to (%p)\n",
+   *         size_of_dynamic_text,
+   *         size_of_dynamic_text,
+   *         sysaddr_parent,
+   *         sysaddr_child);
+   * memcpy(sysaddr_child, sysaddr_parent, size_of_dynamic_text);
+   */
+
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
   natp_child->user = *parent_ctx;
@@ -625,7 +626,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           (size_t)stack_total_size,
           stack_ptr_parent,
           stack_ptr_child);
-  memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size);
+  /* memcpy(stack_ptr_child, stack_ptr_parent, stack_total_size); */
   /* memset((void *)ctx.rsp, 0, sizeof(TYPE_TO_EXAMINE)); */
   for (size_t i = 0; i < ITERATIONS; i++) {
     DPRINTF("child_stack[%zu]:\n", i);

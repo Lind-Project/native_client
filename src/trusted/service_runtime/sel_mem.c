@@ -430,7 +430,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
     return 0;
   }
 
-  NaClLog(2,
+  DPRINTF(
           ("NaClVmmapChangeProt(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
            ", 0x%"NACL_PRIxS", 0x%x)\n"),
           (uintptr_t) self, page_num, npages, prot);
