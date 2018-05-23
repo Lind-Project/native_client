@@ -274,6 +274,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   // yiwen:
   DPRINTF("%s\n", "[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage!");
+  NaClVmmapDebug(&natp->nap->mem_map, "parent vmmap:");
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 
