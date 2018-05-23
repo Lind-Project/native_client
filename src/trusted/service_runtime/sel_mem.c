@@ -52,8 +52,7 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
                                           nacl_off64_t      file_size) {
   struct NaClVmmapEntry *entry;
 
-  DPRINTF(
-          "NaClVmmapEntryMake(0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
+  DPRINTF("NaClVmmapEntryMake(0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n",
           page_num, npages, prot, flags, (uintptr_t) desc, offset);
   entry = (struct NaClVmmapEntry *) malloc(sizeof *entry);
@@ -77,10 +76,9 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
 
 
 void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
-  DPRINTF(
-          ("NaClVmmapEntryFree(0x%08"NACL_PRIxPTR
-           "): (0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
-           "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n"),
+  DPRINTF("NaClVmmapEntryFree(0x%08"NACL_PRIxPTR
+          "): (0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
+          "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n",
           (uintptr_t) entry,
           entry->page_num, entry->npages, entry->prot,
           entry->flags, (uintptr_t) entry->desc, entry->offset);
@@ -275,10 +273,9 @@ void NaClVmmapAdd(struct NaClVmmap  *self,
                   nacl_off64_t      file_size) {
   struct NaClVmmapEntry *entry;
 
-  DPRINTF(
-          ("NaClVmmapAdd(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIx64")\n"),
+  DPRINTF("NaClVmmapAdd(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
+          "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
+          "0x%"NACL_PRIx64")\n",
           (uintptr_t) self, page_num, npages, prot, flags,
           (uintptr_t) desc, offset);
   if (self->nvalid == self->size) {
@@ -319,10 +316,9 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
   size_t                i;
   uintptr_t             new_region_end_page = page_num + npages;
 
-  DPRINTF(
-          ("NaClVmmapUpdate(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIxS", 0x%x, 0x%x, %d, 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIx64")\n"),
+  DPRINTF("NaClVmmapUpdate(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
+          "0x%"NACL_PRIxS", 0x%x, 0x%x, %d, 0x%"NACL_PRIxPTR", "
+          "0x%"NACL_PRIx64")\n",
           (uintptr_t) self, page_num, npages, prot, flags,
           remove, (uintptr_t) desc, offset);
   NaClVmmapMakeSorted(self);
@@ -430,9 +426,8 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
     return 0;
   }
 
-  DPRINTF(
-          ("NaClVmmapChangeProt(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
-           ", 0x%"NACL_PRIxS", 0x%x)\n"),
+  DPRINTF("NaClVmmapChangeProt(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
+          ", 0x%"NACL_PRIxS", 0x%x)\n",
           (uintptr_t) self, page_num, npages, prot);
   NaClVmmapMakeSorted(self);
 
@@ -549,9 +544,8 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
-  DPRINTF(
-          ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
-           ", 0x%"NACL_PRIxS", 0x%x)\n"),
+  DPRINTF("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
+          ", 0x%"NACL_PRIxS", 0x%x)\n",
           (uintptr_t) self, page_num, npages, prot);
 
   if (0 == self->nvalid) {

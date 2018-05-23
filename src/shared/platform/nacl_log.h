@@ -80,6 +80,10 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 #define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+#include <string.h>
 #include <stdarg.h>
 
 #include "native_client/src/include/nacl_base.h"

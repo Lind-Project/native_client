@@ -1540,7 +1540,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   DPRINTF("dyncode parent: [%p] child: [%p]\n", dyncode_parent, dyncode_child);
   DPRINTF("stack parent: [%p] child: [%p]\n", stackaddr_parent, stackaddr_child);
   DPRINTF("nap_parent cage id: [%d]\n", nap_parent->cage_id);
-  DPRINTF("nap_child fork_num: [%d]\n", natp_child->nap->fork_num);
+  DPRINTF("nap_child fork_num: [%d]\n", nap_child->fork_num);
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
