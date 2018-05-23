@@ -1473,14 +1473,14 @@ void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
   uintptr_t page_addr_child = target->mem_start + (entry->page_num << NACL_PAGESHIFT);
   size_t copy_size = entry->npages << NACL_PAGESHIFT;
   int old_prot = entry->prot;
-  NaClVmmapAddWithOverwrite(&target->mem_map,
-                            entry->page_num,
-                            entry->npages,
-                            (old_prot | NACL_ABI_PROT_WRITE) & ~NACL_ABI_PROT_EXEC,
-                            (entry->flags | NACL_ABI_MAP_PRIVATE) & ~NACL_ABI_MAP_SHARED,
-                            entry->desc,
-                            entry->offset,
-                            entry->file_size);
+  NaClVmmapAdd(&target->mem_map,
+               entry->page_num,
+               entry->npages,
+               (old_prot | NACL_ABI_PROT_WRITE) & ~NACL_ABI_PROT_EXEC,
+               (entry->flags | NACL_ABI_MAP_PRIVATE) & ~NACL_ABI_MAP_SHARED,
+               entry->desc,
+               entry->offset,
+               entry->file_size);
   NaClVmmapChangeProt(&target->mem_map,
                       entry->page_num,
                       entry->npages,
@@ -1546,35 +1546,35 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   CHECK(nap_child->dynamic_text_end - nap_child->dynamic_text_start == dyncode_size);
 
   /* copy the stack */
-  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                            stack_pnum_child,
-                            stack_npages,
-                            NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-                            NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS,
-                            NULL,
-                            0,
-                            0);
+  NaClVmmapAdd(&nap_child->mem_map,
+               stack_pnum_child,
+               stack_npages,
+               NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+               NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS,
+               NULL,
+               0,
+               0);
   memcpy(stackaddr_child, stackaddr_parent, stack_size);
   /*
-   * NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-   *                           stack_pnum_child,
-   *                           stack_npages,
-   *                           NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-   *                           NACL_ABI_MAP_PRIVATE,
-   *                           NULL,
-   *                           0,
-   *                           0);
+   * NaClVmmapAdd(&nap_child->mem_map,
+   *              stack_pnum_child,
+   *              stack_npages,
+   *              NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+   *              NACL_ABI_MAP_PRIVATE,
+   *              NULL,
+   *              0,
+   *              0);
    */
 
   /* copy dynamic text */
-  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                            dyncode_pnum_child,
-                            dyncode_npages,
-                            NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-                            NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS,
-                            NULL,
-                            0,
-                            0);
+  NaClVmmapAdd(&nap_child->mem_map,
+              dyncode_pnum_child,
+              dyncode_npages,
+              NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+              NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS,
+              NULL,
+              0,
+              0);
   /* memcpy(dyncode_child, dyncode_parent, dyncode_size); */
   NaClCopyCode(nap_child, nap_child->mem_start, dyncode_child, dyncode_parent, dyncode_size);
   NaClVmmapChangeProt(&nap_child->mem_map,
@@ -1582,14 +1582,14 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                       dyncode_npages,
                       NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC);
   /*
-   * NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-   *                           dyncode_pnum_child,
-   *                           dyncode_npages,
-   *                           NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
-   *                           NACL_ABI_MAP_PRIVATE,
-   *                           NULL,
-   *                           0,
-   *                           0);
+   * NaClVmmapAdd(&nap_child->mem_map,
+   *              dyncode_pnum_child,
+   *              dyncode_npages,
+   *              NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
+   *              NACL_ABI_MAP_PRIVATE,
+   *              NULL,
+   *              0,
+   *              0);
    */
   NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
   NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:");
