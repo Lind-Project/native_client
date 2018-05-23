@@ -127,7 +127,6 @@ ENDMACRO
 
         switcher NaClSwitchSSE, 0
         switcher NaClSwitchAVX, 1
-        switcher NaClSwitchFork, 0
 
         NACL_RODATA
         /*
