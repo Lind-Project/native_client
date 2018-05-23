@@ -948,6 +948,16 @@ void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry);
  */
 void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child);
 
+/*
+ * Copy the entire address execution context of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_ */

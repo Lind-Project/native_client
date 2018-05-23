@@ -1469,14 +1469,26 @@ void NaClGdbHook(struct NaClApp const *nap) {
  */
 void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
   struct NaClApp *target = target_state;
+  uintptr_t page_addr_parent = target->parent->mem_start + (entry->page_num << NACL_PAGESHIFT);
+  uintptr_t page_addr_child = target->mem_start + (entry->page_num << NACL_PAGESHIFT);
+  size_t copy_size = entry->npages << NACL_PAGESHIFT;
+  int old_prot = entry->prot;
   NaClVmmapAddWithOverwrite(&target->mem_map,
                             entry->page_num,
                             entry->npages,
-                            entry->prot,
-                            entry->flags,
+                            (old_prot | NACL_ABI_PROT_WRITE) & ~NACL_ABI_PROT_EXEC,
+                            (entry->flags | NACL_ABI_MAP_PRIVATE) & ~NACL_ABI_MAP_SHARED,
                             entry->desc,
                             entry->offset,
                             entry->file_size);
+  /*
+   * NaClVmmapChangeProt(&target->mem_map,
+   *                     entry->page_num,
+   *                     entry->npages,
+   *                     (old_prot | NACL_ABI_PROT_WRITE) & ~NACL_ABI_PROT_EXEC);
+   */
+  memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
+  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, old_prot);
 }
 
 /*
@@ -1499,7 +1511,15 @@ void NaClVmCopyAddressSpace(struct NaClApp *nap_parent, struct NaClApp *nap_chil
   NaClPrintAddressSpaceLayout(nap_child);
 }
 
-void NaClVmCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
+/*
+ * Copy the entire address execution context of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
   size_t stack_size = nap_parent->stack_size;
   size_t dyncode_size = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
   size_t stack_npages = stack_size >> NACL_PAGESHIFT;
@@ -1511,7 +1531,7 @@ void NaClVmCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_
                                                           stack_size);
   void *stackaddr_child = (void *)NaClUserToSysAddrRange(nap_child,
                                                          NaClGetInitialStackTop(nap_child) - stack_size,
-                                                          stack_size);
+                                                         stack_size);
   uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
   uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
   uintptr_t stack_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)stackaddr_parent) >> NACL_PAGESHIFT;
@@ -1557,6 +1577,7 @@ void NaClVmCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_
   /* copy the address space */
   DPRINTF("copying page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyMemoryRegion, nap_child);
+
   DPRINTF("%s\n", "nap_parent_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap_parent);
   DPRINTF("%s\n", "nap_child address space after copy:");
