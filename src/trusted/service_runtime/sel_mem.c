@@ -52,7 +52,7 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
                                           nacl_off64_t      file_size) {
   struct NaClVmmapEntry *entry;
 
-  NaClLog(4,
+  DPRINTF(
           "NaClVmmapEntryMake(0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n",
           page_num, npages, prot, flags, (uintptr_t) desc, offset);
@@ -60,7 +60,7 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
   if (NULL == entry) {
     return 0;
   }
-  NaClLog(4, "entry: 0x%"NACL_PRIxPTR"\n", (uintptr_t) entry);
+  DPRINTF("entry: 0x%"NACL_PRIxPTR"\n", (uintptr_t) entry);
   entry->page_num = page_num;
   entry->npages = npages;
   entry->prot = prot;
@@ -77,7 +77,7 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
 
 
 void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
-  NaClLog(4,
+  DPRINTF(
           ("NaClVmmapEntryFree(0x%08"NACL_PRIxPTR
            "): (0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
            "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n"),
@@ -99,10 +99,10 @@ void NaClVmentryPrint(void                  *state,
                       struct NaClVmmapEntry *vmep) {
   UNREFERENCED_PARAMETER(state);
 
-  printf("page num 0x%06x\n", (uint32_t)vmep->page_num);
-  printf("num pages %d\n", (uint32_t)vmep->npages);
-  printf("prot bits %x\n", vmep->prot);
-  printf("flags %x\n", vmep->flags);
+  DPRINTF("page num 0x%06x\n", (uint32_t)vmep->page_num);
+  DPRINTF("num pages %d\n", (uint32_t)vmep->npages);
+  DPRINTF("prot bits %x\n", vmep->prot);
+  DPRINTF("flags %x\n", vmep->flags);
   fflush(stdout);
 }
 
@@ -193,7 +193,7 @@ static void NaClVmmapRemoveMarked(struct NaClVmmap *self) {
    * 0 <= last < self->nvalid && !self->vmentry[last]->removed
    */
   CHECK(last < self->nvalid);
-  CHECK(!self->vmentry[last]->removed);
+  CHECK(self->vmentry[last] && self->vmentry[last]->removed);
   /*
    * and,
    *
@@ -275,7 +275,7 @@ void NaClVmmapAdd(struct NaClVmmap  *self,
                   nacl_off64_t      file_size) {
   struct NaClVmmapEntry *entry;
 
-  NaClLog(2,
+  DPRINTF(
           ("NaClVmmapAdd(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIx64")\n"),
@@ -319,7 +319,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
   size_t                i;
   uintptr_t             new_region_end_page = page_num + npages;
 
-  NaClLog(2,
+  DPRINTF(
           ("NaClVmmapUpdate(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIxS", 0x%x, 0x%x, %d, 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIx64")\n"),
@@ -351,7 +351,9 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
                    ent->file_size);
       ent->npages = page_num - ent->page_num;
       break;
-    } else if (ent->page_num < page_num && page_num < ent_end_page) {
+    }
+
+    if (ent->page_num < page_num && page_num < ent_end_page) {
       /* New mapping overlaps end of existing mapping. */
       ent->npages = page_num - ent->page_num;
     } else if (ent->page_num < new_region_end_page &&
@@ -468,7 +470,9 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
                    ent->offset + (page_num - ent->page_num),
                    ent->file_size);
       break;
-    } else if (ent->page_num < page_num && page_num < ent_end_page) {
+    }
+
+    if (ent->page_num < page_num && page_num < ent_end_page) {
       /* New mapping overlaps end of existing mapping. */
       ent->npages = page_num - ent->page_num;
       /* Add the overlapping part of the mapping. */
@@ -545,7 +549,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
-  NaClLog(2,
+  DPRINTF(
           ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
            ", 0x%"NACL_PRIxS", 0x%x)\n"),
           (uintptr_t) self, page_num, npages, prot);
@@ -563,13 +567,16 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
       return 0 == (prot & (~flags));
-    } else if (ent->page_num <= page_num && page_num < ent_end_page) {
+    }
+
+    if (ent->page_num <= page_num && page_num < ent_end_page) {
       /* The mapping overlaps the entry. */
       if (0 != (prot & (~flags))) {
         return 0;
       }
       page_num = ent_end_page;
       npages = region_end_page - ent_end_page;
+      UNREFERENCED_PARAMETER(npages);
     } else if (page_num < ent->page_num) {
       /* The mapping without backing store. */
       return 0;
@@ -585,10 +592,10 @@ static int NaClVmmapContainCmpEntries(void const *vkey,
   struct NaClVmmapEntry const *const *ent =
       (struct NaClVmmapEntry const *const *) vent;
 
-  NaClLog(5, "key->page_num   = 0x%05"NACL_PRIxPTR"\n", (*key)->page_num);
+  DPRINTF("key->page_num   = 0x%05"NACL_PRIxPTR"\n", (*key)->page_num);
 
-  NaClLog(5, "entry->page_num = 0x%05"NACL_PRIxPTR"\n", (*ent)->page_num);
-  NaClLog(5, "entry->npages   = 0x%"NACL_PRIxS"\n", (*ent)->npages);
+  DPRINTF("entry->page_num = 0x%05"NACL_PRIxPTR"\n", (*ent)->page_num);
+  DPRINTF("entry->npages   = 0x%"NACL_PRIxS"\n", (*ent)->npages);
 
   if ((*key)->page_num < (*ent)->page_num) return -1;
   if ((*key)->page_num < (*ent)->page_num + (*ent)->npages) return 0;
