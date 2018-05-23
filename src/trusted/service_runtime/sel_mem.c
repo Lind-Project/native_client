@@ -191,7 +191,7 @@ static void NaClVmmapRemoveMarked(struct NaClVmmap *self) {
    * 0 <= last < self->nvalid && !self->vmentry[last]->removed
    */
   CHECK(last < self->nvalid);
-  CHECK(self->vmentry[last] && self->vmentry[last]->removed);
+  CHECK(self->vmentry[last] && !self->vmentry[last]->removed);
   /*
    * and,
    *
