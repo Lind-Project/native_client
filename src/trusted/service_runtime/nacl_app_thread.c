@@ -514,7 +514,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                                                    NaClGetInitialStackTop(nap_child) - stack_size,
                                                    stack_size);
   stack_ptr_offset = parent_ctx->rsp - (uintptr_t)stack_ptr_parent;
-  base_ptr_offset = parent_ctx->rbp - (uintptr_t)stack_ptr_parent;
+  base_ptr_offset = parent_ctx->rbp - parent_ctx->rsp;
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
