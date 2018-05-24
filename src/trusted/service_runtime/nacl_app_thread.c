@@ -574,6 +574,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * patch stack addresses
    */
   NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)natp_child->user.rsp, NUM_STACK_VALS);
+  NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)&natp_child->user.rbp, 1);
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];

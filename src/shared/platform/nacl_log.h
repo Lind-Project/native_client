@@ -307,7 +307,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #ifdef _DEBUG
 #  define DPRINTF(fmt, ...)						\
         do {								\
-                char *file = strrchr(__FILE__, '/');			\
+                char *file = strrchr((char *)__FILE__, '/');		\
                 if (file)						\
                         file++;						\
                 else							\
