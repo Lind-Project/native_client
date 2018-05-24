@@ -1518,8 +1518,8 @@ void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region)
  * process.
  *
  * preconditions:
- * * `child` must be a pointer to a valid, initialized NaClApp
- * * Caller must hold both the nap->mu and the child->mu mutexes
+ * * `child` and `parent` must both be pointers to valid, initialized NaClApps
+ * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
 void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
   size_t stack_size = nap_parent->stack_size;
