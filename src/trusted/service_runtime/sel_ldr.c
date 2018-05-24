@@ -1575,6 +1575,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyMemoryRegion, nap_child);
   nap_child->break_addr = nap_parent->break_addr;
+  if (!NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX))
+      NaClLog(LOG_FATAL, "%s\n", "dynamic text NaClVmmapChangeProt() failed!");
   if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1)
       NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
   if (NaClMprotect(dyncode_child, dyncode_size, PROT_RX) == -1)
