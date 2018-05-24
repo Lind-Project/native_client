@@ -607,7 +607,7 @@ int NaClAddrIsValidEntryPt(struct NaClApp *nap,
  */
 void NaClAddHostDescriptor(struct NaClApp *nap,
                            int            host_os_desc,
-                           int            mode,
+                           int            flag,
                            int            nacl_desc);
 
 /*
