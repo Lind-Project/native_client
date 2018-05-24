@@ -1575,8 +1575,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyMemoryRegion, nap_child);
   nap_child->break_addr = nap_parent->break_addr;
-  if (!NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX))
-      NaClLog(LOG_FATAL, "%s\n", "dynamic text NaClVmmapChangeProt() failed!");
+  NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
   if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1)
       NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
   if (NaClMprotect(dyncode_child, dyncode_size, PROT_RX) == -1)
@@ -1585,8 +1584,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   DPRINTF("copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   DPRINTF("%s\n", "nap_parent_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap_parent);
-  /* NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:"); */
+  NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:");
   DPRINTF("%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(nap_child);
-  /* NaClVmmapDebug(&nap_child->mem_map, "child vmmap:"); */
+  NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
 }
