@@ -1503,7 +1503,7 @@ void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
 void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
   struct NaClApp *target = target_state;
   uintptr_t offset = target->mem_start;
-  uintptr_t parent_offset = target->parent->mem_start;
+  uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
   uintptr_t start = (region->start & UNTRUSTED_ADDR_MASK) + offset;
   if (NaClMprotect((void *)start, region->size, PROT_RW) == -1)
     NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
