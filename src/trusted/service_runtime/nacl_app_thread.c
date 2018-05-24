@@ -583,7 +583,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
     DPRINTF("master_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)master_ctx->rsp)[i]);
   }
-#undef ITERATIONS
+#undef NUM_STACK_VALS
 #undef TYPE_TO_EXAMINE
 
   /*
