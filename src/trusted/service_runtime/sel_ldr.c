@@ -1566,12 +1566,14 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             PROT_RW, F_ANON_PRIV, NULL, 0, 0);
   if (NaClTextDyncodeCreate(nap_child, nap_child->dynamic_text_start, dyncode_parent, dyncode_size, NULL))
       NaClLog(LOG_FATAL, "%s\n", "NaClSysDyncodeModify() failed");
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_size,
           (size_t)stack_size,
           stackaddr_parent,
           stackaddr_child);
   memcpy(stackaddr_child, stackaddr_parent, stack_size);
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyMemoryRegion, nap_child);
   nap_child->break_addr = nap_parent->break_addr;
