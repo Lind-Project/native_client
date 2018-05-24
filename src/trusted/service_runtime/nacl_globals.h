@@ -40,7 +40,7 @@ EXTERN_C_BEGIN
 # define SIZE_T_MAX (~(size_t)0)
 #endif
 #define LD_FILE "/lib/glibc/runnable-ld.so"
-#define UNTRUSTED_ADDR_MASK 0xffffffff
+#define UNTRUSTED_ADDR_MASK 0x00000000fffffffful
 
 /* extract uint64_t object representation */
 #define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
@@ -148,6 +148,17 @@ void  NaClGlobalModuleFini(void);
 
 /* this is defined in src/trusted/service_runtime/arch/<arch>/ sel_rt.h */
 void NaClInitGlobals(void);
+
+static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t cnt) {
+  for (size_t i = 0; i < cnt; i++) {
+    if (parent_bits != (start[i] & ~UNTRUSTED_ADDR_MASK))
+      continue;
+    DPRINTF("patching %p\n", (void *)start[i]);
+    start[i] &= UNTRUSTED_ADDR_MASK;
+    start[i] |= child_bits;
+    DPRINTF("new addr %p\n", (void *)start[i]);
+  }
+}
 
 static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(
     uint32_t thread_index) {

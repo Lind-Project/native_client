@@ -559,29 +559,34 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * adjust trampolines and %rip
    */
-  /* nap_child->mem_start = ctx.r15; */
+  nap_child->mem_start = ctx.r15;
   /* nap_child->mem_start = parent_ctx->r15; */
-  nap_child->mem_start = master_ctx->r15;
+  /* nap_child->mem_start = master_ctx->r15; */
   natp_child->user.r15 = nap_child->mem_start;
-  /* natp_child->user.rsp = ctx.rsp + stack_ptr_offset; */
+  natp_child->user.rsp = ctx.rsp + stack_ptr_offset;
   /* natp_child->user.rbp = ctx.rbp + base_ptr_offset; */
   /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
   /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
 
-/* debug */
-#define NUM_STACK_VALS 1
+#define NUM_STACK_VALS 8
 #define TYPE_TO_EXAMINE nacl_reg_t
+  /*
+   * patch stack addresses
+   */
+  NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)natp_child->user.rsp, NUM_STACK_VALS);
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
-    DPRINTF("child_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-    DPRINTF("parent_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+    uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
+    uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
+    /*
+     * DPRINTF("child_stack[%zu]:\n", i);
+     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
+     * DPRINTF("parent_stack[%zu]:\n", i);
+     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+     */
     DPRINTF("child_rsp[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, child_addr);
     DPRINTF("parent_rsp[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i]);
-    DPRINTF("master_rsp[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)master_ctx->rsp)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, parent_addr);
   }
 #undef NUM_STACK_VALS
 #undef TYPE_TO_EXAMINE
