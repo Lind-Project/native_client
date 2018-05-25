@@ -510,7 +510,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* align the child stack correctly */
   stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
   nap_child->stack_size = stack_size;
-  /* nap_child->stack_size = nap_parent->stack_size; */
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
                                                     NaClGetInitialStackTop(nap_parent) - stack_total_size,
                                                     stack_total_size);
@@ -565,24 +564,20 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * adjust trampolines and %rip
    */
   nap_child->mem_start = ctx.r15;
-  /* nap_child->mem_start = parent_ctx->r15; */
-  /* nap_child->mem_start = master_ctx->r15; */
   natp_child->user.r15 = nap_child->mem_start;
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
   natp_child->user.rbp = ctx.rsp + base_ptr_offset;
-  /* NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)&natp_child->user.rbp, 1); */
 
 #define NUM_STACK_VALS 8
 #define TYPE_TO_EXAMINE uintptr_t
+  /* debug */
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
-    /*
-     * DPRINTF("child_stack[%zu]:\n", i);
-     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-     * DPRINTF("parent_stack[%zu]:\n", i);
-     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
-     */
+    DPRINTF("child_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
+    DPRINTF("parent_stack[%zu]:\n", i);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
     DPRINTF("child_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, child_addr);
     DPRINTF("parent_rsp[%zu]:\n", i);
@@ -595,10 +590,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * setup TLS slot in the global nacl_user array
    */
   natp_child->user.tls_idx = nap_child->fork_num;
-  /*
-   * NaClTlsSetTlsValue1(natp_child, user_tls1);
-   * NaClTlsSetTlsValue2(natp_child, user_tls2);
-   */
+  NaClTlsSetTlsValue1(natp_child, user_tls1);
+  NaClTlsSetTlsValue2(natp_child, user_tls2);
   if (nacl_user[natp_child->user.tls_idx]) {
     NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
