@@ -507,9 +507,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * make space to copy the parent stack
    */
   stack_total_size = nap_parent->stack_size;
-  nap_child->stack_size = stack_total_size;
   /* align the child stack correctly */
   stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
+  nap_child->stack_size = stack_size;
+  /* nap_child->stack_size = nap_parent->stack_size; */
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
                                                     NaClGetInitialStackTop(nap_parent) - stack_total_size,
                                                     stack_total_size);
@@ -525,11 +526,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 
   /* save child trampoline addresses and set cage_id */
   ctx = natp_child->user;
-  DPRINTF("%s\n", "Thread context of child before copy");
-  NaClLogThreadContext(natp_child);
   /* copy parent page tables and execution context */
   NaClCopyExecutionContext(nap_parent, nap_child);
   /* copy parent thread context */
+  DPRINTF("%s\n", "Thread context of child before copy");
+  NaClLogThreadContext(natp_child);
   natp_child->user = *parent_ctx;
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
@@ -568,13 +569,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* nap_child->mem_start = master_ctx->r15; */
   natp_child->user.r15 = nap_child->mem_start;
   natp_child->user.rsp = ctx.rsp + stack_ptr_offset;
-  /* natp_child->user.rbp = ctx.rbp + base_ptr_offset; */
-  /* natp_child->user.prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  /* natp_child->user.new_prog_ctr += -parent_ctx->r15 + ctx.r15; */
-  NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)&natp_child->user.rbp, 1);
+  natp_child->user.rbp = ctx.rsp + base_ptr_offset;
+  /* NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)&natp_child->user.rbp, 1); */
 
 #define NUM_STACK_VALS 8
-#define TYPE_TO_EXAMINE nacl_reg_t
+#define TYPE_TO_EXAMINE uintptr_t
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];

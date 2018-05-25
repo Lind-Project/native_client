@@ -1566,8 +1566,11 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                             dyncode_pnum_child, dyncode_npages,
                             PROT_RW, F_ANON_PRIV, NULL, 0, 0);
-  if (NaClTextDyncodeCreate(nap_child, nap_child->dynamic_text_start, dyncode_parent, dyncode_size, NULL))
-      NaClLog(LOG_FATAL, "%s\n", "NaClSysDyncodeModify() failed");
+  /*
+   * if (NaClTextDyncodeCreate(nap_child, nap_child->dynamic_text_start, dyncode_parent, dyncode_size, NULL))
+   *     NaClLog(LOG_FATAL, "%s\n", "NaClSysDyncodeCreate() failed");
+   */
+  memcpy(dyncode_child, dyncode_parent, dyncode_size);
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_size,
