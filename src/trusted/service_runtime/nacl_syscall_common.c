@@ -713,6 +713,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       NaClLog(1, "Entered into open file table at %d\n", retval);
     }
   }
+
 cleanup:
   // yiwen: now translate the real fds to virtual fds and return them to the cage
   // printf("[Debug!][NaClSysOpen] cage id = %d, real NaCl fd = %d, filepath = %s \n", nap->cage_id, retval, path);
@@ -730,29 +731,31 @@ cleanup:
   // yiwen: do sanity check for the given fd first before our registration
   if ((fd_retval >= CACHED_LIB_NUM_MAX) || (fd_retval < 0)) {
      // printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");
-  }
-  else {
+  } else {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
      nap->num_lib++;
      // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
 
-  printf("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
+  DPRINTF("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
 }
 
-int32_t NaClSysClose(struct NaClAppThread *natp,
-                     int                  d) {
+int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   struct NaClApp  *nap = natp->nap;
+  struct NaClDesc *ndp = NULL;
   int             retval = -NACL_ABI_EBADF;
-  struct NaClDesc *ndp;
+  int             fd = 0;
 
-  // yiwen
-  int fd;
-
-  NaClLog(3, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
+  DPRINTF("Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
+
+  /* don't unref host descriptors if not base thread -jp */
+  if (nap->cage_id > 1) {
+    retval = 0;
+    goto out;
+  }
 
   NaClFastMutexLock(&nap->desc_mu);
 
@@ -760,22 +763,24 @@ int32_t NaClSysClose(struct NaClAppThread *natp,
   fd = fd_cage_table[nap->cage_id][d];
   if ((fd == 8000) | (fd == 8001)) {
      retval = 0;
-     return retval;
+     goto out;
   }
 
   ndp = NaClGetDescMu(nap, fd);
   if (NULL != ndp) {
-    NaClSetDescMu(nap, d, NULL);  /* Unref the desc_tbl */
+    /* Unref the desc_tbl */
+    NaClSetDescMu(nap, d, NULL);
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
-  NaClLog(5, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
+  DPRINTF("Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
           (uintptr_t) ndp);
   if (NULL != ndp) {
     NaClDescUnref(ndp);
     retval = 0;
   }
 
+out:
   return retval;
 }
 
@@ -792,10 +797,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   // yiwen
   int fd;
 
-  NaClLog(3,
-          ("Entered NaClSysGetdents(0x%08"NACL_PRIxPTR", "
-           "%d, 0x%08"NACL_PRIxPTR", "
-           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
+  DPRINTF("Entered NaClSysGetdents(0x%08"NACL_PRIxPTR","
+          " %d, 0x%08"NACL_PRIxPTR","
+          " %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
   // yiwen
@@ -847,10 +851,10 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     retval = (int32_t) getdents_ret;
   }
   if (retval > 0) {
-    NaClLog(4, "getdents returned %d bytes\n", retval);
-    NaClLog(8, "getdents result: %.*s\n", retval, (char *) sysaddr);
+    DPRINTF("getdents returned %d bytes\n", retval);
+    DPRINTF("getdents result: %.*s\n", retval, (char *) sysaddr);
   } else {
-    NaClLog(4, "getdents returned %d\n", retval);
+    DPRINTF("getdents returned %d\n", retval);
   }
 
 cleanup_unref:
