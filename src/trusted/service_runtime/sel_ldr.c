@@ -1479,11 +1479,6 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
           copy_size,
           (void *)page_addr_parent,
           (void *)page_addr_child);
-  /*
-   * NaClVmmapAdd(&target->mem_map, entry->page_num, entry->npages,
-   *              entry->prot, entry->flags|F_ANON_PRIV,
-   *              entry->desc, entry->offset, entry->file_size);
-   */
   NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
                             entry->prot, entry->flags|F_ANON_PRIV,
                             entry->desc, entry->offset, entry->file_size);
@@ -1507,7 +1502,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
 }
 
 /*
- * Passed to NaClDyncodeVisit in order to copy a memory region from
+ * Passed to NaClDyncodeVisit in order to copy a dynamic region from
  * an NaClApp to a child process (used when forking).
  *
  * -jp
@@ -1536,7 +1531,7 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
  * process.
  *
  * preconditions:
- * * `child` and `parent` must both be pointers to valid, initialized NaClApps
+ * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
 void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
@@ -1576,14 +1571,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
       NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
   if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1)
       NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
-  /*
-   * NaClVmmapAdd(&nap_child->mem_map,
-   *              stack_pnum_child, stack_npages,
-   *              PROT_RW, F_ANON_PRIV, NULL, 0, 0);
-   * NaClVmmapAdd(&nap_child->mem_map,
-   *              dyncode_pnum_child, dyncode_npages,
-   *              PROT_RW, F_ANON_PRIV, NULL, 0, 0);
-   */
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                             stack_pnum_child, stack_npages,
                             PROT_RW, F_ANON_PRIV, NULL, 0, 0);
