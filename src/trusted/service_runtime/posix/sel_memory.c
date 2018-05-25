@@ -56,6 +56,15 @@ static int NaClPageAllocInternalFlags(void **p, size_t size, int map_flags) {
   return (NULL == addr) ? -ENOMEM : 0;
 }
 
+void *NaClPageAllocFlags(void **p, size_t size, int map_flags) {
+    void *addr = p ? *p : NULL;
+    if (NaClPageAllocInternalFlags(&addr, size, map_flags) < 0)
+        return NULL;
+    if (p)
+        *p = addr;
+    return addr;
+}
+
 /*
  * Note that NaClPageAlloc does not allocate pages that satisify
  * NaClIsAllocPageMultiple.  On linux/osx, the system does not impose
