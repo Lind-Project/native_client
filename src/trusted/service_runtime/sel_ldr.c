@@ -1487,6 +1487,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
                             entry->prot, entry->flags|F_ANON_PRIV,
                             entry->desc, entry->offset, entry->file_size);
+  /* copy data pages point to */
   if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0))
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
@@ -1566,7 +1567,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
-  /* copy stack and dynamic text mappings */
+  /* copy page mappings */
   if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RW) == -1)
       NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
   if (NaClMprotect(dyncode_child, dyncode_size, PROT_RW) == -1)
@@ -1589,10 +1590,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                             dyncode_pnum_child, dyncode_npages,
                             PROT_RW, F_ANON_PRIV, NULL, 0, 0);
-  /*
-   * if (NaClTextDyncodeCreate(nap_child, nap_child->dynamic_text_start, dyncode_parent, dyncode_size, NULL))
-   *     NaClLog(LOG_FATAL, "%s\n", "NaClSysDyncodeCreate() failed");
-   */
+
+  /* copy stack and dynamic text mappings */
   memcpy(dyncode_child, dyncode_parent, dyncode_size);
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
   DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
@@ -1604,7 +1603,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
-  /* nap_child->mem_map = nap_parent->mem_map; */
   nap_child->break_addr = nap_parent->break_addr;
   NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
   if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1)
