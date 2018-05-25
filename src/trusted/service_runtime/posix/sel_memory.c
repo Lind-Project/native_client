@@ -57,12 +57,11 @@ static int NaClPageAllocInternalFlags(void **p, size_t size, int map_flags) {
 }
 
 void *NaClPageAllocFlags(void **p, size_t size, int map_flags) {
-    void *addr = p ? *p : NULL;
-    if (NaClPageAllocInternalFlags(&addr, size, map_flags) < 0)
+    if (*p)
+        map_flags |= MAP_FIXED;
+    if (NaClPageAllocInternalFlags(p, size, map_flags) < 0)
         return NULL;
-    if (p)
-        *p = addr;
-    return addr;
+    return *p;
 }
 
 /*

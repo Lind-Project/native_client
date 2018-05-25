@@ -1494,7 +1494,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
    * if ((entry->page_num << NACL_PAGESHIFT) < target->data_start)
    *   return;
    */
-  if (NaClPageAllocAtAddr((void **)&page_addr_child, copy_size))
+  if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0))
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
   if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1)
