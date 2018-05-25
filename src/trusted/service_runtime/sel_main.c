@@ -1143,7 +1143,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * Make sure all the file buffers are flushed before entering
    * the application code.
    */
-  fflush((FILE *) NULL);
+  fflush(NULL);
 
   if (NULL != nap->secure_service) {
     NaClErrorCode start_result;

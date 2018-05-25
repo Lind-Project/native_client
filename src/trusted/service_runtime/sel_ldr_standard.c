@@ -162,7 +162,6 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
   return LOAD_OK;
 }
 
-// yiwen: print out memory content for debug purpose
 void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   void *sysaddr;
   unsigned char *addr;
@@ -171,16 +170,16 @@ void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   UNREFERENCED_PARAMETER(addr);
   DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
   DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
-  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
   DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
+  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
 }
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   unsigned char *addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
   DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
   DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
+  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
   DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
 }
 
@@ -208,10 +207,12 @@ void NaClLogThreadContext(struct NaClAppThread *natp) {
           ctx->fcw, ctx->sys_fcw, ctx->mxcsr, ctx->sys_mxcsr);
 }
 
-// yiwen: print out memory layout of a nap
+/* print out memory layout of a nap */
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
   DPRINTF("%s\n", "NaClApp addr space layout:");
   DPRINTF("NaClApp cage id: %d \n", nap->cage_id);
+  DPRINTF("nap->mem_start          = 0x%016"NACL_PRIxPTR"\n",
+          nap->mem_start);
   DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
   DPRINTF("nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",

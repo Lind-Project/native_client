@@ -113,9 +113,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   }
 
   NaClXMutexLock(&nap->children_mu);
-  if (!DynArraySet(&nap->children, nap->num_children, nap_child))
+  NaClXMutexLock(&nap->mu);
+  if (!DynArraySet(&nap->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
   nap->num_children++;
+  NaClXMutexUnlock(&nap->mu);
   NaClXMutexUnlock(&nap->children_mu);
 
   return nap_child;
@@ -292,18 +294,20 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   if (nap->parent) {
-    DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
-    NaClXMutexLock(&nap->parent->mu);
-    NaClXCondVarSignal(&nap->parent->cv);
-    NaClXMutexUnlock(&nap->parent->mu);
     /*
      * remove self from parent's child_list
      */
     NaClXMutexLock(&nap->parent->children_mu);
+    NaClXMutexLock(&nap->parent->mu);
     DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
     DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     nap->parent->children_ids[nap->parent->num_children] = 0;
     nap->parent->child_list[nap->cage_id] = NULL;
+    if (!DynArrayGet(&nap->children, nap->cage_id))
+      NaClLog(LOG_FATAL, "Failed to remove child at idx %u\n", nap->cage_id);
+    DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
+    NaClXCondVarSignal(&nap->parent->cv);
+    NaClXMutexUnlock(&nap->parent->mu);
     NaClXMutexUnlock(&nap->parent->children_mu);
     goto out;
   }
