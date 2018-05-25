@@ -568,8 +568,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /* nap_child->mem_start = parent_ctx->r15; */
   /* nap_child->mem_start = master_ctx->r15; */
   natp_child->user.r15 = nap_child->mem_start;
-  /* natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset; */
-  /* natp_child->user.rbp = ctx.rsp + base_ptr_offset; */
+  natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
+  natp_child->user.rbp = ctx.rsp + base_ptr_offset;
   /* NaClPatchAddr(ctx.r15, nap_parent->mem_start, (uintptr_t *)&natp_child->user.rbp, 1); */
 
 #define NUM_STACK_VALS 8

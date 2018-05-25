@@ -1479,9 +1479,6 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
           copy_size,
           (void *)page_addr_parent,
           (void *)page_addr_child);
-  UNREFERENCED_PARAMETER(page_addr_child);
-  UNREFERENCED_PARAMETER(page_addr_parent);
-  UNREFERENCED_PARAMETER(copy_size);
   /*
    * NaClVmmapAdd(&target->mem_map, entry->page_num, entry->npages,
    *              entry->prot, entry->flags|F_ANON_PRIV,
@@ -1490,20 +1487,22 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
                             entry->prot, entry->flags|F_ANON_PRIV,
                             entry->desc, entry->offset, entry->file_size);
-  /*
-   * if ((entry->page_num << NACL_PAGESHIFT) < target->data_start)
-   *   return;
-   */
   if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0))
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
+  NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
   if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1)
     NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
+  NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot);
   if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1)
     NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
 }
 
 /*
