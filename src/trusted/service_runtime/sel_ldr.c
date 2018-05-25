@@ -1466,28 +1466,35 @@ void NaClGdbHook(struct NaClApp const *nap) {
  * * target_state must be a pointer to a valid, initialized NaClApp.
  *
  */
-void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
+static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   struct NaClApp *target = target_state;
-  uintptr_t page_addr_parent = target->parent->mem_start + (entry->page_num << NACL_PAGESHIFT);
-  uintptr_t page_addr_child = target->mem_start + (entry->page_num << NACL_PAGESHIFT);
+  uintptr_t offset = target->mem_start;
+  uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
+  uintptr_t page_addr_child = offset + (entry->page_num << NACL_PAGESHIFT);
+  uintptr_t page_addr_parent = parent_offset + (entry->page_num << NACL_PAGESHIFT);
   size_t copy_size = entry->npages << NACL_PAGESHIFT;
-  UNREFERENCED_PARAMETER(page_addr_parent);
-  UNREFERENCED_PARAMETER(page_addr_child);
-  UNREFERENCED_PARAMETER(copy_size);
   DPRINTF("copying %zu page(s) at %zu [%zu] from (%p) to (%p)\n",
           entry->npages,
           entry->page_num,
           copy_size,
           (void *)page_addr_parent,
           (void *)page_addr_child);
-  NaClVmmapAddWithOverwrite(&target->mem_map,
-                            entry->page_num,
-                            entry->npages,
-                            entry->prot,
-                            entry->flags | F_ANON_PRIV,
-                            entry->desc,
-                            entry->offset,
-                            entry->file_size);
+  UNREFERENCED_PARAMETER(page_addr_child);
+  UNREFERENCED_PARAMETER(page_addr_parent);
+  UNREFERENCED_PARAMETER(copy_size);
+  NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
+                            entry->prot, entry->flags|F_ANON_PRIV,
+                            entry->desc, entry->offset, entry->file_size);
+  if (entry->page_num < target->dynamic_text_start)
+    return;
+  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
+  if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
+  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
+  if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1)
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
 }
 
 /*
@@ -1500,19 +1507,19 @@ void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry) {
  * * target_state must be a pointer to a valid, initialized NaClApp.
  *
  */
-void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
+static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
   struct NaClApp *target = target_state;
   uintptr_t offset = target->mem_start;
   uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
   uintptr_t start = (region->start & UNTRUSTED_ADDR_MASK) + offset;
   if (NaClMprotect((void *)start, region->size, PROT_RW) == -1)
-    NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   DPRINTF("copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
   NaClDynamicRegionCreate(target, start, region->size, region->is_mmap);
   memcpy((void *)start, (void *)region->start, region->size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof(uintptr_t));
   if (NaClMprotect((void *)start, region->size, PROT_RX) == -1)
-    NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
 }
 
 /*
@@ -1580,7 +1587,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   memcpy(stackaddr_child, stackaddr_parent, stack_size);
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
-  NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyMemoryRegion, nap_child);
+  NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
   nap_child->break_addr = nap_parent->break_addr;
   NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
   if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1)
