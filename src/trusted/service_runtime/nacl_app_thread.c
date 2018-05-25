@@ -306,7 +306,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     if (!DynArrayGet(&nap->children, nap->cage_id))
       NaClLog(LOG_FATAL, "Failed to remove child at idx %u\n", nap->cage_id);
     DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
-    NaClXCondVarSignal(&nap->parent->cv);
+    NaClXCondVarBroadcast(&nap->parent->cv);
     NaClXMutexUnlock(&nap->parent->mu);
     NaClXMutexUnlock(&nap->parent->children_mu);
     goto out;
@@ -618,7 +618,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  NaClXCondVarSignal(&nap_parent->cv);
+  NaClXCondVarBroadcast(&nap_parent->cv);
   NaClXMutexUnlock(&nap_parent->mu);
   NaClXMutexUnlock(&nap_child->mu);
 
