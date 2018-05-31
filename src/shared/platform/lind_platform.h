@@ -126,7 +126,7 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf);
 int lind_fstatfs (int fd, struct lind_statfs *buf);
 int lind_statfs (const char *path, struct lind_statfs *buf);
 int lind_noop (void);
-int lind_getpid (pid_t * buf);
+int lind_getpid (pid_t *buf);
 int lind_dup (int oldfd);
 int lind_dup2 (int oldfd, int newfd);
 int lind_getdents (int fd, size_t nbytes, char *buf);
@@ -140,7 +140,7 @@ int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr
 int lind_listen (int sockfd, int backlog);
 int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr_in *dest_addr, const void *buf);
 int lind_accept (int sockfd, socklen_t addrlen);
-int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
+int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, const socklen_t *addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, socklen_t optlen, const void *optval);
 int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void *optval);
 int lind_shutdown (int sockfd, int how);
