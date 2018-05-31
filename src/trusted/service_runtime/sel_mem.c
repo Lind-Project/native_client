@@ -93,23 +93,21 @@ void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
 /*
  * Print debug.
  */
-void NaClVmentryPrint(void                  *state,
-                      struct NaClVmmapEntry *vmep) {
+void NaClVmentryPrint(void *state, struct NaClVmmapEntry *vmep) {
   UNREFERENCED_PARAMETER(state);
 
   DPRINTF("page num 0x%06x\n", (uint32_t)vmep->page_num);
   DPRINTF("num pages %d\n", (uint32_t)vmep->npages);
   DPRINTF("prot bits %x\n", vmep->prot);
   DPRINTF("flags %x\n", vmep->flags);
-  fflush(stdout);
+  fflush(NULL);
 }
 
 
-void NaClVmmapDebug(struct NaClVmmap *self,
-                    char             *msg) {
-  puts(msg);
-  NaClVmmapVisit(self, NaClVmentryPrint, (void *) 0);
-  fflush(stdout);
+void NaClVmmapDebug(struct NaClVmmap *self, char *msg) {
+  fputs(msg, stderr);
+  NaClVmmapVisit(self, NaClVmentryPrint, NULL);
+  fflush(NULL);
 }
 
 
