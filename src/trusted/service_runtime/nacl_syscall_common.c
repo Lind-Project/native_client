@@ -751,12 +751,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   DPRINTF("Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
-  /* don't unref host descriptors if not base thread -jp */
-  if (nap->cage_id > 1) {
-    retval = 0;
-    goto out;
-  }
-
   NaClFastMutexLock(&nap->desc_mu);
 
   // yiwen
@@ -767,7 +761,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   ndp = NaClGetDescMu(nap, fd);
-  if (NULL != ndp) {
+  /* don't call NaClSetDescMu() if not the base thread -jp */
+  if (NULL != ndp && nap->cage_id == 1) {
     /* Unref the desc_tbl */
     NaClSetDescMu(nap, d, NULL);
   }
