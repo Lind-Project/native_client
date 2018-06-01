@@ -16,6 +16,7 @@
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
+#include "native_client/src/trusted/service_runtime/dyn_array.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_desc_effector_ldr.h"
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
@@ -142,7 +143,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
   thread_idx = nap->fork_num;
-  CHECK(0 < thread_idx);
+  CHECK(1 < thread_idx);
   CHECK(thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
 #if NACL_WINDOWS
@@ -160,7 +161,13 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    */
   NaClXMutexLock(&nap->threads_mu);
   NaClXMutexLock(&nap->children_mu);
-  natp->thread_num = NaClAddThreadMu(nap, natp);
+  /*
+   * natp->thread_num = NaClAddThreadMu(nap, natp);
+   */
+  nap->num_threads = thread_idx - 1;
+  natp->thread_num = thread_idx;
+  if (!DynArraySet(&nap->threads, natp->thread_num, natp))
+    NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
   NaClXMutexUnlock(&nap->threads_mu);
   NaClXMutexUnlock(&nap->children_mu);
 
@@ -575,6 +582,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.r15 = nap_child->mem_start;
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
   natp_child->user.rbp = ctx.rsp + base_ptr_offset;
+  DPRINTF("usr_syscall_args address (child: %p) (parent: %p))\n",
+          (void *)natp_child->usr_syscall_args,
+          (void *)natp_parent->usr_syscall_args);
+  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p) (%%r15: %p)\n",
+          (void *)natp_child->user.rsp,
+          (void *)natp_child->user.rbp,
+          (void *)natp_child->user.r15);
 
 /* debug */
 #ifdef _DEBUG
@@ -610,13 +624,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
             (void *)nacl_user[natp_child->user.tls_idx]);
   }
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
-  DPRINTF("usr_syscall_args address (child: %p) (parent: %p))\n",
-          (void *)natp_child->usr_syscall_args,
-          (void *)natp_parent->usr_syscall_args);
-  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p) (%%r15: %p)\n",
-          (void *)natp_child->user.rsp,
-          (void *)natp_child->user.rbp,
-          (void *)natp_child->user.r15);
 
   /*
    * We set host_thread_is_defined assuming, for now, that
@@ -628,15 +635,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClXMutexUnlock(&nap_parent->mu);
   NaClXMutexUnlock(&nap_child->mu);
 
-  /*
-  * No other thread saw the NaClAppThread, so it is OK that
-  * host_thread was not initialized despite host_thread_is_defined
-  * being set.
-  */
-  if (!NaClThreadCtor(&natp_child->host_thread,
-                      NaClAppForkThreadLauncher,
-                      natp_child,
-                      NACL_KERN_STACK_SIZE)) {
+  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
+    /*
+    * No other thread saw the NaClAppThread, so it is OK that
+    * host_thread was not initialized despite host_thread_is_defined
+    * being set.
+    */
     natp_child->host_thread_is_defined = 0;
     NaClAppThreadDelete(natp_child);
     return 0;
@@ -669,9 +673,8 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
    * NaClThreadCtor() will succeed.
    */
   natp->host_thread_is_defined = 1;
-  if (!NaClThreadCtor(&natp->host_thread, NaClAppThreadLauncher, (void *) natp,
-                      NACL_KERN_STACK_SIZE)) {
-    /*
+  if (!NaClThreadCtor(&natp->host_thread, NaClAppThreadLauncher, natp, NACL_KERN_STACK_SIZE)) {
+     /*
      * No other thread saw the NaClAppThread, so it is OK that
      * host_thread was not initialized despite host_thread_is_defined
      * being set.
