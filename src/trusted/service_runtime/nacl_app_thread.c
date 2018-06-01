@@ -576,23 +576,27 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
   natp_child->user.rbp = ctx.rsp + base_ptr_offset;
 
-#define NUM_STACK_VALS 8
-#define TYPE_TO_EXAMINE uintptr_t
-  /* debug */
+/* debug */
+#ifdef _DEBUG
+# define NUM_STACK_VALS 4
+# define TYPE_TO_EXAMINE uintptr_t
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
-    DPRINTF("child_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-    DPRINTF("parent_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+    /*
+     * DPRINTF("child_stack[%zu]:\n", i);
+     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
+     * DPRINTF("parent_stack[%zu]:\n", i);
+     * NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+     */
     DPRINTF("child_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, child_addr);
     DPRINTF("parent_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, 16, parent_addr);
   }
-#undef NUM_STACK_VALS
-#undef TYPE_TO_EXAMINE
+# undef NUM_STACK_VALS
+# undef TYPE_TO_EXAMINE
+#endif
 
   /*
    * setup TLS slot in the global nacl_user array
