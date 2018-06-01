@@ -484,13 +484,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            uintptr_t                usr_stack_ptr,
                            uint32_t                 user_tls1,
                            uint32_t                 user_tls2) {
-  static THREAD void *stack_ptr_parent;
-  static THREAD void *stack_ptr_child;
-  static THREAD size_t stack_total_size;
-  static THREAD size_t stack_ptr_offset;
-  static THREAD size_t base_ptr_offset;
-  static THREAD struct NaClAppThread *natp_child;
-  static THREAD struct NaClThreadContext ctx;
+  void *stack_ptr_parent;
+  void *stack_ptr_child;
+  size_t stack_total_size;
+  size_t stack_ptr_offset;
+  size_t base_ptr_offset;
+  struct NaClAppThread *natp_child;
+  struct NaClThreadContext ctx;
 
   UNREFERENCED_PARAMETER(stack_ptr_offset);
   UNREFERENCED_PARAMETER(base_ptr_offset);
