@@ -47,7 +47,7 @@ struct NaClThreadContext *master_ctx;
 
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
+  struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
   NaClErrorCode *mod_status = NULL;
   int newfd = 0;
 
@@ -55,7 +55,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   CHECK(nap_child);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
-  memset(nap_child, 0, sizeof *nap_child);
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
   mod_status = &nap_child->module_load_status;
