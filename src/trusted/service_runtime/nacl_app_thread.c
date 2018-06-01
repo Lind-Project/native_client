@@ -306,25 +306,24 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     if (!DynArrayGet(&nap->parent->children, nap->cage_id))
       NaClLog(LOG_FATAL, "Failed to remove child at idx %u\n", nap->cage_id);
     DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
-    NaClXCondVarBroadcast(&nap->parent->cv);
-    NaClXMutexUnlock(&nap->parent->mu);
+    NaClXCondVarBroadcast(&nap->parent->children_cv);
     NaClXMutexUnlock(&nap->parent->children_mu);
-    goto out;
+    NaClXMutexUnlock(&nap->parent->mu);
+  } else {
+    DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
 
   /*
    * cleanup list of children
    */
-  DPRINTF("%s\n", "Thread has no parent");
-  NaClXMutexLock(&nap->mu);
+  NaClXMutexLock(&nap->children_mu);
   DPRINTF("Thread children count: %d\n", nap->num_children);
   while (nap->num_children > 0)
-    NaClXCondVarWait(&nap->cv, &nap->mu);
+    NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
   free(nap->child_list);
   nap->child_list = NULL;
-  NaClXMutexUnlock(&nap->mu);
+  NaClXMutexUnlock(&nap->children_mu);
 
-out:
   if (nap->debug_stub_callbacks) {
     DPRINTF("%s\n", " notifying the debug stub of the thread exit");
     /*
@@ -398,8 +397,8 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
  }
 
-  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) natp);
-  DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t) nap);
+  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
+  DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)nap);
   DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
   DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
 

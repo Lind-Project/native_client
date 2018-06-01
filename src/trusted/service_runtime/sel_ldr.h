@@ -132,6 +132,7 @@ struct NaClApp {
    * -jp
    */
   struct NaClMutex          children_mu;
+  struct NaClCondVar        children_cv;
   /*
    * TODO: convert child_list to DynArray
    */
