@@ -4408,17 +4408,19 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   struct NaClApp *nap = natp->nap;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = (int *)sysaddr;
-  size_t idx = 0;
   int retval = 0;
+  int children_exist = 1;
+  size_t idx = 0;
 
   DPRINTF("%s\n", "[NaClSysWaitpid] entered waitpid!");
 
   if (nap->num_children > 0) {
     /* seconds between thread switching */
-    time_t timeout = 1;
+    NACL_TIMESPEC_T const timeout = {1, 0};
+    /* time_t timeout = 1; */
     size_t num_children = nap->num_children;
     struct NaClApp *nap_child = nap->child_list[idx];
-    struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx];
+    /* struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx]; */
 
     /*
      * TODO: implement pid == WAIT_ANY_PG (0) and pid < -1 behavior
@@ -4428,26 +4430,69 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     if (pid > 0 && pid < num_children) {
       idx = pid;
       nap_child = nap->child_list[idx];
-      if (!nap_child)
+      if (!nap_child) {
+        retval = -1;
+        errno = ECHILD;
         goto out;
-      natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
-      if (!natp_child)
-        goto out;
-      retval = NaClThreadJoin(&natp_child->host_thread);
-      if (retval)
-        NaClLog(LOG_FATAL, "NaClThreadJoin() failed: %s\n", strerror(retval));
+      }
+      /*
+       * natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
+       * if (!natp_child) {
+       *   retval = -1;
+       *   errno = ECHILD;
+       *   goto out;
+       * }
+       * retval = NaClThreadJoin(&natp_child->host_thread);
+       * if (retval)
+       *   NaClLog(LOG_FATAL, "NaClThreadJoin() failed: %s\n", strerror(retval));
+       */
+      retval = nap_child->cage_id;
+      NaClXMutexLock(&nap->children_mu);
+      DPRINTF("Thread children count: %d\n", nap->num_children);
+      /* wait for child to finish */
+      while (nap->child_list[idx])
+        NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
+      NaClXCondVarBroadcast(&nap->children_cv);
+      NaClXMutexUnlock(&nap->children_mu);
     } else {
       /* wait for any threads to exit */
       for (;;) {
-        retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
-        if (!retval)
+        /* make sure children exist */
+        children_exist = 0;
+        for (size_t cnt = 0; cnt < num_children; cnt++) {
+          if (nap->child_list[cnt]) {
+            children_exist = 1;
+            break;
+          }
+        }
+        if (!children_exist) {
+          retval = -1;
+          errno = ECHILD;
           goto out;
-        if (retval != ETIMEDOUT)
-          NaClLog(LOG_FATAL, "NaClThreadTimedJoin() failed: %s\n", strerror(retval));
+        }
+        /*
+         * retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
+         * if (!retval)
+         *   goto out;
+         * if (retval != ETIMEDOUT)
+         *   NaClLog(LOG_FATAL, "NaClThreadTimedJoin() failed: %s\n", strerror(retval));
+         */
+        retval = nap_child->cage_id;
+        NaClXMutexLock(&nap->children_mu);
+        DPRINTF("Thread children count: %d\n", nap->num_children);
+        /* wait for child to finish */
+        if (nap->child_list[idx]) {
+          NaClXCondVarTimedWaitRelative(&nap->cv, &nap->mu, &timeout);
+          if (!nap->child_list[idx]) {
+            goto out;
+          }
+        }
+        NaClXCondVarBroadcast(&nap->children_cv);
+        NaClXMutexUnlock(&nap->children_mu);
         if (++idx >= num_children)
           idx = 0;
         nap_child = nap->child_list[idx];
-        natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
+        /* natp_child = nap_child->threads.ptr_array[nap_child->fork_num]; */
       }
     }
   }

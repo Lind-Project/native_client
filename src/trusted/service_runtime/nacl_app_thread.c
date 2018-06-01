@@ -629,10 +629,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   * host_thread was not initialized despite host_thread_is_defined
   * being set.
   */
-  if (!NaClThreadCreateJoinable(&natp_child->host_thread,
-                                NaClAppForkThreadLauncher,
-                                natp_child,
-                                NACL_KERN_STACK_SIZE)) {
+  if (!NaClThreadCtor(&natp_child->host_thread,
+                      NaClAppForkThreadLauncher,
+                      natp_child,
+                      NACL_KERN_STACK_SIZE)) {
     natp_child->host_thread_is_defined = 0;
     NaClAppThreadDelete(natp_child);
     return 0;
