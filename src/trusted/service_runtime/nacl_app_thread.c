@@ -285,6 +285,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
  */
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
+  struct NaClApp  *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   size_t          thread_idx;
 
   /*
@@ -309,6 +310,13 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClXCondVarBroadcast(&nap->parent->children_cv);
     NaClXMutexUnlock(&nap->parent->children_mu);
     NaClXMutexUnlock(&nap->parent->mu);
+    /*
+     * wait for all children to finish
+     */
+    NaClXMutexLock(&nap_master->children_mu);
+    while (nap_master->num_children > 0)
+      NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
+    NaClXMutexUnlock(&nap_master->children_mu);
   } else {
     DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
@@ -322,6 +330,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
   free(nap->child_list);
   nap->child_list = NULL;
+  NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
 
   if (nap->debug_stub_callbacks) {
