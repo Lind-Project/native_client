@@ -1469,10 +1469,15 @@ void NaClGdbHook(struct NaClApp const *nap) {
 static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   struct NaClApp *target = target_state;
   uintptr_t offset = target->mem_start;
-  uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
+  uintptr_t parent_offset = target->parent ? target->parent->mem_start : 0;
   uintptr_t page_addr_child = offset + (entry->page_num << NACL_PAGESHIFT);
   uintptr_t page_addr_parent = parent_offset + (entry->page_num << NACL_PAGESHIFT);
   size_t copy_size = entry->npages << NACL_PAGESHIFT;
+
+  /* don't capy pages if nap has no parent */
+  if (!parent_offset)
+    return;
+
   DPRINTF("copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
           entry->npages,
           entry->page_num,
@@ -1482,7 +1487,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
                             entry->prot, entry->flags|F_ANON_PRIV,
                             entry->desc, entry->offset, entry->file_size);
-  /* copy data pages point to */
+
   if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0))
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
@@ -1491,8 +1496,11 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
     NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
   if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1)
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+
+  /* copy data pages point to */
   memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
+
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
   NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot);
   if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1)

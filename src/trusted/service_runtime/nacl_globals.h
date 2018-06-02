@@ -12,7 +12,9 @@
 // #define SYSCALL_TIMING
 
 // yiwen: enable printing out debug info inside functions in NaCl runtime
-// #define DEBUG_INFO_ENABLED
+#ifdef _DEBUG
+# define DEBUG_INFO_ENABLED
+#endif
 
 // yiwen: enable printing out system call tracing info for NaCl irt calls
 // #define NACL_SYSCALL_TRACE_ENABLED
@@ -26,6 +28,7 @@
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
+#include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 
 /* jp */
@@ -40,7 +43,7 @@ EXTERN_C_BEGIN
 # define SIZE_T_MAX (~(size_t)0)
 #endif
 #define LD_FILE "/lib/glibc/runnable-ld.so"
-#define UNTRUSTED_ADDR_MASK 0x00000000fffffffful
+#define UNTRUSTED_ADDR_MASK 0xffffffffu
 
 /* extract uint64_t object representation */
 #define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
@@ -151,17 +154,15 @@ void NaClInitGlobals(void);
 
 static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t cnt) {
   for (size_t i = 0; i < cnt; i++) {
-    if (parent_bits != (start[i] & ~UNTRUSTED_ADDR_MASK))
+    if ((parent_bits >> NACL_PAGESHIFT) != (start[i] >> NACL_PAGESHIFT))
       continue;
     DPRINTF("patching %p\n", (void *)start[i]);
-    start[i] &= UNTRUSTED_ADDR_MASK;
-    start[i] |= child_bits;
+    start[i] = child_bits | (start[i] & UNTRUSTED_ADDR_MASK);
     DPRINTF("new addr %p\n", (void *)start[i]);
   }
 }
 
-static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(
-    uint32_t thread_index) {
+static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(uint32_t thread_index) {
   DCHECK(thread_index < NACL_THREAD_MAX);
   return NaClAppThreadFromThreadContext(nacl_user[thread_index]);
 }
