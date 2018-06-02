@@ -753,29 +753,39 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClFastMutexLock(&nap->desc_mu);
 
+  /* debug -jp */
+  if (nap->cage_id) {
+     DPRINTF("cage_id: %d", nap->cage_id);
+     retval = 0;
+     goto out;
+  }
+
   // yiwen
   fd = fd_cage_table[nap->cage_id][d];
-  if ((fd == 8000) | (fd == 8001)) {
+
+  /* debug -jp */
+  if (fd == 8000 || fd == 8001) {
+     DPRINTF("cage_id: %d fd = %d", nap->cage_id, fd);
      retval = 0;
      goto out;
   }
 
   ndp = NaClGetDescMu(nap, fd);
   /* don't call NaClSetDescMu() if not the base thread -jp */
-  if (NULL != ndp && nap->cage_id == 1) {
+  if (ndp) {
     /* Unref the desc_tbl */
     NaClSetDescMu(nap, d, NULL);
   }
 
-  NaClFastMutexUnlock(&nap->desc_mu);
-  DPRINTF("Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
-          (uintptr_t) ndp);
-  if (NULL != ndp) {
+  if (ndp) {
+    DPRINTF("Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
+            (uintptr_t) ndp);
     NaClDescUnref(ndp);
     retval = 0;
   }
 
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1134,7 +1144,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   }
 
   // yiwen
-  // fd = fd_cage_table[nap->cage_id][d];
+  fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(4, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
