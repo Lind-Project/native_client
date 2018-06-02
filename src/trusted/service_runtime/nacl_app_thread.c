@@ -549,30 +549,87 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClLogThreadContext(natp_child);
 
   /*
-   * set return value for fork().
+   *  Argument passing convention in AMD64, from
    *
-   * linux is a unix-like system. however, its kernel uses the
-   * microsoft system-call convention of passing parameters in
-   * registers. as with the unix convention, the function number
-   * is placed in eax. the parameters, however, are not passed on
-   * the stack but in %rbx, %rcx, %rdx, %rsi, %rdi, %rbp:
+   *    http://www.x86-64.org/documentation/abi.pdf
    *
-   * ; SYS_open's syscall number is 5
-   * open:
-   *	mov	$5, %eax
-   *	mov	$path, %ebx
-   *	mov	$flags, %ecx
-   *	mov	$mode, %edx
-   *	int	$0x80
+   *  for system call parameters, are as follows.  All syscall arguments
+   *  are of INTEGER type (section 3.2.3).  They are assigned, from
+   *  left-to-right, to the registers
    *
-   * n.b. fork() return value is stored in %rdx
-   * instead of %rax like other syscalls, but
-   * thankfully in NaCl we only need to set %sysret
-   * in order to change the return value.
+   *    rdi, rsi, rdx, rcx, r8, r9
    *
-   * -jp
+   *  and any additional arguments are passed on the stack, pushed onto
+   *  the stack in right-to-left order.  Note that this means that the
+   *  syscall with the maximum number of arguments, mmap, passes all its
+   *  arguments in registers.
+   *
+   *  Argument passing convention for Microsoft, from wikipedia, is
+   *  different.  The first four arguments go in
+   *
+   *    rcx, rdx, r8, r9
+   *
+   *  respectively, with the caller responsible for allocating 32 bytes
+   *  of "shadow space" for the first four arguments, an additional 4
+   *  arguments are on the stack.  Presumably this is to make stdargs
+   *  easier to implement: the callee can always write those four
+   *  registers to 8(%rsp), ..., 24(%rsp) resp (%rsp value assumed to be
+   *  at fn entry/start of prolog, before push %rbp), and then use the
+   *  effective address of 8(%rsp) as a pointer to an in-memory argument
+   *  list.  However, because this is always done, presumably called code
+   *  might treat this space as if it's part of the red zone, and it
+   *  would be an error to not allocate this stack space, even if the
+   *  called function is declared to take fewer than 4 arguments.
+   *
+   *  Caller/callee saved
+   *
+   *  - AMD64:
+   *    - caller saved: rax, rcx, rdx, rdi, rsi, r8, r9, r10, r11
+   *    - callee saved: rbx, rbp, r12, r13, r14, r15
+   *
+   *  - Microsoft:
+   *    - caller saved: rax, rcx, rdx, r8, r9, r10, r11
+   *    - callee saved: rbx, rbp, rdi, rsi, r12, r13, r14, r15
+   *
+   *  A conservative approach might be to follow microsoft and save more
+   *  registers, but the presence of shadow space will make assembly code
+   *  incompatible anyway, assembly code that calls must allocate shadow
+   *  space, but then in-memory arguments will be in the wrong location
+   *  wrt %rsp.
+   *
+   *  n.b. -jp:
+   *
+   *  set return value for fork().
+   *
+   *  linux is a unix-like system. however, its kernel uses the
+   *  microsoft system-call convention of passing parameters in
+   *  registers. as with the unix convention, the function number
+   *  is placed in eax. the parameters, however, are not passed on
+   *  the stack but in %rbx, %rcx, %rdx, %rsi, %rdi, %rbp:
+   *
+   *  ; SYS_open's syscall number is 5
+   *  open:
+   *          mov	$5, %eax
+   *          mov	$path, %ebx
+   *          mov	$flags, %ecx
+   *          mov	$mode, %edx
+   *          int	$0x80
+   *
+   *  n.b. fork() return value is stored in %rdx
+   *  instead of %rax like other syscalls,
+   *  _normally_, but in NaCl %rax is used for all
+   *  syscall returns.
+   *
+   *  TODO:
+   *  figure out what user.sysret is actually used
+   *  for; when you set it to anything except 0
+   *  everything breaks and i have no idea why...
+   *
+   *  -jp
    */
   natp_child->user.sysret = 0;
+  natp_child->user.rax = 0;
+  /* natp_child->user.rdx = 0; */
 
   /*
    * adjust trampolines and %rip
@@ -592,20 +649,20 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 /* debug */
 #ifdef _DEBUG
 # define NUM_STACK_VALS 16
-# define TYPE_TO_EXAMINE uintptr_t
+# define TYPE_TO_EXAMINE uint32_t
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     DPRINTF("child_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016x", &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
     DPRINTF("parent_stack[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016x", &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
   }
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
     DPRINTF("child_rsp[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", child_addr);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016x", child_addr);
     DPRINTF("parent_rsp[%zu]:\n", i);
-    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", parent_addr);
+    NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016x", parent_addr);
   }
 # undef NUM_STACK_VALS
 # undef TYPE_TO_EXAMINE
@@ -704,9 +761,9 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 /* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   DPRINTF("[NaClAppThreadPrintInfo] "
-          "cage id = %d, prog_ctr = %#lx, new_prog_ctr = %#lx, sysret = %#lx\n",
+          "cage id = %d, prog_ctr = %#x, new_prog_ctr = %#x, sysret = %#x\n",
           natp->nap->cage_id,
-          (long unsigned)natp->user.prog_ctr,
-          (long unsigned)natp->user.new_prog_ctr,
-          (long unsigned)natp->user.sysret);
+          (unsigned)natp->user.prog_ctr,
+          (unsigned)natp->user.new_prog_ctr,
+          (unsigned)natp->user.sysret);
 }

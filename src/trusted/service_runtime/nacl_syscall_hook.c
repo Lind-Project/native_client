@@ -141,14 +141,19 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   natp->usr_syscall_args = NaClRawUserStackAddrNormalize(sp_user +
                                                          NACL_SYSARGS_FIX);
 
-  if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
-    NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
-    sysret = -NACL_ABI_EINVAL;
-    NaClCopyDropLock(nap);
-  } else {
-    sysret = (*(nap->syscall_table[sysnum].handler))(natp);
-    /* Implicitly drops lock */
-  }
+  sysret = (*(nap->syscall_table[sysnum].handler))(natp);
+
+  /*
+   * if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
+   *   NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
+   *   sysret = -NACL_ABI_EINVAL;
+   *   NaClCopyDropLock(nap);
+   * } else {
+   *   sysret = (*(nap->syscall_table[sysnum].handler))(natp);
+   *   // Implicitly drops lock
+   * }
+   */
+
   NaClLog(4,
           ("Returning from syscall %"NACL_PRIdS": return value %"NACL_PRId32
            " (0x%"NACL_PRIx32")\n"),
