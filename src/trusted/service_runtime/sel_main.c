@@ -1251,11 +1251,23 @@ int NaClSelLdrMain(int argc, char **argv) {
   DPRINTF("nap->binary_path = %s, nap0->binary_path = %s\n", nap->binary_path, nap0->binary_path);
 
   /* jp */
-  DPRINTF("%s\n", "Initializing pipe table mutexes and conditional variables.");
+  DPRINTF("%s\n", "Initializing pipe table mutexes/conditional variables.");
   for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
     NaClXMutexCtor(&pipe_table[i].mu);
     NaClXCondVarCtor(&pipe_table[i].cv);
   }
+
+  DPRINTF("%s\n", "Initializing app linked list");
+  NaClXMutexCtor(&app_list.mu);
+  NaClXCondVarCtor(&app_list.cv);
+  NaClXMutexLock(&app_list.mu);
+  app_list.head = calloc(1, sizeof *app_list.head);
+  CHECK(app_list.head);;
+  app_list.head->size = sizeof state;
+  app_list.head->type = T_APP;
+  app_list.head->data = &state;
+  app_list.head->next = NULL;
+  NaClXMutexUnlock(&app_list.mu);
 
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();

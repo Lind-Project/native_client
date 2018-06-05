@@ -80,14 +80,34 @@ struct NaClValidationCache;
 struct NaClValidationMetadata;
 
 /* jp */
-struct NaClPipe {
-    bool xfer_done;
-    unsigned char pipe_buf[PIPE_BUF_MAX];
-    struct NaClMutex mu;
-    struct NaClCondVar cv;
+struct ListNode {
+  enum {T_OTHER, T_APP, T_THREAD, T_CONTEXT} type;
+  size_t size;
+  void *data;
+  struct ListNode *next;
 };
 
-extern struct NaClPipe pipe_table[PIPE_NUM_MAX];
+struct LinkedList {
+  /*
+   * mu must be held when accessing
+   * *any* part of the structure
+   *
+   * -jp
+   */
+  struct NaClMutex mu;
+  struct NaClCondVar cv;
+  struct ListNode *head;
+};
+
+struct Pipe {
+  bool xfer_done;
+  unsigned char pipe_buf[PIPE_BUF_MAX];
+  struct NaClMutex mu;
+  struct NaClCondVar cv;
+};
+
+extern struct LinkedList app_list;
+extern struct Pipe pipe_table[PIPE_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern int fork_num;
 extern int cached_lib_num;

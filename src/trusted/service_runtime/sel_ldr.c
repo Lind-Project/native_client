@@ -81,7 +81,8 @@ struct NaClApp *nap0_2;
  *
  * -jp
  */
-struct NaClPipe pipe_table[PIPE_NUM_MAX];
+struct LinkedList app_list;
+struct Pipe pipe_table[PIPE_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 int fork_num;
 
