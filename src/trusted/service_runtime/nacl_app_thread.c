@@ -110,7 +110,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     }
     newfd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, newfd, old_nd);
-    fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+    fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   }
 
   DPRINTF("Initializing linked list node for cage_id: [%d]\n", nap_child->cage_id);

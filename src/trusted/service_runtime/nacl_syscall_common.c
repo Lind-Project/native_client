@@ -771,7 +771,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   ndp = NaClGetDescMu(nap, fd);
-  /* don't call NaClSetDescMu() if not the base thread -jp */
   if (ndp) {
     /* Unref the desc_tbl */
     NaClSetDescMu(nap, d, NULL);
@@ -1057,17 +1056,15 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   // yiwen
   int             fd;
-  int		  write_data_size;
+  int             write_data_size;
 
-  NaClLog(3,
-          "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+  DPRINTF("Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-
   fd = fd_cage_table[nap->cage_id][d];
-
-  // printf("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
+  UNREFERENCED_PARAMETER(fd);
+  DPRINTF("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
 
   // yiwen: try to use the kernel pipe
   /*
@@ -1160,42 +1157,37 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  log_bytes = count;
-  if (log_bytes > INT32_MAX) {
-    log_bytes = INT32_MAX;
-    ellipsis = "...";
-  }
-  if (NaClLogGetVerbosity() < 10) {
-    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-      log_bytes = kdefault_io_buffer_bytes_to_log;
-      ellipsis = "...";
-    }
-  }
-  NaClLog(8, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
-          d, (int) log_bytes, (char *) sysaddr, ellipsis, count);
-
   /*
    * The maximum length for read and write is INT32_MAX--anything larger and
    * the return value would overflow. Passing larger values isn't an error--
    * we'll just clamp the request size if it's too large.
    */
-  if (count > INT32_MAX) {
-    count = INT32_MAX;
+  count = count > INT32_MAX ? INT32_MAX : count;
+  log_bytes = count;
+  if (log_bytes == INT32_MAX)
+    ellipsis = "...";
+  UNREFERENCED_PARAMETER(ellipsis);
+  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+     log_bytes = kdefault_io_buffer_bytes_to_log;
+     ellipsis = "...";
   }
+  UNREFERENCED_PARAMETER(log_bytes);
+  UNREFERENCED_PARAMETER(ellipsis);
+  DPRINTF("In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
   NaClVmIoWillStart(nap,
-                    (uint32_t) (uintptr_t) buf,
-                    (uint32_t) (((uintptr_t) buf) + count - 1));
-  write_result = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Write)(ndp, (void *) sysaddr, count);
+                    (uint32_t)(uintptr_t)buf,
+                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  write_result = (*((struct NaClDescVtbl const *)ndp->base.vtbl)->Write)(ndp, (void *) sysaddr, count);
   NaClVmIoHasEnded(nap,
-                   (uint32_t) (uintptr_t) buf,
-                   (uint32_t) (((uintptr_t) buf) + count - 1));
+                   (uint32_t)(uintptr_t)buf,
+                   (uint32_t)(((uintptr_t)buf) + count - 1));
 
   NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
-  retval = (int32_t) write_result;
+  retval = (int32_t)write_result;
 
 cleanup:
   return retval;
