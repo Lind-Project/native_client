@@ -37,6 +37,7 @@
 
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_log.h"
+#include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_threads.h"
 
 #include "native_client/src/shared/srpc/nacl_srpc.h"
@@ -111,6 +112,44 @@ extern struct Pipe pipe_table[PIPE_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern int fork_num;
 extern int cached_lib_num;
+
+static INLINE struct ListNode *LinkedListCtor(struct LinkedList *list, size_t size, int type, void *data) {
+  NaClXMutexCtor(&list->mu);
+  NaClXCondVarCtor(&list->cv);
+  NaClXMutexLock(&list->mu);
+  list->head = calloc(1, sizeof *list->head);
+  CHECK(list->head);
+  list->head->size = size;
+  list->head->type = type;
+  list->head->data = data;
+  list->head->next = NULL;
+  NaClXMutexUnlock(&list->mu);
+  return list->head;
+}
+
+static INLINE struct ListNode *LinkedListAdd(struct LinkedList *list, size_t size, int type, void *data) {
+  struct ListNode *node;
+  size_t node_cnt = 0;
+  CHECK(list);
+  NaClXMutexLock(&list->mu);
+  if (list->head) {
+    /* walk the list */
+    for (node = list->head; node->next; node = node->next)
+      node_cnt++;
+    node->next = calloc(1, sizeof *node);
+    node = node->next;
+  } else {
+    node = calloc(1, sizeof *node);
+    list->head = node;
+  }
+  DPRINTF("current node count: [%zu]\n", node_cnt);
+  node->size = size;
+  node->type = type;
+  node->data = data;
+  node->next = NULL;
+  NaClXMutexUnlock(&list->mu);
+  return node;
+}
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
