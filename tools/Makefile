@@ -87,8 +87,8 @@ HOST_TOOLCHAIN_BITS = 32
 
 # If CANNED_REVISION is "no" then it's "from git build": Makefile uses file
 # named "REVISIONS" to pull infomation from git and builds that.
-# If CANNED_REVISION is set to some revision then Makefile will try to download
 # sources from commondatastorage.googleapis.com and use them.
+# If CANNED_REVISION is set to some revision then Makefile will try to download
 # You can also set CANNED_REVISION to "yes" if you want to just build sources
 # already unpacked and ready to be built from SRC subdirectory.
 CANNED_REVISION = no
@@ -939,7 +939,7 @@ INST_GLIBC_PROGRAM ?= none
 .PHONY: build-with-glibc
 build-with-glibc: SRC/gcc
 	$(MAKE) -f $(THISMAKEFILE) sdkdirs
-	cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
+	# cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
 	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
 ifeq ($(INST_GLIBC_PROGRAM), none)
 	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
