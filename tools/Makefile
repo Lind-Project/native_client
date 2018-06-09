@@ -52,6 +52,7 @@ ifeq ($(VERSION_TEST),)
 	MAKE_COMPAT != \
 		find -H \
 			/bin /sbin /usr/bin /usr/sbin \
+			-maxdepth 1 \
 			-type f \
 			-a \( \
 				-name "make" \
@@ -78,8 +79,8 @@ DESTDIR ?=
 
 # We can't use CFLAGS and LDFLAGS since they are passed to sub-makes and
 # those override configure parameters.
-USER_CFLAGS = -O2 -g -Wno-implicit-fallthrough -Wno-unused-but-set-variable
-USER_LDFLAGS = -s
+USER_CFLAGS = -O2 -g3 -Wno-implicit-fallthrough -Wno-unused-but-set-variable -Wno-pedantic
+USER_LDFLAGS =
 
 # By default all toolchain executables are x86-32 executables, use
 # HOST_TOOLCHAIN_BITS=64 to make them x86-64 executables.
@@ -184,7 +185,8 @@ NACL_GLIBC_GIT_BASE = 5c46008d0874c9b9d5f5f201a10e975d1fe84787
 SRC:
 	mkdir SRC
 
-git-sources := binutils gcc gdb glibc linux-headers-for-nacl newlib
+# git-sources := binutils gcc gdb glibc linux-headers-for-nacl newlib
+git-sources := linux-headers-for-nacl newlib
 
 nacl-name = $(patsubst nacl-linux-headers-for-nacl,linux-headers-for-nacl,nacl-$*)
 
@@ -255,7 +257,7 @@ mkdir -p $@
 BUILD=$$PWD/BUILD && cd $@ && \
   ../../SRC/.gcc-extra-$(@:BUILD/.gcc-extra-build-%=%)/configure \
   CC="$(GCC_CC)" \
-  CXX="$(GCC_CXX)" \
+  CXX="clang++" \
   CFLAGS="$(CFLAGS)" \
   CXXFLAGS="$(CXXFLAGS)" \
   CPPFLAGS="-fexceptions $(CPPFLAGS)" \
@@ -496,8 +498,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-nolibc)
@@ -561,8 +563,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
 	    --prefix=$(PREGCC_PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-nolibc)
@@ -637,7 +639,7 @@ GLIBC_BUILD_DIR = BUILD/build-glibc-$(CROSSARCH)
 GLIBC_CC = $(PREGCC_PREFIX)/bin/$(CROSSARCH)-gcc
 
 # CFLAGS for building glibc.
-GLIBC_CFLAGS = -O2 -g
+GLIBC_CFLAGS = -O2 -g3
 
 ARCH_DEST = $(DESTDIR)$(PREFIX)/$(CROSSARCH)
 ARCH_DEST_INC_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/include
@@ -657,7 +659,7 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	mkdir -p BUILD/build-glibc32/lib
 	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
 	  MAKE=$(MAKE_COMPAT) \
-	  BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
+	  BUILD_CC="gcc -O2 -g3 -Wl,--warn-unresolved-symbols" \
 	  CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
 	  CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
 	  libc_cv_forced_unwind=yes \
@@ -680,7 +682,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	rm -rf BUILD/build-glibc64
 	mkdir -p BUILD/build-glibc64
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
-	    BUILD_CC="gcc -O2 -g" \
+	    BUILD_CC="gcc -O2 -g3" \
 	    CC="$(GLIBC_CC) -m64" \
 	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
@@ -698,7 +700,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 .PHONY: updateglibc
 updateglibc:
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
-	    BUILD_CC="gcc -O2 -g " \
+	    BUILD_CC="gcc -O2 -g3 " \
 	    CC="$(GLIBC_CC) -m64" \
 	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
@@ -795,8 +797,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
+	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-glibc)" \
+	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-glibc)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-glibc)
@@ -849,8 +851,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
+	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-newlib)" \
+	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-newlib)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-newlib)
@@ -938,25 +940,25 @@ endif
 INST_GLIBC_PROGRAM ?= none
 .PHONY: build-with-glibc
 build-with-glibc: SRC/gcc
-	$(MAKE) -f $(THISMAKEFILE) sdkdirs
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs
 	cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
 ifeq ($(INST_GLIBC_PROGRAM), none)
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-glibc32
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-glibc64
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-glibc32
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-glibc64
 else
 	$(INST_GLIBC_PROGRAM) "$(DESTDIR)$(PREFIX)"
 endif
 	cp -f SRC/glibc/sysdeps/nacl/{irt_syscalls,nacl_stat}.h \
 	  "$(DESTDIR)$(PREFIX)/$(CROSSARCH)"/include
-	$(MAKE) -f $(THISMAKEFILE) export-headers
-	$(MAKE) -f $(THISMAKEFILE) glibc-adhoc-files
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-full-gcc
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) export-headers
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) glibc-adhoc-files
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-full-gcc
 ifeq ($(CANNED_REVISION), no)
 ifeq ($(PLATFORM), win)
 else
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
 endif
 endif
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -1002,21 +1004,21 @@ endif
 
 .PHONY: build-with-newlib
 build-with-newlib: SRC/gcc
-	$(MAKE) -f $(THISMAKEFILE) sdkdirs
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs
 	cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
-	$(MAKE) -f $(THISMAKEFILE) export-headers
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-newlib
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) export-headers
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-newlib
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
 ifeq ($(CANNED_REVISION), no)
-	$(MAKE) -f $(THISMAKEFILE) headers_for_build
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) headers_for_build
 endif
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gcc
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gcc
 ifeq ($(CANNED_REVISION), no)
 ifeq ($(PLATFORM), win)
 else
-	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
 endif
 endif
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -1029,7 +1031,7 @@ buildbot-build-with-newlib: | \
   buildbot-mark-version \
   pinned-src-newlib
 	find SRC -print0 | xargs -0 touch -r SRC
-	$(MAKE) -f $(THISMAKEFILE) build-with-newlib
+	$(MAKE_COMPAT) -f $(THISMAKEFILE) build-with-newlib
 
 # Don't generate patch files for things like gmp or linux-headers-for-nacl
 # because these are not changed from upstream.
