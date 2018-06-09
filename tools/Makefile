@@ -384,7 +384,7 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
 	    --target=$(CROSSARCH) \
 	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
 	    --disable-werror --enable-deterministic-archives --without-zlib
-	$(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
+	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
 	  sed \
 	    -e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
 	    -e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
@@ -394,8 +394,8 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
 	    <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
 	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
 	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
-	  $(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) all && \
-	  $(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
 	touch $@
 
 .PHONY: binutils
@@ -617,8 +617,8 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
 		      CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
 		      CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
 		      --target=$(CROSSARCH) && \
-	  $(MAKE_COMPAT) && \
-	  $(MAKE_COMPAT) DESTDIR=$(DESTDIR) install
+	  $(MAKE) && \
+	  $(MAKE) DESTDIR=$(DESTDIR) install
 ifeq ($(CANNED_REVISION), no)
 	rm $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include/pthread.h
 endif
@@ -677,8 +677,8 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	  --host=i686-linux-gnu \
 	  -with-headers=$(LINUX_HEADERS) \
 	  -enable-kernel=2.6.18
-	$(MAKE_COMPAT) -C BUILD/build-glibc32
-	$(MAKE_COMPAT) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+	$(MAKE) -C BUILD/build-glibc32
+	$(MAKE) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
 	touch $@
 
 BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
@@ -750,7 +750,7 @@ endif
 .PHONY: glibc-adhoc-files
 glibc-adhoc-files: | SRC/glibc
 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
-		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
+		$(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
 	fi
 	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
 	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
@@ -946,25 +946,25 @@ endif
 INST_GLIBC_PROGRAM ?= none
 .PHONY: build-with-glibc
 build-with-glibc: SRC/gcc
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs
+	$(MAKE) -f $(THISMAKEFILE) sdkdirs
 	cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
 ifeq ($(INST_GLIBC_PROGRAM), none)
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-glibc32
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-glibc64
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-glibc32
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-glibc64
 else
 	$(INST_GLIBC_PROGRAM) "$(DESTDIR)$(PREFIX)"
 endif
 	cp -f SRC/glibc/sysdeps/nacl/{irt_syscalls,nacl_stat}.h \
 	  "$(DESTDIR)$(PREFIX)/$(CROSSARCH)"/include
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) export-headers
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) glibc-adhoc-files
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-full-gcc
+	$(MAKE) -f $(THISMAKEFILE) export-headers
+	$(MAKE) -f $(THISMAKEFILE) glibc-adhoc-files
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-full-gcc
 ifeq ($(CANNED_REVISION), no)
 ifeq ($(PLATFORM), win)
 else
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
 endif
 endif
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -1010,21 +1010,21 @@ endif
 
 .PHONY: build-with-newlib
 build-with-newlib: SRC/gcc
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs
+	$(MAKE) -f $(THISMAKEFILE) sdkdirs
 	cp -f SRC/gcc/COPYING* $(DESTDIR)$(PREFIX)
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) export-headers
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-newlib
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
+	$(MAKE) -f $(THISMAKEFILE) export-headers
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-newlib
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
 ifeq ($(CANNED_REVISION), no)
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) headers_for_build
+	$(MAKE) -f $(THISMAKEFILE) headers_for_build
 endif
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gcc
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gcc
 ifeq ($(CANNED_REVISION), no)
 ifeq ($(PLATFORM), win)
 else
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
+	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-gdb
 endif
 endif
 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -1037,7 +1037,7 @@ buildbot-build-with-newlib: | \
   buildbot-mark-version \
   pinned-src-newlib
 	find SRC -print0 | xargs -0 touch -r SRC
-	$(MAKE_COMPAT) -f $(THISMAKEFILE) build-with-newlib
+	$(MAKE) -f $(THISMAKEFILE) build-with-newlib
 
 # Don't generate patch files for things like gmp or linux-headers-for-nacl
 # because these are not changed from upstream.
