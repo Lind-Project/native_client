@@ -681,7 +681,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   if (0 == retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
     struct NaClHostDir  *hd;
 
-    hd = malloc(sizeof *hd);
+    /* needed to suppress warnings from c++ code using these functions */
+    hd= (void *)malloc(sizeof *hd);
     if (NULL == hd) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
@@ -698,7 +699,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   } else {
     struct NaClHostDesc  *hd;
 
-    hd = malloc(sizeof *hd);
+    /* needed to suppress warnings from c++ code using these functions */
+    hd= (void *)malloc(sizeof *hd);
     if (NULL == hd) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
@@ -3212,7 +3214,8 @@ int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
 
   shmp = NULL;
 
-  shmp = malloc(sizeof *shmp);
+  /* needed to suppress warnings from c++ code using these functions */
+  shmp= (void *)malloc(sizeof *shmp);
   if (NULL == shmp) {
     retval = -NACL_ABI_ENOMEM;
     goto cleanup;
@@ -3384,7 +3387,8 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
           ("Entered NaClSysMutexCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
-  desc = malloc(sizeof(*desc));
+  /* needed to suppress warnings from c++ code using these functions */
+  desc= (void *)malloc(sizeof(*desc));
 
   if (!desc || !NaClDescMutexCtor(desc)) {
     retval = -NACL_ABI_ENOMEM;
@@ -3482,7 +3486,8 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
           ("Entered NaClSysCondCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
-  desc = malloc(sizeof(*desc));
+  /* needed to suppress warnings from c++ code using these functions */
+  desc= (void *)malloc(sizeof(*desc));
 
   if (!desc || !NaClDescCondVarCtor(desc)) {
     retval = -NACL_ABI_ENOMEM;
@@ -3637,7 +3642,8 @@ int32_t NaClSysSemCreate(struct NaClAppThread *natp,
            ", %d)\n"),
           (uintptr_t) natp, init_value);
 
-  desc = malloc(sizeof(*desc));
+  /* needed to suppress warnings from c++ code using these functions */
+  desc= (void *)malloc(sizeof(*desc));
 
   if (!desc || !NaClDescSemaphoreCtor(desc, init_value)) {
     retval = -NACL_ABI_ENOMEM;
@@ -4161,7 +4167,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   fork_num++;
   child_argc = 3 + nap->command_num;
-  child_argv = calloc(child_argc + 1, sizeof *child_argv);
+  /* needed to suppress warnings from c++ code using these functions */
+  child_argv= (void *)calloc(child_argc + 2, sizeof *child_argv);
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
@@ -4217,7 +4224,8 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv starts! \n");
 
   child_argc = 4;
-  child_argv = calloc(child_argc + 1, sizeof *child_argv);
+  /* needed to suppress warnings from c++ code using these functions */
+  child_argv= (void *)calloc(child_argc + 1, sizeof *child_argv);
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
@@ -4280,13 +4288,15 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   path_len = strlen((char *)path_get);
   path_len += 1;
 
-  options = malloc(3 * sizeof *options);
+  /* needed to suppress warnings from c++ code using these functions */
+  options= (void *)malloc(3 * sizeof *options);
   argv_split = strtok((char *)argv_get, " ");
   while (argv_split != NULL) {
     option_len = strlen(argv_split) + 1;
     // printf ("%s \n", argv_split);
     // printf ("%d \n", option_len);
-    options[argv_num] = malloc(option_len);
+    /* needed to suppress warnings from c++ code using these functions */
+    options[argv_num]= (void *)malloc(option_len);
     strncpy(options[argv_num], argv_split, option_len - 1);
     options[argv_num][option_len - 1] = '\0';
     argv_num++;
@@ -4301,19 +4311,25 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
 
   // setup the arguments needed to start running a new main thread in a pre-allocated new cage
   argc_newcage = 4 + argv_num - 1;
-  argv_newcage = malloc(argc_newcage * sizeof *argv_newcage);
-  argv_newcage[0] = malloc(9);
+  /* needed to suppress warnings from c++ code using these functions */
+  argv_newcage= (void *)malloc(argc_newcage * sizeof *argv_newcage);
+  /* needed to suppress warnings from c++ code using these functions */
+  argv_newcage[0]= (void *)malloc(9);
   strncpy(argv_newcage[0], "NaClMain", 9);
-  argv_newcage[1] = malloc(15);
+  /* needed to suppress warnings from c++ code using these functions */
+  argv_newcage[1]= (void *)malloc(15);
   strncpy(argv_newcage[1], "--library-path", 15);
-  argv_newcage[2] = malloc(7);
+  /* needed to suppress warnings from c++ code using these functions */
+  argv_newcage[2]= (void *)malloc(7);
   strncpy(argv_newcage[2], "/glibc", 7);
-  argv_newcage[3] = malloc(path_len);
+  /* needed to suppress warnings from c++ code using these functions */
+  argv_newcage[3]= (void *)malloc(path_len);
   strncpy(argv_newcage[3], (char *)path_get, path_len);
 
   for (int i = 1; i < argv_num; i++) {
     // printf ("%d \n", (int) strlen(options[i]));
-    argv_newcage[3 + i] = malloc(strlen(options[i]) + 1);
+    /* needed to suppress warnings from c++ code using these functions */
+    argv_newcage[3 + i]= (void *)malloc(strlen(options[i]) + 1);
     strncpy(argv_newcage[3 + i], options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
     // printf ("%s \n", argv_newcage[3 + i]);
