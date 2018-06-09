@@ -79,7 +79,7 @@ DESTDIR ?=
 
 # We can't use CFLAGS and LDFLAGS since they are passed to sub-makes and
 # those override configure parameters.
-USER_CFLAGS = -O2 -g3 -Wno-implicit-fallthrough -Wno-unused-but-set-variable -Wno-pedantic
+USER_CFLAGS = -O2 -g3 -Wno-implicit-fallthrough -Wno-unused-but-set-variable
 USER_LDFLAGS =
 
 # By default all toolchain executables are x86-32 executables, use
