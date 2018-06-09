@@ -52,6 +52,7 @@ ifeq ($(VERSION_TEST),)
 	MAKE_COMPAT != \
 		find -H \
 			/bin /sbin /usr/bin /usr/sbin \
+			-mindepth 1 \
 			-maxdepth 1 \
 			-type f \
 			-a \( \
@@ -66,6 +67,11 @@ else
 	MAKE_COMPAT := make
 endif
 ifeq ($(MAKE_COMPAT),)
+       $(error No suitable make binary found.)
+endif
+COMPAT_VER != $(MAKE_COMPAT) --version | sed -n '1 s/.* \([0-9]\)[0-9\.]*$$/\1/p'
+COMPAT_VER := $(COMPAT_VER:4.%=)
+ifeq ($(COMPAT_VER),)
        $(error No suitable make binary found.)
 endif
 
