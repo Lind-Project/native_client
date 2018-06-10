@@ -191,8 +191,8 @@ NACL_GLIBC_GIT_BASE = 5c46008d0874c9b9d5f5f201a10e975d1fe84787
 SRC:
 	mkdir SRC
 
-# git-sources := binutils gcc gdb glibc linux-headers-for-nacl newlib
-git-sources := linux-headers-for-nacl newlib
+# git-sources := binutils gcc glibc linux-headers-for-nacl newlib
+git-sources := gdb linux-headers-for-nacl newlib
 
 nacl-name = $(patsubst nacl-linux-headers-for-nacl,linux-headers-for-nacl,nacl-$*)
 
