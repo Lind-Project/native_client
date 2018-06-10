@@ -688,6 +688,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	rm -rf BUILD/build-glibc64
 	mkdir -p BUILD/build-glibc64
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+	    MAKE=$(MAKE_COMPAT) \
 	    BUILD_CC="gcc -O2 -g3" \
 	    CC="$(GLIBC_CC) -m64" \
 	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
@@ -706,6 +707,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 .PHONY: updateglibc
 updateglibc:
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+	    MAKE=$(MAKE_COMPAT) \
 	    BUILD_CC="gcc -O2 -g3 " \
 	    CC="$(GLIBC_CC) -m64" \
 	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
