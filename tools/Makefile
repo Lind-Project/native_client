@@ -671,7 +671,6 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	  libc_cv_forced_unwind=yes \
 	  libc_cv_c_cleanup=yes \
 	  libc_cv_slibdir=/lib32 \
-	  --with-tls \
 	  --prefix= \
 	  --libdir=/lib32 \
 	  --host=i686-linux-gnu \
