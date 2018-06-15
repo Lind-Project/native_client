@@ -632,8 +632,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
-  const char           tls_prefix[] = "/lib/glibc/tls/";
   const char           glibc_prefix[] = "/lib/glibc/";
+  const char           tls_prefix[] = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
 
@@ -642,12 +642,15 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   NaClLog(3, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
-          (uintptr_t) natp, (uintptr_t) pathname, flags, mode);
+          (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
 
-  retval = CopyPathFromUser(nap, path, sizeof path, (uintptr_t) pathname);
+  retval = CopyPathFromUser(nap, path, sizeof path, (uintptr_t)pathname);
 
   /*
-   * TODO: fix this hack
+   * TODO:
+   * fix this hacky method to remove incorrect
+   * linker searches for shared libraries in
+   * /lib/glibc/tls/ (doesn't exist)
    *
    * -jp
    */
