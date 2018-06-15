@@ -674,6 +674,7 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	  --prefix= \
 	  --libdir=/lib32 \
 	  --host=i686-linux-gnu \
+	  --with-tls \
 	  -with-headers=$(LINUX_HEADERS) \
 	  -enable-kernel=2.6.18
 	$(MAKE) -C BUILD/build-glibc32
@@ -697,6 +698,7 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	    --prefix= \
 	    --libdir=/lib \
 	    --host=x86_64-linux-gnu \
+	    --with-tls \
 	    --with-headers=$(LINUX_HEADERS) \
 	    --enable-kernel=2.6.18
 	$(MAKE) -C BUILD/build-glibc64
@@ -716,6 +718,7 @@ updateglibc:
 	    --prefix= \
 	    --libdir=/lib \
 	    --host=x86_64-linux-gnu \
+	    --with-tls \
 	    --with-headers=$(LINUX_HEADERS) \
 	    --enable-kernel=2.6.18
 	$(MAKE) -C BUILD/build-glibc64
