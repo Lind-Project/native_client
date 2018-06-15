@@ -632,6 +632,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+  const char           tls_prefix[] = "/lib/glibc/tls/";
+  const char           glibc_prefix[] = "/lib/glibc/";
+  const size_t         tls_start_idx = strlen(glibc_prefix);
+  const size_t         tls_end_idx = strlen(tls_prefix);
 
   // yiwen
   int                  fd_retval; // this is the virtual fd returned to the cage
@@ -738,6 +742,14 @@ cleanup:
      nap->num_lib++;
      // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
+
+  /*
+   * TODO: fix this hack
+   *
+   * -jp
+   */
+  if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1))
+    memmove(path + tls_start_idx, path + tls_end_idx, strlen(path + tls_end_idx) + 1);
 
   DPRINTF("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
 
