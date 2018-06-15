@@ -440,6 +440,7 @@ GCC_CONFIGURE_FLAGS = \
     --disable-libssp \
     --disable-libstdcxx-pch \
     --target=$(CROSSARCH) \
+    --enable-tls \
     --enable-linker-build-id \
     $(GCC_EXTRAS_FLAGS)
 
