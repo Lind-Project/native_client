@@ -646,6 +646,14 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   retval = CopyPathFromUser(nap, path, sizeof path, (uintptr_t) pathname);
 
+  /*
+   * TODO: fix this hack
+   *
+   * -jp
+   */
+  if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1))
+    memmove(path + tls_start_idx, path + tls_end_idx, strlen(path + tls_end_idx) + 1);
+
   if (0 != retval)
     goto cleanup;
 
@@ -742,14 +750,6 @@ cleanup:
      nap->num_lib++;
      // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
-
-  /*
-   * TODO: fix this hack
-   *
-   * -jp
-   */
-  if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1))
-    memmove(path + tls_start_idx, path + tls_end_idx, strlen(path + tls_end_idx) + 1);
 
   DPRINTF("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
 
