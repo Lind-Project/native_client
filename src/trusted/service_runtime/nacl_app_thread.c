@@ -114,7 +114,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   }
 
   DPRINTF("Initializing linked list node for cage_id: [%d]\n", nap_child->cage_id);
-  node = LinkedListAdd(&app_list, sizeof *nap_child, T_APP, nap_child);
+  node = LinkedListSet(&app_list, sizeof *nap_child, T_APP, nap_child);
   CHECK(node);
 
   NaClXMutexLock(&nap->children_mu);
