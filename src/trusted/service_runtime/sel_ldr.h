@@ -720,7 +720,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,
-                             char const *const    *envv) NACL_WUR;
+                             char const *const        *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
@@ -737,7 +737,7 @@ void NaClLoadTrampoline(struct NaClApp *nap);
 
 void NaClLoadSpringboard(struct NaClApp  *nap);
 
-static const uintptr_t kNaClBadAddress = (uintptr_t) -1;
+static const uintptr_t kNaClBadAddress = (uintptr_t)-1;
 
 #include "native_client/src/trusted/service_runtime/sel_ldr-inl.h"
 
