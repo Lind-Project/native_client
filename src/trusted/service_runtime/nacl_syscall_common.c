@@ -4534,16 +4534,13 @@ out:
 
 int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
   struct NaClApp *nap = natp->nap;
-  uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) stat_loc, 4);
-  int *stat_loc_ptr = (int *)sysaddr;
-  int retval = 0;
 
   DPRINTF("%s\n", "[NaClSysWait] entered wait! \n");
+  *stat_loc = 0;
   CHECK(nap->num_children < NACL_THREAD_MAX);
   if (nap->num_children)
-    retval = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
-  *stat_loc_ptr = retval;
-  DPRINTF("[NaClSysWait] retval = %d \n", retval);
+    NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
+  DPRINTF("[NaClSysWait] retval = %d \n", *stat_loc);
 
-  return retval;
+  return *stat_loc;
 }
