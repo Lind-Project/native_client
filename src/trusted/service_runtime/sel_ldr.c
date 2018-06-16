@@ -1479,7 +1479,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   if (!parent_offset)
     return;
 
-  DPRINTF("copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
+  DDPRINTF("copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
           entry->npages,
           entry->page_num,
           copy_size,
@@ -1609,10 +1609,10 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   DPRINTF("copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   DPRINTF("%s\n", "nap_parent_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap_parent);
-  /* NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:"); */
+  NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:");
   DPRINTF("%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(nap_child);
-  /* NaClVmmapDebug(&nap_child->mem_map, "child vmmap:"); */
+  NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
 }
 
 struct ListNode *LinkedListCtor(struct LinkedList *list, size_t size, int type, void *data) {

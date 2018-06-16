@@ -1075,13 +1075,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   int             fd;
   int             write_data_size;
 
-  DPRINTF("Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+  DDPRINTF("Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
   fd = fd_cage_table[nap->cage_id][d];
   UNREFERENCED_PARAMETER(fd);
-  DPRINTF("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
+  DDPRINTF("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
 
   // yiwen: try to use the kernel pipe
   /*
@@ -1116,10 +1116,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
      NaClXMutexLock(&pipe_table[nap->cage_id - 2].mu);
      NaClXCondVarWait(&pipe_table[nap->cage_id - 2].cv, &pipe_table[nap->cage_id - 2].mu);
      NaClXMutexUnlock(&pipe_table[nap->cage_id - 2].mu);
-     DPRINTF("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
+     DDPRINTF("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
-     DPRINTF("[NaClSysWrite] string = %s \n", string);
+     DDPRINTF("[NaClSysWrite] string = %s \n", string);
      if (nap->cage_id == 2) {
         memcpy(pipe_buffer[0], string, count);
         pipe_mutex[0] = 1;
@@ -1190,7 +1190,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   }
   UNREFERENCED_PARAMETER(log_bytes);
   UNREFERENCED_PARAMETER(ellipsis);
-  DPRINTF("In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+  DDPRINTF("In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
   NaClVmIoWillStart(nap,

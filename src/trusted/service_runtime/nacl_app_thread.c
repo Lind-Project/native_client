@@ -656,17 +656,17 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 # define NUM_STACK_VALS 16
 # define TYPE_TO_EXAMINE uintptr_t
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
-    DPRINTF("child_stack[%zu]:\n", i);
+    DDPRINTF("child_stack[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-    DPRINTF("parent_stack[%zu]:\n", i);
+    DDPRINTF("parent_stack[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
   }
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
-    DPRINTF("child_rsp[%zu]:\n", i);
+    DDPRINTF("child_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", child_addr);
-    DPRINTF("parent_rsp[%zu]:\n", i);
+    DDPRINTF("parent_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", parent_addr);
   }
 # undef NUM_STACK_VALS
