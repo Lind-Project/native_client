@@ -1631,7 +1631,7 @@ struct ListNode *LinkedListCtor(struct LinkedList *list, size_t size, int type, 
 
 struct ListNode *LinkedListSet(struct LinkedList *list, size_t size, int type, void *data) {
   struct ListNode *node;
-  size_t node_cnt = 0;
+  size_t node_cnt = 1;
   CHECK(list);
   NaClXMutexLock(&list->mu);
   if (list->head) {
@@ -1656,11 +1656,11 @@ struct ListNode *LinkedListSet(struct LinkedList *list, size_t size, int type, v
 struct ListNode LinkedListGet(struct LinkedList *list) {
   struct ListNode ret;
   struct ListNode *nodes[2];
-  size_t node_cnt = 0;
+  size_t node_cnt = 1;
   CHECK(list);
   NaClXMutexLock(&list->mu);
   nodes[0] = list->head;
-  /* return a zerod compound literal if list->head is NULL */
+  /* return a zeroed compound literal if list->head is NULL */
   if (!nodes[0])
     return (struct ListNode){0};
   if (!nodes[0]->next) {
