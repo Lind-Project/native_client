@@ -118,7 +118,7 @@ static INLINE struct ListNode *LinkedListCtor(struct LinkedList *list, size_t si
   NaClXCondVarCtor(&list->cv);
   NaClXMutexLock(&list->mu);
   /* needed to suppress warnings from c++ code using these functions */
-  list->head= (void *)calloc(1, sizeof *list->head);
+  list->head = calloc(1, sizeof *list->head);
   CHECK(list->head);
   list->head->size = size;
   list->head->type = type;
@@ -138,11 +138,11 @@ static INLINE struct ListNode *LinkedListAdd(struct LinkedList *list, size_t siz
     for (node = list->head; node->next; node = node->next)
       node_cnt++;
     /* needed to suppress warnings from c++ code using these functions */
-    node->next= (void *)calloc(1, sizeof *node);
+    node->next = calloc(1, sizeof *node);
     node = node->next;
   } else {
     /* needed to suppress warnings from c++ code using these functions */
-    node= (void *)calloc(1, sizeof *node);
+    node = calloc(1, sizeof *node);
     list->head = node;
   }
   DPRINTF("current node count: [%zu]\n", node_cnt);
