@@ -302,13 +302,13 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
  * -jp
  */
 #ifdef DPRINTF
-#  undef DPRINTF
+# undef DPRINTF
 #endif
 #ifdef DDPRINTF
-#  undef DDPRINTF
+# undef DDPRINTF
 #endif
 #ifdef _DEBUG
-#  define DPRINTF(fmt, ...)						\
+# define DPRINTF(fmt, ...)						\
         do {								\
                 char *file = strrchr((char *)__FILE__, '/');		\
                 if (file)						\
@@ -321,7 +321,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                         __func__, file, __LINE__, ## __VA_ARGS__);	\
                 NaClLogEnableTimestamp();				\
         } while (0)
-#  define DDPRINTF(fmt, ...)						\
+# define DDPRINTF(fmt, ...)						\
         do {								\
                 char *file = strrchr((char *)__FILE__, '/');		\
                 if (file)						\
@@ -335,8 +335,8 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                 NaClLogEnableTimestamp();				\
         } while (0)
 #else
-#  define DPRINTF(fmt, ...) do {/* no-op */} while (0)
-#  define DDPRINTF(fmt, ...) do {/* no-op */} while (0)
+# define DPRINTF(fmt, ...) do {/* no-op */} while (0)
+# define DDPRINTF(fmt, ...) do {/* no-op */} while (0)
 #endif
 
 /*
