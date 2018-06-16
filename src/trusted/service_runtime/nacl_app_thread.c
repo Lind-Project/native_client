@@ -57,7 +57,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
   if (!NaClAppCtor(nap_child))
-    NaClLog(LOG_FATAL, "Failed to initialize fork child nap\n");
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   mod_status = &nap_child->module_load_status;
   nap_child->command_num = nap->command_num;
   nap_child->binary_path = nap->binary_path;
@@ -485,13 +485,13 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 }
 
 /* jp */
-#define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                    \
- do {                                                                                   \
-  unsigned char *addr = (unsigned char *)(ADDR);                                        \
-  UNREFERENCED_PARAMETER(addr);                                                         \
-  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);                \
-  DPRINTF("[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
-  DPRINTF("[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
+#define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                     \
+ do {                                                                                    \
+  unsigned char *addr = (unsigned char *)(ADDR);                                         \
+  UNREFERENCED_PARAMETER(addr);                                                          \
+  DDPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);                \
+  DDPRINTF("[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
+  DDPRINTF("[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
  } while (0)
 
 /* jp */

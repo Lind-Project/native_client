@@ -4445,7 +4445,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     NACL_TIMESPEC_T const timeout = {1, 0};
     /* time_t timeout = 1; */
     size_t num_children = nap->num_children;
-    struct NaClApp *nap_child = nap->child_list[idx];
+    struct NaClApp *nap_child;
     /* struct NaClAppThread *natp_child = nap_child->threads.ptr_array[idx]; */
 
     /*
@@ -4480,8 +4480,9 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
         NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
-    } else {
+    } else if (pid <= 0) {
       /* wait for any threads to exit */
+      nap_child = nap->child_list[idx];
       for (;;) {
         /* make sure children exist */
         children_exist = 0;
@@ -4520,6 +4521,9 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
         nap_child = nap->child_list[idx];
         /* natp_child = nap_child->threads.ptr_array[nap_child->fork_num]; */
       }
+    } else {
+      retval = -1;
+      errno = ECHILD;
     }
   }
 

@@ -330,7 +330,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                         file = __FILE__;				\
                 /* too noisy when timestamp is enabled */		\
                 NaClLogDisableTimestamp();				\
-                NaClLog(4, "[%s() %s:%u] "fmt,				\
+                NaClLog(1, "[%s() %s:%u] "fmt,				\
                         __func__, file, __LINE__, ## __VA_ARGS__);	\
                 NaClLogEnableTimestamp();				\
         } while (0)
