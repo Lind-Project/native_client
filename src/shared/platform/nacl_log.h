@@ -284,10 +284,10 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
  * Variadic macros are here! -jp
  */
 #ifdef NACL_LOG_MODULE_NAME
-# define NaClLog(detail_level, fmt, args...)                \
-   do {                                                     \
-    NaClLogSetModule(NACL_LOG_MODULE_NAME);                 \
-    NaClLogDoLogAndUnsetModule(detail_level, fmt, ## args); \
+# define NaClLog(detail_level, fmt, ...)                           \
+   do {                                                            \
+    NaClLogSetModule(NACL_LOG_MODULE_NAME);                        \
+    NaClLogDoLogAndUnsetModule(detail_level, fmt, ## __VA_ARGS__); \
    } while (0)
 #endif
 
@@ -330,7 +330,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                         file = __FILE__;				\
                 /* too noisy when timestamp is enabled */		\
                 NaClLogDisableTimestamp();				\
-                NaClLog(1, "[%s() %s:%u] "fmt,				\
+                NaClLog(4, "[%s() %s:%u] "fmt,				\
                         __func__, file, __LINE__, ## __VA_ARGS__);	\
                 NaClLogEnableTimestamp();				\
         } while (0)
