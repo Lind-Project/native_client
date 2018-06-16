@@ -105,7 +105,7 @@ void NaClVmentryPrint(void *state, struct NaClVmmapEntry *vmep) {
 
 
 void NaClVmmapDebug(struct NaClVmmap *self, char *msg) {
-  fputs(msg, stderr);
+  DDPRINTF("%s\n", msg);
   NaClVmmapVisit(self, NaClVmentryPrint, NULL);
   fflush(NULL);
 }

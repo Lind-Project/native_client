@@ -4174,6 +4174,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
      NaClXMutexLock(&nap->mu);
      nap->is_fork_child = 0;
+     /* retval = nap->cage_id; */
      retval = 0;
      NaClXCondVarBroadcast(&nap->cv);
      NaClXMutexUnlock(&nap->mu);
@@ -4202,6 +4203,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap_child = NaClChildNapCtor(natp);
   nap->child_list[nap_child->cage_id] = nap_child;
   nap->children_ids[nap->num_children] = nap_child->cage_id;
+  /* retval = 0; */
   retval = nap_child->cage_id;
   if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
