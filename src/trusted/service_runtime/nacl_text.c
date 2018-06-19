@@ -125,38 +125,19 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
   /* Existing memory is anonymous paging file backed. */
   NaClPageFree((void *) text_sysaddr, dynamic_text_size);
 
-  /*
-   * Unix allows us to map pages with PROT_NONE initially and later
-   * increase the mapping permissions with mprotect().
-   *
-   * Windows does not allow this, however: the initial permissions are
-   * an upper bound on what the permissions may later be changed to
-   * with VirtualProtect() or VirtualAlloc().  Given this, using
-   * PROT_NONE at this point does not even make sense.  On Windows,
-   * the pages start off as uncommitted, which makes them inaccessible
-   * regardless of the page permissions they are mapped with.
-   *
-   * Write permissions are included here for nacl64-gdb to set
-   * breakpoints.
-   */
-#if NACL_WINDOWS
-  mmap_protections = NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC | NACL_ABI_PROT_WRITE;
-#else
-  mmap_protections = NACL_ABI_PROT_NONE;
-#endif
+  mmap_protections = NACL_ABI_PROT_READ|NACL_ABI_PROT_EXEC|NACL_ABI_PROT_WRITE;
   DPRINTF("NaClMakeDynamicTextShared: Map(,,0x%"NACL_PRIxPTR",size = 0x%x,"
           " prot=0x%x, flags=0x%x, offset=0)\n",
           text_sysaddr,
           (int) dynamic_text_size,
           mmap_protections,
-          NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED);
-  mmap_ret = (*((struct NaClDescVtbl const *) shm->base.base.vtbl)->
-              Map)((struct NaClDesc *) shm,
+          NACL_ABI_MAP_SHARED|NACL_ABI_MAP_FIXED);
+  mmap_ret = ((struct NaClDescVtbl const *) shm->base.base.vtbl)->Map((struct NaClDesc *)shm,
                    NaClDescEffectorTrustedMem(),
                    (void *) text_sysaddr,
                    dynamic_text_size,
                    mmap_protections,
-                   NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
+                   NACL_ABI_MAP_SHARED|NACL_ABI_MAP_FIXED,
                    0);
   if (text_sysaddr != mmap_ret)
     DPRINTF("%s\n", "Could not map in shm for dynamic text region");
@@ -674,9 +655,8 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
    * See: http://code.google.com/p/nativeclient/issues/detail?id=2566
    */
   if (!nap->skip_validator) {
-    // yiwen
-    metadata = metadata;
-    // validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata);
+    (void)metadata;
+    /* validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata); */
     validator_result = LOAD_OK;
   } else {
     DPRINTF("%s\n",
