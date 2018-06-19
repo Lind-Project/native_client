@@ -45,7 +45,7 @@ static uint8_t *BitmapAllocate(uint32_t indexes) {
   return bitmap;
 }
 
-static int BitmapIsBitSet(uint8_t *bitmap, uint32_t index) {
+static int BitmapIsBitSet(uint8_t const *bitmap, uint32_t index) {
   return (bitmap[index / kBitsPerByte] & (1 << (index % kBitsPerByte))) != 0;
 }
 
