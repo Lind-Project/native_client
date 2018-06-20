@@ -133,11 +133,6 @@ struct NaClApp {
    */
   struct NaClMutex          children_mu;
   struct NaClCondVar        children_cv;
-  /*
-   * TODO: convert child_list to DynArray
-   */
-  struct NaClApp            **child_list;
-  /* NaClApp pointers (currently unused) */
   struct DynArray           children;
   // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
   struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];

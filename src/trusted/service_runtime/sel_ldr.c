@@ -146,8 +146,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->initial_entry_pt = 0;
   nap->user_entry_pt = 0;
 
-  if (!(nap->child_list = calloc(CHILD_NUM_MAX, sizeof *nap->child_list)))
-    NaClLog(LOG_FATAL, "Failed to allocate memory for nap->child_list\n");
   if (!DynArrayCtor(&nap->threads, 2))
     goto cleanup_cpu_features;
   if (!DynArrayCtor(&nap->desc_tbl, 2))
