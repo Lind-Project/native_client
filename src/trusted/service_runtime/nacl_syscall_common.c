@@ -4214,7 +4214,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap_child->mu);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
   DPRINTF("nap_child->is_fork_child: %d\n", nap_child->is_fork_child);
-  while (nap_child->is_fork_child)
+  while (nap_child->is_fork_child && DynArrayGet(&nap->children, nap_child->cage_id))
     NaClXCondVarTimedWaitRelative(&nap_child->cv, &nap_child->mu, &timeout);
   NaClXMutexUnlock(&nap_child->mu);
 
