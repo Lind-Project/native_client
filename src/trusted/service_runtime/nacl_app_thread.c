@@ -48,7 +48,6 @@ struct NaClThreadContext *master_ctx;
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
-  struct ListNode *node;
   NaClErrorCode *mod_status = NULL;
   int newfd = 0;
 
@@ -112,10 +111,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     NaClSetDesc(nap_child, newfd, old_nd);
     fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   }
-
-  DPRINTF("Initializing linked list node for cage_id: [%d]\n", nap_child->cage_id);
-  node = LinkedListSet(&app_list, sizeof *nap_child, T_APP, nap_child);
-  CHECK(node);
 
   NaClXMutexLock(&nap->children_mu);
   NaClXMutexLock(&nap->mu);

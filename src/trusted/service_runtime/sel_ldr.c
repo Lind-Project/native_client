@@ -81,7 +81,6 @@ struct NaClApp *nap0_2;
  *
  * -jp
  */
-struct LinkedList app_list;
 struct Pipe pipe_table[PIPE_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 int fork_num;
@@ -1613,71 +1612,4 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   DPRINTF("%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(nap_child);
   NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
-}
-
-struct ListNode *LinkedListCtor(struct LinkedList *list, size_t size, int type, void *data) {
-  NaClXMutexCtor(&list->mu);
-  NaClXCondVarCtor(&list->cv);
-  NaClXMutexLock(&list->mu);
-  list->head = calloc(1, sizeof *list->head);
-  CHECK(list->head);
-  list->head->size = size;
-  list->head->type = type;
-  list->head->data = data;
-  list->head->next = NULL;
-  NaClXMutexUnlock(&list->mu);
-  return list->head;
-}
-
-struct ListNode *LinkedListSet(struct LinkedList *list, size_t size, int type, void *data) {
-  struct ListNode *node;
-  size_t node_cnt = 1;
-  CHECK(list);
-  NaClXMutexLock(&list->mu);
-  if (list->head) {
-    /* walk the list */
-    for (node = list->head; node->next; node = node->next)
-      node_cnt++;
-    node->next = calloc(1, sizeof *node);
-    node = node->next;
-  } else {
-    node = calloc(1, sizeof *node);
-    list->head = node;
-  }
-  DPRINTF("current node count: [%zu]\n", node_cnt);
-  node->size = size;
-  node->type = type;
-  node->data = data;
-  node->next = NULL;
-  NaClXMutexUnlock(&list->mu);
-  return node;
-}
-
-struct ListNode LinkedListGet(struct LinkedList *list) {
-  struct ListNode ret;
-  struct ListNode *nodes[2];
-  size_t node_cnt = 1;
-  CHECK(list);
-  NaClXMutexLock(&list->mu);
-  nodes[0] = list->head;
-  /* return a zeroed compound literal if list->head is NULL */
-  if (!nodes[0])
-    return (struct ListNode){0};
-  if (!nodes[0]->next) {
-    list->head = NULL;
-    /* copy and free the node */
-    ret = *nodes[0];
-    free(nodes[0]);
-    return ret;
-  }
-  /* walk the list */
-  for (nodes[1] = nodes[0]->next; nodes[1]->next; nodes[0] = nodes[1], nodes[1] = nodes[0]->next)
-    node_cnt++;
-  nodes[0]->next = NULL;
-  DPRINTF("current node count: [%zu]\n", node_cnt);
-  /* copy and free the node */
-  ret = *nodes[1];
-  free(nodes[1]);
-  NaClXMutexUnlock(&list->mu);
-  return ret;
 }

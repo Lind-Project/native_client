@@ -80,53 +80,6 @@ struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
 
-/* jp */
-struct ListNode {
-  enum {T_OTHER, T_APP, T_THREAD, T_CONTEXT} type;
-  size_t size;
-  void *data;
-  struct ListNode *next;
-};
-
-struct LinkedList {
-  /*
-   * mu must be held when accessing
-   * *any* part of the structure
-   *
-   * -jp
-   */
-  struct NaClMutex mu;
-  struct NaClCondVar cv;
-  struct ListNode *head;
-};
-
-/*
- * creates a list with the head node
- * initialized with data and returns
- * a pointer to it.
- */
-struct ListNode *LinkedListCtor(struct LinkedList *list, size_t size, int type, void *data);
-
-/*
- * adds a node initialized with data
- * to the list and returns a pointer
- * to it.
- */
-struct ListNode *LinkedListSet(struct LinkedList *list, size_t size, int type, void *data);
-
-/*
- * removes a node from the tail of
- * the list, deallocates it, and
- * returns a `struct ListNode`
- * initialized with the data which
- * it contained.
- *
- * if (!list->head) then a zeroed
- * `struct ListNode` compound
- * literal is returned.
- */
-struct ListNode LinkedListGet(struct LinkedList *list);
-
 struct Pipe {
   bool xfer_done;
   unsigned char pipe_buf[PIPE_BUF_MAX];
@@ -134,7 +87,6 @@ struct Pipe {
   struct NaClCondVar cv;
 };
 
-extern struct LinkedList app_list;
 extern struct Pipe pipe_table[PIPE_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern int fork_num;

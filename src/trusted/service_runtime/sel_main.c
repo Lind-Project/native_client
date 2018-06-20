@@ -1257,10 +1257,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClXCondVarCtor(&pipe_table[i].cv);
   }
 
-  DPRINTF("%s\n", "[LinkedListCtor] Initializing app linked list");
-  if (!LinkedListCtor(&app_list, sizeof state, T_APP, &state))
-    NaClLog(LOG_FATAL, "%s\n", "[LinkedListCtor] Linked list initialization failed");
-
   // yiwen: this records the finishing time of the NaCl initialization / setup
   nacl_initialization_finish = clock();
 
