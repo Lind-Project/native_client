@@ -4154,7 +4154,6 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap;
   struct NaClApp *nap_child;
-  struct NaClThreadContext parent_ctx;
   int retval;
   int child_argc;
   char **child_argv;
@@ -4162,17 +4161,16 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
   nap = natp->nap;
-  parent_ctx = natp->user;
-  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
 
   if (nap->is_fork_child) {
      DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
+     NaClXMutexLock(&nap->mu);
      NaClAppThreadPrintInfo(natp);
+     DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
      DPRINTF("         natp = %p\n", (void *)natp);
      DPRINTF("          nap = %p\n", (void *)nap);
      DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
      DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
-     NaClXMutexLock(&nap->mu);
      nap->is_fork_child = 0;
      /* retval = nap->cage_id; */
      retval = 0;
@@ -4181,19 +4179,18 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      goto out;
   }
 
+  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
+
   fork_num++;
   child_argc = 3 + nap->command_num;
-  /* needed to suppress warnings from c++ code using these functions */
   child_argv= calloc(child_argc + 2, sizeof *child_argv);
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
-
   if (nap->binary_path) {
      child_argv[3] = nap->binary_path;
      DPRINTF("[NaClSysFork] binary path: %s \n", nap->binary_path);
   }
-
   if (nap->command_num > 1) {
      child_argv[4] = nap->binary_command;
      DPRINTF("[NaClSysFork] binary command: %s \n", nap->binary_command);
@@ -4205,7 +4202,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap->children_ids[nap->num_children] = nap_child->cage_id;
   /* retval = 0; */
   retval = nap_child->cage_id;
-  if (!NaClCreateMainForkThread(nap, natp, &parent_ctx, nap_child, child_argc, child_argv, NULL)) {
+  if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
     retval = -1;
     goto out;

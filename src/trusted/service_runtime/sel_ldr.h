@@ -716,7 +716,6 @@ int NaClCreateMainThread(struct NaClApp     *nap,
 /* jp */
 int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClAppThread     *natp_parent,
-                             struct NaClThreadContext *parent_ctx,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,

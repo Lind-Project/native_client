@@ -498,7 +498,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
                            size_t                   stack_size,
-                           struct NaClThreadContext *parent_ctx,
                            struct NaClApp           *nap_child,
                            uintptr_t                usr_entry,
                            uintptr_t                usr_stack_ptr,
@@ -510,17 +509,21 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_t stack_ptr_offset;
   size_t base_ptr_offset;
   struct NaClAppThread *natp_child;
-  struct NaClThreadContext ctx;
+  struct NaClThreadContext child_ctx;
+  struct NaClThreadContext parent_ctx;
 
   UNREFERENCED_PARAMETER(stack_ptr_offset);
   UNREFERENCED_PARAMETER(base_ptr_offset);
-  UNREFERENCED_PARAMETER(ctx);
+  UNREFERENCED_PARAMETER(child_ctx);
 
   if (!nap_parent->running)
    return 0;
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
+
+  /* make a copy of parent thread context */
+  parent_ctx = natp_parent->user;
 
   /*
    * make space to copy the parent stack
@@ -535,21 +538,21 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
                                                    NaClGetInitialStackTop(nap_child) - stack_size,
                                                    stack_size);
-  stack_ptr_offset = parent_ctx->rsp - (uintptr_t)stack_ptr_parent;
-  base_ptr_offset = parent_ctx->rbp - parent_ctx->rsp;
+  stack_ptr_offset = parent_ctx.rsp - (uintptr_t)stack_ptr_parent;
+  base_ptr_offset = parent_ctx.rbp - parent_ctx.rsp;
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
   if (!natp_child)
     return 0;
 
   /* save child trampoline addresses and set cage_id */
-  ctx = natp_child->user;
+  child_ctx = natp_child->user;
   /* copy parent page tables and execution context */
   NaClCopyExecutionContext(nap_parent, nap_child);
   /* copy parent thread context */
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
-  natp_child->user = *parent_ctx;
+  natp_child->user = natp_parent->user;
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
 
@@ -639,10 +642,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * adjust trampolines and %rip
    */
-  nap_child->mem_start = ctx.r15;
+  nap_child->mem_start = child_ctx.r15;
   natp_child->user.r15 = nap_child->mem_start;
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
-  natp_child->user.rbp = ctx.rsp + base_ptr_offset;
+  natp_child->user.rbp = child_ctx.rsp + base_ptr_offset;
   DPRINTF("usr_syscall_args address (child: %p) (parent: %p))\n",
           (void *)natp_child->usr_syscall_args,
           (void *)natp_parent->usr_syscall_args);
@@ -663,7 +666,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   }
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
-    uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx->rsp)[i];
+    uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx.rsp)[i];
     DDPRINTF("child_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", child_addr);
     DDPRINTF("parent_rsp[%zu]:\n", i);

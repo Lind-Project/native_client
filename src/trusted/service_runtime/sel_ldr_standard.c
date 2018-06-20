@@ -970,7 +970,6 @@ cleanup:
 /* jp */
 int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClAppThread     *natp_parent,
-                             struct NaClThreadContext *parent_ctx,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,
@@ -992,7 +991,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   retval = 0;  /* fail */
   CHECK(argc >= 0);
-  CHECK(parent_ctx || argv || argc);
+  CHECK(argv || argc);
 
   envc = 0;
   if (NULL != envv) {
@@ -1164,7 +1163,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
                                   size,
-                                  parent_ctx,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),
