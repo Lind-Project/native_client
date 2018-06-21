@@ -4508,7 +4508,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
 
 out:
   *stat_loc_ptr = ret;
-  DPRINTF("[NaClSysWaitpid] pid = %zu \n", pid);
+  DPRINTF("[NaClSysWaitpid] pid = %d \n", pid);
   DPRINTF("[NaClSysWaitpid] options = %d \n", options);
   DPRINTF("[NaClSysWaitpid] ret = %d \n", ret);
 
