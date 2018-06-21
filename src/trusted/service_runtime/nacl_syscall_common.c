@@ -4436,14 +4436,15 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = (int *)sysaddr;
   int pid_max = 0;
-  int retval = pid;
+  int ret = pid;
 
   DPRINTF("%s\n", "[NaClSysWaitpid] entered waitpid!");
 
+  CHECK(nap->num_children < NACL_THREAD_MAX);
   for (int i = 0; i < nap->num_children; i++)
     pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
   if (!nap->num_children || (int)pid > pid_max) {
-    retval = -1;
+    ret = -1;
     errno = ECHILD;
     goto out;
   }
@@ -4452,7 +4453,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, pid);
     if (!nap_child) {
-      retval = -1;
+      ret = -1;
       errno = ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
@@ -4479,7 +4480,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
       NaClXMutexLock(&nap->children_mu);
       nap->num_children = nap->num_children;
       if (!nap->num_children) {
-        retval = -1;
+        ret = -1;
         errno = ECHILD;
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
@@ -4492,7 +4493,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
         NaClXCondVarTimedWaitRelative(&nap->cv, &nap->mu, &timeout);
         /* exit if selected child has finished */
         if (!DynArrayGet(&nap->children, pid)) {
-          retval = pid;
+          ret = pid;
           NaClXCondVarBroadcast(&nap->children_cv);
           NaClXMutexUnlock(&nap->children_mu);
           goto out;
@@ -4506,23 +4507,28 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   }
 
 out:
-  *stat_loc_ptr = retval;
+  *stat_loc_ptr = ret;
   DPRINTF("[NaClSysWaitpid] pid = %zu \n", pid);
   DPRINTF("[NaClSysWaitpid] options = %d \n", options);
-  DPRINTF("[NaClSysWaitpid] retval = %d \n", retval);
+  DPRINTF("[NaClSysWaitpid] ret = %d \n", ret);
 
-  return retval;
+  return ret;
 }
 
 int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
   struct NaClApp *nap = natp->nap;
+  int ret;
 
   DPRINTF("%s\n", "[NaClSysWait] entered wait! \n");
-  *stat_loc = 0;
-  CHECK(nap->num_children < NACL_THREAD_MAX);
-  if (nap->num_children)
-    NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
-  DPRINTF("[NaClSysWait] retval = %d \n", *stat_loc);
 
-  return *stat_loc;
+  if (!nap->num_children) {
+    ret = -1;
+    errno = ECHILD;
+    goto out;
+  }
+  ret = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
+
+out:
+  DPRINTF("[NaClSysWait] ret = %d \n", *stat_loc);
+  return ret;
 }
