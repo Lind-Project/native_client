@@ -4429,102 +4429,85 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
                        uint32_t pid,
                        uint32_t *stat_loc,
                        uint32_t options) {
+  /* seconds between thread switching */
+  NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
+  struct NaClApp *nap_child;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = (int *)sysaddr;
-  int retval = 0;
-  int children_exist = 1;
-  size_t idx = 0;
+  int pid_max = 0;
+  int retval = pid;
 
   DPRINTF("%s\n", "[NaClSysWaitpid] entered waitpid!");
 
-  if (nap->num_children > 0) {
-    /* seconds between thread switching */
-    NACL_TIMESPEC_T const timeout = {1, 0};
-    /* time_t timeout = 1; */
-    size_t num_children = nap->num_children;
-    struct NaClApp *nap_child;
+  for (int i = 0; i < nap->num_children; i++)
+    pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
+  if (!nap->num_children || (int)pid > pid_max) {
+    retval = -1;
+    errno = ECHILD;
+    goto out;
+  }
 
-    /*
-     * TODO: implement pid == WAIT_ANY_PG (0) and pid < -1 behavior
-     *
-     * -jp
-     */
-    if (pid > 0 && pid < num_children) {
-      idx = pid;
-      nap_child = DynArrayGet(&nap->children, idx);
-      if (!nap_child) {
-        retval = -1;
-        errno = ECHILD;
-        goto out;
-      }
-      /*
-       * natp_child = nap_child->threads.ptr_array[nap_child->fork_num];
-       * if (!natp_child) {
-       *   retval = -1;
-       *   errno = ECHILD;
-       *   goto out;
-       * }
-       * retval = NaClThreadJoin(&natp_child->host_thread);
-       * if (retval)
-       *   NaClLog(LOG_FATAL, "NaClThreadJoin() failed: %s\n", strerror(retval));
-       */
-      retval = nap_child->cage_id;
-      NaClXMutexLock(&nap->children_mu);
-      DPRINTF("Thread children count: %d\n", nap->num_children);
-      /* wait for child to finish */
-      while (DynArrayGet(&nap->children, idx))
-        NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
-      NaClXCondVarBroadcast(&nap->children_cv);
-      NaClXMutexUnlock(&nap->children_mu);
-    } else if (pid <= 0) {
-      /* wait for any threads to exit */
-      nap_child = DynArrayGet(&nap->children, idx);
-      for (;;) {
-        /* make sure children exist */
-        children_exist = 0;
-        for (size_t cnt = 0; cnt < num_children; cnt++) {
-          if (DynArrayGet(&nap->children, cnt)) {
-            children_exist = 1;
-            break;
-          }
-        }
-        if (!children_exist) {
-          retval = -1;
-          errno = ECHILD;
-          goto out;
-        }
-        /*
-         * retval = NaClThreadTimedJoin(&natp_child->host_thread, timeout);
-         * if (!retval)
-         *   goto out;
-         * if (retval != ETIMEDOUT)
-         *   NaClLog(LOG_FATAL, "NaClThreadTimedJoin() failed: %s\n", strerror(retval));
-         */
-        retval = nap_child->cage_id;
-        NaClXMutexLock(&nap->children_mu);
-        DPRINTF("Thread children count: %d\n", nap->num_children);
-        /* wait for child to finish */
-        if (DynArrayGet(&nap->children, idx)) {
-          NaClXCondVarTimedWaitRelative(&nap->cv, &nap->mu, &timeout);
-          if (!DynArrayGet(&nap->children, idx))
-            goto out;
-        }
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
-        if (++idx >= num_children)
-          idx = 0;
-        nap_child = DynArrayGet(&nap->children, idx);
-      }
-    } else {
+  if (pid > 0 && (int)pid < pid_max) {
+    NaClXMutexLock(&nap->children_mu);
+    nap_child = DynArrayGet(&nap->children, pid);
+    if (!nap_child) {
       retval = -1;
       errno = ECHILD;
+      NaClXCondVarBroadcast(&nap->children_cv);
+      NaClXMutexUnlock(&nap->children_mu);
+      goto out;
+    }
+    DPRINTF("Thread children count: %d\n", nap->num_children);
+    /* wait for child to finish */
+    while (DynArrayGet(&nap->children, pid))
+      NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
+    NaClXCondVarBroadcast(&nap->children_cv);
+    NaClXMutexUnlock(&nap->children_mu);
+    goto out;
+  }
+
+  /*
+   * TODO: implement pid == WAIT_ANY_PG (0) and pid == WAIT_ANY (-1) behavior
+   *
+   * -jp
+   */
+  if (pid <= 0) {
+    int cur_idx = 0;
+    for (;;) {
+      /* make sure children exists */
+      NaClXMutexLock(&nap->children_mu);
+      nap->num_children = nap->num_children;
+      if (!nap->num_children) {
+        retval = -1;
+        errno = ECHILD;
+        NaClXCondVarBroadcast(&nap->children_cv);
+        NaClXMutexUnlock(&nap->children_mu);
+        goto out;
+      }
+      /* wait for next child to exit */
+      pid = nap->children_ids[cur_idx];
+      if (pid && DynArrayGet(&nap->children, pid)) {
+        DPRINTF("Thread children count: %d\n", nap->num_children);
+        NaClXCondVarTimedWaitRelative(&nap->cv, &nap->mu, &timeout);
+        /* exit if selected child has finished */
+        if (!DynArrayGet(&nap->children, pid)) {
+          retval = pid;
+          NaClXCondVarBroadcast(&nap->children_cv);
+          NaClXMutexUnlock(&nap->children_mu);
+          goto out;
+        }
+      }
+      if (++cur_idx >= nap->num_children)
+        cur_idx = 0;
+      NaClXCondVarBroadcast(&nap->children_cv);
+      NaClXMutexUnlock(&nap->children_mu);
     }
   }
 
 out:
   *stat_loc_ptr = retval;
-  DPRINTF("[NaClSysWaitpid] pid = %zu \n", idx);
+  DPRINTF("[NaClSysWaitpid] pid = %zu \n", pid);
   DPRINTF("[NaClSysWaitpid] options = %d \n", options);
   DPRINTF("[NaClSysWaitpid] retval = %d \n", retval);
 

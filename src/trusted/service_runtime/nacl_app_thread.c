@@ -309,7 +309,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
     DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     nap->parent->children_ids[nap->parent->num_children] = 0;
-    if (!DynArraySet(&nap->parent->children, nap->cage_id, 0))
+    if (!DynArraySet(&nap->parent->children, nap->cage_id, NULL))
       NaClLog(LOG_FATAL, "Failed to remove child at idx %u\n", nap->cage_id);
     DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap->parent->children_cv);
