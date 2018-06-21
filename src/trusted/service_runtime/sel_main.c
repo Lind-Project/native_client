@@ -131,7 +131,7 @@ int ImportModeMap(char opt) {
     case 'w':
       return O_WRONLY;
   }
-  fprintf(stderr, "option %c not understood as a host descriptor import mode\n", opt);
+  DPRINTF("option %c not understood as a host descriptor import mode\n", opt);
   exit(1);
   /* NOTREACHED */
 }
@@ -311,7 +311,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   // yiwen: initialize the syscall_counter
-  // NaClLog(LOG_WARNING, "[NaCl Main Loader] NaCl Loader started! \n\n");
+  // DPRINTF("%s\n", "[NaCl Main Loader] NaCl Loader started! \n");
   nacl_syscall_counter = 0;
   lind_syscall_counter = 0;
   nacl_syscall_trace_level_counter = 0;
@@ -328,7 +328,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // this snapshot is used by execv()
 
   if (!DynArrayCtor(&nap->children, 16))
-    NaClLog(LOG_FATAL, "Failed to initialize children list\n");
+    DPRINTF("%s\n", "Failed to initialize children list");
 
   nap0 = &state0;
   nap0_2 = &state0_2;
@@ -348,47 +348,47 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClDebugExceptionHandlerStandaloneHandleArgs(argc, argv);
 
   if (!GioFileRefCtor(&gout, stdout)) {
-    fprintf(stderr, "Could not create general standard output channel\n");
+    DPRINTF("%s\n", "Could not create general standard output channel");
     exit(1);
   }
   if (!NaClAppCtor(&state)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   // yiwen: my code
   if (!NaClAppCtor(&state2)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state3)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state4)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state5)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state6)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state7)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   // yiwen
   if (!NaClAppCtor(&state0)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state0_2)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   // yiwen
   if (!NaClAppCtor(&state_ready)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!NaClAppCtor(&state_ready_2)) {
-    NaClLog(LOG_FATAL, "NaClAppCtor() failed\n");
+    DPRINTF("%s\n", "NaClAppCtor() failed");
   }
   if (!DynArrayCtor(&env_vars, 0)) {
-    NaClLog(LOG_FATAL, "Failed to allocate env var array\n");
+    DPRINTF("%s\n", "Failed to allocate env var array");
   }
   /*
    * On platforms with glibc getopt, require POSIXLY_CORRECT behavior,
@@ -405,7 +405,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   while ((opt = getopt(argc, argv, optstring)) != -1) {
     switch (opt) {
       case 'a':
-        fprintf(stderr, "DEBUG MODE ENABLED (bypass acl)\n");
+        DPRINTF("%s\n", "DEBUG MODE ENABLED (bypass acl)");
         debug_mode_bypass_acl_checks = 1;
         break;
       case 'B':
@@ -435,7 +435,7 @@ int NaClSelLdrMain(int argc, char **argv) {
          * de-duplication here if it proves to be worthwhile.
          */
         if (!DynArraySet(&env_vars, env_vars.num_entries, optarg)) {
-          NaClLog(LOG_FATAL, "Adding item to env_vars failed\n");
+          DPRINTF("%s\n", "Adding item to env_vars failed");
         }
         break;
       case 'f':
@@ -455,7 +455,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         /* import host descriptor */
         entry = malloc(sizeof *entry);
         if (!entry) {
-          fprintf(stderr, "No memory for redirection queue\n");
+          DPRINTF("%s\n", "No memory for redirection queue");
           exit(EXIT_FAILURE);
         }
         entry->next = NULL;
@@ -470,7 +470,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         /* import IMC handle */
         entry = malloc(sizeof *entry);
         if (NULL == entry) {
-          fprintf(stderr, "No memory for redirection queue\n");
+          DPRINTF("%s\n", "No memory for redirection queue");
           exit(1);
         }
         entry->next = NULL;
@@ -484,7 +484,8 @@ int NaClSelLdrMain(int argc, char **argv) {
         log_file = optarg;
         break;
       case 'Q':
-        fprintf(stderr, "PLATFORM QUALIFICATION DISABLED BY -Q - "
+        DPRINTF("%s\n",
+                 "PLATFORM QUALIFICATION DISABLED BY -Q - "
                 "Native Client's sandbox will be unreliable!\n");
         skip_qualification = 1;
         break;
@@ -496,7 +497,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         if (nap->validator->stubout_mode_implemented)
           nap->validator_stub_out_mode = 1;
         else
-           NaClLog(LOG_WARNING, "stub_out_mode is not supported, disabled\n");
+           DPRINTF("%s\n", "stub_out_mode is not supported, disabled");
         break;
       case 'S':
         handle_signals = 1;
@@ -514,20 +515,20 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       case 'Z':
         if (nap->validator->readonly_text_implemented) {
-          NaClLog(LOG_WARNING, "Enabling Fixed-Feature CPU Mode\n");
+          DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
           nap->fixed_feature_cpu_mode = 1;
           if (!nap->validator->FixCPUFeatures(nap->cpu_features)) {
-            NaClLog(LOG_ERROR, "This CPU lacks features required by fixed-function CPU mode.\n");
+            DPRINTF("%s\n", "This CPU lacks features required by fixed-function CPU mode.");
             exit(EXIT_FAILURE);
           }
         } else {
-           NaClLog(LOG_ERROR, "fixed_feature_cpu_mode is not supported\n");
+           DPRINTF("%s\n", "fixed_feature_cpu_mode is not supported");
            exit(EXIT_FAILURE);
         }
         break;
 
       default:
-        fprintf(stderr, "ERROR: unknown option: [%c]\n\n", opt);
+        DPRINTF("ERROR: unknown option: [%c]\n\n", opt);
         PrintUsage();
         exit(-1);
     }
@@ -542,20 +543,21 @@ int NaClSelLdrMain(int argc, char **argv) {
   // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
   if (debug_mode_ignore_validator == 1)
-    fprintf(stderr, "DEBUG MODE ENABLED (ignore validator)\n");
+    DPRINTF("%s\n", "DEBUG MODE ENABLED (ignore validator)");
   else if (debug_mode_ignore_validator > 1)
-    fprintf(stderr, "DEBUG MODE ENABLED (skip validator)\n");
+    DPRINTF("%s\n", "DEBUG MODE ENABLED (skip validator)");
 
   if (verbosity) {
-    int         ix;
-    char const  *separator = "";
-
-    fprintf(stderr, "sel_ldr argument list:\n");
+    int        ix;
+    char const *separator = "";
+    (void)separator;
+    DPRINTF("%s", "sel_ldr argument list:");
     for (ix = 0; ix < argc; ++ix) {
-      fprintf(stderr, "%s%s", separator, argv[ix]);
+      DPRINTF("%s%s", separator, argv[ix]);
       separator = " ";
+      (void)separator;
     }
-    putc('\n', stderr);
+    DPRINTF("%s", "\n");
   }
 
   if (debug_mode_bypass_acl_checks) {
@@ -574,12 +576,12 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if (rpc_supplies_nexe) {
     if (nap->nacl_file) {
-      fprintf(stderr, "sel_ldr: mutually exclusive flags -f and -R both used\n");
+      DPRINTF("%s\n", "sel_ldr: mutually exclusive flags -f and -R both used");
       exit(EXIT_FAILURE);
     }
     /* post: NULL == nap->nacl_file */
     if (export_addr_to < 0) {
-      fprintf(stderr, "sel_ldr: -R requires -X to set up secure command channel\n");
+      DPRINTF("%s\n", "sel_ldr: -R requires -X to set up secure command channel");
       exit(EXIT_FAILURE);
     }
   } else {
@@ -588,7 +590,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       ++optind;
     }
     if (!nap->nacl_file) {
-      fprintf(stderr, "No nacl file specified\n");
+      DPRINTF("%s\n", "No nacl file specified");
       exit(EXIT_FAILURE);
     }
     /* post: NULL != nap->nacl_file */
@@ -629,7 +631,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     /* NaCl's signal handler is always enabled on Linux. */
 #elif NACL_OSX
     if (!NaClInterceptMachExceptions()) {
-      fprintf(stderr, "ERROR setting up Mach exception interception.\n");
+      DPRINTF("%s\n", "ERROR setting up Mach exception interception.");
       exit(-1);
     }
 #else
@@ -655,8 +657,9 @@ int NaClSelLdrMain(int argc, char **argv) {
    * (see src/third_party/valgrind/).
    */
   if (!skip_qualification && getenv("NACL_DANGEROUS_SKIP_QUALIFICATION_TEST")) {
-    fprintf(stderr, "PLATFORM QUALIFICATION DISABLED BY ENVIRONMENT - "
-            "Native Client's sandbox will be unreliable!\n");
+    DPRINTF("%s\n",
+            "PLATFORM QUALIFICATION DISABLED BY ENVIRONMENT - "
+            "Native Client's sandbox will be unreliable!");
     skip_qualification = 1;
   }
 
@@ -679,7 +682,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       nap->module_load_status = pq_error;
       // yiwen
       nap2->module_load_status = pq_error;
-      fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
+      DPRINTF("%d: Error while loading \"%s\": %s\n",
               __LINE__,
               !nap->nacl_file ? nap->nacl_file : "(no file, to-be-supplied-via-RPC)",
               NaClErrorString(errcode));
@@ -710,7 +713,7 @@ int NaClSelLdrMain(int argc, char **argv) {
                                                        NACL_ABI_O_RDONLY, 0);
     if (NULL == blob_file) {
       perror("sel_main");
-      fprintf(stderr, "Cannot open \"%s\".\n", blob_library_file);
+      DPRINTF("Cannot open \"%s\".\n", blob_library_file);
       exit(EXIT_FAILURE);
     }
     NaClPerfCounterMark(&time_all_main, "SnapshotBlob");
@@ -742,7 +745,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n",
+        DPRINTF("%d: Error while loading \"%s\": %s\n",
                 __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
@@ -756,7 +759,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap2
       errcode = NaClAppLoadFileFromFilename(nap2, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -769,7 +772,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap3
       errcode = NaClAppLoadFileFromFilename(nap3, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -782,7 +785,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap4
       errcode = NaClAppLoadFileFromFilename(nap4, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -795,7 +798,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap5
       errcode = NaClAppLoadFileFromFilename(nap5, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -808,7 +811,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap6
       errcode = NaClAppLoadFileFromFilename(nap6, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -821,7 +824,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap7
       errcode = NaClAppLoadFileFromFilename(nap7, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -834,7 +837,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap0
       errcode = NaClAppLoadFileFromFilename(nap0, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -847,7 +850,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap0_2
       errcode = NaClAppLoadFileFromFilename(nap0_2, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -860,7 +863,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap_ready
       errcode = NaClAppLoadFileFromFilename(nap_ready, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -873,7 +876,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       // yiwen: load NaCl file to nap_ready_2
       errcode = NaClAppLoadFileFromFilename(nap_ready_2, nap->nacl_file);
       if (LOAD_OK != errcode) {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -1018,7 +1021,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
 
       // yiwen: my code
@@ -1027,42 +1030,42 @@ int NaClSelLdrMain(int argc, char **argv) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       errcode = NaClAppPrepareToLaunch(nap3);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       errcode = NaClAppPrepareToLaunch(nap0);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       errcode = NaClAppPrepareToLaunch(nap_ready);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       errcode = NaClAppPrepareToLaunch(nap0_2);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       errcode = NaClAppPrepareToLaunch(nap_ready_2);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
         // yiwen: my code
         nap2->module_load_status = errcode;
-        fprintf(stderr, "NaClAppPrepareToLaunch returned %d", errcode);
+        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
       NaClPerfCounterMark(&time_all_main, "AppPrepLaunch");
       NaClPerfCounterIntervalLast(&time_all_main);
@@ -1110,7 +1113,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if (NULL != blob_library_file) {
     if (nap->irt_loaded) {
-      NaClLog(LOG_INFO, "IRT loaded via command channel; ignoring -B irt\n");
+      DPRINTF("%s\n", "IRT loaded via command channel; ignoring -B irt");
     } else if (LOAD_OK == errcode) {
       NaClLog(2, "Loading blob file %s\n", blob_library_file);
       errcode = NaClAppLoadFileDynamically(nap, blob_file,
@@ -1118,7 +1121,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       if (LOAD_OK == errcode) {
         nap->irt_loaded = 1;
       } else {
-        fprintf(stderr, "%d: Error while loading \"%s\": %s\n", __LINE__,
+        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 blob_library_file,
                 NaClErrorString(errcode));
       }
@@ -1170,43 +1173,43 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
-    NaClLog(LOG_FATAL, "Adding env_vars NULL terminator failed\n");
+    DPRINTF("%s\n", "Adding env_vars NULL terminator failed");
   }
 
   NaClEnvCleanserCtor(&env_cleanser, 0);
   if (!NaClEnvCleanserInit(&env_cleanser, envp,
           (char const *const *)env_vars.ptr_array)) {
-    NaClLog(LOG_FATAL, "Failed to initialise env cleanser\n");
+    DPRINTF("%s\n", "Failed to initialise env cleanser");
   }
 
   if (!NaClAppLaunchServiceThreads(nap)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   // yiwen: my code
   if (!NaClAppLaunchServiceThreads(nap2)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   if (!NaClAppLaunchServiceThreads(nap3)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   // yiwen
   if (!NaClAppLaunchServiceThreads(nap0)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   if (!NaClAppLaunchServiceThreads(nap_ready)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   if (!NaClAppLaunchServiceThreads(nap0_2)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   if (!NaClAppLaunchServiceThreads(nap_ready_2)) {
-    fprintf(stderr, "Launch service threads failed\n");
+    DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
   if (enable_debug_stub) {
@@ -1267,7 +1270,7 @@ int NaClSelLdrMain(int argc, char **argv) {
                             argc - optind,
                             argv + optind,
                             NaClEnvCleanserEnvironment(&env_cleanser))) {
-     fprintf(stderr, "creating main thread failed\n");
+     DPRINTF("%s\n", "creating main thread failed");
      goto done;
   }
   nacl_user_program_begin = clock();
@@ -1312,7 +1315,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1342,7 +1345,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1373,7 +1376,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1402,7 +1405,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1430,7 +1433,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1459,7 +1462,7 @@ int NaClSelLdrMain(int argc, char **argv) {
  *                             argc2,
  *                             argv2,
  *                             NaClEnvCleanserEnvironment(&env_cleanser))) {
- *      fprintf(stderr, "creating main thread failed\n");
+ *      DPRINTF("%s\n", "creating main thread failed");
  *      goto done;
  *   }
  *
@@ -1515,40 +1518,40 @@ int NaClSelLdrMain(int argc, char **argv) {
   nacl_main_finish = clock();
 
   // yiwen: for evaluation measurement, we need to print out info here
-  NaClLog(LOG_WARNING, "[NaClMain] End of the program! \n\n");
+  DPRINTF("%s\n", "[NaClMain] End of the program! \n");
 
   // calculate and print out time of running the NaCl main program
   nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
+  DPRINTF("[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
 
   nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+  DPRINTF("[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
 
   nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
+  DPRINTF("[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
 
   #ifdef SYSCALL_TIMING
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call timing enabled! \n");
-  NaClLog(LOG_WARNING, "[NaClMain] Start printing out results now: \n");
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
-  NaClLog(LOG_WARNING, "[NaClMain] Print out system call timing table: \n");
+  DPRINTF("%s\n", "[NaClMain] NaCl system call timing enabled! ");
+  DPRINTF("%s\n", "[NaClMain] Start printing out results now: ");
+  DPRINTF("[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
+  DPRINTF("%s\n", "[NaClMain] Print out system call timing table: ");
   nacl_syscall_total_time = 0.0;
   for (i = 0; i < NACL_MAX_SYSCALLS; i++) {
-    NaClLog(LOG_WARNING, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
+    DPRINTF("sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
     nacl_syscall_total_time +=  nacl_syscall_execution_time[i];
   }
-  NaClLog(LOG_WARNING, "[NaClMain] NaCl system call total time: %f \n\n", nacl_syscall_total_time);
+  DPRINTF("[NaClMain] NaCl system call total time: %f \n\n", nacl_syscall_total_time);
 
-  NaClLog(LOG_WARNING, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
-  NaClLog(LOG_WARNING, "[NaClMain] Print out Lind system call timing table: \n");
+  DPRINTF("[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
+  DPRINTF("%s\n", "[NaClMain] Print out Lind system call timing table: ");
   lind_syscall_total_time = 0.0;
   for (i = 0; i < LIND_MAX_SYSCALLS; i++) {
-    NaClLog(LOG_WARNING, "sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
+    DPRINTF("sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
     lind_syscall_total_time +=  lind_syscall_execution_time[i];
   }
-  NaClLog(LOG_WARNING, "[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
+  DPRINTF("[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
 
-  NaClLog(LOG_WARNING, "[NaClMain] Results printing out: done! \n");
+  DPRINTF("%s\n", "[NaClMain] Results printing out: done! ");
   #endif
 
   // yiwen: test output for cage->lib_table[CACHED_LIB_NUM_MAX]
@@ -1558,22 +1561,22 @@ int NaClSelLdrMain(int argc, char **argv) {
      printf("[*** TESTING! ***] fd = %d, filepath = %s \n", j, nap->lib_table[j].path);
   } */
 
-  NaClLog(LOG_WARNING, "[Performance results] LindPythonInit(): %f \n", time_counter);
+  DPRINTF("[Performance results] LindPythonInit(): %f \n", time_counter);
 
   LindPythonFinalize();
 
   NaClExit(ret_code);
 
  done:
-  fflush(stdout);
+  fflush(NULL);
 
   if (verbosity) {
     gprintf((struct Gio *) &gout, "exiting -- printing NaClApp details\n");
     NaClAppPrintDetails(nap, (struct Gio *) &gout);
 
-    printf("Dumping vmmap.\n"); fflush(stdout);
+    printf("Dumping vmmap.\n"); fflush(NULL);
     PrintVmmap(nap);
-    fflush(stdout);
+    fflush(NULL);
   }
   /*
    * If there is a secure command channel, we sent an RPC reply with
@@ -1587,10 +1590,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClBlockIfCommandChannelExists(nap);
   }
 
-  if (verbosity > 0) {
-    printf("Done.\n");
-  }
-  fflush(stdout);
+  DPRINTF("%s\n", "Done.");
 
 #if NACL_LINUX
   NaClSignalHandlerFini();
@@ -1599,10 +1599,17 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if(!LindPythonFinalize()) {
       fflush(NULL);
-      exit(1);
+      exit(EXIT_SUCCESS);
   }
 
   NaClExit(ret_code);
+
+  /* silence unused variable warnings */
+  (void)nacl_main_spent;
+  (void)nacl_initialization_spent;
+  (void)nacl_user_program_begin;
+  (void)nacl_user_program_finish;
+  (void)nacl_user_program_spent;
 
   /* Unreachable, but having the return prevents a compiler error. */
   return ret_code;
