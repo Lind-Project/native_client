@@ -142,7 +142,7 @@ int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
 
 void NaClAddSyscall(int num, int32_t (*fn)(struct NaClAppThread *)) {
   if (nacl_syscall[num].handler != &NaClSysNotImplementedDecoder) {
-    NaClLog(LOG_FATAL, "Duplicate syscall number %d\n", num);
+    DPRINTF("Duplicate syscall number %d\n", num);
   }
   nacl_syscall[num].handler = fn;
 }
@@ -171,17 +171,17 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
 
   break_addr = nap->break_addr;
 
-  NaClLog(3, "Entered NaClSysBrk(new_break 0x%08"NACL_PRIxPTR")\n",
+  DDPRINTF("Entered NaClSysBrk(new_break 0x%08"NACL_PRIxPTR")\n",
           new_break);
 
   sys_new_break = NaClUserToSysAddr(nap, new_break);
-  NaClLog(3, "sys_new_break 0x%08"NACL_PRIxPTR"\n", sys_new_break);
+  DDPRINTF("sys_new_break 0x%08"NACL_PRIxPTR"\n", sys_new_break);
 
   if (kNaClBadAddress == sys_new_break) {
     goto cleanup_no_lock;
   }
   if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
-    NaClLog(LOG_ERROR, "Could not get app lock for 0x%08"NACL_PRIxPTR"\n",
+    DPRINTF("Could not get app lock for 0x%08"NACL_PRIxPTR"\n",
             (uintptr_t) nap);
     goto cleanup_no_lock;
   }
@@ -225,7 +225,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
                                       usr_last_data_page,
                                       &iter)
         || NaClVmmapIterAtEnd(&iter)) {
-      NaClLog(LOG_FATAL, ("current break (0x%08"NACL_PRIxPTR", "
+      DPRINTF(("current break (0x%08"NACL_PRIxPTR", "
                           "sys 0x%08"NACL_PRIxPTR") "
                           "not in address map\n"),
               nap->break_addr, sys_break);
@@ -265,7 +265,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
       if (0 != NaClMprotect((void *) NaClUserToSys(nap, start_new_region),
                             region_size,
                             PROT_READ | PROT_WRITE)) {
-        NaClLog(LOG_FATAL,
+        DPRINTF(
                 ("Could not mprotect(0x%08"NACL_PRIxPTR", "
                  "0x%08"NACL_PRIxPTR", "
                  "PROT_READ|PROT_WRITE)\n"),
@@ -298,7 +298,7 @@ cleanup_no_lock:
    */
   rv = (int32_t) break_addr;
 
-  NaClLog(3, "NaClSysBrk: returning 0x%08"NACL_PRIx32"\n", rv);
+  DDPRINTF("NaClSysBrk: returning 0x%08"NACL_PRIx32"\n", rv);
   return rv;
 }
 
@@ -306,7 +306,7 @@ int NaClAclBypassChecks = 0;
 
 void NaClInsecurelyBypassAllAclChecks(void) {
 #ifdef  _DEBUG
-  NaClLog(LOG_WARNING, "BYPASSING ALL ACL CHECKS\n");
+  DPRINTF("%s\n", "BYPASSING ALL ACL CHECKS\n");
 #endif
   NaClAclBypassChecks = 1;
 }
@@ -331,7 +331,7 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
    * gears.  need GUI for user configuration, as well as designing an
    * appropriate language (with sufficient expressiveness), however.
    */
-  NaClLog(1, "NaClOpenAclCheck(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o)\n",
+  DPRINTF("NaClOpenAclCheck(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o)\n",
           (uintptr_t) nap, path, flags, mode);
   if (3 < NaClLogGetVerbosity()) {
     NaClLog(0, "O_ACCMODE: 0%o\n", flags & NACL_ABI_O_ACCMODE);
@@ -340,7 +340,7 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
     NaClLog(0, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
 #define FLOG(VAR, BIT)							\
     do {								\
-      NaClLog(1, "%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no");	\
+      DPRINTF("%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no");	\
     } while (0)
     FLOG(flags, NACL_ABI_O_CREAT);
     FLOG(flags, NACL_ABI_O_TRUNC);
@@ -412,7 +412,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
 
-  NaClLog(1, "Exit syscall handler: %d\n", status);
+  DPRINTF("Exit syscall handler: %d\n", status);
 
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
 
@@ -458,15 +458,14 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   int32_t   retval = -NACL_ABI_EINVAL;
   int32_t   desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("NaClSysNameService(0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp,
           (uintptr_t) desc_addr);
 
   if (!NaClCopyInFromUser(nap, &desc, (uintptr_t) desc_addr, sizeof desc)) {
-    NaClLog(LOG_ERROR,
-            "Invalid address argument to NaClSysNameService\n");
+    DPRINTF("%s\n", "Invalid address argument to NaClSysNameService");
     retval = -NACL_ABI_EFAULT;
     goto done;
   }
@@ -612,11 +611,11 @@ static uint32_t CopyPathFromUser(struct NaClApp *nap,
    */
   if (!NaClCopyInFromUserZStr(nap, dest, num_bytes, src)) {
     if (dest[0] == '\0') {
-      NaClLog(LOG_ERROR, "NaClSys: invalid address for pathname\n");
+      DPRINTF("%s\n", "NaClSys: invalid address for pathname\n");
       return -NACL_ABI_EFAULT;
     }
 
-    NaClLog(LOG_ERROR, "NaClSys: pathname string too long\n");
+    DPRINTF("%s\n", "NaClSys: pathname string too long\n");
     return -NACL_ABI_ENAMETOOLONG;
   }
 
@@ -640,7 +639,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   // yiwen
   int                  fd_retval; // this is the virtual fd returned to the cage
 
-  NaClLog(3, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
+  DDPRINTF("NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
           (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
 
@@ -664,19 +663,19 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
                    | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
   if (0 != (flags & ~allowed_flags)) {
 #ifdef  _DEBUG
-    NaClLog(LOG_WARNING, "Invalid open flags 0%o, ignoring extraneous bits\n",
+    DPRINTF("Invalid open flags 0%o, ignoring extraneous bits\n",
             flags);
 #endif
     flags &= allowed_flags;
   }
   if (0 != (mode & ~0600)) {
-    NaClLog(1, "IGNORING Invalid access mode bits 0%o\n", mode);
+    DPRINTF("IGNORING Invalid access mode bits 0%o\n", mode);
     mode &= 0600;
   }
 
   retval = NaClOpenAclCheck(nap, path, flags, mode);
   if (0 != retval) {
-    NaClLog(3, "Open ACL check rejected \"%s\".\n", path);
+    DDPRINTF("Open ACL check rejected \"%s\".\n", path);
     goto cleanup;
   }
 
@@ -703,12 +702,12 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       goto cleanup;
     }
     retval = NaClHostDirOpen(hd, path);
-    NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
+    DPRINTF("NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
             (uintptr_t) hd, path, retval);
     if (0 == retval) {
       retval = NaClSetAvail(nap,
                             ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      NaClLog(1, "Entered directory into open file table at %d\n",
+      DPRINTF("Entered directory into open file table at %d\n",
               retval);
     }
   } else {
@@ -721,13 +720,12 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       goto cleanup;
     }
     retval = NaClHostDescOpen(hd, path, flags, mode);
-    NaClLog(1,
-            "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
+    DPRINTF("NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
             (uintptr_t) hd, path, flags, mode, retval);
     if (0 == retval) {
       retval = NaClSetAvail(nap,
                             ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      NaClLog(1, "Entered into open file table at %d\n", retval);
+      DPRINTF("Entered into open file table at %d\n", retval);
     }
   }
 
@@ -739,8 +737,8 @@ cleanup:
   nap->fd++;
 
   // yiwen: debug
-  // NaClLog(LOG_WARNING, "[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
-  // NaClLog(LOG_WARNING, "[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
+  // DPRINTF("[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
+  // DPRINTF("[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
   // printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
@@ -866,7 +864,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
       || INT32_MAX < getdents_ret) {
     /* This should never happen, because we already clamped the input count */
-    NaClLog(LOG_FATAL, "Overflow in Getdents: return value is %"NACL_PRIxS,
+    DPRINTF("Overflow in Getdents: return value is %"NACL_PRIxS,
             getdents_ret);
   } else {
     retval = (int32_t) getdents_ret;
@@ -905,7 +903,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   UNREFERENCED_PARAMETER(read_data_size);
   UNREFERENCED_PARAMETER(string);
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n"),
@@ -920,7 +918,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   if (fd == 8000) {
      printf("[Debug][Cage %d][fd = 8000] NaCl Read Begins! \n", nap->cage_id);
      while (pipe_mutex != 1) {
-          // NaClLog(LOG_WARNING, "[NaClSysRead] Waiting for the writer to write data! \n");
+          // DPRINTF("%s\n", "[NaClSysRead] Waiting for the writer to write data! \n");
      }
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
@@ -966,7 +964,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
    *    }
    *    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
    *    string = (char*)sysaddr;
-   *    // NaClLog(LOG_WARNING, "[NaClSysRead] string = %s \n", buffer_ptr);
+   *    // DPRINTF("[NaClSysRead] string = %s \n", buffer_ptr);
    *    if (nap->cage_id == 3) {
    *       memcpy(string, pipe_buffer[0], count);
    *       pipe_mutex[0] = 0;
@@ -1000,7 +998,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   // yiwen
   // fd = fd_cage_table[nap->cage_id][d];
 
-  // NaClLog(LOG_WARNING, "[NaClSysRead] <cage> = %i; fd = %i \n", nap->cage_id, fd);
+  // DPRINTF("[NaClSysRead] <cage> = %i; fd = %i \n", nap->cage_id, fd);
 
   ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
@@ -1088,7 +1086,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   if (fd == 8001) {
      printf("[Debug][Cage %d][fd = 8001] NaCl Write Begins! \n", nap->cage_id);
      while (pipe_mutex != 0) {
-          // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+          // DPRINTF("%s\n", "[NaClSysWrite] Waiting for the reader to read data! \n");
      }
      sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
      string = (char*)sysaddr;
@@ -1107,7 +1105,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
    *    while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))
    *           ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
    *           ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
-   *         // NaClLog(LOG_WARNING, "[NaClSysWrite] Waiting for the reader to read data! \n");
+   *         // DPRINTF("%s\n", "[NaClSysWrite] Waiting for the reader to read data! \n");
    *         }
    *    }
    */
@@ -1226,7 +1224,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   // yiwen
   int             fd;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
@@ -1254,8 +1252,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     if (NaClCopyOutToUser(nap, (uintptr_t) offp, &retval64, sizeof retval64)) {
       retval = 0;
     } else {
-      NaClLog(LOG_FATAL,
-              "NaClSysLseek: in/out ptr became invalid at copyout?\n");
+      DPRINTF("%s\n",
+              "NaClSysLseek: in/out ptr became invalid at copyout?");
     }
   }
 cleanup_unref:
@@ -1274,7 +1272,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   int             fd;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, d, request,
@@ -1306,7 +1304,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
 
   retval = NaClIoctlAclCheck(nap, ndp, request, arg);
   if (0 != retval) {
-    NaClLog(3, "Ioctl ACL check rejected descriptor %d\n", d);
+    DDPRINTF("Ioctl ACL check rejected descriptor %d\n", d);
     goto cleanup_unref;
   }
 
@@ -1339,7 +1337,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   struct nacl_abi_stat  result;
   int                   fd;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysFstat(0x%08"NACL_PRIxPTR
            ", %d, 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp,
@@ -1381,7 +1379,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   char                path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t    stbuf;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, (uintptr_t) pathname, (uintptr_t) buf);
@@ -1627,15 +1625,14 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(nap, usraddr, length)) {
     if (!nap->enable_dyncode_syscalls) {
 #ifdef  _DEBUG
-      NaClLog(LOG_WARNING,
-              "NaClSysMmap: PROT_EXEC when dyncode syscalls are disabled.\n");
+      DPRINTF("%s\n",
+              "NaClSysMmap: PROT_EXEC when dyncode syscalls are disabled.");
 #endif
       map_result = -NACL_ABI_EINVAL;
       goto cleanup;
     }
     if (0 != (NACL_ABI_PROT_WRITE & prot)) {
-      NaClLog(3,
-              "NaClSysMmap: asked for writable and executable code pages?!?\n");
+      DDPRINTF("%s\n", "NaClSysMmap: asked for writable and executable code pages?!?");
       map_result = -NACL_ABI_EINVAL;
       goto cleanup;
     }
@@ -1660,7 +1657,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
    * offset is ignored for anonymous mappings.
    */
   if (offset < 0) {
-    NaClLog(1,  /* application bug */
+    DPRINTF( /* application bug */
             "NaClSysMmap: negative file offset: %"NACL_PRIdNACL_OFF"\n",
             offset);
     map_result = -NACL_ABI_EINVAL;
@@ -1670,10 +1667,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
    * And offset must be a multiple of the allocation unit.
    */
   if (!NaClIsAllocPageMultiple((uintptr_t) offset)) {
-    NaClLog(1,
-            ("NaClSysMmap: file offset 0x%08"NACL_PRIxPTR" not multiple"
-             " of allocation size\n"),
-            (uintptr_t) offset);
+    DPRINTF("NaClSysMmap: file offset 0x%08"NACL_PRIxPTR" not multiple"
+            " of allocation size\n",
+            (uintptr_t)offset);
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
   }
@@ -1685,12 +1681,11 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   alloc_rounded_length = NaClRoundAllocPage(length);
   if (alloc_rounded_length != length) {
     if (mapping_code) {
-      NaClLog(3, "NaClSysMmap: length not a multiple of allocation size\n");
+      DDPRINTF("%s\n", "NaClSysMmap: length not a multiple of allocation size");
       map_result = -NACL_ABI_EINVAL;
       goto cleanup;
     }
-    NaClLog(1,
-            "NaClSysMmap: rounded length to 0x%"NACL_PRIxS"\n",
+    DPRINTF("NaClSysMmap: rounded length to 0x%"NACL_PRIxS"\n",
             alloc_rounded_length);
   }
 
@@ -1789,9 +1784,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
    * kMaxUsableFileSize.
    */
   if (mapping_code && (size_t) file_bytes < alloc_rounded_length) {
-    NaClLog(3,
+    DDPRINTF("%s\n",
             "NaClSysMmap: disallowing partial allocation page extension for"
-            " short files\n");
+            " short files");
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
   }
@@ -2042,7 +2037,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                                             &metadata,
                                             nap->validation_cache),
                                  NaClValidationFailed);
-      NaClLog(3, "NaClSysMmap: prot_exec, validator_status %d\n",
+      DDPRINTF("NaClSysMmap: prot_exec, validator_status %d\n",
               validator_status);
       NaClMetadataDtor(&metadata);
 
@@ -2063,8 +2058,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                                       1);
         NaClXMutexUnlock(&nap->dynamic_load_mutex);
         if (!ret) {
-          NaClLog(3, "NaClSysMmap: PROT_EXEC region"
-                  " overlaps other dynamic code\n");
+          DDPRINTF("%s\n",
+                   "NaClSysMmap: PROT_EXEC region"
+                   " overlaps other dynamic code");
           map_result = -NACL_ABI_EINVAL;
           goto cleanup;
         }
@@ -2079,7 +2075,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
          * that's unrecoverable.  For Linux and OSX, this should never
          * happen, since it's an atomic overmap.
          */
-        NaClLog(3, "NaClSysMmap: mapping into executable memory\n");
+        DDPRINTF("%s\n", "NaClSysMmap: mapping into executable memory");
         image_sys_addr = (*NACL_VTBL(NaClDesc, ndp)->
                           Map)(ndp,
                                nap->effp,
@@ -2089,7 +2085,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                                NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_FIXED,
                                offset);
         if (image_sys_addr != sysaddr) {
-          NaClLog(LOG_FATAL,
+          DPRINTF(
                   "NaClSysMmap: map into executable memory failed:"
                   " got 0x%"NACL_PRIxPTR"\n", image_sys_addr);
         }
@@ -2097,9 +2093,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
         goto cleanup;
       }
 
-      NaClLog(3,
-              "NaClSysMmap: did not validate in readonly_text mode;"
-              " attempting to use dyncode interface.\n");
+      DDPRINTF("%s\n",
+               "NaClSysMmap: did not validate in readonly_text mode;"
+               " attempting to use dyncode interface.");
 
       if (holding_app_lock) {
         NaClVmHoleClosingMu(nap);
@@ -2107,7 +2103,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       }
 
       if (NACL_FI("MMAP_STUBOUT_EMULATION", 0, 1)) {
-        NaClLog(3, "NaClSysMmap: emulating stubout mode by touching memory\n");
+        DDPRINTF("%s\n", "NaClSysMmap: emulating stubout mode by touching memory");
         *(volatile uint8_t *) image_sys_addr =
             *(volatile uint8_t *) image_sys_addr;
       }
@@ -2134,7 +2130,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       sys_ret = munmap((void *) image_sys_addr, length);
 #endif
       if (0 != sys_ret) {
-        NaClLog(LOG_FATAL,
+        DPRINTF(
                 "NaClSysMmap: could not unmap text at 0x%"NACL_PRIxPTR","
                 " length 0x%"NACL_PRIxS", NaCl errno %d\n",
                 image_sys_addr, length, -sys_ret);
@@ -2167,7 +2163,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
      */
     if (NaClPtrIsNegErrno(&map_result)) {
       if ((uintptr_t) -NACL_ABI_E_MOVE_ADDRESS_SPACE == map_result) {
-        NaClLog(LOG_FATAL,
+        DPRINTF(
                 ("NaClSysMmap: Map failed, but we"
                  " cannot handle address space move, error %"NACL_PRIuS"\n"),
                 (size_t) map_result);
@@ -2178,7 +2174,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       goto cleanup;
     }
     if (map_result != sysaddr) {
-      NaClLog(LOG_FATAL, "system mmap did not honor NACL_ABI_MAP_FIXED\n");
+      DPRINTF("%s\n", "system mmap did not honor NACL_ABI_MAP_FIXED\n");
     }
   }
   /*
@@ -2249,10 +2245,10 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
    */
   if (map_result > UINT32_MAX
       && !NaClPtrIsNegErrno(&map_result)) {
-    NaClLog(LOG_FATAL, "Overflow in NaClSysMmap: return address is "
+    DPRINTF("Overflow in NaClSysMmap: return address is "
                        "0x%"NACL_PRIxPTR"\n", map_result);
   }
-  NaClLog(3, "NaClSysMmap: returning 0x%08"NACL_PRIxPTR"\n", map_result);
+  DDPRINTF("NaClSysMmap: returning 0x%08"NACL_PRIxPTR"\n", map_result);
 
   return (int32_t) map_result;
 }
@@ -2270,7 +2266,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   nacl_abi_off_t  offset;
   //PyGILState_STATE gstate;
 
-  NaClLog(3,
+  DDPRINTF(
           "Entered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,%d,0x%08"NACL_PRIxPTR")\n",
           (uintptr_t) start, length, prot, flags, d, (uintptr_t) offp);
@@ -2284,7 +2280,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
      * conversion works.
      */
 #ifdef  _DEBUG
-    NaClLog(LOG_WARNING,
+    DPRINTF(
             "NaClSysMmap: NULL pointer used"
             " for offset in/out argument\n");
 #endif
@@ -2294,8 +2290,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   //gstate = PyGILState_Ensure();
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) offp, sizeof offset);
   if (kNaClBadAddress == sysaddr) {
-    NaClLog(3,
-            "NaClSysMmap: offset in a bad untrusted memory location\n");
+    DDPRINTF("%s\n", "NaClSysMmap: offset in a bad untrusted memory location");
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
@@ -2329,7 +2324,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
     if (NULL == entry) {
       continue;
     }
-    NaClLog(3,
+    DDPRINTF(
             ("NaClSysMunmap: addr 0x%08x, desc 0x%08"NACL_PRIxPTR"\n"),
             addr, (uintptr_t) entry->desc);
 
@@ -2339,7 +2334,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
     if (NULL != entry->desc &&
         offset < (uintptr_t) entry->file_size) {
       if (!UnmapViewOfFile((void *) addr)) {
-        NaClLog(LOG_FATAL,
+        DPRINTF(
                 ("MunmapInternal: UnmapViewOfFile failed to at addr"
                  " 0x%08"NACL_PRIxPTR", error %d\n"),
                 addr, GetLastError());
@@ -2350,7 +2345,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
       */
       if (!VirtualAlloc((void *) addr, NACL_MAP_PAGESIZE, MEM_RESERVE,
                         PAGE_READWRITE)) {
-        NaClLog(LOG_FATAL, "MunmapInternal: "
+        DPRINTF("MunmapInternal: "
                 "failed to fill hole with VirtualAlloc(), error %d\n",
                 GetLastError());
       }
@@ -2363,7 +2358,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
                        NACL_MAP_PAGESIZE,
                        MEM_DECOMMIT)) {
         int error = GetLastError();
-        NaClLog(LOG_FATAL,
+        DPRINTF(
                 ("MunmapInternal: Could not VirtualFree MEM_DECOMMIT"
                  " addr 0x%08x, error %d (0x%x)\n"),
                 addr, error, error);
@@ -2379,7 +2374,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length) {
   UNREFERENCED_PARAMETER(nap);
-  NaClLog(3,
+  DDPRINTF(
           "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n",
           sysaddr,
           length);
@@ -2413,7 +2408,7 @@ int32_t NaClSysMunmap(struct NaClAppThread  *natp,
   int       holding_app_lock = 0;
   size_t    alloc_rounded_length;
 
-  NaClLog(3, "Entered NaClSysMunmap(0x%08"NACL_PRIxPTR", "
+  DDPRINTF("Entered NaClSysMunmap(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n",
           (uintptr_t) natp, (uintptr_t) start, length);
 
@@ -2502,7 +2497,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
     if (NULL == entry) {
       continue;
     }
-    NaClLog(3, "MprotectInternal: addr 0x%08x, desc 0x%08"NACL_PRIxPTR"\n",
+    DDPRINTF("MprotectInternal: addr 0x%08x, desc 0x%08"NACL_PRIxPTR"\n",
             addr, (uintptr_t) entry->desc);
 
     page_num = usraddr - (entry->page_num << NACL_PAGESHIFT);
@@ -2517,7 +2512,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
                           flProtect,
                           &flOldProtect)) {
         int error = GetLastError();
-        NaClLog(LOG_FATAL, "MprotectInternal: "
+        DPRINTF("MprotectInternal: "
                 "failed to change the memory protection with VirtualProtect,"
                 " addr 0x%08x, error %d (0x%x)\n",
                 addr, error, error);
@@ -2544,7 +2539,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
          * This shouldn't really happen since we already checked the address
          * space using NaClVmmapCheckExistingMapping, but better be safe.
          */
-        NaClLog(LOG_FATAL, "MprotectInternal: %s\n", err_msg);
+        DPRINTF("MprotectInternal: %s\n", err_msg);
       }
 
       file_bytes = entry->file_size - offset;
@@ -2560,7 +2555,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
                           flProtect,
                           &flOldProtect)) {
         int error = GetLastError();
-        NaClLog(LOG_FATAL, "MprotectInternal: "
+        DPRINTF("MprotectInternal: "
                 "failed to change the memory protection with VirtualProtect()"
                 " addr 0x%08x, error %d (0x%x)\n",
                 addr, error, error);
@@ -2597,13 +2592,13 @@ static int32_t MprotectInternal(struct NaClApp *nap,
     usraddr = entry->page_num << NACL_PAGESHIFT;
     addr = NaClUserToSys(nap, usraddr);
 
-    NaClLog(3, "MprotectInternal: "
+    DDPRINTF("MprotectInternal: "
             "addr 0x%08"NACL_PRIxPTR", desc 0x%08"NACL_PRIxPTR"\n",
             addr, (uintptr_t) entry->desc);
 
     if (NULL == entry->desc) {
       if (0 != mprotect((void *) addr, entry_len, host_prot)) {
-        NaClLog(LOG_FATAL, "MprotectInternal: "
+        DPRINTF("MprotectInternal: "
                 "mprotect on anonymous memory failed, errno = %d\n", errno);
         return -NaClXlateErrno(errno);
       }
@@ -2617,7 +2612,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
       prot_len = size_min(rounded_file_bytes, entry_len);
 
       if (0 != mprotect((void *) addr, prot_len, host_prot)) {
-        NaClLog(LOG_FATAL, "MprotectInternal: "
+        DPRINTF("MprotectInternal: "
                 "mprotect on file-backed memory failed, errno = %d\n", errno);
         return -NaClXlateErrno(errno);
       }
@@ -2702,7 +2697,7 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
                         int                   prot) {
   struct NaClApp  *nap = natp->nap;
 
-  NaClLog(3, "Entered NaClSysMprotect(0x%08"NACL_PRIxPTR", "
+  DDPRINTF("Entered NaClSysMprotect(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS", 0x%x)\n",
           (uintptr_t) natp, (uintptr_t) start, length, prot);
 
@@ -2723,7 +2718,7 @@ int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
   struct NaClDesc             *pair[2];
   int32_t                     usr_pair[2];
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysImcMakeBoundSock(0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, (uintptr_t) sap);
@@ -2767,7 +2762,7 @@ int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
   struct NaClDesc *ndp;
   int             fd;
 
-  NaClLog(3, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n",
+  DDPRINTF("Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
   // yiwen
@@ -2795,7 +2790,7 @@ int32_t NaClSysImcConnect(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   int             fd;
 
-  NaClLog(3, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n",
+  DDPRINTF("Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
   // yiwen
@@ -2841,7 +2836,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
   size_t                        i;
   int                           fd;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysImcSendmsg(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", 0x%x)\n"),
           (uintptr_t) natp, d, (uintptr_t) nanimhp, flags);
@@ -2992,7 +2987,7 @@ cleanup:
   }
   NaClDescUnref(ndp);
 cleanup_leave:
-  NaClLog(3, "NaClSysImcSendmsg: returning %d\n", retval);
+  DDPRINTF("NaClSysImcSendmsg: returning %d\n", retval);
   return retval;
 }
 
@@ -3017,7 +3012,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   // yiwen
   int                                   fd;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysImcRecvMsg(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, d, (uintptr_t) nanimhp);
@@ -3123,7 +3118,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
    * retval is number of user payload bytes received and excludes the
    * header bytes.
    */
-  NaClLog(3, "NaClSysImcRecvMsg: RecvMsg() returned %"NACL_PRIdS"\n",
+  DDPRINTF("NaClSysImcRecvMsg: RecvMsg() returned %"NACL_PRIdS"\n",
           ssize_retval);
   if (NaClSSizeIsNegErrno(&ssize_retval)) {
     /* negative error numbers all have valid 32-bit representations,
@@ -3173,18 +3168,17 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   if (0 != num_user_desc &&
       !NaClCopyOutToUser(nap, (uintptr_t) kern_nanimh.descv, usr_desc,
                          num_user_desc * sizeof usr_desc[0])) {
-    NaClLog(LOG_FATAL,
-            ("NaClSysImcRecvMsg: in/out ptr (descv %"NACL_PRIxPTR
-             ") became invalid at copyout?\n"),
+    DPRINTF("NaClSysImcRecvMsg: in/out ptr (descv %"NACL_PRIxPTR
+            ") became invalid at copyout?\n",
             (uintptr_t) kern_nanimh.descv);
   }
 
   kern_nanimh.desc_length = num_user_desc;
   if (!NaClCopyOutToUser(nap, (uintptr_t) nanimhp, &kern_nanimh,
                          sizeof kern_nanimh)) {
-    NaClLog(LOG_FATAL,
+    DPRINTF("%s\n",
             "NaClSysImcRecvMsg: in/out ptr (iov) became"
-            " invalid at copyout?\n");
+            " invalid at copyout?");
   }
   /* copy out updated desc count, flags */
  cleanup:
@@ -3198,7 +3192,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   }
   NaClDescUnref(ndp);
   NaClDescSafeUnref(invalid_desc);
-  NaClLog(3, "NaClSysImcRecvMsg: returning %d\n", retval);
+  DDPRINTF("NaClSysImcRecvMsg: returning %d\n", retval);
 cleanup_leave:
   return retval;
 }
@@ -3210,7 +3204,7 @@ int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
   struct NaClDescImcShm *shmp;
   off_t                 size_as_off;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysImcMemObjCreate(0x%08"NACL_PRIxPTR
            " 0x%08"NACL_PRIxS")\n"),
           (uintptr_t) natp, size);
@@ -3257,7 +3251,7 @@ int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
   struct NaClDesc         *pair[2];
   int32_t                 retval;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysImcSocketPair(0x%08"NACL_PRIxPTR
            " 0x%08"NACL_PRIx32")\n"),
           (uintptr_t) natp, descs_out);
@@ -3288,7 +3282,7 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   int32_t   retval = -NACL_ABI_EINVAL;
   uintptr_t sys_tls;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysTlsInit(0x%08"NACL_PRIxPTR
            ", 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, (uintptr_t) thread_ptr);
@@ -3322,14 +3316,14 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
   uintptr_t   sys_tls;
   uintptr_t   sys_stack;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysThreadCreate(0x%08"NACL_PRIxPTR
            " pc=0x%08"NACL_PRIxPTR", sp=0x%08"NACL_PRIx32", thread_ptr=0x%08"
            NACL_PRIx32")\n"),
           (uintptr_t) natp, (uintptr_t) prog_ctr, stack_ptr, thread_ptr);
 
   if (!NaClIsValidJumpTarget(nap, (uintptr_t) prog_ctr)) {
-    NaClLog(LOG_ERROR, "NaClSysThreadCreate: Bad function pointer\n");
+    DPRINTF("%s\n", "NaClSysThreadCreate: Bad function pointer\n");
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
@@ -3341,13 +3335,13 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
 
   sys_stack = NaClUserToSysAddr(nap, stack_ptr);
   if (kNaClBadAddress == sys_stack) {
-    NaClLog(LOG_ERROR, "bad stack\n");
+    DPRINTF("%s\n", "bad stack\n");
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
   sys_tls = NaClUserToSysAddrRange(nap, thread_ptr, 4);
   if (kNaClBadAddress == sys_tls) {
-    NaClLog(LOG_ERROR, "bad TLS pointer\n");
+    DPRINTF("%s\n", "bad TLS pointer\n");
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
@@ -3398,7 +3392,7 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   int32_t              retval = -NACL_ABI_EINVAL;
   struct NaClDescMutex *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysMutexCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
@@ -3414,7 +3408,7 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   desc = NULL;
 cleanup:
   free(desc);
-  NaClLog(3,
+  DDPRINTF(
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
   return retval;
@@ -3426,7 +3420,7 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
   int32_t               retval = -NACL_ABI_EINVAL;
   struct NaClDesc       *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysMutexLock(0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, mutex_handle);
 
@@ -3450,7 +3444,7 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysMutexUnlock(0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, mutex_handle);
 
@@ -3474,7 +3468,7 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysMutexTrylock(0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, mutex_handle);
 
@@ -3497,7 +3491,7 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
   int32_t                retval = -NACL_ABI_EINVAL;
   struct NaClDescCondVar *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysCondCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
@@ -3513,7 +3507,7 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
   desc = NULL;
 cleanup:
   free(desc);
-  NaClLog(3,
+  DDPRINTF(
           ("NaClSysCondCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
   return retval;
@@ -3527,7 +3521,7 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
   struct NaClDesc *cv_desc;
   struct NaClDesc *mutex_desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysCondWait(0x%08"NACL_PRIxPTR", %d, %d)\n"),
           (uintptr_t) natp, cond_handle, mutex_handle);
 
@@ -3560,7 +3554,7 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysCondSignal(0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, cond_handle);
 
@@ -3583,7 +3577,7 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
   struct NaClDesc *desc;
   int32_t         retval = -NACL_ABI_EINVAL;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysCondBroadcast(0x%08"NACL_PRIxPTR", %d)\n"),
           (uintptr_t) natp, cond_handle);
 
@@ -3611,7 +3605,7 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   struct NaClDesc          *mutex_desc;
   struct nacl_abi_timespec trusted_ts;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysCondTimedWaitAbs(0x%08"NACL_PRIxPTR
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, cond_handle, mutex_handle, (uintptr_t) ts);
@@ -3652,7 +3646,7 @@ int32_t NaClSysSemCreate(struct NaClAppThread *natp,
   int32_t                  retval = -NACL_ABI_EINVAL;
   struct NaClDescSemaphore *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysSemCreate(0x%08"NACL_PRIxPTR
            ", %d)\n"),
           (uintptr_t) natp, init_value);
@@ -3679,7 +3673,7 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysSemWait(0x%08"NACL_PRIxPTR
            ", %d)\n"),
           (uintptr_t) natp, sem_handle);
@@ -3709,7 +3703,7 @@ int32_t NaClSysSemPost(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysSemPost(0x%08"NACL_PRIxPTR
            ", %d)\n"),
           (uintptr_t) natp, sem_handle);
@@ -3733,7 +3727,7 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysSemGetValue(0x%08"NACL_PRIxPTR
            ", %d)\n"),
           (uintptr_t) natp, sem_handle);
@@ -3760,7 +3754,7 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
   struct nacl_abi_timespec  *remptr;
   int                       retval = -NACL_ABI_EINVAL;
 
-  NaClLog(3,
+  DDPRINTF(
           ("Entered NaClSysNanosleep(0x%08"NACL_PRIxPTR
            ", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR"x)\n"),
           (uintptr_t) natp, (uintptr_t) req, (uintptr_t) rem);
@@ -3794,7 +3788,7 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
 
   if (-EINTR == retval && NULL != rem &&
       !NaClCopyOutToUser(nap, (uintptr_t) rem, remptr, sizeof *remptr)) {
-    NaClLog(LOG_FATAL, "NaClSysNanosleep: check rem failed at copyout\n");
+    DPRINTF("%s\n", "NaClSysNanosleep: check rem failed at copyout\n");
   }
 
 cleanup:
@@ -4010,7 +4004,7 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type) {
     *p = 0;
     break;
   case NACL_TEST_CRASH_LOG_FATAL:
-    NaClLog(LOG_FATAL, "NaClSysTestCrash: This is a test error\n");
+    DPRINTF("%s\n", "NaClSysTestCrash: This is a test error\n");
     break;
   case NACL_TEST_CRASH_CHECK_FAILURE:
     CHECK(0);
@@ -4027,10 +4021,9 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 
   UNREFERENCED_PARAMETER(tz);
 
-  NaClLog(3,
-          ("Entered NaClSysGetTimeOfDay(%08"NACL_PRIxPTR
-           ", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n"),
-          (uintptr_t) natp, (uintptr_t) tv, (uintptr_t) tz);
+  DDPRINTF("Entered NaClSysGetTimeOfDay(%08"NACL_PRIxPTR
+           ", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          (uintptr_t)natp, (uintptr_t)tv, (uintptr_t)tz);
 
   /*
    * tz is not supported in linux, nor is it supported by glibc, since
@@ -4143,8 +4136,8 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   string2_ptr = string2;
   pipe(string2_ptr);
 
-  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
-  NaClLog(LOG_WARNING, "[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);
+  DPRINTF("[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
+  DPRINTF("[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);
   */
   retval = 0;
   return retval;
@@ -4234,7 +4227,7 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   int child_argc;
   char **child_argv;
 
-  NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv starts! \n");
+  DPRINTF("%s\n", "[NaClSysExecv] NaCl execv starts! \n");
 
   child_argc = 4;
   /* needed to suppress warnings from c++ code using these functions */
@@ -4252,7 +4245,7 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
                             child_argv,
                             NULL)) {
     fprintf(stderr, "creating main thread failed\n");
-    NaClLog(LOG_WARNING, "[NaClSysExecv] Execv new program failed! \n");
+    DPRINTF("%s\n", "[NaClSysExecv] Execv new program failed! \n");
     retval = -1;
     return retval;
   }
@@ -4260,7 +4253,7 @@ int32_t NaClSysExecv(struct NaClAppThread  *natp) {
   NaClReportExitStatus(nap, 0);  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
   NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return.
 
-  NaClLog(LOG_WARNING, "[NaClSysExecv] NaCl execv finishes! \n");
+  DPRINTF("%s\n", "[NaClSysExecv] NaCl execv finishes! \n");
 
   return retval;
 }
@@ -4348,17 +4341,17 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     // printf ("%s \n", argv_newcage[3 + i]);
   }
 
-  // NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
-  // NaClLog(LOG_WARNING, "[NaClSysExecve] path = %s \n", (char*) path_get);
-  // NaClLog(LOG_WARNING, "[NaClSysExecve] argv = %s \n", (char*) argv_get);
+  // DPRINTF("[NaClSysExecve] cage id = %d \n", nap->cage_id);
+  // DPRINTF("[NaClSysExecve] path = %s \n", (char*) path_get);
+  // DPRINTF("[NaClSysExecve] argv = %s \n", (char*) argv_get);
   //
   UNREFERENCED_PARAMETER(envp);
   free(options);
 
 #ifdef  _DEBUG
-  NaClLog(LOG_WARNING, "[NaClSysExecve] cage id = %d \n", nap->cage_id);
-  NaClLog(LOG_WARNING, "[NaClSysExecve] envp = %s \n", (char*) envp_get);
-  NaClLog(LOG_WARNING, "[NaClSysExecve] fork_num = %d \n", fork_num);
+  DPRINTF("[NaClSysExecve] cage id = %d \n", nap->cage_id);
+  DPRINTF("[NaClSysExecve] envp = %s \n", (char*) envp_get);
+  DPRINTF("[NaClSysExecve] fork_num = %d \n", fork_num);
 #endif
 
   if (fork_num == 1) {
@@ -4373,7 +4366,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
                                 argc_newcage,
                                 argv_newcage,
                                 NULL)) {
-        NaClLog(LOG_WARNING, "[NaClSysExecve] creating main thread failed \n");
+        DPRINTF("%s\n", "[NaClSysExecve] creating main thread failed \n");
         retval = -1;
         return retval;
       }
@@ -4391,7 +4384,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
                                 argc_newcage,
                                 argv_newcage,
                                 NULL)) {
-        NaClLog(LOG_WARNING, "[NaClSysExecve] creating main thread failed \n");
+        DPRINTF("%s\n", "[NaClSysExecve] creating main thread failed \n");
         retval = -1;
         return retval;
       }
