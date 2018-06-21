@@ -297,7 +297,9 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #define LOG_FATAL   (-4)
 
 /*
- * Debug versions of NaClLog() that are stubbed unless _DEBUG is defined
+ * Debug versions of NaClLog() that are stubbed unless _DEBUG is
+ * defined. DPRINTF() and DDPRINTF() are enabled with sel_ldr
+ * flags -v and -vv respectively.
  *
  * -jp
  */
@@ -317,7 +319,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                         file = __FILE__;				\
                 /* too noisy when timestamp is enabled */		\
                 NaClLogDisableTimestamp();				\
-                NaClLog(LOG_ERROR, "[%s() %s:%u] "fmt,			\
+                NaClLog(1, "[%s() %s:%u] "fmt,			\
                         __func__, file, __LINE__, ## __VA_ARGS__);	\
                 NaClLogEnableTimestamp();				\
         } while (0)
@@ -330,7 +332,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
                         file = __FILE__;				\
                 /* too noisy when timestamp is enabled */		\
                 NaClLogDisableTimestamp();				\
-                NaClLog(1, "[%s() %s:%u] "fmt,				\
+                NaClLog(2, "[%s() %s:%u] "fmt,				\
                         __func__, file, __LINE__, ## __VA_ARGS__);	\
                 NaClLogEnableTimestamp();				\
         } while (0)
