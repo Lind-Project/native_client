@@ -141,7 +141,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
-  thread_idx = nap->fork_num;
+  thread_idx = nap->cage_id;
   CHECK(1 < thread_idx);
   CHECK(thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
@@ -628,7 +628,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    *  -jp
    */
   natp_child->user.sysret = 0;
-  natp_child->user.rax = 0;
+  /* natp_child->user.rax = 0; */
   /* natp_child->user.rdx = 0; */
 
   /*
@@ -671,7 +671,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   /*
    * setup TLS slot in the global nacl_user array
    */
-  natp_child->user.tls_idx = nap_child->fork_num;
+  natp_child->user.tls_idx = nap_child->cage_id;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
   if (nacl_user[natp_child->user.tls_idx]) {
@@ -715,8 +715,6 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
   if (!natp)
     return 0;
   nap->parent = NULL;
-  nap->is_fork_child = 0;
-  nap->fork_num = nap->cage_id;
 
   /*
    * save master thread context pointer

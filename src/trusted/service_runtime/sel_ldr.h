@@ -88,9 +88,9 @@ struct Pipe {
 };
 
 extern struct Pipe pipe_table[PIPE_NUM_MAX];
-extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-extern int fork_num;
+extern volatile int fork_num;
 extern int cached_lib_num;
+extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);

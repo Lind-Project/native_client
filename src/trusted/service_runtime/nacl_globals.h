@@ -92,8 +92,6 @@ extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 // yiwen
 extern int cage;
-extern int fork_num;
-extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern struct NaClApp state_ready;
 extern struct NaClApp *nap_ready;
 extern struct NaClApp state_ready_2;

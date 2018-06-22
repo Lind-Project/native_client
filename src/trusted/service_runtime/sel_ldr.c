@@ -83,7 +83,7 @@ struct NaClApp *nap0_2;
  */
 struct Pipe pipe_table[PIPE_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-int fork_num;
+volatile int fork_num = 1;
 
 // yiwen: lookup table for <file_path, mem_addr>
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
@@ -1564,7 +1564,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   DPRINTF("dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
   DPRINTF("stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
   DPRINTF("cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
-  DPRINTF("fork_num [nap_parent: %d] [nap_child: %d]\n", nap_parent->fork_num, nap_child->fork_num);
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
