@@ -4099,36 +4099,32 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap;
   struct NaClApp *nap_child;
-  int retval;
-  int child_argc;
   char **child_argv;
+  int child_argc;
+  int ret;
   NACL_TIMESPEC_T const timeout = {1, 0};
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
+
   nap = natp->nap;
 
-  if (nap->is_fork_child) {
-     DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
-     NaClXMutexLock(&nap->mu);
-     NaClAppThreadPrintInfo(natp);
-     DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
-     DPRINTF("         natp = %p\n", (void *)natp);
-     DPRINTF("          nap = %p\n", (void *)nap);
-     DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
-     DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
-     nap->is_fork_child = 0;
-     /* retval = nap->cage_id; */
-     retval = 0;
-     NaClXCondVarBroadcast(&nap->cv);
-     NaClXMutexUnlock(&nap->mu);
-     goto out;
+  /* child */
+  if (nap->fork_state && !nap->num_children) {
+    NaClAppThreadPrintInfo(natp);
+    DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
+    DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
+    DPRINTF("         natp = %p\n", (void *)natp);
+    DPRINTF("          nap = %p\n", (void *)nap);
+    DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
+    DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
+    ret = 0;
+    goto out;
   }
 
-  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", nap->fork_num, nap->cage_id);
-
-  fork_num++;
+  /* parent */
+  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
   child_argc = 3 + nap->command_num;
-  child_argv= calloc(child_argc + 2, sizeof *child_argv);
+  child_argv = calloc(child_argc + 2, sizeof *child_argv);
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
@@ -4143,14 +4139,16 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp);
-  nap->children_ids[nap->num_children] = nap_child->cage_id;
-  /* retval = 0; */
-  retval = nap_child->cage_id;
+  nap_child->fork_state = 1;
+  DPRINTF("initial child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
-    retval = -1;
+    ret = -1;
     goto out;
   }
+  fork_num++;
+  ret = nap_child->cage_id;
+  DPRINTF("post child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
 
   /*
    * _n.b._ parent _MUST_ wait for child to
@@ -4158,23 +4156,23 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
    *
    * -jp
    */
-  NaClXMutexLock(&nap_child->mu);
+  NaClXMutexLock(&nap->children_mu);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
-  DPRINTF("nap_child->is_fork_child: %d\n", nap_child->is_fork_child);
-  while (nap_child->is_fork_child && DynArrayGet(&nap->children, nap_child->cage_id))
-    NaClXCondVarTimedWaitRelative(&nap_child->cv, &nap_child->mu, &timeout);
-  NaClXMutexUnlock(&nap_child->mu);
+  DPRINTF("child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
+  while (nap->num_children > 0 && nap_child->fork_state)
+    NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+  NaClXMutexUnlock(&nap->children_mu);
 
 out:
-  DPRINTF("[NaClSysFork] retval = %d \n", retval);
-  return retval;
+  nap->fork_state = 0;
+  return ret;
 }
 
 // yiwen: my implementation for execv() call
 // a new cage is created for the new program
 // the new program will be running inside the new cage
 // the old cage and the runnging main thread inside that cage will be torn down
-int32_t NaClSysExecv(struct NaClAppThread  *natp) {
+int32_t NaClSysExecv(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
 

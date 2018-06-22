@@ -141,15 +141,13 @@ struct NaClApp {
 
   int                       children_ids[CHILD_NUM_MAX];
   int                       num_children;
-  int                       fork_num;
   int                       cage_id;
   int                       num_lib;
 
   /*
-   * Whether or not current thread is a child of fork(). Flag
-   * is reset after forking.
+   * fork_state is set to one if current thread is a child of fork
    */
-  int                       is_fork_child;
+  int                       fork_state;
   int                       parent_id;
   struct NaClApp            *parent;
 

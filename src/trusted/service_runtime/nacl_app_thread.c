@@ -46,13 +46,17 @@
 struct NaClThreadContext *master_ctx;
 
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
-  struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
+  struct NaClApp *nap;
+  struct NaClApp *nap_child;
   NaClErrorCode *mod_status = NULL;
+  size_t ctx_index = 1;
   int newfd = 0;
 
+  nap = natp->nap;
+  nap_child = calloc(1, sizeof *nap_child);
   CHECK(nap);
   CHECK(nap_child);
+  UNREFERENCED_PARAMETER(ctx_index);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
   if (!NaClAppCtor(nap_child))
@@ -64,18 +68,24 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->nacl_file = nap->nacl_file;
   nap_child->enable_exception_handling = nap->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
-  nap_child->fork_num  = nap_child->cage_id = nap->cage_id + 1;
-  nap_child->parent_id = nap->cage_id;
-  nap_child->parent = nap;
-  nap_child->is_fork_child = 1;
-  nap_child->num_children = 0;
-  nap_child->num_lib = 3;
   nap_child->fd = 3;
+  nap_child->num_lib = 3;
+  nap_child->num_children = 0;
+  nap_child->parent = nap;
+  nap_child->parent_id = nap->cage_id;
+
+  /* find an empty slot */
+  nap_child->cage_id = fork_num + 1;
+  /*
+   * for (; nacl_user[ctx_index]; ctx_index++);
+   * nap_child->cage_id = ctx_index;
+   */
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
-  NaClAppInitialDescriptorHookup(nap_child);
 
-  NaClXMutexLock(&nap_child->mu);
+  NaClAppInitialDescriptorHookup(nap_child);
+  DPRINTF("fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
             nap_child->nacl_file,
@@ -85,8 +95,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
-  NaClXCondVarBroadcast(&nap_child->cv);
-  NaClXMutexUnlock(&nap_child->mu);
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
     NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
@@ -113,11 +121,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   }
 
   NaClXMutexLock(&nap->children_mu);
-  NaClXMutexLock(&nap->mu);
+  DPRINTF("Incrementing parent child count for cage id: %d\n", nap->cage_id);
+  DPRINTF("Parent new child count: %d\n", ++nap->num_children);
   if (!DynArraySet(&nap->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
-  nap->num_children++;
-  NaClXMutexUnlock(&nap->mu);
+  nap->children_ids[nap->num_children - 1] = nap_child->cage_id;
   NaClXMutexUnlock(&nap->children_mu);
 
   return nap_child;
@@ -163,7 +171,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   /*
    * natp->thread_num = NaClAddThreadMu(nap, natp);
    */
-  nap->num_threads = thread_idx - 1;
+  nap->num_threads = thread_idx;
   natp->thread_num = thread_idx;
   if (!DynArraySet(&nap->threads, natp->thread_num, natp))
     NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
@@ -299,22 +307,22 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    * asking us to commit suicide.
    */
   DPRINTF("[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
+  UNREFERENCED_PARAMETER(nap_master);
 
   if (nap->parent) {
     /*
      * remove self from parent's child_list
      */
     NaClXMutexLock(&nap->parent->children_mu);
-    NaClXMutexLock(&nap->parent->mu);
     DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
-    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
-    nap->parent->children_ids[nap->parent->num_children] = 0;
+    /* CHECK(nap->parent->children_ids[nap->parent->num_children - 1] == nap->cage_id); */
+    nap->parent->children_ids[nap->parent->num_children - 1] = 0;
     if (!DynArraySet(&nap->parent->children, nap->cage_id, NULL))
       NaClLog(LOG_FATAL, "Failed to remove child at idx %u\n", nap->cage_id);
+    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap->parent->children_cv);
     NaClXMutexUnlock(&nap->parent->children_mu);
-    NaClXMutexUnlock(&nap->parent->mu);
     /*
      * wait for all children to finish
      */
@@ -322,6 +330,12 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     while (nap_master->num_children > 0)
       NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
     NaClXMutexUnlock(&nap_master->children_mu);
+    /*
+     * NaClXMutexLock(&nap->parent->children_mu);
+     * while (nap->parent->num_children > 0)
+     *   NaClXCondVarWait(&nap->parent->children_cv, &nap->parent->children_mu);
+     * NaClXMutexUnlock(&nap->parent->children_mu);
+     */
   } else {
     DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
@@ -503,13 +517,15 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClAppThread *natp_child;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
+  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
 
   UNREFERENCED_PARAMETER(stack_ptr_offset);
   UNREFERENCED_PARAMETER(base_ptr_offset);
   UNREFERENCED_PARAMETER(child_ctx);
+  UNREFERENCED_PARAMETER(nap_master);
 
   if (!nap_parent->running)
-   return 0;
+    return 0;
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
@@ -523,6 +539,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   stack_total_size = nap_parent->stack_size;
   /* align the child stack correctly */
   stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
+  /* stack_size = stack_total_size; */
   nap_child->stack_size = stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
                                                     NaClGetInitialStackTop(nap_parent) - stack_total_size,
@@ -541,10 +558,16 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   child_ctx = natp_child->user;
   /* copy parent page tables and execution context */
   NaClCopyExecutionContext(nap_parent, nap_child);
+  /* NaClCopyExecutionContext(nap_master, nap_child); */
+  DPRINTF("fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
+          fork_num,
+          nap_child->cage_id,
+          nap_parent->cage_id);
   /* copy parent thread context */
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
   natp_child->user = natp_parent->user;
+  /* natp_child->user = *master_ctx; */
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
 
@@ -628,8 +651,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    *  -jp
    */
   natp_child->user.sysret = 0;
-  /* natp_child->user.rax = 0; */
-  /* natp_child->user.rdx = 0; */
+  natp_child->user.rax = 0;
+  natp_child->user.rdx = 0;
 
   /*
    * adjust trampolines and %rip
