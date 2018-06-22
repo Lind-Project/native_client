@@ -73,6 +73,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->num_children = 0;
   nap_child->parent = nap;
   nap_child->parent_id = nap->cage_id;
+  /* nap_child->cage_id = nap_child->parent_id + 1; */
 
   /* find an empty slot */
   nap_child->cage_id = fork_num + 1;
@@ -84,7 +85,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     nap_child->nacl_file = LD_FILE;
 
   NaClAppInitialDescriptorHookup(nap_child);
-  DPRINTF("fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  DPRINTF("fork_num = %d, cage_id = %d\n", ++fork_num, nap_child->cage_id);
 
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
@@ -126,6 +127,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if (!DynArraySet(&nap->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
   nap->children_ids[nap->num_children - 1] = nap_child->cage_id;
+  nap->fork_state = 0;
+  NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
 
   return nap_child;
@@ -168,10 +171,8 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    */
   NaClXMutexLock(&nap->threads_mu);
   NaClXMutexLock(&nap->children_mu);
-  /*
-   * natp->thread_num = NaClAddThreadMu(nap, natp);
-   */
-  nap->num_threads = thread_idx;
+  /* nap->num_threads++; */
+  nap->num_threads = thread_idx - 1;
   natp->thread_num = thread_idx;
   if (!DynArraySet(&nap->threads, natp->thread_num, natp))
     NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);

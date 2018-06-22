@@ -4109,7 +4109,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap = natp->nap;
 
   /* child */
-  if (nap->fork_state && !nap->num_children) {
+  if (nap->fork_state) {
     NaClAppThreadPrintInfo(natp);
     DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
     DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
@@ -4117,6 +4117,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     DPRINTF("          nap = %p\n", (void *)nap);
     DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
     DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
+    NaClXMutexLock(&nap->parent->children_mu);
+    NaClXCondVarBroadcast(&nap->parent->children_cv);
+    NaClXMutexUnlock(&nap->parent->children_mu);
     ret = 0;
     goto out;
   }
@@ -4146,7 +4149,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     ret = -1;
     goto out;
   }
-  fork_num++;
   ret = nap_child->cage_id;
   DPRINTF("post child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
 
@@ -4421,7 +4423,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     for (;;) {
       /* make sure children exists */
       NaClXMutexLock(&nap->children_mu);
-      nap->num_children = nap->num_children;
       if (!nap->num_children) {
         ret = -ECHILD;
         NaClXCondVarBroadcast(&nap->children_cv);
