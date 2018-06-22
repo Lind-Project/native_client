@@ -4121,6 +4121,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     NaClXCondVarBroadcast(&nap->parent->children_cv);
     NaClXMutexUnlock(&nap->parent->children_mu);
     ret = 0;
+    nap->fork_state = 0;
     goto out;
   }
 
@@ -4149,8 +4150,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     ret = -1;
     goto out;
   }
-  ret = nap_child->cage_id;
-  DPRINTF("post child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
 
   /*
    * _n.b._ parent _MUST_ wait for child to
@@ -4164,9 +4163,11 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   while (nap->num_children > 0 && nap_child->fork_state)
     NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
   NaClXMutexUnlock(&nap->children_mu);
+  nap->fork_state = 0;
+  ret = nap_child->cage_id;
+  DPRINTF("post child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
 
 out:
-  nap->fork_state = 0;
   return ret;
 }
 
