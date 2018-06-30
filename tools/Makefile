@@ -50,18 +50,18 @@ GIT_BASE_URL = https://chromium.googlesource.com/native_client
 VERSION_TEST := $(MAKE_VERSION:4.%=)
 ifeq ($(VERSION_TEST),)
 	MAKE_COMPAT := $(shell \
-			find -H \
-				/bin /sbin /usr/bin /usr/sbin \
-				-mindepth 1 \
-				-maxdepth 1 \
-				-type f \
-				-a \( \
-					-name "make" \
-					-o -name "make-[0-9]*" \
-				\) \
-				2>/dev/null \
-				| sort \
-				| tail -n1)
+				find -H \
+					/bin /sbin /usr/bin /usr/sbin \
+					-mindepth 1 \
+					-maxdepth 1 \
+					-type f \
+					-a \( \
+						-name "make" \
+						-o -name "make-[0-9]*" \
+					\) \
+					2>/dev/null \
+					| sort \
+					| tail -n1)
 # No need run find if the version is compatible
 else
 	MAKE_COMPAT := make

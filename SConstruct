@@ -2621,7 +2621,6 @@ def MakeLinuxEnv():
   linux_env.Prepend(
       CCFLAGS=[
           '-fno-common',
-          '-fno-plt',
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
@@ -2631,7 +2630,6 @@ def MakeLinuxEnv():
       ],
       CFLAGS=[
           '-fno-common',
-          '-fno-plt',
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
@@ -2641,7 +2639,6 @@ def MakeLinuxEnv():
       ],
       CXXFLAGS=[
           '-fno-common',
-          '-fno-plt',
           '-fno-strict-aliasing',
           '-fpermissive',
           '-Wno-cast-function-type',
@@ -2658,7 +2655,6 @@ def MakeLinuxEnv():
       ]],
       LINKFLAGS=[
           '-fno-common',
-          '-fno-plt',
           '-fno-strict-aliasing',
           '-pie',
           '-Wl,-O2,-z,relro,-z,now,-z,noexecstack',
