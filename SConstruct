@@ -2620,7 +2620,6 @@ def MakeLinuxEnv():
   #              personality flag, which disables NX page protection.
   linux_env.Prepend(
       CCFLAGS=[
-          '-fno-common',
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
@@ -2629,7 +2628,6 @@ def MakeLinuxEnv():
           '-O2',
       ],
       CFLAGS=[
-          '-fno-common',
           '-fno-strict-aliasing',
           '-Wno-cast-function-type',
           '-Wno-cpp',
@@ -2638,7 +2636,6 @@ def MakeLinuxEnv():
           '-O2',
       ],
       CXXFLAGS=[
-          '-fno-common',
           '-fno-strict-aliasing',
           '-fpermissive',
           '-Wno-cast-function-type',
@@ -2654,7 +2651,6 @@ def MakeLinuxEnv():
           '-D_GNU_SOURCE','1',
       ]],
       LINKFLAGS=[
-          '-fno-common',
           '-fno-strict-aliasing',
           '-pie',
           '-Wl,-O2,-z,relro,-z,now,-z,noexecstack',
