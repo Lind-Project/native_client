@@ -2335,7 +2335,7 @@ def MakeUnixLikeEnv():
                   ['__STDC_FORMAT_MACROS', '1'],
                   ],
   )
-  
+
   unix_like_env.Append(CPPPATH=[distutils.sysconfig.get_python_inc()], LIBS=['python2.7'])
 
   if not unix_like_env.Bit('clang'):
@@ -2619,9 +2619,47 @@ def MakeLinuxEnv():
   #              header that causes the kernel to set the READ_IMPLIES_EXEC
   #              personality flag, which disables NX page protection.
   linux_env.Prepend(
-      CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']],
-      LINKFLAGS=['-pie', '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack'],
-      )
+      CCFLAGS=[
+          '-fno-common',
+          '-fno-strict-aliasing',
+          '-Wno-cast-function-type',
+          '-Wno-cpp',
+          '-Wno-unused-const-variable',
+          '-Wno-write-strings',
+          '-O2',
+      ],
+      CFLAGS=[
+          '-fno-common',
+          '-fno-strict-aliasing',
+          '-Wno-cast-function-type',
+          '-Wno-cpp',
+          '-Wno-unused-const-variable',
+          '-Wno-write-strings',
+          '-O2',
+      ],
+      CXXFLAGS=[
+          '-fno-common',
+          '-fno-strict-aliasing',
+          '-fpermissive',
+          '-Wno-cast-function-type',
+          '-Wno-cpp',
+          '-Wno-c++11-compat',
+          '-Wno-unused-const-variable',
+          '-Wno-unused-function',
+          '-Wno-write-strings',
+          '-O2',
+      ],
+      CPPDEFINES=[[
+          '-D_FORTIFY_SOURCE','2',
+          '-D_GNU_SOURCE','1',
+      ]],
+      LINKFLAGS=[
+          '-fno-common',
+          '-fno-strict-aliasing',
+          '-pie',
+          '-Wl,-O2,-z,relro,-z,now,-z,noexecstack',
+      ],
+  )
   # The ARM toolchain has a linker that doesn't handle the code its
   # compiler generates under -fPIE.
   if linux_env.Bit('build_arm') or linux_env.Bit('build_mips32'):
