@@ -235,18 +235,19 @@ int main(int ac, char **av) {
 
   while (EOF != (opt = getopt(ac, av, "f:m:n:"))) {
     switch (opt) {
-      case 'f':
-        file_path = optarg;
-        break;
-      case 'm':
-        max_write_size = (size_t) STRTOULL(optarg, (char **) NULL, 0);
-      case 'n':
-        num_bytes = (uint64_t) STRTOULL(optarg, (char **) NULL, 0);
-        break;
-      default:
-        Usage();
-        exit_status = 1;
-        goto cleanup;
+    case 'f':
+      file_path = optarg;
+    break;
+    case 'm':
+      max_write_size = (size_t)STRTOULL(optarg, (char **) NULL, 0);
+      /* fallthrough */
+    case 'n':
+      num_bytes = (uint64_t)STRTOULL(optarg, (char **) NULL, 0);
+      break;
+    default:
+      Usage();
+      exit_status = 1;
+      goto cleanup;
     }
   }
   if (NULL == file_path) {
@@ -347,6 +348,7 @@ int main(int ac, char **av) {
     printf("PASSED.\n");
     exit_status = 0;
   }
+  free(buffer);
 
 cleanup_file:
   NaClDescQuotaInterfaceSafeUnref(

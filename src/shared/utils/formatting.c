@@ -63,8 +63,8 @@ void FormatDataAppend(char* buffer,
       case RESET:
       default:
         /* This shouldn't happen!! process like ordinary text.*/
-        state = ORDINARY;
-        /* intentionally drop to next case. */
+        state = ORDINARY; /* intentionally drop to next case. */
+        /* fallthrough */
       case ORDINARY:
         switch (ch) {
           case '%':
