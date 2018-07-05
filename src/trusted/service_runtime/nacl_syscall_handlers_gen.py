@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -261,7 +261,7 @@ def MemoryArgStruct(architecture, name, alist):
 
   # Note: although this return value might be computed more
   # concisely with a list comprehension, we instead use a
-  # for statement to maintain python 2.3 compatibility.
+  # for statement to maintain python2 2.3 compatibility.
   margs = []
   for argnum, arg in enumerate(alist):
     if argnum >= len(ARG_REGISTERS[architecture]):

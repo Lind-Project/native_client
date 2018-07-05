@@ -11,7 +11,7 @@ VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 ${PREFIX} $1 ${DASHDASH}  <inp.in  >inp.out 2>stderr.out
 

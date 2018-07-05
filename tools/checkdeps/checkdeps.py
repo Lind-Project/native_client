@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -437,7 +437,7 @@ def GetGitSourceDirectory(root):
 
 
 def PrintUsage():
-  print """Usage: python checkdeps.py [--root <root>] [tocheck]
+  print """Usage: python2 checkdeps.py [--root <root>] [tocheck]
   --root   Specifies the repository root. This defaults to "../../.." relative
            to the script file. This will be correct given the normal location
            of the script in "<root>/tools/checkdeps".
@@ -447,8 +447,8 @@ def PrintUsage():
            supported, so you can say "chrome" but not "chrome/browser".
 
 Examples:
-  python checkdeps.py
-  python checkdeps.py --root c:\\source chrome"""
+  python2 checkdeps.py
+  python2 checkdeps.py --root c:\\source chrome"""
 
 
 def checkdeps(options, args):

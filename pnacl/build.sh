@@ -421,7 +421,7 @@ checkout-git-bundles-for-trybot() {
   local patch_dir=${NACL_ROOT}/pnacl/not_for_commit
   for component in llvm clang nacl-newlib binutils gcc compiler-rt; do
     if [ -e ${patch_dir}/${component}_bundle.b64 ]; then
-      python -c "import base64, sys; base64.decode(sys.stdin, sys.stdout)" \
+      python2 -c "import base64, sys; base64.decode(sys.stdin, sys.stdout)" \
           < ${patch_dir}/${component}_bundle.b64 \
           > ${patch_dir}/${component}_bundle
       spushd "${PNACL_GIT_ROOT}/${component}"
@@ -2267,7 +2267,7 @@ translate-sb-tool() {
     for tarch in ${arches}; do
       local nexe="${toolname}.${tarch}.nexe"
       local llvm_host_lib=$(ls "${LLVM_INSTALL_DIR}"/lib/libLLVM-3.*.so)
-      python "${PNACL_ROOT}/prune_test.py" "${PNACL_NM}" \
+      python2 "${PNACL_ROOT}/prune_test.py" "${PNACL_NM}" \
         "${llvm_host_lib}" "${nexe}"
     done
   fi
@@ -3032,7 +3032,7 @@ driver() {
   driver-install newlib
 }
 
-# install python scripts and redirector shell/batch scripts
+# install python2 scripts and redirector shell/batch scripts
 driver-install-python() {
   local destdir="$1"
   shift
@@ -3045,7 +3045,7 @@ driver-install-python() {
 
   spushd "${DRIVER_DIR}"
 
-  # Copy python scripts
+  # Copy python2 scripts
   cp $@ driver_log.py driver_env.py *tools.py filetype.py loader.py "${pydir}"
 
   # Install redirector shell/batch scripts
@@ -3062,7 +3062,7 @@ driver-install-python() {
   spopd
 }
 
-# The driver is a simple python script which changes its behavior
+# The driver is a simple python2 script which changes its behavior
 # depending on the name it is invoked as.
 driver-install() {
   local libmode=$1

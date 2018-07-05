@@ -9,7 +9,7 @@ set -o errexit
 VERIFY=${PREFIX:-yes}
 PREFIX=${PREFIX:-}
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 ${PREFIX} $1  ${DASHDASH} data/ref/input/input.source 58 > input.source.out  2>stderr1.out
 ${PREFIX} $1  ${DASHDASH} data/ref/input/input.graphic 58 > input.graphic.out  2>stderr2.out

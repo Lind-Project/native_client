@@ -10,7 +10,7 @@ PREFIX=${PREFIX:-}
 VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 LIST="ref.out ref.twf ref.pl1 ref.pl2 ref.pin"
 

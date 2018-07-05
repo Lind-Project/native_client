@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright 2008, Google Inc.
 # All rights reserved.
 #
@@ -35,7 +35,7 @@ import platform
 try:
   import subprocess
 except ImportError:
-  print "You need python 2.4 or later to run this script"
+  print "You need python2 2.4 or later to run this script"
   sys.exit(-1)
 
 SEL_LDR = "../../scons-out/dbg-linux/obj/service_runtime/sel_ldr"

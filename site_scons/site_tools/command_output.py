@@ -158,7 +158,7 @@ def RunCommand(cmdargs, cwdir=None, env=None, echo_output=True, timeout=None,
 
   # Wait a bit for worker thread to pick up final output and die.  No need to
   # worry if it's still alive at the end of this, since it's a daemon thread
-  # and won't block python from exiting.  (And since it's blocked, it doesn't
+  # and won't block python2 from exiting.  (And since it's blocked, it doesn't
   # chew up CPU.)
   read_thread.join(5)
 

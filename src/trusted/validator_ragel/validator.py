@@ -87,7 +87,7 @@ class DisassemblerError(Exception):
 class Validator(object):
 
   def __init__(self, validator_dll=None, decoder_dll=None):
-    """Initialize python interface to the validator.
+    """Initialize python2 interface to the validator.
 
     Should be called before any calls to ValidateChunk.
 
@@ -141,7 +141,7 @@ class Validator(object):
     Validator interface must be initialized by calling Init first.
 
     Args:
-      data: raw data to validate as python string.
+      data: raw data to validate as python2 string.
       bitness: 32 or 64.
       callback: function that takes three arguments
           begin_index, end_index and info (info is combination of flags; it is
@@ -217,7 +217,7 @@ class Validator(object):
     """Disassemble chunk assuming it consists of valid instructions.
 
     Args:
-      data: raw data as python string.
+      data: raw data as python2 string.
       bitness: 32 or 64
 
     Returns:
@@ -226,7 +226,7 @@ class Validator(object):
       exception is raised.
     """
     # TODO(shcherbina):
-    # Replace this shameless plug with python interface to RDFA decoder once
+    # Replace this shameless plug with python2 interface to RDFA decoder once
     # https://code.google.com/p/nativeclient/issues/detail?id=3456 is done.
 
     arch = {32: '-Mi386', 64: '-Mx86-64'}[bitness]

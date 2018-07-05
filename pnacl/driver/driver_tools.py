@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -339,7 +339,7 @@ def ParseArgsBase(argv, patternlist):
         action = action.replace('$%d' % g, 'groups[%d]' % g)
     try:
       if isinstance(action, str):
-        # NOTE: this is essentially an eval for python expressions
+        # NOTE: this is essentially an eval for python2 expressions
         # which does rely on the current environment for unbound vars
         # Log.Info('about to exec [%s]', str(action))
         exec(action)

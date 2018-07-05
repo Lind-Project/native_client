@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2013 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -137,7 +137,7 @@ def _SplitOps(insn, args):
   i = 0
   while True:
     # We do not use mere re.match(_OperandRE(), args, i) here because
-    # python backtracking regexes do not guarantee to find longest match.
+    # python2 backtracking regexes do not guarantee to find longest match.
     m = re.compile(r'(%s)($|,)' % _OperandRE()).match(args, i)
     assert m is not None, (args, i)
     ops.append(m.group(1))

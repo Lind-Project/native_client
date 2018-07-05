@@ -11,7 +11,7 @@ VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 # First run
 ${PREFIX} $1 ${DASHDASH} -scanfile c756hel.in\

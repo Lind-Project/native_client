@@ -10,7 +10,7 @@ PREFIX=${PREFIX:-}
 VERIFY=${VERIFY:-yes}
 EMU_HACK=${EMU_HACK:-yes}
 
-python ../prepare_input.py --config $(basename $(pwd)) train
+python2 ../prepare_input.py --config $(basename $(pwd)) train
 
 LIST="train.out train.twf train.pl1 train.pl2  train.pin "
 

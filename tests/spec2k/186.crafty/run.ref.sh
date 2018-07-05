@@ -15,7 +15,7 @@ if [[ "${EMU_HACK}" != "no" ]] ; then
   touch game.001
 fi
 
-python ../prepare_input.py --config $(basename $(pwd)) ref
+python2 ../prepare_input.py --config $(basename $(pwd)) ref
 
 ${PREFIX} $1 <data/ref/input/crafty.in >stdout.out 2>stderr.out
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2011 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -202,7 +202,7 @@ def RunTestWithInputOutput(cmd, input_data):
 def DiffStringsIgnoringWhiteSpace(a, b):
   a = a.splitlines()
   b = b.splitlines()
-  # NOTE: the whitespace stuff seems to be broken in python
+  # NOTE: the whitespace stuff seems to be broken in python2
   cruncher = difflib.SequenceMatcher(lambda x: x in ' \t\r', a, b)
 
   for group in cruncher.get_grouped_opcodes():

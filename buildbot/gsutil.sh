@@ -19,7 +19,7 @@ set -x
 if [ "x${OSTYPE}" = "xcygwin" ]; then
   # Use extended globbing (cygwin should always have it).
   shopt -s extglob
-  # Filter out cygwin python (everything under /usr or /bin, or *cygwin*).
+  # Filter out cygwin python2 (everything under /usr or /bin, or *cygwin*).
   export PATH=${PATH/#\/bin*([^:])/}
   export PATH=${PATH//:\/bin*([^:])/}
   export PATH=${PATH/#\/usr*([^:])/}

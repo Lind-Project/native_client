@@ -67,7 +67,7 @@ export FIREFOX=${FIREFOX:-firefox}
 
 PORT=8888
 
-python -m SimpleHTTPServer "$PORT" > /dev/null 2>&1 &
+python2 -m SimpleHTTPServer "$PORT" > /dev/null 2>&1 &
 PID=$!
 
 # Build a URL of the form http://localhost/argv0?argv1&argv2&argv3

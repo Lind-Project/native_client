@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- python2 -*-
 # Copyright (c) 2012 The Native Client Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -329,8 +329,8 @@ env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
 # locals from llvm allocas to registers.
 # We may be able to remove this test once LLVM has an upstream regression test.
 debug_env = env.Clone()
-debug_env.Append(CFLAGS=['-g', '-O0'])
-debug_env.Append(CCFLAGS=['-g', '-O0'])
+debug_env.Append(CFLAGS=['-g3', '-O0'])
+debug_env.Append(CCFLAGS=['-g3', '-O0'])
 debug_env.Append(LINKFLAGS=['-O0'])
 # This requires preserving nonstable bitcode debug metadata.
 if debug_env.AllowNonStableBitcode():

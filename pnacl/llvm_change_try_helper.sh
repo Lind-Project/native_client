@@ -45,7 +45,7 @@ git bundle create $top_dir/pnacl/not_for_commit/${component}_bundle \
     origin/master..HEAD
 popd
 
-python -c "import base64, sys; base64.encode(sys.stdin, sys.stdout)" \
+python2 -c "import base64, sys; base64.encode(sys.stdin, sys.stdout)" \
     < pnacl/not_for_commit/${component}_bundle \
     > pnacl/not_for_commit/${component}_bundle.b64
 

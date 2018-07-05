@@ -13,6 +13,6 @@ To build
   which will build this test:
     .../native_client$ ./hammer MODE=nacl sdl=1
 
-To run, from this directory execute the python script:
+To run, from this directory execute the python2 script:
     .../native_client/tests/createthreads$ ./createthreads.py
 
