@@ -4,6 +4,10 @@
  * found in the LICENSE file.
  */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
 /*
  * NaCl Server Runtime threads implementation layer.
  */
@@ -24,8 +28,8 @@
  * PTHREAD_STACK_MIN should come from pthread.h as documented, but is
  * actually pulled in by limits.h.
  */
-
 #include "native_client/src/include/portability.h"
+#include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_threads.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
@@ -33,6 +37,9 @@
 #if !defined(__native_client__) && NACL_KERN_STACK_SIZE < PTHREAD_STACK_MIN
 # error "NaCl service runtime stack size is smaller than PTHREAD_STACK_MIN"
 #endif
+
+int pthread_tryjoin_np(pthread_t thread, void **retval);
+int pthread_timedjoin_np(pthread_t thread, void **retval, const struct timespec *abstime);
 
 static int NaClThreadCreate(struct NaClThread  *ntp,
                             void               (*start_fn)(void *),
@@ -78,7 +85,7 @@ static int NaClThreadCreate(struct NaClThread  *ntp,
   }
   if (0 != (code = pthread_create(&ntp->tid,
                                   &attr,
-                                  (void *(*)(void *)) start_fn,
+                                  (void *(*)(void *))start_fn,
                                   state))) {
     NaClLog(LOG_ERROR,
             "nacl_thread: pthread_create returned %d (%s)",
@@ -90,7 +97,7 @@ static int NaClThreadCreate(struct NaClThread  *ntp,
   }
   rv = 1;
  done_attr_dtor:
-  (void) pthread_attr_destroy(&attr);  /* often a noop */
+  (void)pthread_attr_destroy(&attr);  /* often a noop */
  done:
   return rv;
 }
@@ -125,8 +132,23 @@ void NaClThreadDtor(struct NaClThread *ntp) {
   UNREFERENCED_PARAMETER(ntp);
 }
 
-void NaClThreadJoin(struct NaClThread *ntp) {
-  pthread_join(ntp->tid, NULL);
+int NaClThreadJoin(struct NaClThread *ntp) {
+  return pthread_join(ntp->tid, NULL);
+}
+
+int NaClThreadTryJoin(struct NaClThread *ntp) {
+  return pthread_tryjoin_np(ntp->tid, NULL);
+}
+
+int NaClThreadTimedJoin(struct NaClThread *ntp, time_t timeout) {
+  int ret = 0;
+  struct timespec *abstime = malloc(sizeof *abstime);
+  CHECK(abstime);
+  abstime->tv_sec = time(0) + timeout;
+  abstime->tv_nsec = 0;
+  ret = pthread_timedjoin_np(ntp->tid, NULL, abstime);
+  free(abstime);
+  return ret;
 }
 
 void NaClThreadExit(void) {
