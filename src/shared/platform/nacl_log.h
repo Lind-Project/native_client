@@ -80,6 +80,10 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 #define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+#include <string.h>
 #include <stdarg.h>
 
 #include "native_client/src/include/nacl_base.h"
@@ -271,59 +275,71 @@ void NaClLog2(char const *module_name,
  * "naked" identifier in the macro definition, and so will take on the
  * argument list from the apparent argument list of NaClLog.
  */
-int NaClLogSetModule(char const *module_name);
+void NaClLogSetModule(char const *module_name);
 void NaClLogDoLogAndUnsetModule(int        detail_level,
                                 char const *fmt,
                                 ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-/*
- * TODO(bsy): With variadic macro support on the way, the macro below and
- * the comment following it could be improved for readability.
- */
 
+/*
+ * Variadic macros are here! -jp
+ */
 #ifdef NACL_LOG_MODULE_NAME
-# define NaClLog                              \
-  if (NaClLogSetModule(NACL_LOG_MODULE_NAME)) \
-    ;                                         \
-  else                                        \
-    NaClLogDoLogAndUnsetModule
-
-/*
- * User code has lines of the form
- *
- * NaClLog(detail_level, format_string, ...);
- *
- * We need to be usable without variadic macros.  So, when
- * NACL_LOG_MODULE_NAME is not defined, the NaClLog statement would
- * just invoke the NaClLog function.  When NACL_LOG_MODULE_NAME *is*
- * defined, however, it expands to:
- *
- * if (NaClLogSetModule(NACL_LOG_MODULE_NAME))
- *   ;
- * else
- *   NaClLogDoLogAndUnsetModule(detail_level, format_string, ...);
- *
- * Note that this is a syntactic macro, so that if the original code had
- *
- * if (foo)
- *   if (bar)
- *     NaClLog(LOG_WARNING, "EEeeep!\n");
- *   else
- *     printf("!bar\n");
- *
- * the macro expansion for NaClLog would not cause the "else" clauses
- * to mis-bind.
- *
- * Also note that the compiler may generate a warning/suggestion to
- * use braces.  This doesn't occur in the NaCl code base (esp w/
- * -Werror), but may have an impact on untrusted code that use this
- * module.
- */
+# define NaClLog(detail_level, fmt, ...)                           \
+   do {                                                            \
+    NaClLogSetModule(NACL_LOG_MODULE_NAME);                        \
+    NaClLogDoLogAndUnsetModule(detail_level, fmt, ## __VA_ARGS__); \
+   } while (0)
 #endif
 
 #define LOG_INFO    (-1)
 #define LOG_WARNING (-2)
 #define LOG_ERROR   (-3)
 #define LOG_FATAL   (-4)
+
+/*
+ * Debug versions of NaClLog() that are stubbed unless _DEBUG is
+ * defined. DPRINTF() and DDPRINTF() are enabled with sel_ldr
+ * flags -v and -vv respectively.
+ *
+ * -jp
+ */
+#ifdef DPRINTF
+# undef DPRINTF
+#endif
+#ifdef DDPRINTF
+# undef DDPRINTF
+#endif
+#ifdef _DEBUG
+# define DPRINTF(fmt, ...)						\
+        do {								\
+                char *file = strrchr((char *)__FILE__, '/');		\
+                if (file)						\
+                        file++;						\
+                else							\
+                        file = __FILE__;				\
+                /* too noisy when timestamp is enabled */		\
+                NaClLogDisableTimestamp();				\
+                NaClLog(1, "[%s() %s:%u] "fmt,			\
+                        __func__, file, __LINE__, ## __VA_ARGS__);	\
+                NaClLogEnableTimestamp();				\
+        } while (0)
+# define DDPRINTF(fmt, ...)						\
+        do {								\
+                char *file = strrchr((char *)__FILE__, '/');		\
+                if (file)						\
+                        file++;						\
+                else							\
+                        file = __FILE__;				\
+                /* too noisy when timestamp is enabled */		\
+                NaClLogDisableTimestamp();				\
+                NaClLog(2, "[%s() %s:%u] "fmt,				\
+                        __func__, file, __LINE__, ## __VA_ARGS__);	\
+                NaClLogEnableTimestamp();				\
+        } while (0)
+#else
+# define DPRINTF(fmt, ...) do {/* no-op */} while (0)
+# define DDPRINTF(fmt, ...) do {/* no-op */} while (0)
+#endif
 
 /*
  * Low-level logging code that requires manual lock manipulation.

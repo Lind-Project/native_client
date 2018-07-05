@@ -12,10 +12,13 @@
 #define NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_MEMORY_H_ 1
 
 #include "native_client/src/include/nacl_compiler_annotations.h"
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+void *NaClPageAllocFlags(void **p, size_t size, int map_flags) NACL_WUR;
 
 int NaClPageAlloc(void **p, size_t num_bytes) NACL_WUR;
 
