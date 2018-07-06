@@ -90,7 +90,6 @@ struct Pipe {
 
 extern volatile sig_atomic_t fork_num;
 extern struct Pipe pipe_table[PIPE_NUM_MAX];
-extern struct NaClApp *nacl_active[CHILD_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern int cached_lib_num;
 
@@ -147,6 +146,7 @@ struct NaClApp {
   volatile sig_atomic_t     num_lib;
   volatile sig_atomic_t     parent_id;
   struct NaClApp           *parent;
+  struct NaClApp           *master;
 
   /*
    * fork_state is set to one if current thread is a child of fork

@@ -83,7 +83,6 @@ struct NaClApp *nap0_2;
  */
 volatile sig_atomic_t fork_num;
 struct Pipe pipe_table[PIPE_NUM_MAX];
-struct NaClApp *nacl_active[CHILD_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 int cached_lib_num;
 

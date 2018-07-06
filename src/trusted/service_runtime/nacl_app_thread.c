@@ -46,44 +46,50 @@
 struct NaClThreadContext *master_ctx;
 
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
-  struct NaClApp *nap;
-  struct NaClApp *nap_child;
+  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
+  struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
+  struct NaClApp *nap_parent = natp->nap;
+
   NaClErrorCode *mod_status = NULL;
   int newfd = 0;
 
-  nap = natp->nap;
-  nap_child = calloc(1, sizeof *nap_child);
-  CHECK(nap);
+  CHECK(nap_master);
+  CHECK(nap_parent);
   CHECK(nap_child);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
   if (!NaClAppCtor(nap_child))
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
+  NaClXMutexLock(&nap_child->mu);
   mod_status = &nap_child->module_load_status;
-  nap_child->command_num = nap->command_num;
-  nap_child->binary_path = nap->binary_path;
-  nap_child->binary_command = nap->binary_command;
-  nap_child->nacl_file = nap->nacl_file;
-  nap_child->enable_exception_handling = nap->enable_exception_handling;
-  nap_child->validator_stub_out_mode = nap->validator_stub_out_mode;
+  nap_child->command_num = nap_parent->command_num;
+  nap_child->binary_path = nap_parent->binary_path;
+  nap_child->binary_command = nap_parent->binary_command;
+  nap_child->nacl_file = nap_parent->nacl_file;
+  nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
+  nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
   nap_child->fd = 3;
   nap_child->num_lib = 3;
   nap_child->num_children = 0;
-  nap_child->parent = nap;
+  nap_child->parent = nap_parent;
+  nap_child->parent = nap_master;
 
-  DPRINTF("Incrementing parent child count for cage id: %d\n", nap->cage_id);
-  NaClXMutexLock(&nap_child->fork_mu);
-  NaClXMutexLock(&nap->children_mu);
-  /* add fork_num to keep ids unique */
-  nap_child->cage_id = nap->cage_id + ++fork_num;
-  nap_child->parent_id = nap->cage_id;
-  nacl_active[nap_child->cage_id] = nap_child;
-  DPRINTF("Parent new child count: %d\n", ++nap->num_children);
-  if (!DynArraySet(&nap->children, nap_child->cage_id, nap_child))
-    NaClLog(LOG_FATAL, "Failed to add child at idx %u\n", nap->num_children);
-  nap->children_ids[nap->num_children - 1] = nap_child->cage_id;
-  NaClXMutexUnlock(&nap_child->fork_mu);
-  NaClXMutexUnlock(&nap->children_mu);
+  DPRINTF("Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
+  NaClXMutexLock(&nap_master->children_mu);
+  NaClXMutexLock(&nap_parent->children_mu);
+  /* keep cage_ids unique */
+  DPRINTF("Master new child count: %d\n", ++nap_master->num_children);
+  DPRINTF("Parent new child count: %d\n", ++nap_parent->num_children);
+  nap_child->cage_id = nap_master->num_children;
+  /* nap_child->cage_id = nap_parent->cage_id + ++fork_num; */
+  nap_child->parent_id = nap_parent->cage_id;
+  /* store cage_ids in both master and parent */
+  nap_master->children_ids[nap_master->num_children - 1] = nap_child->cage_id;
+  nap_parent->children_ids[nap_parent->num_children - 1] = nap_child->cage_id;
+  if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
+    NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
+  NaClXMutexUnlock(&nap_master->children_mu);
+  NaClXMutexUnlock(&nap_parent->children_mu);
 
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
@@ -102,7 +108,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
-    NaClLog(LOG_FATAL, "Failed to prepare child nap for launch\n");
+    NaClLog(LOG_FATAL, "Failed to prepare child nap_parent for launch\n");
   DPRINTF("Loading blob file %s\n", nap_child->nacl_file);
   if (!nap_child->validator->readonly_text_implemented)
     NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
@@ -115,14 +121,14 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
 
   for (int oldfd = 0; oldfd < CAGING_FD_NUM; oldfd++) {
     struct NaClDesc *old_nd;
-    old_nd = NaClGetDesc(nap, oldfd);
+    old_nd = NaClGetDesc(nap_parent, oldfd);
     if (!old_nd) {
       DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", oldfd - 1, newfd);
       break;
     }
     newfd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, newfd, old_nd);
-    fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+    fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap_parent->cage_id][oldfd];
   }
 
   return nap_child;
@@ -294,8 +300,8 @@ void WINAPI NaClAppThreadLauncher(void *state) {
  * natp should be thread_self(), called while holding no locks.
  */
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
-  struct NaClApp  *nap = natp->nap;
   struct NaClApp  *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
+  struct NaClApp  *nap = natp->nap;
   size_t          thread_idx;
 
   /*
@@ -739,15 +745,15 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uint32_t       user_tls2) {
   struct NaClAppThread *natp = NaClAppThreadMake(nap, usr_entry, usr_stack_ptr,
                                                  user_tls1, user_tls2);
-  if (!natp)
-    return 0;
-  nap->parent = NULL;
-
   /*
    * save master thread context pointer
    */
+  if (!natp)
+    return 0;
   if (nap->cage_id == 1)
     master_ctx = &natp->user;
+  nap->parent = NULL;
+  nap->master = ((struct NaClAppThread *)master_ctx)->nap;
 
   /*
    * We set host_thread_is_defined assuming, for now, that
