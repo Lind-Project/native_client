@@ -177,8 +177,10 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->text_shm = NULL;
   if (!NaClMutexCtor(&nap->dynamic_load_mutex))
     goto cleanup_effp_free;
-  if (!NaClMutexCtor(&nap->children_mu))
+  if (!NaClMutexCtor(&nap->fork_mu))
     goto cleanup_dynamic_load_mutex;
+  if (!NaClMutexCtor(&nap->children_mu))
+    goto cleanup_fork_mutex;
   nap->dynamic_page_bitmap = NULL;
 
   nap->dynamic_regions = NULL;
@@ -210,8 +212,10 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   if (!NaClMutexCtor(&nap->mu))
     goto cleanup_children_mutex;
-  if (!NaClCondVarCtor(&nap->cv))
+  if (!NaClCondVarCtor(&nap->fork_cv))
     goto cleanup_mu;
+  if (!NaClCondVarCtor(&nap->cv))
+    goto cleanup_fork_cv;
 
 #if NACL_WINDOWS
   nap->vm_hole_may_exist = 0;
@@ -317,10 +321,14 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
  cleanup_cv:
   NaClCondVarDtor(&nap->cv);
+ cleanup_fork_cv:
+  NaClCondVarDtor(&nap->fork_cv);
  cleanup_mu:
   NaClMutexDtor(&nap->mu);
  cleanup_children_mutex:
   NaClMutexDtor(&nap->children_mu);
+ cleanup_fork_mutex:
+  NaClMutexDtor(&nap->fork_mu);
  cleanup_dynamic_load_mutex:
   NaClMutexDtor(&nap->dynamic_load_mutex);
  cleanup_effp_free:

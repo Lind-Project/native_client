@@ -28,6 +28,7 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_
 #define NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_ 1
 
+#include <signal.h>
 #include <stdbool.h>
 
 #include "native_client/src/include/atomic_ops.h"
@@ -137,25 +138,27 @@ struct NaClApp {
   // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
   struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
   /* mappings of `int fd` numbers to `NaClDesc *` */
-  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
+  struct NaClDesc          *fd_maps[FILE_DESC_MAX];
 
-  int                       children_ids[CHILD_NUM_MAX];
-  int                       num_children;
-  int                       cage_id;
-  int                       num_lib;
+  volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
+  volatile sig_atomic_t     num_children;
+  volatile sig_atomic_t     cage_id;
+  volatile sig_atomic_t     num_lib;
+  volatile sig_atomic_t     parent_id;
+  struct NaClApp           *parent;
 
   /*
    * fork_state is set to one if current thread is a child of fork
    */
-  int                       fork_state;
-  int                       parent_id;
-  struct NaClApp            *parent;
+  volatile sig_atomic_t     fork_state;
+  struct NaClMutex          fork_mu;
+  struct NaClCondVar        fork_cv;
 
   // yiwen: store the path of the execuable running inside this cage(as the main thread)
   int                       command_num;
-  char                      *binary_path;
-  char                      *binary_command;
-  char                      *nacl_file;
+  char                     *binary_path;
+  char                     *binary_command;
+  char                     *nacl_file;
   // yiwen: record the current fd number(largest) assigned by this cage
   int                       fd;
 
@@ -179,7 +182,7 @@ struct NaClApp {
    * browser plugin to provide information that would be useful for
    * the debugger.
    */
-  char                      *aux_info;
+  char                     *aux_info;
 
   /*
    * Determined at load time; OS-determined.
