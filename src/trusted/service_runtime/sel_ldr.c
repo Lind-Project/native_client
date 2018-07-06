@@ -81,13 +81,14 @@ struct NaClApp *nap0_2;
  *
  * -jp
  */
+volatile sig_atomic_t fork_num;
 struct Pipe pipe_table[PIPE_NUM_MAX];
+struct NaClApp *nacl_active[CHILD_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-volatile int fork_num = 1;
+int cached_lib_num;
 
 // yiwen: lookup table for <file_path, mem_addr>
 struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
-int cached_lib_num;
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);

@@ -88,10 +88,11 @@ struct Pipe {
   struct NaClCondVar cv;
 };
 
+extern volatile sig_atomic_t fork_num;
 extern struct Pipe pipe_table[PIPE_NUM_MAX];
-extern volatile int fork_num;
-extern int cached_lib_num;
+extern struct NaClApp *nacl_active[CHILD_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
+extern int cached_lib_num;
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
