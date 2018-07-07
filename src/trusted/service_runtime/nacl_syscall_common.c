@@ -3883,7 +3883,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   /* compiler memory barrier */
   __asm__ volatile("":::"memory");
-  NaClThreadYield();
 
   nap = natp->nap;
 

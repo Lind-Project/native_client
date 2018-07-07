@@ -71,32 +71,37 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->fd = 3;
   nap_child->num_lib = 3;
   nap_child->num_children = 0;
-  nap_child->parent = nap_parent;
-  nap_child->master = nap_master;
 
   DPRINTF("Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
   NaClXMutexLock(&nap_master->children_mu);
-  /* NaClXMutexLock(&nap_parent->children_mu); */
   /* keep cage_ids unique */
   DPRINTF("Master new child count: %d\n", ++nap_master->num_children);
   DPRINTF("Parent new child count: %d\n", ++nap_parent->num_children);
-  nap_child->cage_id = nap_master->num_children;
-  /* nap_child->cage_id = nap_parent->cage_id + ++fork_num; */
+
+  /* compiler memory barrier */
+  __asm__ volatile("":::"memory");
+
+  fork_num++;
+  nap_child->parent = nap_parent;
+  nap_child->master = nap_master;
   nap_child->parent_id = nap_parent->cage_id;
+  /* nap_child->cage_id = nap_parent->cage_id + fork_num; */
+  nap_child->cage_id = nap_master->cage_id + 1;
   /* store cage_ids in both master and parent */
   nap_master->children_ids[nap_master->num_children - 1] = nap_child->cage_id;
   nap_parent->children_ids[nap_parent->num_children - 1] = nap_child->cage_id;
   if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
-  NaClXMutexUnlock(&nap_master->children_mu);
-  /* NaClXMutexUnlock(&nap_parent->children_mu); */
+  NaClXMutexUnlock(&nap_parent->children_mu);
+
+  /* compiler memory barrier */
+  __asm__ volatile("":::"memory");
 
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
 
   NaClAppInitialDescriptorHookup(nap_child);
   DPRINTF("fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     DPRINTF("Error while loading \"%s\": %s\n",
             nap_child->nacl_file,
@@ -568,8 +573,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    */
   stack_total_size = nap_parent->stack_size;
   /* align the child stack correctly */
-  /* stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK; */
-  stack_size = stack_total_size;
+  stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
+  /* stack_size = stack_total_size; */
   nap_child->stack_size = stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
                                                     NaClGetInitialStackTop(nap_parent) - stack_total_size,
