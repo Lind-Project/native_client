@@ -4167,7 +4167,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
 
   if (cage_id > 0 && cage_id <= pid_max) {
     nap_child = DynArrayGet(&nap->children, pid);
-    if (!nap_child || !nacl_active[cage_id]) {
+    if (!nap_child) {
       ret = -ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
