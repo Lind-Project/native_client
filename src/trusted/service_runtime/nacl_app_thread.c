@@ -529,16 +529,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 }
 
 /* jp */
-#define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                     \
- do {                                                                                    \
-  unsigned char *addr = (unsigned char *)(ADDR);                                         \
-  UNREFERENCED_PARAMETER(addr);                                                          \
-  DDPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);                \
-  DDPRINTF("[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
-  DDPRINTF("[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
- } while (0)
-
-/* jp */
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
                            size_t                   stack_size,
@@ -563,12 +553,14 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   if (!nap_parent->running)
     return 0;
 
-  natp_master = (struct NaClAppThread *)master_ctx;
-  nap_master = natp_master->nap;
-  old_natp_parent = natp_parent;
-  old_nap_parent = natp_parent->nap;
-  natp_parent = natp_master;
-  nap_parent = natp_master->nap;
+  /*
+   * natp_master = (struct NaClAppThread *)master_ctx;
+   * nap_master = natp_master->nap;
+   * old_natp_parent = natp_parent;
+   * old_nap_parent = natp_parent->nap;
+   * natp_parent = natp_master;
+   * nap_parent = natp_master->nap;
+   */
 
   UNREFERENCED_PARAMETER(stack_ptr_offset);
   UNREFERENCED_PARAMETER(base_ptr_offset);
@@ -721,10 +713,17 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
           (void *)natp_child->user.rbp,
           (void *)natp_child->user.r15);
 
-/* debug */
-#ifdef _DEBUG
+#if defined(_DEBUG)
 # define NUM_STACK_VALS 16
 # define TYPE_TO_EXAMINE uintptr_t
+# define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                            \
+        do {                                                                                     \
+          unsigned char *addr = (unsigned char *)(ADDR);                                         \
+          UNREFERENCED_PARAMETER(addr);                                                          \
+          DDPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);                \
+          DDPRINTF("[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
+          DDPRINTF("[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
+        } while (0)
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     DDPRINTF("child_stack[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
@@ -741,7 +740,8 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   }
 # undef NUM_STACK_VALS
 # undef TYPE_TO_EXAMINE
-#endif
+# undef NaClLogSysMemoryContentType
+#endif /* defined(_DEBUG) */
 
   /* compiler memory barrier */
   __asm__ volatile("":::"memory");
