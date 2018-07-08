@@ -73,29 +73,32 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->num_children = 0;
 
   DPRINTF("Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
+
   NaClXMutexLock(&nap_master->children_mu);
-  /* keep cage_ids unique */
-  DPRINTF("Master new child count: %d\n", ++nap_master->num_children);
-  DPRINTF("Parent new child count: %d\n", ++nap_parent->num_children);
-
-  /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
-
-  fork_num++;
+  if (nap_master != nap_parent)
+    NaClXMutexLock(&nap_parent->children_mu);
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
   nap_child->parent_id = nap_parent->cage_id;
-  /* nap_child->cage_id = nap_parent->cage_id + fork_num; */
-  nap_child->cage_id = nap_master->cage_id + 1;
+  /* make sure cage_id is unique */
+  nap_child->cage_id = nap_master->cage_id + ++fork_num;
+
+  fprintf(stderr, "\n    [fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
+          fork_num, nap_child->cage_id, nap_parent->cage_id, nap_master->cage_id);
+
+  CHECK(!nap_master->children_ids[nap_master->num_children]);
+  CHECK(!nap_parent->children_ids[nap_parent->num_children]);
   /* store cage_ids in both master and parent */
-  nap_master->children_ids[nap_master->num_children - 1] = nap_child->cage_id;
-  nap_parent->children_ids[nap_parent->num_children - 1] = nap_child->cage_id;
+  nap_master->children_ids[nap_master->num_children++] = nap_child->cage_id;
+  nap_parent->children_ids[nap_parent->num_children++] = nap_child->cage_id;
   if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
-  NaClXMutexUnlock(&nap_parent->children_mu);
-
-  /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
+  /* keep cage_ids unique */
+  DPRINTF("Master new child count: %d\n", nap_master->num_children);
+  DPRINTF("Parent new child count: %d\n", nap_parent->num_children);
+  NaClXMutexUnlock(&nap_master->children_mu);
+  if (nap_master != nap_parent)
+    NaClXMutexUnlock(&nap_parent->children_mu);
 
   if (!nap_child->nacl_file)
     nap_child->nacl_file = LD_FILE;
@@ -326,7 +329,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    * asking us to commit suicide.
    */
   DPRINTF("[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
-  UNREFERENCED_PARAMETER(nap_master);
 
   if (nap_master && nap->parent) {
     /*
@@ -357,20 +359,21 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     DPRINTF("Signaling master from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap_master->children_cv);
     /*
-     * wait for all children to finish
+     * wait for all threads to finish
      */
-    while (nap_master->num_children > 0)
-      NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
+    if (nap != nap_master)
+      NaClWaitForMainThreadToExit(nap_master);
+    /*
+     * while (nap_master->num_children > 0)
+     *   NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
+     */
     NaClXMutexUnlock(&nap_master->children_mu);
-
     /*
      * NaClXMutexLock(&nap->parent->mu);
      * while (nap->parent->running)
      *   NaClXCondVarWait(&nap->parent->cv, &nap->parent->mu);
      * NaClXMutexUnlock(&nap->parent->mu);
      */
-
-    /* NaClWaitForMainThreadToExit(nap->parent); */
   } else {
     DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
@@ -549,18 +552,31 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   size_t stack_total_size;
   size_t stack_ptr_offset;
   size_t base_ptr_offset;
+  struct NaClAppThread *natp_master;
   struct NaClAppThread *natp_child;
+  struct NaClAppThread *old_natp_parent;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
-  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
+  struct NaClApp *nap_master;
+  struct NaClApp *old_nap_parent;
+
+  if (!nap_parent->running)
+    return 0;
+
+  natp_master = (struct NaClAppThread *)master_ctx;
+  nap_master = natp_master->nap;
+  old_natp_parent = natp_parent;
+  old_nap_parent = natp_parent->nap;
+  natp_parent = natp_master;
+  nap_parent = natp_master->nap;
 
   UNREFERENCED_PARAMETER(stack_ptr_offset);
   UNREFERENCED_PARAMETER(base_ptr_offset);
   UNREFERENCED_PARAMETER(child_ctx);
+  UNREFERENCED_PARAMETER(natp_master);
+  UNREFERENCED_PARAMETER(old_natp_parent);
   UNREFERENCED_PARAMETER(nap_master);
-
-  if (!nap_parent->running)
-    return 0;
+  UNREFERENCED_PARAMETER(old_nap_parent);
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
@@ -727,6 +743,9 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 # undef TYPE_TO_EXAMINE
 #endif
 
+  /* compiler memory barrier */
+  __asm__ volatile("":::"memory");
+
   /*
    * setup TLS slot in the global nacl_user array
    */
@@ -740,6 +759,9 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
+
+  /* compiler memory barrier */
+  __asm__ volatile("":::"memory");
 
   /*
    * We set host_thread_is_defined assuming, for now, that
