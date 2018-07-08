@@ -1162,7 +1162,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
-                                  size,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),

@@ -3953,23 +3953,19 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap->fork_mu);
   nap->fork_state = 0;
   nap_child->fork_state = 1;
+  nap_child->running = 1;
   ret = nap_child->cage_id;
   /* ret = 0; */
   NaClXMutexUnlock(&nap->fork_mu);
   NaClXMutexUnlock(&nap_child->fork_mu);
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
-    ret = -1;
+    ret = -ENOMEM;
     goto out;
   }
 
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");
-
-  fprintf(stderr, "\n\tchild fork_state: [%d] parent fork state: [%d]\n\t",
-          nap_child->fork_state, nap->fork_state);
-  fprintf(stderr, "[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
-          fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
 
   /*
    * _n.b._ parent _MUST_ wait for child to
@@ -3977,6 +3973,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
    *
    * -jp
    */
+  DPRINTF("\n\tchild fork_state: [%d] parent fork state: [%d]\n\t",
+          nap_child->fork_state, nap->fork_state);
+  DPRINTF("[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
+          fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
   if (clock_gettime(CLOCK_REALTIME, &fork_ts) == -1)
     EPRINTF("clock_gettime(CLOCK_REALTIME, &ts) == -1: %s\n", strerror(errno));
@@ -4015,7 +4015,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp) {
                             child_argc,
                             child_argv,
                             NULL)) {
-    fprintf(stderr, "creating main thread failed\n");
+    DPRINTF("%s\n", "creating main thread failed\n");
     DPRINTF("%s\n", "[NaClSysExecv] Execv new program failed! \n");
     retval = -1;
     return retval;

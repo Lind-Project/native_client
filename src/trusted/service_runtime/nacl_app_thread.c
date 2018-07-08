@@ -377,8 +377,14 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&nap->children_mu);
 
   /* wait for master thread */
-  if (nap != nap_master)
-    NaClWaitForMainThreadToExit(nap_master);
+  if (nap_master && nap != nap_master) {
+    NaClXMutexLock(&nap_master->children_mu);
+    DPRINTF("Master children count: %d\n", nap_master->num_children);
+    while (nap_master->num_children > 0)
+      NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
+    NaClXCondVarBroadcast(&nap_master->children_cv);
+    NaClXMutexUnlock(&nap_master->children_mu);
+  }
 
   if (nap->debug_stub_callbacks) {
     DPRINTF("%s\n", " notifying the debug stub of the thread exit");
@@ -524,7 +530,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 /* jp */
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
-                           size_t                   stack_size,
                            struct NaClApp           *nap_child,
                            uintptr_t                usr_entry,
                            uintptr_t                usr_stack_ptr,
@@ -532,57 +537,33 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            uint32_t                 user_tls2) {
   void *stack_ptr_parent;
   void *stack_ptr_child;
-  size_t stack_total_size;
   size_t stack_ptr_offset;
   size_t base_ptr_offset;
+  struct NaClApp *nap_master;
   struct NaClAppThread *natp_master;
   struct NaClAppThread *natp_child;
-  struct NaClAppThread *old_natp_parent;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
-  struct NaClApp *nap_master;
-  struct NaClApp *old_nap_parent;
 
   if (!nap_parent->running)
     return 0;
-
-  /*
-   * natp_master = (struct NaClAppThread *)master_ctx;
-   * nap_master = natp_master->nap;
-   * old_natp_parent = natp_parent;
-   * old_nap_parent = natp_parent->nap;
-   * natp_parent = natp_master;
-   * nap_parent = natp_master->nap;
-   */
-
-  UNREFERENCED_PARAMETER(stack_ptr_offset);
-  UNREFERENCED_PARAMETER(base_ptr_offset);
-  UNREFERENCED_PARAMETER(child_ctx);
-  UNREFERENCED_PARAMETER(natp_master);
-  UNREFERENCED_PARAMETER(old_natp_parent);
-  UNREFERENCED_PARAMETER(nap_master);
-  UNREFERENCED_PARAMETER(old_nap_parent);
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
 
   /* make a copy of parent thread context */
+  natp_master = (struct NaClAppThread *)master_ctx;
+  nap_master = natp_master->nap;
   parent_ctx = natp_parent->user;
+
+  UNREFERENCED_PARAMETER(nap_master);
 
   /*
    * make space to copy the parent stack
    */
-  stack_total_size = nap_parent->stack_size;
-  /* align the child stack correctly */
-  stack_size = (stack_total_size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
-  /* stack_size = stack_total_size; */
-  nap_child->stack_size = stack_size;
-  stack_ptr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
-                                                    NaClGetInitialStackTop(nap_parent) - stack_total_size,
-                                                    stack_total_size);
-  stack_ptr_child = (void *)NaClUserToSysAddrRange(nap_child,
-                                                   NaClGetInitialStackTop(nap_child) - stack_size,
-                                                   stack_size);
+  nap_child->stack_size = nap_parent->stack_size;
+  stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
+  stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
   stack_ptr_offset = parent_ctx.rsp - (uintptr_t)stack_ptr_parent;
   base_ptr_offset = parent_ctx.rbp - parent_ctx.rsp;
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
@@ -686,10 +667,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    *
    *  -jp
    */
+  /* natp_child->user.sysret = child_ctx.sysret; */
   natp_child->user.sysret = 0;
   /* natp_child->user.rax = 0; */
+  natp_child->user.rbx = 0;
   /* natp_child->user.rdx = 0; */
-  /* natp_child->usr_syscall_args = natp_parent->usr_syscall_args; */
+  natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
 
   /*
    * adjust trampolines and %rip
@@ -736,9 +719,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 # undef NaClLogSysMemoryContentType
 #endif /* defined(_DEBUG) */
 
-  /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
-
   /*
    * setup TLS slot in the global nacl_user array
    */
@@ -752,9 +732,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
   NaClTlsSetTlsValue2(natp_child, user_tls2);
-
-  /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
 
   /*
    * We set host_thread_is_defined assuming, for now, that
