@@ -303,13 +303,16 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
  *
  * -jp
  */
-#ifdef DPRINTF
+#if defined(DPRINTF)
 # undef DPRINTF
 #endif
-#ifdef DDPRINTF
+#if defined(DDPRINTF)
 # undef DDPRINTF
 #endif
-#ifdef _DEBUG
+#if defined(EPRINTF)
+# undef EPRINTF
+#endif
+#if defined(_DEBUG)
 # define DPRINTF(fmt, ...)						\
         do {								\
                 char *file = strrchr((char *)__FILE__, '/');		\
@@ -339,7 +342,22 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
 #else
 # define DPRINTF(fmt, ...) do {/* no-op */} while (0)
 # define DDPRINTF(fmt, ...) do {/* no-op */} while (0)
-#endif
+#endif /* defined(_DEBUG) */
+
+/* wrapper for NaClLog(LOG_FATAL, ...) is always defined */
+#define EPRINTF(fmt, ...)						\
+        do {								\
+                char *file = strrchr((char *)__FILE__, '/');		\
+                if (file)						\
+                        file++;						\
+                else							\
+                        file = __FILE__;				\
+                /* too noisy when timestamp is enabled */		\
+                NaClLogDisableTimestamp();				\
+                NaClLog(LOG_FATAL, "[%s() %s:%u] "fmt,			\
+                        __func__, file, __LINE__, ## __VA_ARGS__);	\
+                NaClLogEnableTimestamp();				\
+        } while (0)
 
 /*
  * Low-level logging code that requires manual lock manipulation.
