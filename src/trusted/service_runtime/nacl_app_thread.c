@@ -355,11 +355,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClXCondVarBroadcast(&nap_master->children_cv);
     NaClXMutexUnlock(&nap_master->children_mu);
     /*
-     * wait for all threads to finish
-     */
-    if (nap->parent != nap_master)
-      NaClWaitForMainThreadToExit(nap->parent);
-    /*
      * while (nap_master->num_children > 0)
      *   NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
      */
@@ -373,15 +368,17 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
 
-  /*
-   * cleanup list of children
-   */
+  /* cleanup list of children */
   NaClXMutexLock(&nap->children_mu);
   DPRINTF("Thread children count: %d\n", nap->num_children);
   while (nap->num_children > 0)
     NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
   NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
+
+  /* wait for master thread */
+  if (nap != nap_master)
+    NaClWaitForMainThreadToExit(nap_master);
 
   if (nap->debug_stub_callbacks) {
     DPRINTF("%s\n", " notifying the debug stub of the thread exit");

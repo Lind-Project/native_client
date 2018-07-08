@@ -129,11 +129,12 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 #if !defined(SIZE_T_MAX)
 # define SIZE_T_MAX   (~(size_t)0ull)
 #endif
-
+#define FORK_TIMEOUT 10
 /* fork semaphore used to synchronize parent and child -jp */
 #define SEM_SHARED 1
 #define SEM_PRIVATE 0
 static sem_t fork_sem, *sem_ptr;
+static struct timespec fork_ts;
 
 static const size_t kMaxUsableFileSize = (SIZE_T_MAX >> 1);
 
@@ -3903,7 +3904,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");
 
-  /* initialize semaphore */
+  /* initialize semaphore if needed */
   if (!sem_ptr) {
     if (sem_init(&fork_sem, SEM_PRIVATE, 0) == -1)
       EPRINTF("sem_init(&fork_sem, SEM_PRIVATE, 0) == -1: %s\n", strerror(errno));
@@ -3920,8 +3921,10 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
     DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
     /* unblock parent */
-    sem_post(sem_ptr);
+    sem_post(&fork_sem);
+    nap->fork_state = 0;
     ret = 0;
+    /* ret = nap->cage_id; */
     goto out;
   }
 
@@ -3951,6 +3954,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap->fork_state = 0;
   nap_child->fork_state = 1;
   ret = nap_child->cage_id;
+  /* ret = 0; */
   NaClXMutexUnlock(&nap->fork_mu);
   NaClXMutexUnlock(&nap_child->fork_mu);
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
@@ -3962,19 +3966,22 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");
 
-  fprintf(stderr, "\n\tchild fork_state: [%d] parent fork state: [%d]\n",
+  fprintf(stderr, "\n\tchild fork_state: [%d] parent fork state: [%d]\n\t",
           nap_child->fork_state, nap->fork_state);
-  fprintf(stderr, "\n\t[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
+  fprintf(stderr, "[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
           fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
 
-   /*
-    * _n.b._ parent _MUST_ wait for child to
-    * finish initialization before continuing
-    *
-    * -jp
-    */
-   DPRINTF("%s\n", "Waiting for child to finish initialization...");
-   sem_wait(sem_ptr);
+  /*
+   * _n.b._ parent _MUST_ wait for child to
+   * finish initialization before continuing
+   *
+   * -jp
+   */
+  DPRINTF("%s\n", "Waiting for child to finish initialization...");
+  if (clock_gettime(CLOCK_REALTIME, &fork_ts) == -1)
+    EPRINTF("clock_gettime(CLOCK_REALTIME, &ts) == -1: %s\n", strerror(errno));
+  /* fork_ts.tv_sec += FORK_TIMEOUT; */
+  while (sem_timedwait(&fork_sem, &fork_ts) == -1 && errno == EINTR);
 
 out:
   return ret;
