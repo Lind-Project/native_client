@@ -3891,8 +3891,9 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
 
 /* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
-  struct NaClApp *nap;
-  struct NaClApp *nap_child;
+  struct NaClApp *nap = natp->nap;
+  struct NaClApp *nap_child = NULL;
+  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   int ret;
   char **child_argv;
   int child_argc;
@@ -3900,8 +3901,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
 
   /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
-
+  __asm__ __volatile__ ("":::"memory");
 
   /* initialize semaphore */
   if (!sem_ptr) {
@@ -3910,8 +3910,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     sem_ptr = &fork_sem;
   }
 
-  /* parent */
-  nap = natp->nap;
+  /* child */
   if (nap->fork_state) {
     NaClAppThreadPrintInfo(natp);
     DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
@@ -3920,20 +3919,13 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     DPRINTF("          nap = %p\n", (void *)nap);
     DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
     DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
-    /*
-     * _n.b._ parent _MUST_ wait for child to
-     * finish initialization before continuing
-     *
-     * -jp
-     */
-    DPRINTF("%s\n", "Waiting for child to finish initialization...");
-    sem_wait(sem_ptr);
-    nap->fork_state = 0;
-    ret = nap->cage_id;
-    /* ret = 0; */
+    /* unblock parent */
+    sem_post(sem_ptr);
+    ret = 0;
     goto out;
   }
 
+  /* parent */
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
   child_argc = 3 + nap->command_num;
   child_argv = calloc(child_argc + 2, sizeof *child_argv);
@@ -3950,24 +3942,17 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
+  __asm__ __volatile__ ("":::"memory");
 
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp);
   NaClXMutexLock(&nap_child->fork_mu);
   NaClXMutexLock(&nap->fork_mu);
-  ret = 0;
   nap->fork_state = 0;
   nap_child->fork_state = 1;
-  /* ret = nap_child->cage_id; */
+  ret = nap_child->cage_id;
   NaClXMutexUnlock(&nap->fork_mu);
   NaClXMutexUnlock(&nap_child->fork_mu);
-
-  /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
-
-  DPRINTF("initial child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
-  /* the thread that returns from NaClCreateMainForkThread() will be the "child" */
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
     ret = -1;
@@ -3975,15 +3960,21 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   /* compiler memory barrier */
-  __asm__ volatile("":::"memory");
+  __asm__ __volatile__ ("":::"memory");
 
-  /* child */
-  DPRINTF("child fork_state: [%d] parent fork state: [%d]\n", nap_child->fork_state, nap->fork_state);
-  /* ret = 0; */
-  /* nap->fork_state = 0; */
-  /* nap_child->fork_state = 1; */
-  /* unblock parent */
-  sem_post(sem_ptr);
+  fprintf(stderr, "\n\tchild fork_state: [%d] parent fork state: [%d]\n",
+          nap_child->fork_state, nap->fork_state);
+  fprintf(stderr, "\n\t[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
+          fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
+
+   /*
+    * _n.b._ parent _MUST_ wait for child to
+    * finish initialization before continuing
+    *
+    * -jp
+    */
+   DPRINTF("%s\n", "Waiting for child to finish initialization...");
+   sem_wait(sem_ptr);
 
 out:
   return ret;

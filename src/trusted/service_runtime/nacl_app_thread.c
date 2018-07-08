@@ -49,7 +49,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
   struct NaClApp *nap_parent = natp->nap;
-
   NaClErrorCode *mod_status = NULL;
   int newfd = 0;
 
@@ -82,10 +81,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->parent_id = nap_parent->cage_id;
   /* make sure cage_id is unique */
   nap_child->cage_id = nap_master->cage_id + ++fork_num;
-
-  fprintf(stderr, "\n    [fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
-          fork_num, nap_child->cage_id, nap_parent->cage_id, nap_master->cage_id);
-
   CHECK(!nap_master->children_ids[nap_master->num_children]);
   CHECK(!nap_parent->children_ids[nap_parent->num_children]);
   /* store cage_ids in both master and parent */
@@ -358,16 +353,16 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     DPRINTF("Signaling master from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap_master->children_cv);
+    NaClXMutexUnlock(&nap_master->children_mu);
     /*
      * wait for all threads to finish
      */
-    if (nap != nap_master)
-      NaClWaitForMainThreadToExit(nap_master);
+    if (nap->parent != nap_master)
+      NaClWaitForMainThreadToExit(nap->parent);
     /*
      * while (nap_master->num_children > 0)
      *   NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
      */
-    NaClXMutexUnlock(&nap_master->children_mu);
     /*
      * NaClXMutexLock(&nap->parent->mu);
      * while (nap->parent->running)
@@ -385,6 +380,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   DPRINTF("Thread children count: %d\n", nap->num_children);
   while (nap->num_children > 0)
     NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
+  NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
 
   if (nap->debug_stub_callbacks) {
