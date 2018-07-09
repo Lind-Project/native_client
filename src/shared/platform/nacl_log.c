@@ -242,10 +242,10 @@ void NaClLogParseAndSetModuleVerbosityMap(char const *module_verbosity_map) {
     strncpy(entry_buf, module_verbosity_map, entry_len);
     entry_buf[entry_len] = '\0';
     assign = strchr(entry_buf, '=');
-    if (NULL == assign && !seen_global) {
+    if (!assign && !seen_global) {
       verbosity = strtol(entry_buf, (char **) 0, 0);
       seen_global = 1;
-    } else {
+    } else if (assign) {
       *assign = '\0';
 
       module_verbosity = strtol(assign+1, (char **) 0, 0);
@@ -259,11 +259,7 @@ void NaClLogParseAndSetModuleVerbosityMap(char const *module_verbosity_map) {
                 module_verbosity_map);
       }
 
-      for (module_name = entry_buf;
-           ' ' == *module_name || '\t' == *module_name;
-           ++module_name) {
-        ;
-      }
+      for (module_name = entry_buf; ' ' == *module_name || '\t' == *module_name; module_name++) {}
       NaClLogSetModuleVerbosity(module_name, module_verbosity);
     }
     module_verbosity_map = next;
@@ -390,13 +386,13 @@ void NaClLogPreInitSetVerbosity(int verb) {
   NaClLogSetVerbosity_mu(verb);
 }
 
-void  NaClLogSetVerbosity(int verb) {
+void NaClLogSetVerbosity(int verb) {
   NaClLogLock();
   NaClLogSetVerbosity_mu(verb);
   NaClLogUnlock();
 }
 
-void  NaClLogIncrVerbosity(void) {
+void NaClLogIncrVerbosity(void) {
   NaClLogLock();
   if (NACL_VERBOSITY_UNSET == verbosity) {
     verbosity = 0;
@@ -537,32 +533,32 @@ void NaClLogV(int         detail_level,
 }
 
 void NaClLogSetModuleVerbosity_mu(char const  *module_name,
-                                  int         verbosity) {
-  struct NaClLogModuleVerbosity *entry;
-
-  entry = (struct NaClLogModuleVerbosity *) malloc(sizeof *entry);
-  if (NULL == entry) {
+                                  int         mod_verbosity) {
+  struct NaClLogModuleVerbosity *entry = malloc(sizeof *entry);
+  if (!entry) {
     NaClLog_mu(LOG_FATAL,
                ("NaClLogSetModuleVerbosity_mu: Out of memory while setting"
                 " module record for module: %s, verbosity: %d\n"),
-               module_name, verbosity);
+               module_name, mod_verbosity);
+    /* silence linters (return statement is never reached) */
+    return;
   }
   entry->module_name = STRDUP(module_name);
   if (NULL == entry->module_name) {
     NaClLog_mu(LOG_FATAL,
                ("NaClLogSetModuleVerbosity_mu: Out of memory while duplicating"
                 " module name: %s, verbosity: %d\n"),
-               module_name, verbosity);
+               module_name, mod_verbosity);
   }
-  entry->verbosity = verbosity;
+  entry->verbosity = mod_verbosity;
   entry->next = gNaClLogModuleVerbosity;
   gNaClLogModuleVerbosity = entry;
 }
 
 void NaClLogSetModuleVerbosity(char const *module_name,
-                               int        verbosity) {
+                               int        mod_verbosity) {
   NaClLogLock();
-  NaClLogSetModuleVerbosity_mu(module_name, verbosity);
+  NaClLogSetModuleVerbosity_mu(module_name, mod_verbosity);
   NaClLogUnlock();
 }
 
@@ -592,9 +588,8 @@ int NaClLogGetModuleVerbosity(char const *module_name) {
 }
 
 #if NACL_PLATFORM_HAS_TLS
-int NaClLogSetModule(char const *module_name) {
+void NaClLogSetModule(char const *module_name) {
   gTls_ModuleName = module_name;
-  return 0;
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
@@ -612,9 +607,8 @@ static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
 }
 
 #elif NACL_PLATFORM_HAS_TSD
-int NaClLogSetModule(char const *module_name) {
-  (void) pthread_setspecific(gModuleNameKey, (void const *) module_name);
-  return 0;
+void NaClLogSetModule(char const *module_name) {
+  pthread_setspecific(gModuleNameKey, (void const *) module_name);
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
@@ -635,10 +629,9 @@ static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
 #else
 /* !NACL_PLATFORM_HAS_TLS && !NACL_PLATFORM_HAS_TSD */
 
-int NaClLogSetModule(char const *module_name) {
+void NaClLogSetModule(char const *module_name) {
   NaClLogLock();
   nacl_log_module_name = module_name;
-  return 0;
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int         detail_level,
@@ -671,9 +664,8 @@ void NaClLog(int         detail_level,
   va_list ap;
 
 #if !THREAD_SAFE_DETAIL_CHECK
-  if (NACL_LIKELY(detail_level > verbosity)) {
+  if (NACL_LIKELY(detail_level > verbosity))
     return;
-  }
 #endif
 
   NaClLogLock();
