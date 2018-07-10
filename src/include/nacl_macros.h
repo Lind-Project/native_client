@@ -140,7 +140,7 @@ static inline void *NaClArrayCheckHelper(void *arg) {
    * -pedantic-error), in which case instead of a compile-time error,
    * we'd get a runtime error.
    */
-  if (NULL != arg) {
+  if (arg) {
     abort();
   }
   return arg;

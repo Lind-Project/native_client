@@ -124,7 +124,7 @@ static INLINE size_t  size_min(size_t a, size_t b) {
 
 static int const kKnownInvalidDescNumber = -1;
 
-struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS] = {{0}};
+struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
@@ -327,10 +327,7 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
     NaClLog(0, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
     NaClLog(0, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
     NaClLog(0, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
-#define FLOG(VAR, BIT)							\
-    do {								\
-      DPRINTF("%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no");	\
-    } while (0)
+#define FLOG(VAR, BIT) DPRINTF("%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no")
     FLOG(flags, NACL_ABI_O_CREAT);
     FLOG(flags, NACL_ABI_O_TRUNC);
     FLOG(flags, NACL_ABI_O_APPEND);
@@ -411,13 +408,11 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
    */
 
   if (NULL != stack_flag) {
-    DDPRINTF("aClSysThreadExit: stack_flag is %"NACL_PRIxPTR"\n",
-            (uintptr_t) stack_flag);
-    if (!NaClCopyOutToUser(natp->nap, (uintptr_t) stack_flag,
-                           &zero, sizeof zero)) {
+    DDPRINTF("aClSysThreadExit: stack_flag is %"NACL_PRIxPTR"\n", (uintptr_t)stack_flag);
+    if (!NaClCopyOutToUser(natp->nap, (uintptr_t) stack_flag, &zero, sizeof zero)) {
       DDPRINTF("NaClSysThreadExit: ignoring invalid"
                " stack_flag 0x%"NACL_PRIxPTR"\n",
-              (uintptr_t) stack_flag);
+               (uintptr_t)stack_flag);
     }
   }
 
@@ -557,15 +552,16 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
 
   UNREFERENCED_PARAMETER(flags);
 
-  if ((oldfd == 8000) || (oldfd == 8001)) {
+  if (oldfd == 8000 || oldfd == 8001) {
      fd_cage_table[nap->cage_id][newfd] = oldfd;
      DPRINTF("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
      retval = 0;
      return retval;
   }
 
-  if (newfd < nap->fd)
+  if (newfd < nap->fd) {
      return -1;
+  }
 
   fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
   retval = nap->fd;
@@ -626,22 +622,21 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
    *
    * -jp
    */
-  if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1))
+  if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1)) {
     memmove(path + tls_start_idx, path + tls_end_idx, strlen(path) + tls_end_idx + 1);
+  }
 
-  if (0 != retval)
+  if (retval) {
     goto cleanup;
+  }
 
   allowed_flags = (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
                    | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
-  if (0 != (flags & ~allowed_flags)) {
-#ifdef  _DEBUG
-    DPRINTF("Invalid open flags 0%o, ignoring extraneous bits\n",
-            flags);
-#endif
+  if (flags & ~allowed_flags) {
+    DPRINTF("Invalid open flags 0%o, ignoring extraneous bits\n", flags);
     flags &= allowed_flags;
   }
-  if (0 != (mode & ~0600)) {
+  if (mode & ~0600) {
     DPRINTF("IGNORING Invalid access mode bits 0%o\n", mode);
     mode &= 0600;
   }
@@ -668,36 +663,31 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   if (0 == retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
     struct NaClHostDir  *hd;
 
-    /* needed to suppress warnings from c++ code using these functions */
-    hd= malloc(sizeof *hd);
-    if (NULL == hd) {
+    hd = malloc(sizeof *hd);
+    if (!hd) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
     retval = NaClHostDirOpen(hd, path);
     DPRINTF("NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
             (uintptr_t) hd, path, retval);
-    if (0 == retval) {
-      retval = NaClSetAvail(nap,
-                            ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      DPRINTF("Entered directory into open file table at %d\n",
-              retval);
+    if (!retval) {
+      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescDirDescMake(hd)));
+      DPRINTF("Entered directory into open file table at %d\n", retval);
     }
   } else {
     struct NaClHostDesc  *hd;
 
-    /* needed to suppress warnings from c++ code using these functions */
-    hd= malloc(sizeof *hd);
-    if (NULL == hd) {
+    hd = malloc(sizeof *hd);
+    if (!hd) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
     retval = NaClHostDescOpen(hd, path, flags, mode);
     DPRINTF("NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
             (uintptr_t) hd, path, flags, mode, retval);
-    if (0 == retval) {
-      retval = NaClSetAvail(nap,
-                            ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+    if (!retval) {
+      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       DPRINTF("Entered into open file table at %d\n", retval);
     }
   }
@@ -711,7 +701,7 @@ cleanup:
   // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
   //        this will be used when trying to check if a lib has been cached in our system
   // yiwen: do sanity check for the given fd first before our registration
-  if (fd_retval > CACHED_LIB_NUM_MAX && fd_retval >= 0) {
+  if (fd_retval > CACHED_LIB_NUM_MAX) {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
      nap->num_lib++;
   }
@@ -941,11 +931,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   char const      *ellipsis = "";
   struct NaClDesc *ndp;
   size_t          log_bytes;
-  char* string;
 
   // yiwen
   int             fd;
-  int             write_data_size;
 
   DDPRINTF("Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
@@ -4049,8 +4037,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
   envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
 
-  path_len = strlen(path_get);
+  path_len = strlen((char *)path_get);
   path_len += 1;
+
+  UNREFERENCED_PARAMETER(envp_get);
 
   options= malloc(3 * sizeof *options);
   argv_split = strtok((char *)argv_get, " ");
@@ -4177,8 +4167,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
 
   if (cage_id > 0 && cage_id <= pid_max) {
     nap_child = DynArrayGet(&nap->children, pid);
-    /* if (!nap_child) { */
-    if (!nacl_active[cage_id]) {
+    if (!nap_child || !nacl_active[cage_id]) {
       ret = -ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
