@@ -103,15 +103,6 @@ struct NaClDescQuotaInterface;
 
 static size_t const kdefault_io_buffer_bytes_to_log = 64;
 
-// yiwen: my data for the in-process-pipe
-// char pipe_buffer[16*4096];
-/* char *buffer_ptr; */
-// int pipe_mutex; // 0: pipe is empty, ready to write, cannot read; 1: pipe is full, ready to read, cannot write.
-                   // at initialization, it should be set to 0.
-
-// yiwen: this is for debugging in fork()
-int fork_mark;
-
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length);
 
@@ -386,19 +377,6 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap,
 int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   int32_t pid;
   struct NaClApp *nap = natp->nap;
-
-  /*
-   * UNREFERENCED_PARAMETER(natp);
-   * return ++nap->num_children;
-   */
-
-  /*
-   * if (NaClAclBypassChecks) {
-   *   pid = GETPID();
-   * } else {
-   *   pid = -NACL_ABI_EACCES;
-   * }
-   */
 
   pid = nap->cage_id;
   DPRINTF("NaClSysGetpid: returning %d\n", pid);
@@ -726,25 +704,16 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
 cleanup:
   // yiwen: now translate the real fds to virtual fds and return them to the cage
-  // printf("[Debug!][NaClSysOpen] cage id = %d, real NaCl fd = %d, filepath = %s \n", nap->cage_id, retval, path);
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
   nap->fd++;
 
-  // yiwen: debug
-  // DPRINTF("[NaClSysOpen] <cage> = %i; file =  %s; fd = %i \n", nap->cage_id, path, fd_retval);
-  // DPRINTF("[NaClSysOpen] fd_table_test = %i \n", fd_cage_table[1][3]);
-  // printf("[Debug!][NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
-
   // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
   //        this will be used when trying to check if a lib has been cached in our system
   // yiwen: do sanity check for the given fd first before our registration
-  if ((fd_retval >= CACHED_LIB_NUM_MAX) || (fd_retval < 0)) {
-     // printf("[Error!][NaClSysOpen] Cannot register the given fd with the filepath in lib_table! fd is out of the allowed range! \n");
-  } else {
+  if (fd_retval > CACHED_LIB_NUM_MAX && fd_retval >= 0) {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
      nap->num_lib++;
-     // printf("[Debug!][NaClSysOpen] num_lib = %d, filepath = %s \n", nap->num_lib, nap->lib_table[fd_retval].path);
   }
 
   DPRINTF("[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
@@ -905,95 +874,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   fd = fd_cage_table[nap->cage_id][d];
 
-  // printf("[Debug][Cage %d] From NaClSysRead: d = %d, fd = %d \n", nap->cage_id, d, fd);
-
-  // yiwen: try to use the kernel pipe
-  /*
-  if (fd == 8000) {
-     printf("[Debug][Cage %d][fd = 8000] NaCl Read Begins! \n", nap->cage_id);
-     while (pipe_mutex != 1) {
-          // DPRINTF("%s\n", "[NaClSysRead] Waiting for the writer to write data! \n");
-     }
-     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
-     string = (char*)sysaddr;
-     read(31, string, count);
-     pipe_mutex = 0;
-     retval = 0;
-     printf("[Debug][Cage %d][fd = 8000] From NaCl Read Succeed! \n", nap->cage_id);
-     goto cleanup;
-  }
-
-  // fd = fd_cage_table[nap->cage_id][d];
-  // printf("[Debug][Cage %d][fd = %d] From NaClSysRead! \n", nap->cage_id, fd);
-  */
-  // yiwen: this is the read end of my pipe
-
-  /*
-   * if (nap->cage_id == 1 || fd == STDIN_FILENO) {
-   *    NaClXMutexLock(&pipe_table[0].mu);
-   *    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
-   *    string = (char*)sysaddr;
-   *    DPRINTF("[NaClSysRead] string = %s \n", buffer_ptr);
-   *    memcpy(string, pipe_table[0].pipe_buf, count);
-   *    NaClXCondVarBroadcast(&pipe_table[0].cv);
-   *    NaClXMutexUnlock(&pipe_table[0].mu);
-   *    read_data_size = strlen(string);
-   *    DPRINTF("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
-   *    retval = read_data_size;
-   *    goto cleanup;
-   * }
-   */
-
-  /*
-   * if (((nap->cage_id == 3)||(nap->cage_id == 4)||(nap->cage_id == 5)||(nap->cage_id == 6)
-   *     ||(nap->cage_id == 7))&&(fd == 0)) {
-   *    if (((pipe_transfer_over[0] == 1)&&(nap->cage_id == 3))||((pipe_transfer_over[1] == 1)&&(nap->cage_id == 4))
-   *             ||((pipe_transfer_over[2] == 1)&&(nap->cage_id == 5))||((pipe_transfer_over[3] == 1)&&(nap->cage_id == 6))||((pipe_transfer_over[4] == 1)&&(nap->cage_id == 7)))  {
-   *            retval = 0;
-   *            goto cleanup;
-   *    }
-   *    while (((nap->cage_id == 3)&&(pipe_mutex[0] != 1))||((nap->cage_id == 4)&&(pipe_mutex[1] != 1))
-   *           ||((nap->cage_id == 5)&&(pipe_mutex[2] != 1))||((nap->cage_id == 6)&&(pipe_mutex[3] != 1))
-   *           ||((nap->cage_id == 7)&&(pipe_mutex[4] != 1))) {
-   *    }
-   *    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
-   *    string = (char*)sysaddr;
-   *    // DPRINTF("[NaClSysRead] string = %s \n", buffer_ptr);
-   *    if (nap->cage_id == 3) {
-   *       memcpy(string, pipe_buffer[0], count);
-   *       pipe_mutex[0] = 0;
-   *    }
-   *    if (nap->cage_id == 4) {
-   *       memcpy(string, pipe_buffer[1], count);
-   *       pipe_mutex[1] = 0;
-   *    }
-   *    if (nap->cage_id == 5) {
-   *       memcpy(string, pipe_buffer[2], count);
-   *       pipe_mutex[2] = 0;
-   *    }
-   *    if (nap->cage_id == 6) {
-   *       memcpy(string, pipe_buffer[3], count);
-   *       pipe_mutex[3] = 0;
-   *    }
-   *    if (nap->cage_id == 7) {
-   *       memcpy(string, pipe_buffer[4], count);
-   *       pipe_mutex[4] = 0;
-   *    }
-   */
-
-     // printf("[Debug][Cage %d] From NaCl Read Succeed! \n", nap->cage_id);
-     // printf("[Debug][Cage %d] From NaCl Read Data: \n %s \n", nap->cage_id, string);
-     /* read_data_size = strlen(string); */
-     // printf("[Debug][Cage %d] From NaCl Read Data Size: %d \n", nap->cage_id, read_data_size);
-     /* retval = read_data_size; */
-     /* goto cleanup; */
-  /* } */
-
-  // yiwen
-  // fd = fd_cage_table[nap->cage_id][d];
-
-  // DPRINTF("[NaClSysRead] <cage> = %i; fd = %i \n", nap->cage_id, fd);
-
   ndp = NaClGetDesc(nap, fd);
   if (NULL == ndp) {
     retval = -NACL_ABI_EBADF;
@@ -1074,80 +954,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   fd = fd_cage_table[nap->cage_id][d];
   UNREFERENCED_PARAMETER(fd);
   DDPRINTF("[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
-
-  // yiwen: try to use the kernel pipe
-  /*
-  if (fd == 8001) {
-     printf("[Debug][Cage %d][fd = 8001] NaCl Write Begins! \n", nap->cage_id);
-     while (pipe_mutex != 0) {
-          // DPRINTF("%s\n", "[NaClSysWrite] Waiting for the reader to read data! \n");
-     }
-     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
-     string = (char*)sysaddr;
-     write(32, string, count);
-     pipe_mutex = 1;
-     retval = 0;
-     printf("[Debug][Cage %d][fd = 8001] From NaCl Write Succeed! \n", nap->cage_id);
-     goto cleanup;
-  }
-  */
-  // yiwen: this is the write end of my pipe
-
-  /*
-   * if (((nap->cage_id == 2)||(nap->cage_id == 3)||(nap->cage_id == 4)
-   *     ||(nap->cage_id == 5)||(nap->cage_id == 6))&&(fd == 1)) {
-   *    while (((nap->cage_id == 2)&&(pipe_mutex[0] != 0))||((nap->cage_id == 3)&&(pipe_mutex[1] != 0))
-   *           ||((nap->cage_id == 4)&&(pipe_mutex[2] != 0))||((nap->cage_id == 5)&&(pipe_mutex[3] != 0))
-   *           ||((nap->cage_id == 6)&&(pipe_mutex[4] != 0))) {
-   *         // DPRINTF("%s\n", "[NaClSysWrite] Waiting for the reader to read data! \n");
-   *         }
-   *    }
-   */
-
-  if (0) {
-     NaClXMutexLock(&pipe_table[nap->cage_id - 2].mu);
-     NaClXCondVarWait(&pipe_table[nap->cage_id - 2].cv, &pipe_table[nap->cage_id - 2].mu);
-     NaClXMutexUnlock(&pipe_table[nap->cage_id - 2].mu);
-     DDPRINTF("[Debug][Cage %d] From NaCl Write. \n", nap->cage_id);
-     sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
-     string = (char*)sysaddr;
-     DDPRINTF("[NaClSysWrite] string = %s \n", string);
-     if (nap->cage_id == 2) {
-        memcpy(pipe_buffer[0], string, count);
-        pipe_mutex[0] = 1;
-        pipe_transfer_over[0] = 1;
-     }
-     if (nap->cage_id == 3) {
-        memcpy(pipe_buffer[1], string, count);
-        pipe_mutex[1] = 1;
-        pipe_transfer_over[1] = 1;
-     }
-     if (nap->cage_id == 4) {
-        memcpy(pipe_buffer[2], string, count);
-        pipe_mutex[2] = 1;
-        pipe_transfer_over[2] = 1;
-     }
-     if (nap->cage_id == 5) {
-        memcpy(pipe_buffer[3], string, count);
-        pipe_mutex[3] = 1;
-        pipe_transfer_over[3] = 1;
-     }
-     if (nap->cage_id == 6) {
-        memcpy(pipe_buffer[4], string, count);
-        pipe_mutex[4] = 1;
-        pipe_transfer_over[4] = 1;
-     }
-
-     // pipe_mutex = 1; // the buffer is full, after an immediate write
-
-     // printf("[Debug][Cage %d] From NaCl Write Succeed! \n", nap->cage_id);
-     // printf("[Debug][Cage %d] From NaCl Write Data: \n %s \n", nap->cage_id, string);
-     write_data_size = strlen(string);
-     // printf("[Debug][Cage %d] From NaCl Write Data Size: %d \n", nap->cage_id, write_data_size);
-     // pipe_transfer_over = 1;
-     retval = write_data_size;
-     goto cleanup;
-  }
 
   // yiwen
   fd = fd_cage_table[nap->cage_id][d];
@@ -4061,10 +3867,7 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   int32_t   retval = -NACL_ABI_EINVAL;
   uintptr_t sysaddr;
   int size;
-  /* int string[2]; */
   int *string_ptr;
-  // int string2[2];
-  // int* string2_ptr;
 
   size = 8;
   /* string_ptr = string; */
@@ -4075,22 +3878,6 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   string_ptr[0] = 8000;
   string_ptr[1] = 8001;
 
-  // fd_cage_table[1][8000] = 8000;
-  // fd_cage_table[1][8001] = 8001;
-  // fd_cage_table[2][8000] = 8000;
-  // fd_cage_table[2][8001] = 8001;
-
-  // we initialize our pipe buffer
-  /* pipe_mutex[0] = 0; // at the initialization, the pipe should be empty, allow write but not read */
-
-  // let's try to use the kernel pipes
-  /*
-  string2_ptr = string2;
-  pipe(string2_ptr);
-
-  DPRINTF("[NaClSysPipe] fd_cage_table[1][8001] = %d \n", string2_ptr[1]);
-  DPRINTF("[NaClSysPipe] fd_cage_table[2][8000] = %d \n", string2_ptr[0]);
-  */
   retval = 0;
   return retval;
 }
@@ -4247,9 +4034,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   int path_len = 0;
   uintptr_t path_get;
   uintptr_t argv_get;
-#ifdef  _DEBUG
   uintptr_t envp_get;
-#endif
   char *argv_split;
   int argv_num = 0;
   char **options;
@@ -4262,21 +4047,15 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
    */
   path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
   argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
-#ifdef  _DEBUG
   envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
-#endif
 
-  path_len = strlen((char *)path_get);
+  path_len = strlen(path_get);
   path_len += 1;
 
-  /* needed to suppress warnings from c++ code using these functions */
   options= malloc(3 * sizeof *options);
   argv_split = strtok((char *)argv_get, " ");
   while (argv_split != NULL) {
     option_len = strlen(argv_split) + 1;
-    // printf ("%s \n", argv_split);
-    // printf ("%d \n", option_len);
-    /* needed to suppress warnings from c++ code using these functions */
     options[argv_num]= malloc(option_len);
     strncpy(options[argv_num], argv_split, option_len - 1);
     options[argv_num][option_len - 1] = '\0';
@@ -4284,50 +4063,29 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     argv_split = strtok(NULL, " ");
   }
 
-  /*
-  printf ("%d \n", argv_num);
-  for (i = 0; i < argv_num; i++) {
-    printf ("%s \n", options[i]);
-  } */
-
-  // setup the arguments needed to start running a new main thread in a pre-allocated new cage
   argc_newcage = 4 + argv_num - 1;
-  /* needed to suppress warnings from c++ code using these functions */
   argv_newcage= malloc(argc_newcage * sizeof *argv_newcage);
-  /* needed to suppress warnings from c++ code using these functions */
   argv_newcage[0]= malloc(9);
   strncpy(argv_newcage[0], "NaClMain", 9);
-  /* needed to suppress warnings from c++ code using these functions */
   argv_newcage[1]= malloc(15);
   strncpy(argv_newcage[1], "--library-path", 15);
-  /* needed to suppress warnings from c++ code using these functions */
   argv_newcage[2]= malloc(7);
   strncpy(argv_newcage[2], "/glibc", 7);
-  /* needed to suppress warnings from c++ code using these functions */
   argv_newcage[3]= malloc(path_len);
   strncpy(argv_newcage[3], (char *)path_get, path_len);
 
   for (int i = 1; i < argv_num; i++) {
-    // printf ("%d \n", (int) strlen(options[i]));
-    /* needed to suppress warnings from c++ code using these functions */
     argv_newcage[3 + i]= malloc(strlen(options[i]) + 1);
     strncpy(argv_newcage[3 + i], options[i], strlen(options[i]));
     argv_newcage[3 + i][strlen(options[i])] = '\0';
-    // printf ("%s \n", argv_newcage[3 + i]);
   }
 
-  // DPRINTF("[NaClSysExecve] cage id = %d \n", nap->cage_id);
-  // DPRINTF("[NaClSysExecve] path = %s \n", (char*) path_get);
-  // DPRINTF("[NaClSysExecve] argv = %s \n", (char*) argv_get);
-  //
   UNREFERENCED_PARAMETER(envp);
   free(options);
 
-#ifdef  _DEBUG
   DPRINTF("[NaClSysExecve] cage id = %d \n", nap->cage_id);
   DPRINTF("[NaClSysExecve] envp = %s \n", (char*) envp_get);
   DPRINTF("[NaClSysExecve] fork_num = %d \n", fork_num);
-#endif
 
   if (fork_num == 1) {
       // need to inherit children info from previous cage
@@ -4428,14 +4186,10 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     }
     DPRINTF("Thread children count: %d\n", nap->num_children);
     /* wait for child to finish */
-    /* while (DynArrayGet(&nap->children, cage_id)) */
-    /*
-     * while (nacl_active[cage_id])
-     *   NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
-     * NaClXCondVarBroadcast(&nap->children_cv);
-     * NaClXMutexUnlock(&nap->children_mu);
-     */
-    NaClWaitForMainThreadToExit(nap_child);
+    while (DynArrayGet(&nap->children, cage_id))
+      NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
+    NaClXCondVarBroadcast(&nap->children_cv);
+    NaClXMutexUnlock(&nap->children_mu);
     goto out;
   }
 
