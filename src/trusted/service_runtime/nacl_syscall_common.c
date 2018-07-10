@@ -649,7 +649,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
    * -jp
    */
   if (!memcmp(path, tls_prefix, sizeof tls_prefix - 1))
-    memmove(path + tls_start_idx, path + tls_end_idx, strlen(path + tls_end_idx) + 1);
+    memmove(path + tls_start_idx, path + tls_end_idx, strlen(path) + tls_end_idx + 1);
 
   if (0 != retval)
     goto cleanup;
