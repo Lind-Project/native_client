@@ -64,15 +64,6 @@ double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;
 int cage = 1001;
-struct NaClApp state_ready;
-struct NaClApp *nap_ready;
-struct NaClApp state_ready_2;
-struct NaClApp *nap_ready_2;
-
-struct NaClApp state0;
-struct NaClApp *nap0;
-struct NaClApp state0_2;
-struct NaClApp *nap0_2;
 
 /*
  * `fd_cage_table[cage_id][fd] = real fd`

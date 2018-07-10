@@ -71,19 +71,6 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
-// yiwen
-// set up the cage id
-// set up the fd table for the cage
-static void InitializeCage(struct NaClApp *nap, int cage_id) {
-  nap->cage_id = cage_id;
-  nap->num_children = 0;
-  nap->num_lib = 3;
-  fd_cage_table[cage_id][0] = 0;
-  fd_cage_table[cage_id][1] = 1;
-  fd_cage_table[cage_id][2] = 2;
-  nap->fd = 3; // fd will start with 3, since 0, 1, 2 are reserved
-}
-
 static void (*g_enable_outer_sandbox_func)(void) =
 #if NACL_OSX
     NaClEnableOuterSandbox;
@@ -214,23 +201,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   struct NaClApp                *nap = &state;
 
-  // yiwen: added a second nap(cage), call it nap2.
-  // we need to set up both state2 and nap2 properly, before loading file into nap2.
-  struct NaClApp                state2 = {0};
-  struct NaClApp                *nap2 = &state2;
-
-  // yiwen: added a third cage, nap3.
-  struct NaClApp                state3 = {0};
-  struct NaClApp                *nap3 = &state3;
-  struct NaClApp                state4 = {0};
-  struct NaClApp                *nap4 = &state4;
-  struct NaClApp                state5 = {0};
-  struct NaClApp                *nap5 = &state5;
-  struct NaClApp                state6 = {0};
-  struct NaClApp                *nap6 = &state6;
-  struct NaClApp                state7 = {0};
-  struct NaClApp                *nap7 = &state7;
-
   // argc2 and argv2 defines the NaCl file we want to run for nap2.
   // they will be used when we try to create the thread.
   /* int argc2; */
@@ -270,48 +240,17 @@ int NaClSelLdrMain(int argc, char **argv) {
   double			lind_syscall_total_time;
   #endif
 
-  // yiwen: testing mmap
-  /*
-  int shmid;
-  char *reg1;
-  char *reg2;
-  char *reg3;
-  int data_size;
-  void *reg1_ptr;
-  void *reg2_ptr;
-  void *reg3_ptr; */
-
-  // yiwen: testing cow mapping
-  /*
-  int shm_fd;
-  char *shm_buf1;
-  char *shm_buf2;
-  void *cage1_ptr; */
-
-  // yiwen: variables used to create our named pipe
-  /*
-  char * myfifo;
-  int myfifo_fd;
-  char user_input[256]; */
-
-  // yiwen: variables used when processing the user input command from the client program
-  /*
-  int j;
-  int k;
-  int is_new_argument; */
-
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
-  envp = (const char **) *_NSGetEnviron();
+  envp = (const char **)*_NSGetEnviron();
 #else
   /* Overzealous code style check is overzealous. */
   /* @IGNORE_LINES_FOR_CODE_HYGIENE[1] */
   extern char **environ;
-  envp = (const char **) environ;
+  envp = (const char **)environ;
 #endif
 
   // yiwen: initialize the syscall_counter
-  // DPRINTF("%s\n", "[NaCl Main Loader] NaCl Loader started! \n");
   nacl_syscall_counter = 0;
   lind_syscall_counter = 0;
   nacl_syscall_trace_level_counter = 0;
@@ -323,17 +262,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_queue = NULL;
   redir_qend = &redir_queue;
 
-  // yiwen: nap0 is shared with nacl_syscall_common.c
-  // we use it to store the snapshot of an initial cage, which is ready to run a program(create a thread)
-  // this snapshot is used by execv()
-
   if (!DynArrayCtor(&nap->children, 16))
     DPRINTF("%s\n", "Failed to initialize children list");
-
-  nap0 = &state0;
-  nap0_2 = &state0_2;
-  nap_ready = &state_ready;
-  nap_ready_2 = &state_ready_2;
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
@@ -354,42 +284,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!NaClAppCtor(&state)) {
     DPRINTF("%s\n", "NaClAppCtor() failed");
   }
-  // yiwen: my code
-  if (!NaClAppCtor(&state2)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state3)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state4)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state5)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state6)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state7)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  // yiwen
-  if (!NaClAppCtor(&state0)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state0_2)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  // yiwen
-  if (!NaClAppCtor(&state_ready)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
-  if (!NaClAppCtor(&state_ready_2)) {
-    DPRINTF("%s\n", "NaClAppCtor() failed");
-  }
   if (!DynArrayCtor(&env_vars, 0)) {
     DPRINTF("%s\n", "Failed to allocate env var array");
   }
+
   /*
    * On platforms with glibc getopt, require POSIXLY_CORRECT behavior,
    * viz, no reordering of the arglist -- stop argument processing as
@@ -534,13 +432,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  // time_start = clock();
   if(!LindPythonInit()) {
       fflush(NULL);
       exit(EXIT_FAILURE);
   }
-  // time_end = clock();
-  // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
   if (debug_mode_ignore_validator == 1)
     DPRINTF("%s\n", "DEBUG MODE ENABLED (ignore validator)");
@@ -680,8 +575,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     if (LOAD_OK != pq_error) {
       errcode = pq_error;
       nap->module_load_status = pq_error;
-      // yiwen
-      nap2->module_load_status = pq_error;
       DPRINTF("%d: Error while loading \"%s\": %s\n",
               __LINE__,
               !nap->nacl_file ? nap->nacl_file : "(no file, to-be-supplied-via-RPC)",
@@ -721,162 +614,15 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NaClAppInitialDescriptorHookup(nap);
-  // yiwen
-  NaClAppInitialDescriptorHookup(nap2);
-  NaClAppInitialDescriptorHookup(nap3);
-  NaClAppInitialDescriptorHookup(nap4);
-  NaClAppInitialDescriptorHookup(nap5);
-  NaClAppInitialDescriptorHookup(nap6);
-  NaClAppInitialDescriptorHookup(nap7);
-  // yiwen
-  NaClAppInitialDescriptorHookup(nap0);
-  NaClAppInitialDescriptorHookup(nap0_2);
-  NaClAppInitialDescriptorHookup(nap_ready);
-  NaClAppInitialDescriptorHookup(nap_ready_2);
 
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {
       NaClLog(2, "Loading nacl file %s (non-RPC)\n", nap->nacl_file);
-
-      // yiwen
-      // time_start = clock();
       errcode = NaClAppLoadFileFromFilename(nap, nap->nacl_file);
-      // time_end = clock();
-      // time_counter = (double)(time_end - time_start) / CLOCKS_PER_SEC;
 
       if (LOAD_OK != errcode) {
         DPRINTF("%d: Error while loading \"%s\": %s\n",
                 __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap2
-      errcode = NaClAppLoadFileFromFilename(nap2, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap3
-      errcode = NaClAppLoadFileFromFilename(nap3, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap4
-      errcode = NaClAppLoadFileFromFilename(nap4, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap5
-      errcode = NaClAppLoadFileFromFilename(nap5, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap6
-      errcode = NaClAppLoadFileFromFilename(nap6, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap7
-      errcode = NaClAppLoadFileFromFilename(nap7, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap0
-      errcode = NaClAppLoadFileFromFilename(nap0, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap0_2
-      errcode = NaClAppLoadFileFromFilename(nap0_2, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap_ready
-      errcode = NaClAppLoadFileFromFilename(nap_ready, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      // yiwen: load NaCl file to nap_ready_2
-      errcode = NaClAppLoadFileFromFilename(nap_ready_2, nap->nacl_file);
-      if (LOAD_OK != errcode) {
-        DPRINTF("%d: Error while loading \"%s\": %s\n", __LINE__,
                 nap->nacl_file,
                 NaClErrorString(errcode));
         fprintf(stderr,
@@ -893,39 +639,6 @@ int NaClSelLdrMain(int argc, char **argv) {
       nap->module_load_status = errcode;
       NaClXCondVarBroadcast(&nap->cv);
       NaClXMutexUnlock(&nap->mu);
-
-      // yiwen
-      NaClXMutexLock(&nap2->mu);
-      nap2->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap2->cv);
-      NaClXMutexUnlock(&nap2->mu);
-
-      NaClXMutexLock(&nap3->mu);
-      nap3->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap3->cv);
-      NaClXMutexUnlock(&nap3->mu);
-
-      // yiwen
-      NaClXMutexLock(&nap0->mu);
-      nap0->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap0->cv);
-      NaClXMutexUnlock(&nap0->mu);
-
-      NaClXMutexLock(&nap0_2->mu);
-      nap0_2->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap0_2->cv);
-      NaClXMutexUnlock(&nap0_2->mu);
-
-      // yiwen
-      NaClXMutexLock(&nap_ready->mu);
-      nap_ready->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap_ready->cv);
-      NaClXMutexUnlock(&nap_ready->mu);
-
-      NaClXMutexLock(&nap_ready_2->mu);
-      nap_ready_2->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap_ready_2->cv);
-      NaClXMutexUnlock(&nap_ready_2->mu);
     }
 
     if (fuzzing_quit_after_load) {
@@ -1019,56 +732,8 @@ int NaClSelLdrMain(int argc, char **argv) {
       errcode = NaClAppPrepareToLaunch(nap);
       if (LOAD_OK != errcode) {
         nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
         DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
       }
-
-      // yiwen: my code
-      errcode = NaClAppPrepareToLaunch(nap2);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      errcode = NaClAppPrepareToLaunch(nap3);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      errcode = NaClAppPrepareToLaunch(nap0);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      errcode = NaClAppPrepareToLaunch(nap_ready);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      errcode = NaClAppPrepareToLaunch(nap0_2);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      errcode = NaClAppPrepareToLaunch(nap_ready_2);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        // yiwen: my code
-        nap2->module_load_status = errcode;
-        DPRINTF("NaClAppPrepareToLaunch returned %d", errcode);
-      }
-      NaClPerfCounterMark(&time_all_main, "AppPrepLaunch");
-      NaClPerfCounterIntervalLast(&time_all_main);
     }
 
     /* Give debuggers a well known point at which xlate_base is known.  */
@@ -1186,72 +851,28 @@ int NaClSelLdrMain(int argc, char **argv) {
     DPRINTF("%s\n", "Launch service threads failed");
     goto done;
   }
-  // yiwen: my code
-  if (!NaClAppLaunchServiceThreads(nap2)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
-  if (!NaClAppLaunchServiceThreads(nap3)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
-  // yiwen
-  if (!NaClAppLaunchServiceThreads(nap0)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
-  if (!NaClAppLaunchServiceThreads(nap_ready)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
-  if (!NaClAppLaunchServiceThreads(nap0_2)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
-  if (!NaClAppLaunchServiceThreads(nap_ready_2)) {
-    DPRINTF("%s\n", "Launch service threads failed");
-    goto done;
-  }
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
     }
   }
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-
-  /*
-   * yiwen: set up cage 0 (currently used by fork
-   * and execv) right now, nap0 is reserved for
-   * fork().
-   */
-  InitializeCage(nap0, 2);
-  InitializeCage(nap_ready, 2);
-  InitializeCage(nap0_2, 3);
-  InitializeCage(nap_ready_2, 3);
-  // yiwen: set up cage 1
   InitializeCage(nap, 1);
-  InitializeCage(nap2, 2);
-  InitializeCage(nap3, 3);
-  InitializeCage(nap4, 4);
-  InitializeCage(nap5, 5);
-  InitializeCage(nap6, 6);
-  InitializeCage(nap7, 7);
 
   // yiwen: debug
   DPRINTF("[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   DPRINTF("[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   DPRINTF("[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
-  nap->command_num = nap0->command_num = argc - optind - 3;
-  nap->binary_path = nap0->binary_path = malloc(strlen((argv + optind)[3]) + 1);
+  nap->command_num = argc - optind - 3;
+  nap->binary_path = malloc(strlen((argv + optind)[3]) + 1);
   strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
   if (nap->command_num > 1) {
-     nap->binary_command = nap0->binary_command = malloc(strlen((argv + optind)[4]) + 1);
+     nap->binary_command = malloc(strlen((argv + optind)[4]) + 1);
      strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
   }
 
-  DPRINTF("nap->command_num = %d, nap0->command_num = %d\n", nap->command_num, nap0->command_num);
-  DPRINTF("nap->binary_path = %s, nap0->binary_path = %s\n", nap->binary_path, nap0->binary_path);
+  DPRINTF("nap->command_num = %d, nap->binary_path = %s\n", nap->command_num, nap->binary_path);
 
   /* jp */
   DPRINTF("%s\n", "Initializing pipe table mutexes/conditional variables.");
@@ -1286,21 +907,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  ret_code |= NaClWaitForMainThreadToExit(nap2);
-  ret_code |= NaClWaitForMainThreadToExit(nap3);
-  ret_code |= NaClWaitForMainThreadToExit(nap4);
-  ret_code |= NaClWaitForMainThreadToExit(nap5);
-  ret_code |= NaClWaitForMainThreadToExit(nap6);
-  ret_code |= NaClWaitForMainThreadToExit(nap7);
-  switch (fork_num) {
-  case 1:
-    ret_code |= NaClWaitForMainThreadToExit(nap0);
-    ret_code |= NaClWaitForMainThreadToExit(nap_ready);
-    /* fallthrough */
-  case 2:
-    ret_code |= NaClWaitForMainThreadToExit(nap0_2);
-    ret_code |= NaClWaitForMainThreadToExit(nap_ready_2);
-  }
   nacl_user_program_finish = clock();
 
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");

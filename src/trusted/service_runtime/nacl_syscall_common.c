@@ -3987,175 +3987,23 @@ out:
   return ret;
 }
 
-// yiwen: my implementation for execv() call
-// a new cage is created for the new program
-// the new program will be running inside the new cage
-// the old cage and the runnging main thread inside that cage will be torn down
+/*
+ * TODO: implement execv()
+ */
 int32_t NaClSysExecv(struct NaClAppThread *natp) {
-  struct NaClApp *nap = natp->nap;
-  int32_t retval = -NACL_ABI_EINVAL;
-
-  int child_argc;
-  char **child_argv;
-
-  DPRINTF("%s\n", "[NaClSysExecv] NaCl execv starts! \n");
-
-  child_argc = 4;
-  /* needed to suppress warnings from c++ code using these functions */
-  child_argv= calloc(child_argc + 1, sizeof *child_argv);
-  child_argv[0] = "NaClMain";
-  child_argv[1] = "--library-path";
-  child_argv[2] = "/lib/glibc";
-  /*
-   * TODO: implement execve()
-   */
-  child_argv[3] =  "/test_case/jp/hello.nexe";
-
-  if (!NaClCreateMainThread(nap0,
-                            child_argc,
-                            child_argv,
-                            NULL)) {
-    DPRINTF("%s\n", "creating main thread failed\n");
-    DPRINTF("%s\n", "[NaClSysExecv] Execv new program failed! \n");
-    retval = -1;
-    return retval;
-  }
-
-  NaClReportExitStatus(nap, 0);  // need to report the exit status of the old cage, otherwise the main process will hang, waiting for this cage to exit.
-  NaClAppThreadTeardown(natp);   // now tear down the old running thread, so that it will not return.
-
-  DPRINTF("%s\n", "[NaClSysExecv] NaCl execv finishes! \n");
-
-  return retval;
+  UNREFERENCED_PARAMETER(natp);
+  return -ENOSYS;
 }
 
-// yiwen: my implementation for execve(3) call
-// a new cage is created for the new program (I am using a pre-allocated cage right now)
-// the new program will be running inside the new cage
-// the old cage and the runnging main thread inside that cage will be torn down
-// on success, this function will not return
-// on failure, this function will return -1
-int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp)  {
-  struct NaClApp *nap = natp->nap;
-  int argc_newcage;
-  char **argv_newcage;
-  int32_t retval = -1;
-  int path_len = 0;
-  uintptr_t path_get;
-  uintptr_t argv_get;
-  uintptr_t envp_get;
-  char *argv_split;
-  int argv_num = 0;
-  char **options;
-  int option_len = 0;
-
-  /*
-   * convert pointers from addresses within the cage into ones
-   * in the whole address space basically just adding the cage
-   * memory start address to the offset within the cage.
-   */
-  path_get = NaClUserToSysAddr(nap, (uintptr_t) path);
-  argv_get = NaClUserToSysAddr(nap, (uintptr_t) argv);
-  envp_get = NaClUserToSysAddr(nap, (uintptr_t) envp);
-
-  path_len = strlen((char *)path_get);
-  path_len += 1;
-
-  UNREFERENCED_PARAMETER(envp_get);
-
-  options= malloc(3 * sizeof *options);
-  argv_split = strtok((char *)argv_get, " ");
-  while (argv_split != NULL) {
-    option_len = strlen(argv_split) + 1;
-    options[argv_num]= malloc(option_len);
-    strncpy(options[argv_num], argv_split, option_len - 1);
-    options[argv_num][option_len - 1] = '\0';
-    argv_num++;
-    argv_split = strtok(NULL, " ");
-  }
-
-  argc_newcage = 4 + argv_num - 1;
-  argv_newcage= malloc(argc_newcage * sizeof *argv_newcage);
-  argv_newcage[0]= malloc(9);
-  strncpy(argv_newcage[0], "NaClMain", 9);
-  argv_newcage[1]= malloc(15);
-  strncpy(argv_newcage[1], "--library-path", 15);
-  argv_newcage[2]= malloc(7);
-  strncpy(argv_newcage[2], "/glibc", 7);
-  argv_newcage[3]= malloc(path_len);
-  strncpy(argv_newcage[3], (char *)path_get, path_len);
-
-  for (int i = 1; i < argv_num; i++) {
-    argv_newcage[3 + i]= malloc(strlen(options[i]) + 1);
-    strncpy(argv_newcage[3 + i], options[i], strlen(options[i]));
-    argv_newcage[3 + i][strlen(options[i])] = '\0';
-  }
-
+/*
+ * TODO: implement execve()
+ */
+int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp) {
+  UNREFERENCED_PARAMETER(natp);
+  UNREFERENCED_PARAMETER(path);
+  UNREFERENCED_PARAMETER(argv);
   UNREFERENCED_PARAMETER(envp);
-  free(options);
-
-  DPRINTF("[NaClSysExecve] cage id = %d \n", nap->cage_id);
-  DPRINTF("[NaClSysExecve] envp = %s \n", (char*) envp_get);
-  DPRINTF("[NaClSysExecve] fork_num = %d \n", fork_num);
-
-  if (fork_num == 1) {
-      // need to inherit children info from previous cage
-      nap_ready->num_children = nap->num_children;
-      for (int i = 0; i < nap->num_children; i++) {
-          nap_ready->children_ids[i] = nap->children_ids[i];
-      }
-
-      // create and start running the main thread in the new cage
-      if (!NaClCreateMainThread(nap_ready,
-                                argc_newcage,
-                                argv_newcage,
-                                NULL)) {
-        DPRINTF("%s\n", "[NaClSysExecve] creating main thread failed \n");
-        retval = -1;
-        return retval;
-      }
-  }
-
-  else if (fork_num == 2) {
-      // need to inherit children info from previous cage
-      nap_ready_2->num_children = nap->num_children;
-      for (int i = 0; i < nap->num_children; i++) {
-          nap_ready_2->children_ids[i] = nap->children_ids[i];
-      }
-
-      // create and start running the main thread in the new cage
-      if (!NaClCreateMainThread(nap_ready_2,
-                                argc_newcage,
-                                argv_newcage,
-                                NULL)) {
-        DPRINTF("%s\n", "[NaClSysExecve] creating main thread failed \n");
-        retval = -1;
-        return retval;
-      }
-  }
-
-  free(argv_newcage);
-
-  /*
-   * need to report the exit status of the old cage,
-   * otherwise the main process will hang, waiting
-   * for this cage to exit.
-   */
-  switch (nap->cage_id) {
-  case 1000:
-     NaClReportExitStatus(nap0, 0);
-     break;
-  case 1001:
-     NaClReportExitStatus(nap0_2, 0);
-     break;
-  case 1: /* fallthrough */
-  default:
-    NaClReportExitStatus(nap, 0);
-  }
-
-  /* now tear down the old running thread, so that it will not return. */
-  NaClAppThreadTeardown(natp);
-  return retval;
+  return -ENOSYS;
 }
 
 /* jp */

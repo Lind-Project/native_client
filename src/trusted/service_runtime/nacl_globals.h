@@ -92,16 +92,6 @@ extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
 // yiwen
 extern int cage;
-extern struct NaClApp state_ready;
-extern struct NaClApp *nap_ready;
-extern struct NaClApp state_ready_2;
-extern struct NaClApp *nap_ready_2;
-
-extern struct NaClApp state0;
-extern struct NaClApp *nap0;
-extern struct NaClApp state0_2;
-extern struct NaClApp *nap0_2;
-
 extern double time_counter;
 extern double time_start;
 extern double time_end;
