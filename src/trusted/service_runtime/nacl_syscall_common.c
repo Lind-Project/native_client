@@ -497,29 +497,16 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   int             retval, newfd;
   struct NaClDesc *old_nd;
 
-  DPRINTF("NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n",
-          (uintptr_t) natp, oldfd);
+  DPRINTF("NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
   old_nd = NaClGetDesc(nap, oldfd);
   if (!old_nd) {
     retval = -NACL_ABI_EBADF;
     goto done;
   }
-
   retval = newfd = NaClSetAvail(nap, old_nd);
   NaClSetDesc(nap, newfd, old_nd);
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
-
-  if ((oldfd == 8000) || (oldfd == 8001)) {
-     fd_cage_table[nap->cage_id][newfd] = oldfd;
-     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
-     retval = 0;
-     goto done;
-  }
-
-  // yiwen: debug output
-  DPRINTF("[dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
-  for (int i = 0; i < nap->fd; i++)
-     DPRINTF("[dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
+  nap->fd++;
 
 done:
   return retval;
@@ -529,32 +516,17 @@ done:
 int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   oldfd,
                     int                   newfd) {
-  struct NaClApp  *nap = natp->nap;
-  int             retval;
+  struct NaClApp *nap = natp->nap;
 
-  // yiwen: debug
   DPRINTF("%s\n", "[dup2] Entered dup2!");
   DPRINTF("[dup2] cage id = %d \n", nap->cage_id);
   DPRINTF("[dup2] oldfd = %d \n", oldfd);
   DPRINTF("[dup2] newfd = %d \n", newfd);
 
-  if ((oldfd == 8000) || (oldfd == 8001)) {
-     fd_cage_table[nap->cage_id][newfd] = oldfd;
-     printf("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
-     retval = 0;
-     return retval;
-  }
-
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+  nap->fd++;
 
-  retval = newfd;
-
-  // yiwen: debug output
-  DPRINTF("[dup2] cage %d fd max = %d \n", nap->cage_id, nap->fd);
-  for (int i = 0; i < nap->fd; i++)
-     DPRINTF("[dup2] cage %d fd[%d] = %d \n", nap->cage_id, i, fd_cage_table[nap->cage_id][i]);
-
-  return retval;
+  return newfd;
 }
 
 // yiwen: my dup3 implementation
@@ -563,7 +535,7 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
                     int                   newfd,
                     int                   flags) {
   struct NaClApp  *nap = natp->nap;
-  int             retval;
+  int             retval = -NACL_ABI_EINVAL;
 
   DPRINTF("%s\n", "[dup3] Entered dup3!");
   DPRINTF("[dup3] cage id = %d \n", nap->cage_id);
@@ -572,21 +544,16 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
 
   UNREFERENCED_PARAMETER(flags);
 
-  if (oldfd == 8000 || oldfd == 8001) {
-     fd_cage_table[nap->cage_id][newfd] = oldfd;
-     DPRINTF("[cage %d][fd %d] = %d \n", nap->cage_id, newfd, fd_cage_table[nap->cage_id][newfd]);
-     retval = 0;
-     return retval;
-  }
-
   if (newfd < nap->fd) {
-     return -1;
+    retval = -EBADF;
+    goto done;
   }
 
   fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
   retval = nap->fd;
   nap->fd++;
 
+done:
   return retval;
 }
 
@@ -3869,25 +3836,14 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
                                      NaClClockGetTime);
 }
 
-// yiwen
+/*
+ * TODO: implement pipe()
+ */
 int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
-  struct NaClApp *nap = natp->nap;
-  int32_t   retval = -NACL_ABI_EINVAL;
-  uintptr_t sysaddr;
-  int size;
-  int *string_ptr;
-
-  size = 8;
-  /* string_ptr = string; */
-  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) pipedes, size);
-  string_ptr = (int *)sysaddr;
-
-  // return two fds to the user
-  string_ptr[0] = 8000;
-  string_ptr[1] = 8001;
-
-  retval = 0;
-  return retval;
+  UNREFERENCED_PARAMETER(natp);
+  pipedes[0] = -1;
+  pipedes[1] = -1;
+  return -ENOSYS;
 }
 
 /* jp */
@@ -3900,6 +3856,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   int child_argc;
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
+  UNREFERENCED_PARAMETER(nap_master);
 
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");

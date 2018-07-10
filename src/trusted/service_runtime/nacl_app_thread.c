@@ -132,6 +132,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     newfd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, newfd, old_nd);
     fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap_parent->cage_id][oldfd];
+    nap_child->fd++;
   }
 
   return nap_child;
