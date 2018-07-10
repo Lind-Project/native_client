@@ -955,6 +955,9 @@ void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child);
  */
 void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
 
+/* Set up the fd table for each cage */
+void InitializeCage(struct NaClApp *nap, int cage_id);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_ */

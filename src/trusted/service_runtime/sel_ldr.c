@@ -1609,3 +1609,16 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_child);
   NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
 }
+
+/* Set up the fd table for each cage */
+void InitializeCage(struct NaClApp *nap, int cage_id) {
+  nap->cage_id = cage_id;
+  nap->num_children = 0;
+  nap->num_lib = 3;
+  fd_cage_table[cage_id][0] = 0;
+  fd_cage_table[cage_id][1] = 1;
+  fd_cage_table[cage_id][2] = 2;
+  /* fd will start with 3, since 0, 1, 2 are reserved */
+  nap->fd = 3;
+}
+

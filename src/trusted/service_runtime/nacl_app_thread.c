@@ -79,8 +79,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
   nap_child->parent_id = nap_parent->cage_id;
-  /* make sure cage_id is unique */
-  nap_child->cage_id = nap_master->cage_id + ++fork_num;
+  /* make sure cage_id is unique and assign it to child */
+  InitializeCage(nap_child, nap_master->cage_id + ++fork_num);
   CHECK(!nap_master->children_ids[nap_master->num_children]);
   CHECK(!nap_parent->children_ids[nap_parent->num_children]);
   /* store cage_ids in both master and parent */
