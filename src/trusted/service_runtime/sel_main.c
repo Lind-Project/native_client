@@ -655,7 +655,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * as part of service runtime exit.
    */
   NaClLog(4, "Processing I/O redirection/inheritance from command line\n");
-  for (entry = redir_queue; NULL != entry; entry = entry->next) {
+  for (entry = redir_queue; entry && entry->next; entry = entry->next) {
     switch (entry->tag) {
       case HOST_DESC:
         NaClAddHostDescriptor(nap, entry->u.host.d,
@@ -666,6 +666,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
     }
   }
+  free(entry);
 
   /*
    * If export_addr_to is set to a non-negative integer, we create a
