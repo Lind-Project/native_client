@@ -110,21 +110,21 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
                     struct nacl_abi_stat *nasp);
 
 int32_t NaClSysMkdir(struct NaClAppThread *natp,
-                     uint32_t             path,
+                     uint32_t             pathname,
                      int                  mode);
 
 int32_t NaClSysRmdir(struct NaClAppThread *natp,
-                     uint32_t             path);
+                     uint32_t             pathname);
 
 int32_t NaClSysChdir(struct NaClAppThread *natp,
-                     uint32_t             path);
+                     uint32_t             pathname);
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       uint32_t             buffer,
                       int                  len);
 
 int32_t NaClSysUnlink(struct NaClAppThread *natp,
-                      uint32_t             path);
+                      uint32_t             pathname);
 
 /* bool */
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
@@ -230,7 +230,7 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp);
 
 int32_t NaClSysThreadNice(struct NaClAppThread *natp,
-                          const int nice);
+                          int                  nice);
 
 /* mutex */
 

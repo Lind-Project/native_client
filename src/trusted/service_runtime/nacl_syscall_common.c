@@ -3143,7 +3143,7 @@ int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
 }
 
 int NaClSysThreadNice(struct NaClAppThread *natp,
-                      const int            nice) {
+                      int                  nice) {
   /* Note: implementation of nacl_thread_nice is OS dependent. */
   UNREFERENCED_PARAMETER(natp);
   return nacl_thread_nice(nice);
