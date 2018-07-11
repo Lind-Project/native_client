@@ -3772,29 +3772,31 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 #endif
   CHECK(now.nacl_abi_tv_usec >= 0);
   CHECK(now.nacl_abi_tv_usec < NACL_MICROS_PER_UNIT);
-  if (!NaClCopyOutToUser(natp->nap, (uintptr_t) tv, &now, sizeof now)) {
+  if (!NaClCopyOutToUser(natp->nap, (uintptr_t)tv, &now, sizeof now)) {
     return -NACL_ABI_EFAULT;
   }
   return 0;
 }
 
+/* convenience typedef */
+typedef int clock_func(nacl_clockid_t, struct nacl_abi_timespec *);
+
 static int NaClIsValidClockId(int clk_id) {
+  int ret = 0;
   switch (clk_id) {
-    case NACL_ABI_CLOCK_REALTIME:
-    case NACL_ABI_CLOCK_MONOTONIC:
-    case NACL_ABI_CLOCK_PROCESS_CPUTIME_ID:
-    case NACL_ABI_CLOCK_THREAD_CPUTIME_ID:
-      return 1;
+  case NACL_ABI_CLOCK_REALTIME:
+  case NACL_ABI_CLOCK_MONOTONIC:
+  case NACL_ABI_CLOCK_PROCESS_CPUTIME_ID:
+  case NACL_ABI_CLOCK_THREAD_CPUTIME_ID:
+    ret = 1;
   }
-  return 0;
+  return ret;
 }
 
 int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
                               int                   clk_id,
                               uint32_t              ts_addr,
-                              int                   (*timefunc)(
-                                  nacl_clockid_t            clk_id,
-                                  struct nacl_abi_timespec  *tp)) {
+                              clock_func            *time_func) {
   struct NaClApp            *nap = natp->nap;
   int                       retval = -NACL_ABI_EINVAL;
   struct nacl_abi_timespec  out_buf;
@@ -3802,13 +3804,11 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
   if (!NaClIsValidClockId(clk_id)) {
     goto done;
   }
-  retval = (*timefunc)((nacl_clockid_t) clk_id, &out_buf);
-  if (0 == retval) {
-    if (!NaClCopyOutToUser(nap, (uintptr_t) ts_addr,
-                           &out_buf, sizeof out_buf)) {
-      retval = -NACL_ABI_EFAULT;
-    }
+  retval = time_func((nacl_clockid_t) clk_id, &out_buf);
+  if (!retval && !NaClCopyOutToUser(nap, (uintptr_t)ts_addr, &out_buf, sizeof out_buf)) {
+    retval = -NACL_ABI_EFAULT;
   }
+
  done:
   return retval;
 }
@@ -3834,6 +3834,7 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   UNREFERENCED_PARAMETER(natp);
   pipedes[0] = -1;
   pipedes[1] = -1;
+
   return -ENOSYS;
 }
 
