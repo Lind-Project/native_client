@@ -63,7 +63,9 @@ int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
   struct NaClDesc *basep = (struct NaClDesc *) self;
   int rv;
 
-  basep->base.vtbl = (struct NaClRefCountVtbl const *) NULL;
+  if (!basep)
+    return -NACL_ABI_EBADF;
+  basep->base.vtbl = 0;
   if (!NaClDescCtor(basep)) {
     return 0;
   }
@@ -71,8 +73,8 @@ int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
   if (!rv) {
     (*NACL_VTBL(NaClRefCount, basep)->Dtor)((struct NaClRefCount *) basep);
   }
-  (*NACL_VTBL(NaClDesc, basep)->
-   SetFlags)(basep, hd->flags & NACL_ABI_O_ACCMODE);
+  if (hd)
+    NACL_VTBL(NaClDesc, basep)->SetFlags(basep, hd->flags & NACL_ABI_O_ACCMODE);
   return rv;
 }
 
