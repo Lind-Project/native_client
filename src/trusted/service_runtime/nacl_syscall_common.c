@@ -3931,9 +3931,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
    *
    * -jp
    */
-  DPRINTF("\n\tchild fork_state: [%d] parent fork state: [%d]\n\t",
+  DPRINTF("child fork_state: [%d] parent fork state: [%d]\n",
           nap_child->fork_state, nap->fork_state);
-  DPRINTF("[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n\n",
+  DPRINTF("[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n",
           fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
   if (clock_gettime(CLOCK_REALTIME, &fork_ts) == -1)
