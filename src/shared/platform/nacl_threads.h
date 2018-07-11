@@ -61,9 +61,7 @@ int NaClThreadCreateJoinable(struct NaClThread  *ntp,
                              void (WINAPI *start_fn)(void *),
                              void *state,
                              size_t stack_size) NACL_WUR;
-int NaClThreadJoin(struct NaClThread *ntp);
-int NaClThreadTryJoin(struct NaClThread *ntp);
-int NaClThreadTimedJoin(struct NaClThread *ntp, time_t timeout);
+void NaClThreadJoin(struct NaClThread *ntp);
 
 /*
  * NaClThreadExit() terminates the current thread.

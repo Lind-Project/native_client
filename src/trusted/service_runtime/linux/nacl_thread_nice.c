@@ -43,18 +43,20 @@ int nacl_thread_nice(int nacl_nice) {
 
   switch (nacl_nice) {
     case NICE_REALTIME:
-      /* else no RT priviledges and all through to NICE_NORMAL */
-      if (0 == setpriority(PRIO_PROCESS, 0, kRealTimePriority))
+      if (0 == setpriority(PRIO_PROCESS, 0, kRealTimePriority)) {
         return 0;  /* success */
-      /* fallthrough */
+      }
+      /* Sorry; no RT priviledges. Fall through to NICE_NORMAL */
     case NICE_NORMAL:
-      if (0 == setpriority(PRIO_PROCESS, 0, kNormalPriority))
+      if (0 == setpriority(PRIO_PROCESS, 0, kNormalPriority)) {
         return 0;  /* success */
+      }
       handle_warning_en(errno, "setpriority\n");
       break;
     case NICE_BACKGROUND:
-      if (0 == setpriority(PRIO_PROCESS, 0, kBackgroundPriority))
+      if (0 == setpriority(PRIO_PROCESS, 0, kBackgroundPriority)) {
         return 0;  /* success */
+      }
       handle_warning_en(errno, "setpriority\n");
       break;
     default:
