@@ -90,6 +90,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   /* store cage_ids in both master and parent */
   nap_master->children_ids[nap_master->num_children++] = nap_child->cage_id;
   nap_parent->children_ids[nap_parent->num_children++] = nap_child->cage_id;
+  if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child))
+    NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
   if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
   DPRINTF("Master new child count: %d\n", nap_master->num_children);
@@ -323,6 +325,7 @@ static INLINE int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, v
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp  *nap = natp->nap;
+  struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
   int             master_idx;
   int             parent_idx;
@@ -333,14 +336,17 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    */
   DPRINTF("[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
-  if (nap_master && nap->parent) {
+  if (nap_master && nap_parent) {
     /*
      * remove self from parent's list of children
      */
     NaClXMutexLock(&nap_master->children_mu);
-    DPRINTF("Decrementing parent child count for cage id: %d\n", nap->parent->cage_id);
+    if (nap_master != nap_parent) {
+      NaClXMutexLock(&nap_parent->children_mu);
+    }
+    DPRINTF("Decrementing parent child count for cage id: %d\n", nap_parent->cage_id);
     master_idx = GetChildIdx(nap_master->children_ids, nap_master->num_children, nap->cage_id);
-    parent_idx = GetChildIdx(nap->parent->children_ids, nap->parent->num_children, nap->cage_id);
+    parent_idx = GetChildIdx(nap_parent->children_ids, nap_parent->num_children, nap->cage_id);
     if (master_idx == -1) {
       DPRINTF("Index not found in master array: cage_id = %d\n", nap->cage_id);
       master_idx = 0;
@@ -350,15 +356,22 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
       parent_idx = 0;
     }
     nap_master->children_ids[master_idx] = 0;
-    nap->parent->children_ids[parent_idx] = 0;
+    nap_parent->children_ids[parent_idx] = 0;
+    if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
+      DPRINTF("Failed to remove child from parent list: cage_id = %d\n", nap->cage_id);
+    }
     if (!DynArraySet(&nap_master->children, nap->cage_id, NULL)) {
-      NaClLog(LOG_FATAL, "Failed to remove child: cage_id = %d\n", nap->cage_id);
+      DPRINTF("Failed to remove child master list: cage_id = %d\n", nap->cage_id);
     }
     DPRINTF("Master new child count: %d\n", --nap_master->num_children);
-    DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
+    DPRINTF("Parent new child count: %d\n", --nap_parent->num_children);
     DPRINTF("Signaling master from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap_master->children_cv);
     NaClXMutexUnlock(&nap_master->children_mu);
+    if (nap_master != nap_parent) {
+      NaClXCondVarBroadcast(&nap_parent->children_cv);
+      NaClXMutexUnlock(&nap_parent->children_mu);
+    }
   }
 
   /* cleanup list of children */
