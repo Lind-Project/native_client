@@ -44,7 +44,7 @@
  * for host-OS descriptors).
  */
 
-struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
+extern struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
 
 static int NaClDescIoDescSubclassCtor(struct NaClDescIoDesc  *self,
                                       struct NaClHostDesc    *hd) {

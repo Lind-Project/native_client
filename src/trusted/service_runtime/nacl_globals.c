@@ -17,6 +17,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
+#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
 struct NaClThreadContext    *nacl_user[NACL_THREAD_MAX] = {NULL};
 #if NACL_WINDOWS
@@ -29,10 +30,14 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
  */
 uintptr_t                   nacl_global_xlate_base;
 
+// yiwen
+int nacl_syscall_counter;
+int nacl_syscall_trace_level_counter;
+int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
+double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
+
 void NaClGlobalModuleInit(void) {
   NaClInitGlobals();
 }
 
-
-void  NaClGlobalModuleFini(void) {
-}
+void NaClGlobalModuleFini(void) { /* no-op */ }

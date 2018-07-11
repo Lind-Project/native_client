@@ -5,6 +5,9 @@
  *      Author: sji
  */
 
+#ifdef _POSIX_C_SOURCE
+# undef _POSIX_C_SOURCE
+#endif
 
 #include <Python.h>
 
@@ -12,6 +15,10 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+// yiwen: added header files
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -29,16 +36,22 @@
 #include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 
 
-#define GOTO_ERROR_IF_NULL(x) if(!(x)) {goto error;}
+#define GOTO_ERROR_IF_NULL(x) if (!(x)) { goto error; }
 
-extern PyObject* context;
+extern PyObject *py_context;
 
 #define MAX_INARGS 16
 #define MAX_OUTARGS 16
 
-typedef enum _LindArgType {AT_INT, AT_STRING, AT_STRING_OPTIONAL, AT_DATA, AT_DATA_OPTIONAL} LindArgType;
+typedef enum _LindArgType {
+    AT_INT,
+    AT_STRING,
+    AT_STRING_OPTIONAL,
+    AT_DATA,
+    AT_DATA_OPTIONAL
+} LindArgType;
 
-struct NaClDescVtbl const kNaClDescIoDescVtbl;
+extern struct NaClDescVtbl const kNaClDescIoDescVtbl;
 
 typedef struct _LindArg
 {
@@ -61,20 +74,20 @@ typedef int(*CleanupType)(struct NaClApp*, uint32_t, LindArg*, void*);
 typedef struct _StubType {PreprocessType pre; PostprocessType post; CleanupType clean;} StubType;
 
 static int NaClFdToRepyFD(struct NaClApp *nap, int NaClFd) {
-	struct NaClDesc *ndp;
-	int retval;
-	NaClFastMutexLock(&nap->desc_mu);
-	ndp = NaClGetDescMu(nap, NaClFd);
-	NaClFastMutexUnlock(&nap->desc_mu);
-	if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
-		retval = -1;
-		goto cleanup;
-	}
-	retval = ((struct NaClDescIoDesc *)ndp)->hd->d;
+        struct NaClDesc *ndp;
+        int retval;
+        NaClFastMutexLock(&nap->desc_mu);
+        ndp = NaClGetDescMu(nap, NaClFd);
+        NaClFastMutexUnlock(&nap->desc_mu);
+        if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+                retval = -1;
+                goto cleanup;
+        }
+        retval = ((struct NaClDescIoDesc *)ndp)->hd->d;
 cleanup:
-	NaClDescSafeUnref(ndp);
-	NaClLog(3, "NaClFdToRepyFD: %d->%d\n", NaClFd, retval);
-	return retval;
+        NaClDescSafeUnref(ndp);
+        NaClLog(1, "NaClFdToRepyFD: %d->%d\n", NaClFd, retval);
+        return retval;
 }
 
 static int NaClHostDescCtor(struct NaClHostDesc  *d,
@@ -82,121 +95,120 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
                             int flags) {
   d->d = fd;
   d->flags = flags;
-  NaClLog(3, "NaClHostDescCtor: success.\n");
+  NaClLog(1, "%s\n", "NaClHostDescCtor: success.");
   return 0;
 }
 
 struct FcntlExchangeData {
-	struct NaClHostDesc* nhd;
-	int minFd;
+        struct NaClHostDesc *nhd;
+        int minFd;
 };
 
-int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata) {
-	int retval;
-	int lindFd;
-	NaClLog(3, "Entered LindFcntlPreprocess inNum=%8u\n", inNum);
-	*xchangedata = 0;
-	lindFd = NaClFdToRepyFD(nap, (int)(*(int64_t*)&inArgs[0].ptr));
-	if(lindFd<0) {
-		retval = -NACL_ABI_EINVAL;
-		goto cleanup;
-	}
-	inArgs[0].ptr = lindFd;
-	if(inNum>=3 && (inArgs[1].ptr == 0 /*F_DUPFD*/ || inArgs[1].ptr == 1030 /*F_DUPFD_CLOEXEC*/)) {
-		*xchangedata = (struct FcntlExchangeData*)malloc(sizeof(struct FcntlExchangeData));
-		if(!*xchangedata) {
-			retval = -NACL_ABI_ENOMEM;
-			goto cleanup;
-		}
-		((struct FcntlExchangeData*)(*xchangedata))->nhd = (struct NaClHostDesc*)malloc(sizeof(struct NaClHostDesc));
-		if(!((struct FcntlExchangeData*)(*xchangedata))->nhd) {
-			retval = -NACL_ABI_ENOMEM;
-			free(*xchangedata);
-			goto cleanup;
-		}
-		((struct FcntlExchangeData*)(*xchangedata))->minFd = (int)(*(int64_t*)&inArgs[2].ptr);
-		NaClLog(3, "MinFD: %d\n", ((struct FcntlExchangeData*)(*xchangedata))->minFd);
-	}
-	retval = 0;
-	cleanup:
-	NaClLog(3, "Exiting LindFcntlPreprocess\n");
-	return retval;
+int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata) {
+        int retval;
+        int lindFd;
+        NaClLog(1, "Entered LindFcntlPreprocess inNum=%8u\n", inNum);
+        *xchangedata = 0;
+        lindFd = NaClFdToRepyFD(nap, (int)(*(int64_t*)&inArgs[0].ptr));
+        if(lindFd<0) {
+                retval = -NACL_ABI_EINVAL;
+                goto cleanup;
+        }
+        inArgs[0].ptr = lindFd;
+        if(inNum>=3 && (inArgs[1].ptr == 0 /*F_DUPFD*/ || inArgs[1].ptr == 1030 /*F_DUPFD_CLOEXEC*/)) {
+                *xchangedata = (struct FcntlExchangeData*)malloc(sizeof(struct FcntlExchangeData));
+                if(!*xchangedata) {
+                        retval = -NACL_ABI_ENOMEM;
+                        goto cleanup;
+                }
+                ((struct FcntlExchangeData*)(*xchangedata))->nhd = (struct NaClHostDesc*)malloc(sizeof(struct NaClHostDesc));
+                if(!((struct FcntlExchangeData*)(*xchangedata))->nhd) {
+                        retval = -NACL_ABI_ENOMEM;
+                        free(*xchangedata);
+                        goto cleanup;
+                }
+                ((struct FcntlExchangeData*)(*xchangedata))->minFd = (int)(*(int64_t *)&inArgs[2].ptr);
+                NaClLog(1, "MinFD: %d\n", ((struct FcntlExchangeData*)(*xchangedata))->minFd);
+        }
+        retval = 0;
+cleanup:
+        NaClLog(1, "%s\n", "Exiting LindFcntlPreprocess");
+        return retval;
 }
 
-int LindFcntlPostprocess(struct NaClApp *nap, int iserror, int* code, char* data, int len, void* xchangedata) {
-	struct NaClHostDesc  *hd;
-	int minFd;
-	UNREFERENCED_PARAMETER(nap);
-	UNREFERENCED_PARAMETER(iserror);
-	UNREFERENCED_PARAMETER(data);
-	UNREFERENCED_PARAMETER(len);
-	NaClLog(3, "Entered LindFcntlPostprocess\n");
-	if(xchangedata) {
-		hd = ((struct FcntlExchangeData*)xchangedata)->nhd;
-		NaClHostDescCtor(hd, *code, NACL_ABI_O_RDWR);
-		minFd = ((struct FcntlExchangeData*)xchangedata)->minFd;
-		NaClLog(3, "Try to find a valid FD: %d\n", minFd);
-		NaClFastMutexLock(&nap->desc_mu);
-		while(DynArrayGet(&nap->desc_tbl, minFd)) {
-			++minFd;
-		}
-		NaClLog(3, "Found a valid FD: %d\n", minFd);
-		if (!DynArraySet(&nap->desc_tbl, minFd, ((struct NaClDesc *) NaClDescIoDescMake(hd)))) {
-		NaClLog(LOG_FATAL,
-				"NaClSetDesc: could not set descriptor %d to 0x%08"
-				NACL_PRIxPTR"\n",
-				minFd,
-				(uintptr_t) hd);
-		}
-		NaClFastMutexUnlock(&nap->desc_mu);
-		*code = minFd;
-	}
-	NaClLog(3, "Exiting LindFcntlPostprocess\n");
-	return 0;
+int LindFcntlPostprocess(struct NaClApp *nap,
+                         int iserror,
+                         int *code,
+                         char *data,
+                         int len,
+                         void *xchangedata) {
+        struct NaClHostDesc  *hd;
+        int minFd;
+        UNREFERENCED_PARAMETER(nap);
+        UNREFERENCED_PARAMETER(iserror);
+        UNREFERENCED_PARAMETER(data);
+        UNREFERENCED_PARAMETER(len);
+        NaClLog(1, "%s\n", "Entered LindFcntlPostprocess");
+        if(xchangedata) {
+                hd = ((struct FcntlExchangeData*)xchangedata)->nhd;
+                NaClHostDescCtor(hd, *code, NACL_ABI_O_RDWR);
+                minFd = ((struct FcntlExchangeData*)xchangedata)->minFd;
+                NaClLog(1, "Try to find a valid FD: %d\n", minFd);
+                NaClFastMutexLock(&nap->desc_mu);
+                while(DynArrayGet(&nap->desc_tbl, minFd)) {
+                        ++minFd;
+                }
+                NaClLog(1, "Found a valid FD: %d\n", minFd);
+                if (!DynArraySet(&nap->desc_tbl, minFd, ((struct NaClDesc *) NaClDescIoDescMake(hd)))) {
+                NaClLog(LOG_FATAL,
+                                "NaClSetDesc: could not set descriptor %d to 0x%08"
+                                NACL_PRIxPTR"\n",
+                                minFd,
+                                (uintptr_t) hd);
+                }
+                NaClFastMutexUnlock(&nap->desc_mu);
+                *code = minFd;
+        }
+        NaClLog(1, "%s\n", "Exiting LindFcntlPostprocess");
+        return 0;
 }
 
-int LindFcntlCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void* xchangedata) {
-	UNREFERENCED_PARAMETER(nap);
-	UNREFERENCED_PARAMETER(inNum);
-	UNREFERENCED_PARAMETER(inArgs);
-	if(xchangedata) {
-		free(xchangedata);
-	}
-	return 0;
+int LindFcntlCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *xchangedata) {
+        UNREFERENCED_PARAMETER(nap);
+        UNREFERENCED_PARAMETER(inNum);
+        UNREFERENCED_PARAMETER(inArgs);
+        if(xchangedata) {
+                free(xchangedata);
+        }
+        return 0;
 }
 
 
-int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void* xchangedata)
+int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *xchangedata)
 {
     UNREFERENCED_PARAMETER(nap);
     UNREFERENCED_PARAMETER(inNum);
     if(xchangedata) {
-		if(inArgs[1].ptr) {
-			free((void*)inArgs[1].ptr);
-		}
-		if(inArgs[2].ptr) {
-			free((void*)inArgs[2].ptr);
-		}
-		if(inArgs[3].ptr) {
-			free((void*)inArgs[3].ptr);
-		}
-    	free(xchangedata);
+        free((void *)inArgs[1].ptr);
+        free((void *)inArgs[2].ptr);
+        free((void *)inArgs[3].ptr);
+        free(xchangedata);
     }
     return 0;
 }
 
-int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, void** xchangedata)
+int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata)
 {
     struct NaClDesc *ndp = NULL;
     int hfd;
     int retval = 0;
-    int* mapdata;
+    int *mapdata;
     fd_set rs;
     fd_set ws;
     fd_set es;
     int64_t max_fd;
     int64_t max_hfd = -1;
-    NaClLog(3, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
+    NaClLog(1, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
     max_fd = *(int64_t*)&inArgs[0].ptr;
     if(inArgs[1].ptr) {
         rs = *(fd_set*)inArgs[1].ptr;
@@ -259,22 +271,22 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg* inArgs, v
                 goto cleanup_xdata;
             }
             if(inArgs[1].ptr && FD_ISSET(i, &rs)) {
-                NaClLog(3, "%d in RS with host desc %d\n", i, hfd);
+                NaClLog(1, "%d in RS with host desc %d\n", i, hfd);
                 FD_SET(hfd, (fd_set*)inArgs[1].ptr);
             }
             if(inArgs[2].ptr && FD_ISSET(i, &ws)) {
-                NaClLog(3, "%d in WS with host desc %d\n", i, hfd);
+                NaClLog(1, "%d in WS with host desc %d\n", i, hfd);
                 FD_SET(hfd, (fd_set*)inArgs[2].ptr);
             }
             if(inArgs[3].ptr && FD_ISSET(i, &es)) {
-                NaClLog(3, "%d in ES with host desc %d\n", i, hfd);
+                NaClLog(1, "%d in ES with host desc %d\n", i, hfd);
                 FD_SET(hfd, (fd_set*)inArgs[3].ptr);
             }
         }
     }
     *(int64_t*)&inArgs[0].ptr = max_hfd+1;
     ((int*)(*xchangedata))[0] = max_hfd+1;
-    NaClLog(3, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", *(int64_t*)&inArgs[0].ptr, max_fd);
+    NaClLog(1, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", *(int64_t*)&inArgs[0].ptr, max_fd);
     NaClFastMutexUnlock(&nap->desc_mu);
     goto finish;
 cleanup_xdata:
@@ -320,26 +332,26 @@ int LindSelectPostprocess(struct NaClApp *nap,
     for(int i=0; i<max_hfd; ++i) {
         if(FD_ISSET(i, &((struct select_results*)data)->r)) {
             if(-1 != mapdata[i]) {
-                NaClLog(3, "%d in RS with nacl desc %d\n", i, mapdata[i]);
+                NaClLog(1, "%d in RS with nacl desc %d\n", i, mapdata[i]);
                 FD_SET(mapdata[i], &rs);
             } else {
-                NaClLog(3, "%d in RS not valid, ignored\n", i);
+                NaClLog(1, "%d in RS not valid, ignored\n", i);
             }
         }
         if(FD_ISSET(i, &((struct select_results*)data)->w)) {
             if(-1 != mapdata[i]) {
-                NaClLog(3, "%d in WS with nacl desc %d\n", i, mapdata[i]);
+                NaClLog(1, "%d in WS with nacl desc %d\n", i, mapdata[i]);
                 FD_SET(mapdata[i], &ws);
             } else {
-                NaClLog(3, "%d in WS not valid, ignored\n", i);
+                NaClLog(1, "%d in WS not valid, ignored\n", i);
             }
         }
         if(FD_ISSET(i, &((struct select_results*)data)->e)) {
             if(-1 != mapdata[i]) {
-                NaClLog(3, "%d in ES with nacl desc %d\n", i, mapdata[i]);
+                NaClLog(1, "%d in ES with nacl desc %d\n", i, mapdata[i]);
                 FD_SET(mapdata[i], &es);
             } else {
-                NaClLog(3, "%d in ES not valid, ignored\n", i);
+                NaClLog(1, "%d in ES not valid, ignored\n", i);
             }
         }
     }
@@ -385,25 +397,25 @@ cleanup: \
     return retval
 
 #define CONVERT_NACL_DESC_TO_LIND_AND_ALLOC_RET_DESC(x) \
-    int retval = 0; \
-    struct NaClDesc* ndp; \
-    UNREFERENCED_PARAMETER(inNum); \
-    *xchangedata = malloc(sizeof(struct NaClHostDesc)); \
-    if (NULL == *xchangedata) { \
-      retval = -NACL_ABI_ENOMEM; \
-      goto cleanup; \
-    } \
-    NaClFastMutexLock(&nap->desc_mu); \
-    ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
-    NaClFastMutexUnlock(&nap->desc_mu); \
-    if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) { \
-        retval = -NACL_ABI_EINVAL; \
+      int retval = 0; \
+      struct NaClDesc *ndp = {0}; \
+      UNREFERENCED_PARAMETER(inNum); \
+      *xchangedata = malloc(sizeof(struct NaClHostDesc)); \
+      if (NULL == *xchangedata) { \
+        retval = -NACL_ABI_ENOMEM; \
         goto cleanup; \
-    } \
-    *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
+      } \
+      NaClFastMutexLock(&nap->desc_mu); \
+      ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr)); \
+      NaClFastMutexUnlock(&nap->desc_mu); \
+      if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) { \
+          retval = -NACL_ABI_EINVAL; \
+          goto cleanup; \
+      } \
+      *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d; \
 cleanup: \
-    NaClDescSafeUnref(ndp); \
-    return retval
+      NaClDescSafeUnref(ndp); \
+      return retval
 
 #define BUILD_AND_RETURN_NACL_DESC() \
     int retval = 0; \
@@ -847,11 +859,23 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         DumpArg(&outArgSys[i]);
     }*/
 
+    // yiwen: handle lind_pipe here.
+    //        the pipe() call should initialize the pipe buffer
+    //        and returns two fds for the pipe
+    if (callNum == 61) {
+        int data[2] = {9001, 9002};
+        int len = 8;
+        int error = NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, data, len);
+        if (!error)
+            NaClLog(LOG_ERROR, "NaClCopyOutToUser: failed! \n");
+        retval = 0;
+        goto cleanup;
+    }
+
     if(stubs[callNum].pre) {
         retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
-        if(retval) {
+        if(retval)
             goto cleanup;
-        }
     }
 
     callArgs = PyList_New(0);
@@ -862,8 +886,10 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     for(i=0; i<inNum; ++i) {
         switch(inArgSys[i].type) {
         case AT_INT:
-            NaClLog(3, "Int argument: %"NACL_PRId64", %"NACL_PRIu64"\n", *(int64_t*)&inArgSys[i].ptr, inArgSys[i].len);
-            PyList_Append(callArgs, PyInt_FromLong(*(int64_t*)&inArgSys[i].ptr));
+            NaClLog(1, "Int argument: %" NACL_PRId64 ", %" NACL_PRIu64 "\n",
+                    *(int64_t *)&inArgSys[i].ptr,
+                    inArgSys[i].len);
+            PyList_Append(callArgs, PyInt_FromLong(*(int64_t *)&inArgSys[i].ptr));
             break;
         case AT_STRING:
         case AT_STRING_OPTIONAL:
@@ -875,16 +901,18 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
                         NaClLog(LOG_ERROR, "NaClSysLindSyscall: input string is empty\n");
                         retval = -NACL_ABI_EFAULT;
                     } else {
-                        NaClLog(LOG_ERROR, "NaClSysLindSyscall: input string is too long (>%d)\n", NACL_CONFIG_PATH_MAX);
+                        NaClLog(LOG_ERROR,
+                                "NaClSysLindSyscall: input string is too long (>%d)\n",
+                                NACL_CONFIG_PATH_MAX);
                         retval = -NACL_ABI_ENAMETOOLONG;
                     }
                     goto cleanup;
                 }
                 gstate = PyGILState_Ensure();
-                NaClLog(3, "String argument: %s\n", stringArg);
+                NaClLog(1, "String argument: %s\n", stringArg);
                 PyList_Append(callArgs, PyString_FromString(stringArg));
             } else if(inArgSys[i].type == AT_STRING_OPTIONAL) {
-                NaClLog(3, "Optional empty string argument\n");
+                NaClLog(1, "%s\n", "Optional empty string argument");
                 PyList_Append(callArgs, Py_None);
                 Py_INCREF(Py_None);
             } else {
@@ -896,14 +924,16 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         case AT_DATA:
         case AT_DATA_OPTIONAL:
             if(inArgSys[i].ptr) {
-                NaClLog(3, "Data argument of length: %u\n", (unsigned int)inArgSys[i].len);
+                NaClLog(1, "Data argument of length: %u\n", (unsigned int)inArgSys[i].len);
                 PyGILState_Release(gstate);
                 NaClXMutexLock(&nap->mu);
                 gstate = PyGILState_Ensure();
-                PyList_Append(callArgs, PyString_FromStringAndSize((char*)inArgSys[i].ptr, inArgSys[i].len));
+                PyList_Append(callArgs,
+                              PyString_FromStringAndSize((char *)inArgSys[i].ptr,
+                              inArgSys[i].len));
                 NaClXMutexUnlock(&nap->mu);
             } else if(inArgSys[i].type == AT_DATA_OPTIONAL) {
-                NaClLog(3, "Optional empty data argument\n");
+                NaClLog(1, "%s\n", "Optional empty data argument");
                 PyList_Append(callArgs, Py_None);
                 Py_INCREF(Py_None);
             } else {
@@ -919,7 +949,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
-    response = CallPythonFunc(context, "LindSyscall", apiArg);
+    response = CallPythonFunc(py_context, "LindSyscall", apiArg);
     GOTO_ERROR_IF_NULL(response);
     ParseResponse(response, &_isError, &_code, &_data, &_len);
     if(!_isError) {
@@ -929,25 +959,34 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         if(outNum == 1) {
             assert(((unsigned int)_len)<=outArgSys[0].len);
             PyGILState_Release(gstate);
-            if(outArgSys[0].ptr && !NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, _data, _len)) {
-            	gstate = PyGILState_Ensure();
-                retval = -NACL_ABI_EFAULT;
-                goto cleanup;
+            if(outArgSys[0].ptr && !NaClCopyOutToUser(nap,
+                                                      (uintptr_t)outArgSys[0].ptr,
+                                                      _data,
+                                                      _len)) {
+                 gstate = PyGILState_Ensure();
+                 retval = -NACL_ABI_EFAULT;
+                 goto cleanup;
             }
             gstate = PyGILState_Ensure();
         } else if (outNum > 1) {
             offset = 0;
             for(i=0; i<outNum; ++i) {
-                NaClLog(3, "Out#%d, len=%"NACL_PRIu32", maxlen=%"NACL_PRIu64"\n",i, (unsigned int)(((int*)_data)[i]), outArgSys[i].len);
-                assert(((unsigned int)(((int*)_data)[i]))<=outArgSys[i].len);
+                NaClLog(1, "Out#%d, len = %" NACL_PRIu32
+                        "maxlen=%" NACL_PRIu64 "\n",
+                        i, (unsigned int)(((int *)_data)[i]),
+                        outArgSys[i].len);
+                CHECK(((unsigned int)(((int*)_data)[i])) <= outArgSys[i].len);
                 PyGILState_Release(gstate);
-                if(outArgSys[i].ptr && !NaClCopyOutToUser(nap, (uintptr_t)outArgSys[i].ptr, _data+sizeof(int)*outNum+offset, ((int*)_data)[i])) {
-                	gstate = PyGILState_Ensure();
+                if(outArgSys[i].ptr && !NaClCopyOutToUser(nap,
+                                                          (uintptr_t)outArgSys[i].ptr,
+                                                          _data + sizeof(int) * outNum+offset,
+                                                          ((int *)_data)[i])) {
+                    gstate = PyGILState_Ensure();
                     retval = -NACL_ABI_EFAULT;
                     goto cleanup;
                 }
                 gstate = PyGILState_Ensure();
-                offset += ((int*)_data)[i];
+                offset += ((int *)_data)[i];
             }
         }
     }
@@ -963,5 +1002,12 @@ cleanup:
     Py_XDECREF(apiArg);
     Py_XDECREF(response);
     PyGILState_Release(gstate);
+
+    // yiwen: record the ending time of the Lind system call, this includes the post-processing of arguments right now
+    lind_sys_finish = clock();
+    // yiwen: record Lind system call timing info
+    lind_syscall_counter++;
+    lind_syscall_invoked_times[callNum]++;
+    lind_syscall_execution_time[callNum] += (double)(lind_sys_finish - lind_sys_begin) / CLOCKS_PER_SEC;
     return retval;
 }
