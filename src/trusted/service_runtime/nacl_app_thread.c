@@ -50,21 +50,20 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
   struct NaClApp *nap_parent = natp->nap;
   NaClErrorCode *mod_status = NULL;
-  int newfd = 0;
 
   CHECK(nap_master);
   CHECK(nap_parent);
   CHECK(nap_child);
 
   DPRINTF("%s\n", "Entered NaClChildNapCtor()");
-  if (!NaClAppCtor(nap_child))
+  if (!NaClAppCtor(nap_child)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
-  /* NaClXMutexLock(&nap_child->mu); */
+  }
   mod_status = &nap_child->module_load_status;
   nap_child->command_num = nap_parent->command_num;
   nap_child->binary_path = nap_parent->binary_path;
   nap_child->binary_command = nap_parent->binary_command;
-  nap_child->nacl_file = nap_parent->nacl_file;
+  nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
   nap_child->fd = 3;
@@ -74,8 +73,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   DPRINTF("Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
 
   NaClXMutexLock(&nap_master->children_mu);
-  if (nap_master != nap_parent)
+  if (nap_master != nap_parent) {
     NaClXMutexLock(&nap_parent->children_mu);
+  }
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
   nap_child->parent_id = nap_parent->cage_id;
@@ -88,42 +88,42 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_parent->children_ids[nap_parent->num_children++] = nap_child->cage_id;
   if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
-  /* keep cage_ids unique */
   DPRINTF("Master new child count: %d\n", nap_master->num_children);
   DPRINTF("Parent new child count: %d\n", nap_parent->num_children);
   NaClXMutexUnlock(&nap_master->children_mu);
-  if (nap_master != nap_parent)
+  if (nap_master != nap_parent) {
     NaClXMutexUnlock(&nap_parent->children_mu);
-
-  if (!nap_child->nacl_file)
-    nap_child->nacl_file = LD_FILE;
+  }
 
   NaClAppInitialDescriptorHookup(nap_child);
   DPRINTF("fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-    DPRINTF("Error while loading \"%s\": %s\n",
-            nap_child->nacl_file,
-            NaClErrorString(*mod_status));
+    DPRINTF("Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
     DPRINTF("%s\n%s\n",
             "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
   }
 
-  if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK)
+  if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
     NaClLog(LOG_FATAL, "Failed to prepare child nap_parent for launch\n");
+  }
   DPRINTF("Loading blob file %s\n", nap_child->nacl_file);
-  if (!nap_child->validator->readonly_text_implemented)
+  if (!nap_child->validator->readonly_text_implemented) {
     NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
+  }
   DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
   nap_child->fixed_feature_cpu_mode = 1;
-  if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features))
+  if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
-  if (!NaClAppLaunchServiceThreads(nap_child))
+  }
+  if (!NaClAppLaunchServiceThreads(nap_child)) {
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
+  }
 
   for (int oldfd = 0; oldfd < CAGING_FD_NUM; oldfd++) {
     struct NaClDesc *old_nd;
+    int newfd;
     old_nd = NaClGetDesc(nap_parent, oldfd);
     if (!old_nd) {
       DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", oldfd - 1, newfd);
@@ -179,8 +179,9 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   NaClXMutexLock(&nap->children_mu);
   nap->num_threads = thread_idx + 1;
   natp->thread_num = thread_idx + 1;
-  if (!DynArraySet(&nap->threads, natp->thread_num, natp))
+  if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
     NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
+  }
   NaClXMutexUnlock(&nap->threads_mu);
   NaClXMutexUnlock(&nap->children_mu);
 
@@ -300,14 +301,16 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
 
-static int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, volatile sig_atomic_t cage_id) {
-        int ret;
-        /* return the index if match found */
-        for (ret = 0; ret < nmemb; ret++)
-                if (cage_id == id_list[ret])
-                        return ret;
-        /* otherwise return an error value */
-        return -1;
+static INLINE int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, volatile sig_atomic_t cage_id) {
+  int ret;
+  /* return the index if match found */
+  for (ret = 0; ret < nmemb; ret++) {
+    if (cage_id == id_list[ret]) {
+      return ret;
+    }
+  }
+  /* otherwise return an error value */
+  return -1;
 }
 
 /*
@@ -335,45 +338,29 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     master_idx = GetChildIdx(nap_master->children_ids, nap_master->num_children, nap->cage_id);
     parent_idx = GetChildIdx(nap->parent->children_ids, nap->parent->num_children, nap->cage_id);
     if (master_idx == -1) {
-      /* NaClLog(LOG_FATAL, "Index not found in master array: cage_id = %d\n", nap->cage_id); */
-      DPRINTF("Index not found in master array: cage_id = %d\n", nap->cage_id);
-      master_idx = 0;
+      NaClLog(LOG_FATAL, "Index not found in master array: cage_id = %d\n", nap->cage_id);
     }
     if (parent_idx == -1) {
-      /* NaClLog(LOG_FATAL, "Index not found in parent array: cage_id = %d\n", nap->cage_id); */
-      DPRINTF("Index not found in parent array: cage_id = %d\n", nap->cage_id);
-      parent_idx = 0;
+      NaClLog(LOG_FATAL, "Index not found in parent array: cage_id = %d\n", nap->cage_id);
     }
     nap_master->children_ids[master_idx] = 0;
     nap->parent->children_ids[parent_idx] = 0;
     if (!DynArraySet(&nap_master->children, nap->cage_id, NULL)) {
-      /* NaClLog(LOG_FATAL, "Failed to remove child: cage_id = %d\n", nap->cage_id); */
-      DPRINTF("Failed to remove child: cage_id = %d\n", nap->cage_id);
+      NaClLog(LOG_FATAL, "Failed to remove child: cage_id = %d\n", nap->cage_id);
     }
     DPRINTF("Master new child count: %d\n", --nap_master->num_children);
     DPRINTF("Parent new child count: %d\n", --nap->parent->num_children);
     DPRINTF("Signaling master from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap_master->children_cv);
     NaClXMutexUnlock(&nap_master->children_mu);
-    /*
-     * while (nap_master->num_children > 0)
-     *   NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
-     */
-    /*
-     * NaClXMutexLock(&nap->parent->mu);
-     * while (nap->parent->running)
-     *   NaClXCondVarWait(&nap->parent->cv, &nap->parent->mu);
-     * NaClXMutexUnlock(&nap->parent->mu);
-     */
-  } else {
-    DPRINTF("cage_id [%d] has no parent\n", nap->cage_id);
   }
 
   /* cleanup list of children */
   NaClXMutexLock(&nap->children_mu);
   DPRINTF("Thread children count: %d\n", nap->num_children);
-  while (nap->num_children > 0)
+  while (nap->num_children > 0) {
     NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
+  }
   NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
 
@@ -381,8 +368,9 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   if (nap_master && nap != nap_master) {
     NaClXMutexLock(&nap_master->children_mu);
     DPRINTF("Master children count: %d\n", nap_master->num_children);
-    while (nap_master->num_children > 0)
+    while (nap_master->num_children > 0) {
       NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
+    }
     NaClXCondVarBroadcast(&nap_master->children_cv);
     NaClXMutexUnlock(&nap_master->children_mu);
   }
