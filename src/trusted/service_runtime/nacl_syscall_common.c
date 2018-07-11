@@ -129,7 +129,8 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 #if !defined(SIZE_T_MAX)
 # define SIZE_T_MAX   (~(size_t)0ull)
 #endif
-#define FORK_TIMEOUT 10
+/* child initialization timeout */
+#define FORK_TIMEOUT 5
 /* fork semaphore used to synchronize parent and child -jp */
 #define SEM_SHARED 1
 #define SEM_PRIVATE 0
@@ -3937,7 +3938,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
   if (clock_gettime(CLOCK_REALTIME, &fork_ts) == -1)
     EPRINTF("clock_gettime(CLOCK_REALTIME, &ts) == -1: %s\n", strerror(errno));
-  /* fork_ts.tv_sec += FORK_TIMEOUT; */
+  fork_ts.tv_sec += FORK_TIMEOUT;
   while (sem_timedwait(&fork_sem, &fork_ts) == -1 && errno == EINTR);
 
 out:
