@@ -121,17 +121,17 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
   }
 
-  for (int oldfd = 0; oldfd < CAGING_FD_NUM; oldfd++) {
+  for (int old_fd = 0; old_fd < CAGING_FD_NUM; old_fd++) {
     struct NaClDesc *old_nd;
-    int newfd;
-    old_nd = NaClGetDesc(nap_parent, oldfd);
+    int new_fd;
+    old_nd = NaClGetDesc(nap_parent, old_fd);
     if (!old_nd) {
-      DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", oldfd - 1, newfd);
+      DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", old_fd - 1, new_fd - 1);
       break;
     }
-    newfd = NaClSetAvail(nap_child, old_nd);
-    NaClSetDesc(nap_child, newfd, old_nd);
-    fd_cage_table[nap_child->cage_id][newfd] = fd_cage_table[nap_parent->cage_id][oldfd];
+    new_fd = NaClSetAvail(nap_child, old_nd);
+    NaClSetDesc(nap_child, new_fd, old_nd);
+    fd_cage_table[nap_child->cage_id][new_fd] = fd_cage_table[nap_parent->cage_id][old_fd];
     nap_child->fd++;
   }
 
@@ -338,10 +338,12 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     master_idx = GetChildIdx(nap_master->children_ids, nap_master->num_children, nap->cage_id);
     parent_idx = GetChildIdx(nap->parent->children_ids, nap->parent->num_children, nap->cage_id);
     if (master_idx == -1) {
-      NaClLog(LOG_FATAL, "Index not found in master array: cage_id = %d\n", nap->cage_id);
+      DPRINTF("Index not found in master array: cage_id = %d\n", nap->cage_id);
+      master_idx = 0;
     }
     if (parent_idx == -1) {
-      NaClLog(LOG_FATAL, "Index not found in parent array: cage_id = %d\n", nap->cage_id);
+      DPRINTF("Index not found in parent array: cage_id = %d\n", nap->cage_id);
+      parent_idx = 0;
     }
     nap_master->children_ids[master_idx] = 0;
     nap->parent->children_ids[parent_idx] = 0;
@@ -528,24 +530,19 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   void *stack_ptr_child;
   size_t stack_ptr_offset;
   size_t base_ptr_offset;
-  struct NaClApp *nap_master;
-  struct NaClAppThread *natp_master;
   struct NaClAppThread *natp_child;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
 
-  if (!nap_parent->running)
+  if (!nap_parent->running) {
     return 0;
+  }
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
 
   /* make a copy of parent thread context */
-  natp_master = (struct NaClAppThread *)master_ctx;
-  nap_master = natp_master->nap;
   parent_ctx = natp_parent->user;
-
-  UNREFERENCED_PARAMETER(nap_master);
 
   /*
    * make space to copy the parent stack
@@ -557,14 +554,14 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   base_ptr_offset = parent_ctx.rbp - parent_ctx.rsp;
   usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
-  if (!natp_child)
+  if (!natp_child) {
     return 0;
+  }
 
   /* save child trampoline addresses and set cage_id */
   child_ctx = natp_child->user;
   /* copy parent page tables and execution context */
   NaClCopyExecutionContext(nap_parent, nap_child);
-  /* NaClCopyExecutionContext(nap_master, nap_child); */
   DPRINTF("fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
           fork_num,
           nap_child->cage_id,
@@ -573,7 +570,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   DPRINTF("%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
   natp_child->user = natp_parent->user;
-  /* natp_child->user = *master_ctx; */
   DPRINTF("%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
 
@@ -649,18 +645,10 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    *  _normally_, but in NaCl %rax is used for all
    *  syscall returns.
    *
-   *  TODO:
-   *  figure out what user.sysret is actually used
-   *  for; when you set it to anything except 0
-   *  everything breaks and i have no idea why...
-   *
    *  -jp
    */
-  /* natp_child->user.sysret = child_ctx.sysret; */
+  natp_child->user.rax = 0;
   natp_child->user.sysret = 0;
-  /* natp_child->user.rax = 0; */
-  natp_child->user.rbx = 0;
-  /* natp_child->user.rdx = 0; */
   natp_child->usr_syscall_args = natp_parent->usr_syscall_args;
 
   /*
@@ -670,13 +658,6 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.r15 = nap_child->mem_start;
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
   natp_child->user.rbp = child_ctx.rsp + base_ptr_offset;
-  DPRINTF("usr_syscall_args address (child: %p) (parent: %p))\n",
-          (void *)natp_child->usr_syscall_args,
-          (void *)natp_parent->usr_syscall_args);
-  DPRINTF("Registers after copy (%%rsp: %p) (%%rbp: %p) (%%r15: %p)\n",
-          (void *)natp_child->user.rsp,
-          (void *)natp_child->user.rbp,
-          (void *)natp_child->user.r15);
 
 #if defined(_DEBUG)
 # define NUM_STACK_VALS 16

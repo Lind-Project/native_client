@@ -3841,19 +3841,13 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NULL;
-  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   int ret;
   char **child_argv;
   int child_argc;
 
   DPRINTF("%s\n", "[NaClSysFork] NaCl fork starts!");
-  UNREFERENCED_PARAMETER(nap_master);
-
-  /* compiler memory barrier */
-  __asm__ __volatile__ ("":::"memory");
 
   /* parent */
-  DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
   child_argc = 3 + nap->command_num;
   child_argv = calloc(child_argc + 2, sizeof *child_argv);
   child_argv[0] = "NaClMain";
@@ -3867,33 +3861,16 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
      child_argv[4] = nap->binary_command;
      DPRINTF("[NaClSysFork] binary command: %s \n", nap->binary_command);
   }
-
-  /* compiler memory barrier */
-  __asm__ __volatile__ ("":::"memory");
-
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp);
-  NaClXMutexLock(&nap_child->fork_mu);
-  NaClXMutexLock(&nap->fork_mu);
   nap_child->running = 1;
   ret = nap_child->cage_id;
-  /* ret = 0; */
-  NaClXMutexUnlock(&nap->fork_mu);
-  NaClXMutexUnlock(&nap_child->fork_mu);
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     DPRINTF("%s\n", "[NaClSysFork] forking program failed!");
     ret = -ENOMEM;
     goto out;
   }
-
-  /* compiler memory barrier */
-  __asm__ __volatile__ ("":::"memory");
-
-  DPRINTF("child fork_state: [%d] parent fork state: [%d]\n",
-          nap_child->fork_state, nap->fork_state);
-  DPRINTF("[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n",
-          fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
-  DPRINTF("%s\n", "Waiting for child to finish initialization...");
+  DPRINTF("fork_num = %u, cage_id = u, parent_id = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 out:
   return ret;
