@@ -8,6 +8,14 @@
 #ifndef LIND_PLATFORM_H_
 #define LIND_PLATFORM_H_
 
+#ifdef _POSIX_C_SOURCE
+#  undef _POSIX_C_SOURCE
+#endif
+
+#ifdef _XOPEN_SOURCE
+#  undef _XOPEN_SOURCE
+#endif
+
 #include <sys/types.h>
 #if NACL_LINUX
 #include <sys/statfs.h>
@@ -82,6 +90,8 @@
 #define LIND_comp_accept                107
 #define LIND_comp_recv                  108
 
+// yiwen: we should define the MAX system call number
+#define LIND_MAX_SYSCALLS               110
 
 struct select_results {
     struct timeval used_t;
@@ -130,7 +140,7 @@ int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr
 int lind_listen (int sockfd, int backlog);
 int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr_in *dest_addr, const void *buf);
 int lind_accept (int sockfd, socklen_t addrlen);
-int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
+int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, const socklen_t *addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, socklen_t optlen, const void *optval);
 int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void *optval);
 int lind_shutdown (int sockfd, int how);
