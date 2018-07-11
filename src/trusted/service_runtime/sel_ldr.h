@@ -28,6 +28,9 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_
 #define NATIVE_CLIENT_SRC_TRUSTED_SERVICE_RUNTIME_SEL_LDR_H_ 1
 
+#include <signal.h>
+#include <stdbool.h>
+
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/include/portability.h"
@@ -35,6 +38,7 @@
 
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_log.h"
+#include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_threads.h"
 
 #include "native_client/src/shared/srpc/nacl_srpc.h"
@@ -57,13 +61,15 @@
 #include "native_client/src/trusted/service_runtime/name_service/name_service.h"
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
+// yiwen
+#include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 EXTERN_C_BEGIN
 
 #define NACL_SERVICE_PORT_DESCRIPTOR    3
 #define NACL_SERVICE_ADDRESS_DESCRIPTOR 4
 
-#define NACL_DEFAULT_STACK_MAX  (16 << 20)  /* main thread stack */
+#define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
 
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
@@ -74,6 +80,18 @@ struct NaClSignalContext;
 struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
+
+struct Pipe {
+  bool xfer_done;
+  unsigned char pipe_buf[PIPE_BUF_MAX];
+  struct NaClMutex mu;
+  struct NaClCondVar cv;
+};
+
+extern volatile sig_atomic_t fork_num;
+extern struct Pipe pipe_table[PIPE_NUM_MAX];
+extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
+extern int cached_lib_num;
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -107,6 +125,36 @@ struct NaClSpringboardInfo {
 };
 
 struct NaClApp {
+  /*
+   * children table lock children_mu is higher in the locking order than
+   * the thread locks, i.e., children_mu must be acqured w/o holding
+   * any thread table or per-thread lock (threads_mu or natp->mu).
+   *
+   * -jp
+   */
+  struct NaClMutex          children_mu;
+  struct NaClCondVar        children_cv;
+  struct DynArray           children;
+  // yiwen: store the <file_path, fd, mem_addr> for each cage, fd is used as the index
+  struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
+  /* mappings of `int fd` numbers to `NaClDesc *` */
+  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
+  volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
+  volatile sig_atomic_t     num_children;
+  volatile sig_atomic_t     cage_id;
+  volatile sig_atomic_t     num_lib;
+  volatile sig_atomic_t     parent_id;
+  struct NaClApp            *parent;
+  struct NaClApp            *master;
+
+  // yiwen: store the path of the execuable running inside this cage(as the main thread)
+  int                       command_num;
+  char                      *binary_path;
+  char                      *binary_command;
+  char                      *nacl_file;
+  /* set to the next unused (available for dup() etc.) file descriptor */
+  int                       fd;
+
   /*
    * public, user settable prior to app start.
    */
@@ -549,7 +597,7 @@ int NaClAddrIsValidEntryPt(struct NaClApp *nap,
  */
 void NaClAddHostDescriptor(struct NaClApp *nap,
                            int            host_os_desc,
-                           int            mode,
+                           int            flag,
                            int            nacl_desc);
 
 /*
@@ -588,6 +636,12 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status);
  */
 uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
 
+// yiwen
+void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr);
+void NaClLogSysMemoryContent(uintptr_t sysaddr);
+void NaClLogThreadContext(struct NaClAppThread *natp);
+void NaClPrintAddressSpaceLayout(struct NaClApp *nap);
+
 /*
  * Used to launch the main thread.  NB: calling thread may in the
  * future become the main NaCl app thread, and this function will
@@ -599,6 +653,14 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                          int                argc,
                          char               **argv,
                          char const *const  *envp) NACL_WUR;
+
+/* jp */
+int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
+                             struct NaClAppThread     *natp_parent,
+                             struct NaClApp           *nap_child,
+                             int                      argc,
+                             char                     **argv,
+                             char const *const        *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
@@ -615,7 +677,7 @@ void NaClLoadTrampoline(struct NaClApp *nap);
 
 void NaClLoadSpringboard(struct NaClApp  *nap);
 
-static const uintptr_t kNaClBadAddress = (uintptr_t) -1;
+static const uintptr_t kNaClBadAddress = (uintptr_t)-1;
 
 #include "native_client/src/trusted/service_runtime/sel_ldr-inl.h"
 
@@ -855,6 +917,38 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
   UNREFERENCED_PARAMETER(argv_p);
 }
 #endif
+
+/*
+ * Passed to NaClVmmapVisit in order to copy a memory region from
+ * an NaClApp to a child process (used when forking).
+ *
+ * preconditions:
+ * * target_state must be a pointer to a valid, initialized NaClApp
+ */
+void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry);
+
+/*
+ * Copy the entire address space of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child);
+
+/*
+ * Copy the entire address execution context of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `child` must be a pointer to a valid, initialized NaClApp
+ * * Caller must hold both the nap->mu and the child->mu mutexes
+ */
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+
+/* Set up the fd table for each cage */
+void InitializeCage(struct NaClApp *nap, int cage_id);
 
 EXTERN_C_END
 

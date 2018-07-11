@@ -68,12 +68,11 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat    *dst,
       break;
 #endif
     default:
-      NaClLog(LOG_INFO,
-              ("NaClAbiStatHostDescStatXlateCtor:"
-               " Unusual NaCl descriptor type (not constructible)."
-               " The NaCl app has a file with st_mode = 0%o."
-               " (This is normal for std{in,out,err}, or other"
-               " inherited/injected files.)\n"),
+      NaClLog(1, "NaClAbiStatHostDescStatXlateCtor:"
+              " Unusual NaCl descriptor type (not constructible)."
+              " The NaCl app has a file with st_mode = 0%o."
+              " (This is normal for std{in,out,err}, or other"
+              " inherited/injected files.)\n",
               src->st_mode);
       m = NACL_ABI_S_UNSUP;
   }

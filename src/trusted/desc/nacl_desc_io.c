@@ -44,7 +44,7 @@
  * for host-OS descriptors).
  */
 
-struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
+extern struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
 
 static int NaClDescIoDescSubclassCtor(struct NaClDescIoDesc  *self,
                                       struct NaClHostDesc    *hd) {
@@ -63,7 +63,9 @@ int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
   struct NaClDesc *basep = (struct NaClDesc *) self;
   int rv;
 
-  basep->base.vtbl = (struct NaClRefCountVtbl const *) NULL;
+  if (!basep)
+    return -NACL_ABI_EBADF;
+  basep->base.vtbl = 0;
   if (!NaClDescCtor(basep)) {
     return 0;
   }
@@ -71,8 +73,8 @@ int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
   if (!rv) {
     (*NACL_VTBL(NaClRefCount, basep)->Dtor)((struct NaClRefCount *) basep);
   }
-  (*NACL_VTBL(NaClDesc, basep)->
-   SetFlags)(basep, hd->flags & NACL_ABI_O_ACCMODE);
+  if (hd)
+    NACL_VTBL(NaClDesc, basep)->SetFlags(basep, hd->flags & NACL_ABI_O_ACCMODE);
   return rv;
 }
 
@@ -170,6 +172,9 @@ struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
                                           int mode,
                                           int perms) {
   struct NaClHostDesc *nhdp;
+
+  // yiwen: debug
+  // printf("\n [***Debug!***][NaClDescIoDesc] opening file: %s \n", path);
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
@@ -406,7 +411,8 @@ int NaClDescIoInternalize(struct NaClDesc               **out_desc,
   struct NaClDescIoDesc *ndidp;
 
   UNREFERENCED_PARAMETER(quota_interface);
-  rv = -NACL_ABI_EIO;  /* catch-all */
+  /* catch-all */
+  /* rv = -NACL_ABI_EIO; */
   h = NACL_INVALID_HANDLE;
   nhdp = NULL;
   ndidp = NULL;

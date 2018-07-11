@@ -150,6 +150,11 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 };
 
+/* jp */
+struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp);
+
+//yiwen
+void WINAPI NaClAppForkThreadLauncher(void *state);
 void WINAPI NaClAppThreadLauncher(void *state);
 
 void NaClAppThreadTeardown(struct NaClAppThread *natp);
@@ -179,6 +184,15 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
                        uint32_t       user_tls1,
                        uint32_t       user_tls2) NACL_WUR;
 
+// yiwen
+int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
+                           struct NaClAppThread     *natp_parent,
+                           struct NaClApp           *nap_child,
+                           uintptr_t                usr_entry,
+                           uintptr_t                usr_stack_ptr,
+                           uint32_t                 user_tls1,
+                           uint32_t                 user_tls2) NACL_WUR;
+
 void NaClAppThreadDelete(struct NaClAppThread *natp);
 
 /*
@@ -195,6 +209,9 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   NACL_COMPILE_TIME_ASSERT(offsetof(struct NaClAppThread, user) == 0);
   return (struct NaClAppThread *) ntcp;
 }
+
+// yiwen
+void NaClAppThreadPrintInfo(struct NaClAppThread *natp);
 
 EXTERN_C_END
 
