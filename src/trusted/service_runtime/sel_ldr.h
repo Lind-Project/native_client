@@ -152,7 +152,7 @@ struct NaClApp {
   char                      *binary_path;
   char                      *binary_command;
   char                      *nacl_file;
-  // yiwen: record the current fd number(largest) assigned by this cage
+  /* set to the next unused (available for dup() etc.) file descriptor */
   int                       fd;
 
   /*
