@@ -29,9 +29,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/* jp */
-#include <semaphore.h>
-
 // yiwen
 #include <time.h>
 
@@ -129,13 +126,6 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 #if !defined(SIZE_T_MAX)
 # define SIZE_T_MAX   (~(size_t)0ull)
 #endif
-/* child initialization timeout */
-#define FORK_TIMEOUT 5
-/* fork semaphore used to synchronize parent and child -jp */
-#define SEM_SHARED 1
-#define SEM_PRIVATE 0
-static sem_t fork_sem, *sem_ptr;
-static struct timespec fork_ts;
 
 static const size_t kMaxUsableFileSize = (SIZE_T_MAX >> 1);
 
@@ -3862,30 +3852,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");
 
-  /* initialize semaphore if needed */
-  if (!sem_ptr) {
-    if (sem_init(&fork_sem, SEM_PRIVATE, 0) == -1)
-      EPRINTF("sem_init(&fork_sem, SEM_PRIVATE, 0) == -1: %s\n", strerror(errno));
-    sem_ptr = &fork_sem;
-  }
-
-  /* child */
-  if (nap->fork_state) {
-    NaClAppThreadPrintInfo(natp);
-    DPRINTF("%s\n", "[NaClSysFork] This is the child of fork()");
-    DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
-    DPRINTF("         natp = %p\n", (void *)natp);
-    DPRINTF("          nap = %p\n", (void *)nap);
-    DPRINTF("    usr_entry = %p\n", (void *)natp->user.new_prog_ctr);
-    DPRINTF("usr_stack_ptr = %p\n", (void *)natp->user.trusted_stack_ptr);
-    /* unblock parent */
-    sem_post(&fork_sem);
-    nap->fork_state = 0;
-    ret = 0;
-    /* ret = nap->cage_id; */
-    goto out;
-  }
-
   /* parent */
   DPRINTF("[NaClSysFork] fork_num = %d, cage_id = %d\n", fork_num, nap->cage_id);
   child_argc = 3 + nap->command_num;
@@ -3909,8 +3875,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   nap_child = NaClChildNapCtor(natp);
   NaClXMutexLock(&nap_child->fork_mu);
   NaClXMutexLock(&nap->fork_mu);
-  nap->fork_state = 0;
-  nap_child->fork_state = 1;
   nap_child->running = 1;
   ret = nap_child->cage_id;
   /* ret = 0; */
@@ -3925,21 +3889,11 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   /* compiler memory barrier */
   __asm__ __volatile__ ("":::"memory");
 
-  /*
-   * _n.b._ parent _MUST_ wait for child to
-   * finish initialization before continuing
-   *
-   * -jp
-   */
   DPRINTF("child fork_state: [%d] parent fork state: [%d]\n",
           nap_child->fork_state, nap->fork_state);
   DPRINTF("[fork_num = %u, cage_id = %u, parent_id = %u, master_id = %u]\n",
           fork_num, nap_child->cage_id, nap->cage_id, nap_master->cage_id);
   DPRINTF("%s\n", "Waiting for child to finish initialization...");
-  if (clock_gettime(CLOCK_REALTIME, &fork_ts) == -1)
-    EPRINTF("clock_gettime(CLOCK_REALTIME, &ts) == -1: %s\n", strerror(errno));
-  fork_ts.tv_sec += FORK_TIMEOUT;
-  while (sem_timedwait(&fork_sem, &fork_ts) == -1 && errno == EINTR);
 
 out:
   return ret;
