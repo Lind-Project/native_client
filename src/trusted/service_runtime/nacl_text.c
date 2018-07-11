@@ -65,9 +65,9 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
   uintptr_t                   text_sysaddr;
 
   shm_vaddr_base = NaClEndOfStaticText(nap);
-  DPRINTF("NaClMakeDynamicTextShared: shm_vaddr_base = %08"NACL_PRIxPTR"\n", shm_vaddr_base);
+  NaClLog(1, "NaClMakeDynamicTextShared: shm_vaddr_base = %08"NACL_PRIxPTR"\n", shm_vaddr_base);
   shm_vaddr_base = NaClRoundAllocPage(shm_vaddr_base);
-  DPRINTF("NaClMakeDynamicTextShared: shm_vaddr_base = %08"NACL_PRIxPTR"\n", shm_vaddr_base);
+  NaClLog(1, "NaClMakeDynamicTextShared: shm_vaddr_base = %08"NACL_PRIxPTR"\n", shm_vaddr_base);
 
   /*
    * Default is that there is no usable dynamic code area.
@@ -75,10 +75,10 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
   nap->dynamic_text_start = shm_vaddr_base;
   nap->dynamic_text_end = shm_vaddr_base;
   if (!nap->use_shm_for_dynamic_text) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClMakeDynamicTextShared:"
             "  rodata / data segments not allocation aligned");
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             " not using shm for text");
     return LOAD_OK;
   }
@@ -96,18 +96,18 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
     shm_upper_bound = shm_vaddr_base;
   }
 
-  DPRINTF("shm_upper_bound = %08"NACL_PRIxPTR"\n", shm_upper_bound);
+  NaClLog(1, "shm_upper_bound = %08"NACL_PRIxPTR"\n", shm_upper_bound);
   dynamic_text_size = shm_upper_bound - shm_vaddr_base;
-  DPRINTF("NaClMakeDynamicTextShared: dynamic_text_size = %"NACL_PRIxPTR"\n", dynamic_text_size);
+  NaClLog(1, "NaClMakeDynamicTextShared: dynamic_text_size = %"NACL_PRIxPTR"\n", dynamic_text_size);
 
   if (0 == dynamic_text_size) {
-    DPRINTF("%s\n", "Empty JITtable region");
+    NaClLog(1, "%s\n", "Empty JITtable region");
     return LOAD_OK;
   }
 
   shm = (struct NaClDescImcShm *) malloc(sizeof *shm);
   if (NULL == shm) {
-    DPRINTF("%s\n", "NaClMakeDynamicTextShared: shm object allocation failed");
+    NaClLog(1, "%s\n", "NaClMakeDynamicTextShared: shm object allocation failed");
     retval = LOAD_NO_MEMORY;
     goto cleanup;
   }
@@ -115,7 +115,7 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
     /* cleanup invariant is if ptr is non-NULL, it's fully ctor'd */
     free(shm);
     shm = NULL;
-    DPRINTF("%s\n", "NaClMakeDynamicTextShared: shm alloc ctor for text failed");
+    NaClLog(1, "%s\n", "NaClMakeDynamicTextShared: shm alloc ctor for text failed");
     retval = LOAD_NO_MEMORY_FOR_DYNAMIC_TEXT;
     goto cleanup;
   }
@@ -126,7 +126,7 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
   NaClPageFree((void *) text_sysaddr, dynamic_text_size);
 
   mmap_protections = NACL_ABI_PROT_READ|NACL_ABI_PROT_EXEC|NACL_ABI_PROT_WRITE;
-  DPRINTF("NaClMakeDynamicTextShared: Map(,,0x%"NACL_PRIxPTR",size = 0x%x,"
+  NaClLog(1, "NaClMakeDynamicTextShared: Map(,,0x%"NACL_PRIxPTR",size = 0x%x,"
           " prot=0x%x, flags=0x%x, offset=0)\n",
           text_sysaddr,
           (int) dynamic_text_size,
@@ -140,11 +140,11 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
                    NACL_ABI_MAP_SHARED|NACL_ABI_MAP_FIXED,
                    0);
   if (text_sysaddr != mmap_ret)
-    DPRINTF("%s\n", "Could not map in shm for dynamic text region");
+    NaClLog(1, "%s\n", "Could not map in shm for dynamic text region");
 
   nap->dynamic_page_bitmap = BitmapAllocate((uint32_t) (dynamic_text_size / NACL_MAP_PAGESIZE));
   if (!nap->dynamic_page_bitmap)
-    DPRINTF("%s\n", "NaClMakeDynamicTextShared: BitmapAllocate() failed");
+    NaClLog(1, "%s\n", "NaClMakeDynamicTextShared: BitmapAllocate() failed");
 
   nap->dynamic_text_start = shm_vaddr_base;
   nap->dynamic_text_end = shm_upper_bound;
@@ -422,7 +422,7 @@ static void MakeDynamicCodePagesVisible(struct NaClApp *nap,
       void *user_page_addr = (char *) user_addr + offset;
       if (VirtualAlloc(user_page_addr, NACL_MAP_PAGESIZE,
                        MEM_COMMIT, PAGE_EXECUTE_READ) != user_page_addr) {
-        DPRINTF("%s\n",
+        NaClLog(1, "%s\n",
             "MakeDynamicCodePagesVisible: "
                 "VirtualAlloc() failed -- probably out of swap space");
       }
@@ -439,7 +439,7 @@ static void MakeDynamicCodePagesVisible(struct NaClApp *nap,
   NaClUntrustedThreadsResumeAll(nap);
 #else
   if (NaClMprotect(user_addr, size, PROT_READ | PROT_EXEC) != 0) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "MakeDynamicCodePageVisible: NaClMprotect() failed");
   }
 #endif
@@ -607,13 +607,13 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
   NaClPerfCounterCtor(&time_dyncode_create, "NaClTextDyncodeCreate");
 
   if (NULL == nap->text_shm) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClTextDyncodeCreate: Dynamic loading not enabled");
     return -NACL_ABI_EINVAL;
   }
   if (0 != (dest & (nap->bundle_size - 1)) ||
       0 != (size & (nap->bundle_size - 1))) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClTextDyncodeCreate: Non-bundle-aligned address or size");
     return -NACL_ABI_EINVAL;
   }
@@ -623,14 +623,14 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
   // NaClLog(LOG_WARNING, "[***Debug!***][NaClTextDyncodeCreate] dest_addr = %p \n", (void*) dest_addr);
 
   if (kNaClBadAddress == dest_addr) {
-    DPRINTF("%s\n", "NaClTextDyncodeCreate: Dest address out of range");
+    NaClLog(1, "%s\n", "NaClTextDyncodeCreate: Dest address out of range");
     return -NACL_ABI_EFAULT;
   }
-  DPRINTF("NaClTextDyncodeCreate: (dest: %#hx, nap->dynamic_text_start: %#lx)\n",
+  NaClLog(1, "NaClTextDyncodeCreate: (dest: %#hx, nap->dynamic_text_start: %#lx)\n",
           dest,
           nap->dynamic_text_start);
   if (dest < nap->dynamic_text_start) {
-    DPRINTF("%s\n", "NaClTextDyncodeCreate: Below dynamic code area");
+    NaClLog(1, "%s\n", "NaClTextDyncodeCreate: Below dynamic code area");
     return -NACL_ABI_EFAULT;
   }
   /*
@@ -638,7 +638,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
    * be overwritten, just in case of CPU bugs.
    */
   if (dest + size > nap->dynamic_text_end - NACL_HALT_SLED_SIZE) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClTextDyncodeCreate: Above dynamic code area");
     return -NACL_ABI_EFAULT;
   }
@@ -659,7 +659,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
     /* validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata); */
     validator_result = LOAD_OK;
   } else {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "VALIDATION SKIPPED.");
     validator_result = LOAD_OK;
   }
@@ -670,14 +670,14 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
 
   if (validator_result != LOAD_OK
       && nap->ignore_validator_result) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "VALIDATION FAILED for dynamically-loaded code: "
             "continuing anyway...");
     validator_result = LOAD_OK;
   }
 
   if (validator_result != LOAD_OK) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClTextDyncodeCreate: "
             "Validation of dynamic code failed");
     retval = -NACL_ABI_EINVAL;
@@ -686,7 +686,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
 
   if (NaClDynamicRegionCreate(nap, dest_addr, size, 0) != 1) {
     /* target addr is in use */
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClTextDyncodeCreate: Code range already allocated");
     retval = -NACL_ABI_EINVAL;
     goto cleanup_unlock;
@@ -729,7 +729,7 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   // NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] <cage id> = %d; dest = 0x%x; src = 0x%x; size = %u \n", nap->cage_id, dest, src, size);
 
   if (!nap->enable_dyncode_syscalls) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeCreate: Dynamic code syscalls are disabled");
     return -NACL_ABI_ENOSYS;
   }
@@ -740,7 +740,7 @@ int32_t NaClSysDyncodeCreate(struct NaClAppThread *natp,
   // NaClLog(LOG_WARNING, "[***Debug!***][NaClSysDyncodeCreate] src_addr = %p \n", (void*) src_addr);
 
   if (kNaClBadAddress == src_addr) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeCreate: Source address out of range");
     return -NACL_ABI_EFAULT;
   }
@@ -785,20 +785,20 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
   struct NaClDynamicRegion    *region;
 
   if (!nap->validator->code_replacement) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: "
             "Dynamic code modification is not supported");
     return -NACL_ABI_ENOSYS;
   }
 
   if (!nap->enable_dyncode_syscalls) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Dynamic code syscalls are disabled");
     return -NACL_ABI_ENOSYS;
   }
 
   if (NULL == nap->text_shm) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Dynamic loading not enabled");
     return -NACL_ABI_EINVAL;
   }
@@ -811,7 +811,7 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
   dest_addr = NaClUserToSysAddrRange(nap, dest, size);
   src_addr = NaClUserToSysAddrRange(nap, src, size);
   if (kNaClBadAddress == src_addr || kNaClBadAddress == dest_addr) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Address out of range");
     return -NACL_ABI_EFAULT;
   }
@@ -826,7 +826,7 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
     /*
      * target not a subregion of region or region is null, or came from a file.
      */
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Can't find region to modify");
     retval = -NACL_ABI_EFAULT;
     goto cleanup_unlock;
@@ -873,14 +873,14 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
 
   if (validator_result != LOAD_OK
       && nap->ignore_validator_result) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "VALIDATION FAILED for dynamically-loaded code: "
                        "continuing anyway...");
     validator_result = LOAD_OK;
   }
 
   if (validator_result != LOAD_OK) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Validation of dynamic code failed");
     retval = -NACL_ABI_EINVAL;
     goto cleanup_unlock;
@@ -892,7 +892,7 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
   }
 
   if (LOAD_OK != NaClCopyCode(nap, dest, mapped_addr, code_copy, size)) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeModify: Copying of replacement code failed");
     retval = -NACL_ABI_EINVAL;
     goto cleanup_unlock;
@@ -921,13 +921,13 @@ int32_t NaClSysDyncodeDelete(struct NaClAppThread *natp,
   struct NaClDynamicRegion    *region;
 
   if (!nap->enable_dyncode_syscalls) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeDelete: Dynamic code syscalls are disabled");
     return -NACL_ABI_ENOSYS;
   }
 
   if (NULL == nap->text_shm) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeDelete: Dynamic loading not enabled");
     return -NACL_ABI_EINVAL;
   }
@@ -946,7 +946,7 @@ int32_t NaClSysDyncodeDelete(struct NaClAppThread *natp,
 
   dest_addr = NaClUserToSysAddrRange(nap, dest, size);
   if (kNaClBadAddress == dest_addr) {
-    DPRINTF("%s\n",
+    NaClLog(1, "%s\n",
             "NaClSysDyncodeDelete: Address out of range");
     return -NACL_ABI_EFAULT;
   }
@@ -962,7 +962,7 @@ int32_t NaClSysDyncodeDelete(struct NaClAppThread *natp,
       region->start != dest_addr ||
       region->size != size ||
       region->is_mmap) {
-    DPRINTF("%s\n", "NaClSysDyncodeDelete: Can't find region to delete");
+    NaClLog(1, "%s\n", "NaClSysDyncodeDelete: Can't find region to delete");
     retval = -NACL_ABI_EFAULT;
     goto cleanup_unlock;
   }
@@ -972,7 +972,7 @@ int32_t NaClSysDyncodeDelete(struct NaClAppThread *natp,
     /* first deletion request */
 
     if (nap->dynamic_delete_generation == INT32_MAX) {
-      DPRINTF("%s\n",
+      NaClLog(1, "%s\n",
             "NaClSysDyncodeDelete:"
             "Overflow, can only delete INT32_MAX regions");
       retval = -NACL_ABI_EFAULT;

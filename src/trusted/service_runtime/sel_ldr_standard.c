@@ -168,31 +168,31 @@ void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr) {
   sysaddr = (void *)NaClUserToSys(nap, useraddr);
   addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
-  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
-  DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
-  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
+  NaClLog(1, "[Memory] Memory addr:                   %p\n", (void *)sysaddr);
+  NaClLog(1, "[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
+  NaClLog(1, "[Memory] Memory content (string):       %s\n", (char *)addr);
+  NaClLog(1, "[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
 }
 
 void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   unsigned char *addr = (unsigned char *)sysaddr;
   UNREFERENCED_PARAMETER(addr);
-  DPRINTF("[Memory] Memory addr:                   %p\n", (void *)sysaddr);
-  DPRINTF("[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
-  DPRINTF("[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
-  DPRINTF("[Memory] Memory content (string):       %s\n", (char *)addr);
+  NaClLog(1, "[Memory] Memory addr:                   %p\n", (void *)sysaddr);
+  NaClLog(1, "[Memory] Memory content (raw):          %#08lx\n", *(uint64_t *)addr);
+  NaClLog(1, "[Memory] Memory content (byte-swapped): %#08lx\n", OBJ_REP_64(addr));
+  NaClLog(1, "[Memory] Memory content (string):       %s\n", (char *)addr);
 }
 
 /* jp */
 void NaClLogThreadContext(struct NaClAppThread *natp) {
   struct NaClThreadContext *ctx = &natp->user;
   UNREFERENCED_PARAMETER(ctx);
-  DPRINTF("[Thread Context] cage id           = %i \n", natp->nap->cage_id);
-  DPRINTF("[Thread Context] sysret            = %p \n", (void *)ctx->sysret);
-  DPRINTF("[Thread Context] prog_ctr (%%rip)  = %p \n", (void *)ctx->prog_ctr);
-  DPRINTF("[Thread Context] new_prog_ctr      = %p \n", (void *)ctx->new_prog_ctr);
-  DPRINTF("[Thread Context] trusted_stack_ptr = %p \n", (void *)ctx->trusted_stack_ptr);
-  DPRINTF("[Thread Context] registers:\n"
+  NaClLog(1, "[Thread Context] cage id           = %i \n", natp->nap->cage_id);
+  NaClLog(1, "[Thread Context] sysret            = %p \n", (void *)ctx->sysret);
+  NaClLog(1, "[Thread Context] prog_ctr (%%rip)  = %p \n", (void *)ctx->prog_ctr);
+  NaClLog(1, "[Thread Context] new_prog_ctr      = %p \n", (void *)ctx->new_prog_ctr);
+  NaClLog(1, "[Thread Context] trusted_stack_ptr = %p \n", (void *)ctx->trusted_stack_ptr);
+  NaClLog(1, "[Thread Context] registers:\n"
           "\t%%tls_idx (%#x), %%tls_value1 (%#x), %%tls_value2 (%#x),\n"
           "\t%%rax (%#lx), %%rbx (%#lx), %%rcx (%#lx), %%rdx (%#lx),\n"
           "\t%%rbp (%#lx), %%rsi (%#lx), %%rdi (%#lx), %%rsp (%#lx),\n"
@@ -209,29 +209,29 @@ void NaClLogThreadContext(struct NaClAppThread *natp) {
 
 /* print out memory layout of a nap */
 void NaClPrintAddressSpaceLayout(struct NaClApp *nap) {
-  DPRINTF("%s\n", "NaClApp addr space layout:");
-  DPRINTF("NaClApp cage id: %d \n", nap->cage_id);
-  DPRINTF("nap->mem_start          = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "%s\n", "NaClApp addr space layout:");
+  NaClLog(1, "NaClApp cage id: %d \n", nap->cage_id);
+  NaClLog(1, "nap->mem_start          = 0x%016"NACL_PRIxPTR"\n",
           nap->mem_start);
-  DPRINTF("nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->static_text_end    = 0x%016"NACL_PRIxPTR"\n",
           nap->static_text_end);
-  DPRINTF("nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->dynamic_text_start = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_start);
-  DPRINTF("nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->dynamic_text_end   = 0x%016"NACL_PRIxPTR"\n",
           nap->dynamic_text_end);
-  DPRINTF("nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->rodata_start       = 0x%016"NACL_PRIxPTR"\n",
           nap->rodata_start);
-  DPRINTF("nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->data_start         = 0x%016"NACL_PRIxPTR"\n",
           nap->data_start);
-  DPRINTF("nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->data_end           = 0x%016"NACL_PRIxPTR"\n",
           nap->data_end);
-  DPRINTF("nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->break_addr         = 0x%016"NACL_PRIxPTR"\n",
           nap->break_addr);
-  DPRINTF("nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->initial_entry_pt   = 0x%016"NACL_PRIxPTR"\n",
           nap->initial_entry_pt);
-  DPRINTF("nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "nap->user_entry_pt      = 0x%016"NACL_PRIxPTR"\n",
           nap->user_entry_pt);
-  DPRINTF("nap->bundle_size        = 0x%x\n", nap->bundle_size);
+  NaClLog(1, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
 
 void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
@@ -1154,10 +1154,10 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
     memset((void *)stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
 
-  DPRINTF("   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  DPRINTF("     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
-  DPRINTF("   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
-  DPRINTF("      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
+  NaClLog(1, "   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+  NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
+  NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
+  NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,

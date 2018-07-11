@@ -68,7 +68,7 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat    *dst,
       break;
 #endif
     default:
-      DPRINTF("NaClAbiStatHostDescStatXlateCtor:"
+      NaClLog(1, "NaClAbiStatHostDescStatXlateCtor:"
               " Unusual NaCl descriptor type (not constructible)."
               " The NaCl app has a file with st_mode = 0%o."
               " (This is normal for std{in,out,err}, or other"

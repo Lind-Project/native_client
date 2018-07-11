@@ -55,7 +55,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   CHECK(nap_parent);
   CHECK(nap_child);
 
-  DPRINTF("%s\n", "Entered NaClChildNapCtor()");
+  NaClLog(1, "%s\n", "Entered NaClChildNapCtor()");
   if (!NaClAppCtor(nap_child)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   }
@@ -70,7 +70,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->num_lib = 3;
   nap_child->num_children = 0;
 
-  DPRINTF("Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
+  NaClLog(1, "Incrementing parent child count for cage id: %d\n", nap_parent->cage_id);
 
   NaClXMutexLock(&nap_master->children_mu);
   if (nap_master != nap_parent) {
@@ -94,18 +94,18 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
   if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
-  DPRINTF("Master new child count: %d\n", nap_master->num_children);
-  DPRINTF("Parent new child count: %d\n", nap_parent->num_children);
+  NaClLog(1, "Master new child count: %d\n", nap_master->num_children);
+  NaClLog(1, "Parent new child count: %d\n", nap_parent->num_children);
   NaClXMutexUnlock(&nap_master->children_mu);
   if (nap_master != nap_parent) {
     NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
   NaClAppInitialDescriptorHookup(nap_child);
-  DPRINTF("fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-    DPRINTF("Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-    DPRINTF("%s\n%s\n",
+    NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+    NaClLog(1, "%s\n%s\n",
             "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
             "or a corrupt nexe file may be responsible for this error.");
     exit(EXIT_FAILURE);
@@ -114,11 +114,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
     NaClLog(LOG_FATAL, "Failed to prepare child nap_parent for launch\n");
   }
-  DPRINTF("Loading blob file %s\n", nap_child->nacl_file);
+  NaClLog(1, "Loading blob file %s\n", nap_child->nacl_file);
   if (!nap_child->validator->readonly_text_implemented) {
     NaClLog(LOG_FATAL, "fixed_feature_cpu_mode is not supported\n");
   }
-  DPRINTF("%s\n", "Enabling Fixed-Feature CPU Mode");
+  NaClLog(1, "%s\n", "Enabling Fixed-Feature CPU Mode");
   nap_child->fixed_feature_cpu_mode = 1;
   if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
@@ -132,7 +132,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     int new_fd;
     old_nd = NaClGetDesc(nap_parent, old_fd);
     if (!old_nd) {
-      DPRINTF("NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", old_fd - 1, new_fd - 1);
+      NaClLog(1, "NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", old_fd - 1, new_fd - 1);
       break;
     }
     new_fd = NaClSetAvail(nap_child, old_nd);
@@ -154,13 +154,13 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
 
   UNREFERENCED_PARAMETER(context);
 
-  DPRINTF("%s\n", "NaClAppForkThreadLauncher: entered");
+  NaClLog(1, "%s\n", "NaClAppForkThreadLauncher: entered");
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
-  DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
-  DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
+  NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
+  NaClLog(1, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
+  NaClLog(1, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
 
   /* thread_idx = nap->cage_id; */
   thread_idx = NaClGetThreadIdx(natp);
@@ -219,19 +219,19 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * bytes for the shadow space.
    */
   secure_stack_ptr = NaClGetStackPtr();
-  DPRINTF("NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",
+  NaClLog(1, "NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",
           secure_stack_ptr);
   secure_stack_ptr = secure_stack_ptr & ~0x1f;
-  DPRINTF("NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
+  NaClLog(1, "NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
           secure_stack_ptr);
   natp->user.trusted_stack_ptr = secure_stack_ptr;
 #endif
 
-  DPRINTF("NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
+  NaClLog(1, "NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(context));
-  DPRINTF("%s\n", "NaClStartThreadInApp: switching to untrusted code");
+  NaClLog(1, "%s\n", "NaClStartThreadInApp: switching to untrusted code");
 
-  DPRINTF("[NaClAppThreadLauncher] Nap %d is ready to launch! child registers: \n", nap->cage_id);
+  NaClLog(1, "[NaClAppThreadLauncher] Nap %d is ready to launch! child registers: \n", nap->cage_id);
   NaClLogThreadContext(natp);
   NaClAppThreadPrintInfo(natp);
   CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
@@ -257,9 +257,9 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
-  DPRINTF("     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
-  DPRINTF(" prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
-  DPRINTF("stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
+  NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
+  NaClLog(1, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
+  NaClLog(1, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
           NaClGetThreadCtxSp(&natp->user));
 
   thread_idx = NaClGetThreadIdx(natp);
@@ -302,7 +302,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
                                NACL_APP_THREAD_UNTRUSTED);
 
   // yiwen:
-  DPRINTF("%s\n", "[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage!");
+  NaClLog(1, "%s\n", "[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage!");
   /* NaClVmmapDebug(&natp->nap->mem_map, "parent vmmap:"); */
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
 }
@@ -334,27 +334,27 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
    */
-  DPRINTF("[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
+  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   if (nap_master && nap_parent) {
     /*
      * remove self from parent's list of children
      */
     NaClXMutexLock(&nap_master->children_mu);
-    DPRINTF("Decrementing parent child count for cage id: %d\n", nap_parent->cage_id);
+    NaClLog(1, "Decrementing parent child count for cage id: %d\n", nap_parent->cage_id);
     master_idx = GetChildIdx(nap_master->children_ids, nap_master->num_children, nap->cage_id);
     switch (master_idx) {
     case -1:
-      DPRINTF("Index not found in master array: cage_id = %d\n", nap->cage_id);
+      NaClLog(1, "Index not found in master array: cage_id = %d\n", nap->cage_id);
       break;
     default:
       nap_master->children_ids[master_idx] = 0;
-      DPRINTF("Master new child count: %d\n", --nap_master->num_children);
+      NaClLog(1, "Master new child count: %d\n", --nap_master->num_children);
       if (!DynArraySet(&nap_master->children, nap->cage_id, NULL)) {
-        DPRINTF("Failed to remove child master list: cage_id = %d\n", nap->cage_id);
+        NaClLog(1, "Failed to remove child master list: cage_id = %d\n", nap->cage_id);
       }
     }
-    DPRINTF("Signaling master from cage id: %d\n", nap->cage_id);
+    NaClLog(1, "Signaling master from cage id: %d\n", nap->cage_id);
     NaClXCondVarBroadcast(&nap_master->children_cv);
     NaClXMutexUnlock(&nap_master->children_mu);
     /* handle nested fork cases */
@@ -363,16 +363,16 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
       parent_idx = GetChildIdx(nap_parent->children_ids, nap_parent->num_children, nap->cage_id);
       switch (parent_idx) {
       case -1:
-        DPRINTF("Index not found in parent array: cage_id = %d\n", nap->cage_id);
+        NaClLog(1, "Index not found in parent array: cage_id = %d\n", nap->cage_id);
         break;
       default:
         nap_parent->children_ids[parent_idx] = 0;
-        DPRINTF("Parent new child count: %d\n", --nap_parent->num_children);
+        NaClLog(1, "Parent new child count: %d\n", --nap_parent->num_children);
         if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
-          DPRINTF("Failed to remove child from parent list: cage_id = %d\n", nap->cage_id);
+          NaClLog(1, "Failed to remove child from parent list: cage_id = %d\n", nap->cage_id);
         }
       }
-      DPRINTF("Signaling parent from cage id: %d\n", nap->cage_id);
+      NaClLog(1, "Signaling parent from cage id: %d\n", nap->cage_id);
       NaClXCondVarBroadcast(&nap_parent->children_cv);
       NaClXMutexUnlock(&nap_parent->children_mu);
     }
@@ -380,7 +380,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
 
   /* cleanup list of children */
   NaClXMutexLock(&nap->children_mu);
-  DPRINTF("Thread children count: %d\n", nap->num_children);
+  NaClLog(1, "Thread children count: %d\n", nap->num_children);
   while (nap->num_children > 0) {
     NaClXCondVarWait(&nap->children_cv, &nap->children_mu);
   }
@@ -390,7 +390,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   /* wait for master thread */
   if (nap_master && nap != nap_master) {
     NaClXMutexLock(&nap_master->children_mu);
-    DPRINTF("Master children count: %d\n", nap_master->num_children);
+    NaClLog(1, "Master children count: %d\n", nap_master->num_children);
     while (nap_master->num_children > 0) {
       NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
     }
@@ -399,7 +399,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   }
 
   if (nap->debug_stub_callbacks) {
-    DPRINTF("%s\n", " notifying the debug stub of the thread exit");
+    NaClLog(1, "%s\n", " notifying the debug stub of the thread exit");
     /*
      * This must happen before deallocating the ID natp->thread_num.
      * We have the invariant that debug stub lock should be acquired before
@@ -409,9 +409,9 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  DPRINTF("%s\n", " getting thread table lock");
+  NaClLog(1, "%s\n", " getting thread table lock");
   NaClXMutexLock(&nap->threads_mu);
-  DPRINTF("%s\n", " getting thread lock");
+  NaClLog(1, "%s\n", " getting thread lock");
   NaClXMutexLock(&natp->mu);
 
   /*
@@ -441,18 +441,18 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    */
   NaClTlsSetCurrentThread(NULL);
 
-  DPRINTF("%s\n", " removing thread from thread table");
+  NaClLog(1, "%s\n", " removing thread from thread table");
   /* Deallocate the ID natp->thread_num. */
   NaClRemoveThreadMu(nap, natp->thread_num);
-  DPRINTF("%s\n", " unlocking thread");
+  NaClLog(1, "%s\n", " unlocking thread");
   NaClXMutexUnlock(&natp->mu);
-  DPRINTF("%s\n", " unlocking thread table");
+  NaClLog(1, "%s\n", " unlocking thread table");
   NaClXMutexUnlock(&nap->threads_mu);
-  DPRINTF("%s\n", " unregistering signal stack");
+  NaClLog(1, "%s\n", " unregistering signal stack");
   NaClSignalStackUnregister();
-  DPRINTF("%s\n", " freeing thread object");
+  NaClLog(1, "%s\n", " freeing thread object");
   NaClAppThreadDelete(natp);
-  DPRINTF("%s\n", " NaClThreadExit");
+  NaClLog(1, "%s\n", " NaClThreadExit");
 
   NaClThreadExit();
   NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
@@ -472,10 +472,10 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
  }
 
-  DPRINTF("         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
-  DPRINTF("          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)nap);
-  DPRINTF("    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
-  DPRINTF("usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
+  NaClLog(1, "         natp = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
+  NaClLog(1, "          nap = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)nap);
+  NaClLog(1, "    usr_entry = 0x%016"NACL_PRIxPTR"\n", usr_entry);
+  NaClLog(1, "usr_stack_ptr = 0x%016"NACL_PRIxPTR"\n", usr_stack_ptr);
 
   /*
    * Set these early, in case NaClTlsAllocate() wants to examine them.
@@ -583,15 +583,15 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   child_ctx = natp_child->user;
   /* copy parent page tables and execution context */
   NaClCopyExecutionContext(nap_parent, nap_child);
-  DPRINTF("fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
+  NaClLog(1, "fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
           fork_num,
           nap_child->cage_id,
           nap_parent->cage_id);
   /* copy parent thread context */
-  DPRINTF("%s\n", "Thread context of child before copy");
+  NaClLog(1, "%s\n", "Thread context of child before copy");
   NaClLogThreadContext(natp_child);
   natp_child->user = natp_parent->user;
-  DPRINTF("%s\n", "Thread context of child after copy");
+  NaClLog(1, "%s\n", "Thread context of child after copy");
   NaClLogThreadContext(natp_child);
 
   /*
@@ -687,22 +687,22 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
         do {                                                                                     \
           unsigned char *addr = (unsigned char *)(ADDR);                                         \
           UNREFERENCED_PARAMETER(addr);                                                          \
-          DDPRINTF("[Memory] Memory addr:                   %p\n", (void *)addr);                \
-          DDPRINTF("[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
-          DDPRINTF("[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
+          NaClLog(2, "[Memory] Memory addr:                   %p\n", (void *)addr);                \
+          NaClLog(2, "[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
+          NaClLog(2, "[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
         } while (0)
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
-    DDPRINTF("child_stack[%zu]:\n", i);
+    NaClLog(2, "child_stack[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_child)[i]);
-    DDPRINTF("parent_stack[%zu]:\n", i);
+    NaClLog(2, "parent_stack[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", &((TYPE_TO_EXAMINE *)stack_ptr_parent)[i]);
   }
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     uintptr_t child_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)natp_child->user.rsp)[i];
     uintptr_t parent_addr = (uintptr_t)&((TYPE_TO_EXAMINE *)parent_ctx.rsp)[i];
-    DDPRINTF("child_rsp[%zu]:\n", i);
+    NaClLog(2, "child_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", child_addr);
-    DDPRINTF("parent_rsp[%zu]:\n", i);
+    NaClLog(2, "parent_rsp[%zu]:\n", i);
     NaClLogSysMemoryContentType(TYPE_TO_EXAMINE, "0x%016lx", parent_addr);
   }
 # undef NUM_STACK_VALS
@@ -801,7 +801,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 
 /* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
-  DPRINTF("[NaClAppThreadPrintInfo] "
+  NaClLog(1, "[NaClAppThreadPrintInfo] "
           "cage id = %d, prog_ctr = %#x, new_prog_ctr = %#x, sysret = %#x\n",
           natp->nap->cage_id,
           (unsigned)natp->user.prog_ctr,

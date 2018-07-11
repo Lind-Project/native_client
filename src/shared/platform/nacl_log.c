@@ -592,8 +592,9 @@ int NaClLogGetModuleVerbosity(char const *module_name) {
 }
 
 #if NACL_PLATFORM_HAS_TLS
-void NaClLogSetModule(char const *module_name) {
+int NaClLogSetModule(char const *module_name) {
   gTls_ModuleName = module_name;
+  return 0;
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
@@ -611,8 +612,9 @@ static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
 }
 
 #elif NACL_PLATFORM_HAS_TSD
-void NaClLogSetModule(char const *module_name) {
-  pthread_setspecific(gModuleNameKey, (void const *) module_name);
+int NaClLogSetModule(char const *module_name) {
+  (void) pthread_setspecific(gModuleNameKey, (void const *) module_name);
+  return 0;
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
@@ -633,9 +635,10 @@ static void NaClLogDoLogAndUnsetModuleV(int        detail_level,
 #else
 /* !NACL_PLATFORM_HAS_TLS && !NACL_PLATFORM_HAS_TSD */
 
-void NaClLogSetModule(char const *module_name) {
+int NaClLogSetModule(char const *module_name) {
   NaClLogLock();
   nacl_log_module_name = module_name;
+  return 0;
 }
 
 static void NaClLogDoLogAndUnsetModuleV(int         detail_level,
@@ -668,8 +671,9 @@ void NaClLog(int         detail_level,
   va_list ap;
 
 #if !THREAD_SAFE_DETAIL_CHECK
-  if (NACL_LIKELY(detail_level > verbosity))
+  if (NACL_LIKELY(detail_level > verbosity)) {
     return;
+  }
 #endif
 
   NaClLogLock();

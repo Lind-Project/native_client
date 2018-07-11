@@ -800,16 +800,16 @@ static void NaClProcessRedirControl(struct NaClApp *nap) {
     mode = g_nacl_redir_control[ix].mode;
 
     if ((env = getenv(env_name))) {
-      DPRINTF("getenv(%s) -> %s\n", env_name, env);
+      NaClLog(1, "getenv(%s) -> %s\n", env_name, env);
       ndp = NaClResourceOpen((struct NaClResource *)&nap->resources,
                              env,
                              nacl_flags,
                              mode);
-      DPRINTF(" NaClResourceOpen returned %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+      NaClLog(1, " NaClResourceOpen returned %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     }
 
     if (ndp) {
-      DPRINTF("Setting descriptor %d\n", (int)ix);
+      NaClLog(1, "Setting descriptor %d\n", (int)ix);
       NaClSetDesc(nap, (int)ix, ndp);
       continue;
     }
@@ -853,7 +853,7 @@ void NaClCreateServiceSocket(struct NaClApp *nap) {
                          0 != NaClCommonDescMakeBoundSock(secure_pair))) {
     NaClLog(LOG_FATAL, "Cound not create secure service socket\n");
   }
-  DPRINTF("got bound socket at %p, addr at %p\n", (void *)secure_pair[0], (void *)secure_pair[1]);
+  NaClLog(1, "got bound socket at %p, addr at %p\n", (void *)secure_pair[0], (void *)secure_pair[1]);
   NaClDescSafeUnref(nap->secure_service_port);
   nap->secure_service_port = secure_pair[0];
 
@@ -897,7 +897,7 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
   struct NaClDesc             *descs[2] = {0};
   ssize_t                     rv = 0;
 
-  DPRINTF("NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
+  NaClLog(1, "NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
           (uintptr_t) nap,
           (uintptr_t) inherited_desc);
 
@@ -1141,7 +1141,7 @@ static void NaClSecureChannelStartModuleRpc(struct NaClSrpcRpc     *rpc,
   } else {
     nap->module_may_start = 1;
   }
-  DPRINTF("%s\n", "NaClSecureChannelStartModuleRpc: broadcasting");
+  NaClLog(1, "%s\n", "NaClSecureChannelStartModuleRpc: broadcasting");
   NaClXCondVarBroadcast(&nap->cv);
   NaClXMutexUnlock(&nap->mu);
 
@@ -1467,7 +1467,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   if (!parent_offset)
     return;
 
-  DDPRINTF("copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
+  NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
           entry->npages,
           entry->page_num,
           copy_size,
@@ -1515,7 +1515,7 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
   uintptr_t start = (region->start & UNTRUSTED_ADDR_MASK) + offset;
   if (NaClMprotect((void *)start, region->size, PROT_RW) == -1)
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
-  DPRINTF("copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
+  NaClLog(1, "copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
   NaClDynamicRegionCreate(target, start, region->size, region->is_mmap);
   memcpy((void *)start, (void *)region->start, region->size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof(uintptr_t));
@@ -1552,9 +1552,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
   UNREFERENCED_PARAMETER(stack_pnum_parent);
 
-  DPRINTF("dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
-  DPRINTF("stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
-  DPRINTF("cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
+  NaClLog(1, "dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
+  NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
+  NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
@@ -1578,7 +1578,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   nap_child->break_addr = nap_parent->break_addr;
   memcpy(dyncode_child, dyncode_parent, dyncode_size);
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
-  DPRINTF("Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
+  NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
           (size_t)stack_size,
           (size_t)stack_size,
           stackaddr_parent,
@@ -1593,11 +1593,11 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   if (NaClMprotect(dyncode_child, dyncode_size, PROT_RX) == -1)
       NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
 
-  DPRINTF("copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
-  DPRINTF("%s\n", "nap_parent_parent address space after copy:");
+  NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
+  NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClVmmapDebug(&nap_parent->mem_map, "parent vmmap:");
-  DPRINTF("%s\n", "nap_child address space after copy:");
+  NaClLog(1, "%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(nap_child);
   NaClVmmapDebug(&nap_child->mem_map, "child vmmap:");
 }

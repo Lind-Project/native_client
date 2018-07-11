@@ -47,14 +47,14 @@ NaClErrorCode NaClAllocAddrSpaceAslr(struct NaClApp *nap,
    * at least a function call as well as possibly a TLS/TSD read if
    * module-specific logging verbosity level comparisons are needed.
    */
-  DPRINTF("Native Client module will be loaded at"
+  NaClLog(1, "Native Client module will be loaded at"
           " base address 0x%016"NACL_PRIxPTR"\n",
           nap->mem_start);
 
   hole_start = NaClRoundAllocPage(nap->data_end);
 
   if (nap->stack_size >= ((uintptr_t) 1U) << nap->addr_bits) {
-    DPRINTF("%s\n", "NaClAllocAddrSpace: stack too large!");
+    NaClLog(1, "%s\n", "NaClAllocAddrSpace: stack too large!");
   }
   stack_start = (((uintptr_t) 1U) << nap->addr_bits) - nap->stack_size;
   stack_start = NaClTruncAllocPage(stack_start);
@@ -143,7 +143,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
   if (0 != (err = NaClMprotect((void *) start_addr,
                                region_size,
                                PROT_READ | PROT_EXEC))) {
-    DPRINTF("NaClMemoryProtection: "
+    NaClLog(1, "NaClMemoryProtection: "
             "NaClMprotect(0x%08"NACL_PRIxPTR", "
             "0x%08"NACL_PRIxS", 0x%x) failed, "
             "error %d (trampoline + code)\n",
@@ -212,7 +212,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
     if (0 != (err = NaClMprotect((void *) start_addr,
                                  region_size,
                                  PROT_READ))) {
-      DPRINTF("NaClMemoryProtection: "
+      NaClLog(1, "NaClMemoryProtection: "
               "NaClMprotect(0x%08"NACL_PRIxPTR", "
               "0x%08"NACL_PRIxS", 0x%x) failed, "
               "error %d (rodata)\n",
@@ -247,7 +247,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
     if (0 != (err = NaClMprotect((void *) start_addr,
                                  region_size,
                                  PROT_READ | PROT_WRITE))) {
-      DPRINTF("NaClMemoryProtection: "
+      NaClLog(1, "NaClMemoryProtection: "
               "NaClMprotect(0x%08"NACL_PRIxPTR", "
               "0x%08"NACL_PRIxS", 0x%x) failed, "
               "error %d (data)\n",
@@ -279,7 +279,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
   if (0 != (err = NaClMprotect((void *) start_addr,
                                NaClRoundAllocPage(nap->stack_size),
                                PROT_READ | PROT_WRITE))) {
-    DPRINTF("NaClMemoryProtection: "
+    NaClLog(1, "NaClMemoryProtection: "
              "NaClMprotect(0x%08"NACL_PRIxPTR", "
              "0x%08"NACL_PRIxS", 0x%x) failed, "
              "error %d (stack)\n",

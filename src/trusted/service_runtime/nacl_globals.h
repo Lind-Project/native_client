@@ -144,9 +144,9 @@ static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, ui
   for (size_t i = 0; i < cnt; i++) {
     if ((parent_bits >> NACL_PAGESHIFT) != (start[i] >> NACL_PAGESHIFT))
       continue;
-    DPRINTF("patching %p\n", (void *)start[i]);
+    NaClLog(1, "patching %p\n", (void *)start[i]);
     start[i] = child_bits | (start[i] & UNTRUSTED_ADDR_MASK);
-    DPRINTF("new addr %p\n", (void *)start[i]);
+    NaClLog(1, "new addr %p\n", (void *)start[i]);
   }
 }
 
