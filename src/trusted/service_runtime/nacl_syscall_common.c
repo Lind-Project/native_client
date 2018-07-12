@@ -776,31 +776,29 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClFastMutexLock(&nap->desc_mu);
 
-  /* debug -jp */
-  if (nap->cage_id) {
+  /*
+   * only close master fds
+   *
+   * FIXME: maybe there is a better way to avoid
+   * segfaults trying to close child fds... -jp
+   */
+  if (nap->cage_id > 1) {
      NaClLog(1, "cage_id: %d\n", nap->cage_id);
-     retval = 0;
      goto out;
   }
-
   fd = fd_cage_table[nap->cage_id][d];
 
-  /* debug -jp */
+  /* don't close pipe fds */
   if (fd == 8000 || fd == 8001) {
      NaClLog(1, "cage_id: %d fd = %d\n", nap->cage_id, fd);
      retval = 0;
      goto out;
   }
 
-  ndp = NaClGetDescMu(nap, fd);
-  if (ndp) {
-    /* Unref the desc_tbl */
+  /* Unref the desc_tbl */
+  if ((ndp = NaClGetDescMu(nap, fd))) {
+    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, d, NULL);
-  }
-
-  if (ndp) {
-    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n",
-            (uintptr_t) ndp);
     NaClDescUnref(ndp);
     retval = 0;
   }
