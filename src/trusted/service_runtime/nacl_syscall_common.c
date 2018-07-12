@@ -485,39 +485,53 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
 
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp  *nap = natp->nap;
-  int             retval, newfd;
+  int             ret, newfd;
   struct NaClDesc *old_nd;
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
-  old_nd = NaClGetDesc(nap, oldfd);
-  if (!old_nd) {
-    retval = -NACL_ABI_EBADF;
+
+  if (nap->fd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
     goto done;
   }
-  retval = newfd = NaClSetAvail(nap, old_nd);
+  if (!(old_nd = NaClGetDesc(nap, oldfd))) {
+    ret= -NACL_ABI_EBADF;
+    goto done;
+  }
+  ret = newfd = NaClSetAvail(nap, old_nd);
   NaClSetDesc(nap, newfd, old_nd);
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   nap->fd++;
 
 done:
-  return retval;
+  return ret;
 }
 
-// yiwen: my dup2 implementation
 int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   oldfd,
                     int                   newfd) {
   struct NaClApp *nap = natp->nap;
+  int            ret;
 
   NaClLog(1, "%s\n", "[dup2] Entered dup2!");
   NaClLog(1, "[dup2] cage id = %d \n", nap->cage_id);
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
 
+  if (oldfd == newfd) {
+    ret = oldfd;
+    goto done;
+  }
+  if (nap->fd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto done;
+  }
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
+  ret = newfd;
   nap->fd++;
 
-  return newfd;
+done:
+  return ret;
 }
 
 // yiwen: my dup3 implementation
@@ -526,26 +540,32 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
                     int                   newfd,
                     int                   flags) {
   struct NaClApp  *nap = natp->nap;
-  int             retval = -NACL_ABI_EINVAL;
+  int             ret;
 
   NaClLog(1, "%s\n", "[dup3] Entered dup3!");
   NaClLog(1, "[dup3] cage id = %d \n", nap->cage_id);
   NaClLog(1, "[dup3] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup3] newfd = %d \n", newfd);
 
+  /*
+   * TODO: implement flags -jp
+   */
   UNREFERENCED_PARAMETER(flags);
 
-  if (newfd < nap->fd) {
-    retval = -EBADF;
+  if (oldfd == newfd) {
+    ret = -NACL_ABI_EINVAL;
     goto done;
   }
-
+  if (nap->fd++ > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto done;
+  }
   fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
-  retval = nap->fd;
+  ret = newfd;
   nap->fd++;
 
 done:
-  return retval;
+  return ret;
 }
 
 static uint32_t CopyPathFromUser(struct NaClApp *nap,
@@ -2108,8 +2128,7 @@ static int32_t MunmapInternal(struct NaClApp *nap,
 static int32_t MunmapInternal(struct NaClApp *nap,
                               uintptr_t sysaddr, size_t length) {
   UNREFERENCED_PARAMETER(nap);
-  NaClLog(3, "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n",
-          (uintptr_t) sysaddr, length);
+  NaClLog(3, "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n", sysaddr, length);
   /*
    * Overwrite current mapping with inaccessible, anonymous
    * zero-filled pages, which should be copy-on-write and thus
@@ -3483,7 +3502,7 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
   retval = NaClNanosleep(&t_sleep, remptr);
   NaClLog(2, "NaClNanosleep returned %d\n", retval);
 
-  if (-EINTR == retval && rem && !NaClCopyOutToUser(nap, (uintptr_t)rem, remptr, sizeof *remptr)) {
+  if (-NACL_ABI_EINTR == retval && rem && !NaClCopyOutToUser(nap, (uintptr_t)rem, remptr, sizeof *remptr)) {
     NaClLog(1, "%s\n", "NaClSysNanosleep: check rem failed at copyout\n");
   }
 
@@ -3804,7 +3823,7 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   UNREFERENCED_PARAMETER(natp);
   pipedes[0] = -1;
   pipedes[1] = -1;
-  return -ENOSYS;
+  return -NACL_ABI_ENOSYS;
 }
 
 int32_t NaClSysFork(struct NaClAppThread *natp) {
@@ -3835,7 +3854,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   ret = nap_child->cage_id;
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
-    ret = -ENOMEM;
+    ret = -NACL_ABI_ENOMEM;
     goto out;
   }
   NaClLog(1, "[fork_num = %u, cage_id = %u, parent_id = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
@@ -3849,7 +3868,7 @@ out:
  */
 int32_t NaClSysExecv(struct NaClAppThread *natp) {
   UNREFERENCED_PARAMETER(natp);
-  return -ENOSYS;
+  return -NACL_ABI_ENOSYS;
 }
 
 /*
@@ -3860,7 +3879,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   UNREFERENCED_PARAMETER(path);
   UNREFERENCED_PARAMETER(argv);
   UNREFERENCED_PARAMETER(envp);
-  return -ENOSYS;
+  return -NACL_ABI_ENOSYS;
 }
 
 #define WAIT_ANY (-1)
@@ -3887,7 +3906,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   for (int i = 0; i < nap->num_children; i++)
     pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
   if (!nap->num_children || cage_id > pid_max) {
-    ret = -ECHILD;
+    ret = -NACL_ABI_ECHILD;
     goto out;
   }
 
@@ -3899,7 +3918,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
     if (!nap_child) {
-      ret = -ECHILD;
+      ret = -NACL_ABI_ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
       goto out;
@@ -3926,7 +3945,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
       /* make sure children exist */
       NaClXMutexLock(&nap->children_mu);
       if (!nap->num_children) {
-        ret = -ECHILD;
+        ret = -NACL_ABI_ECHILD;
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
         goto out;
@@ -3971,7 +3990,7 @@ int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
   NaClLog(1, "%s\n", "[NaClSysWait] entered wait! \n");
 
   if (!nap->num_children) {
-    ret = -ECHILD;
+    ret = -NACL_ABI_ECHILD;
     goto out;
   }
   ret = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
