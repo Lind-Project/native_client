@@ -692,25 +692,29 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   uintptr_t             stack_ptr;
 
   CHECK(argc >= 0);
-  CHECK(NULL != argv || 0 == argc);
+  CHECK(argv || !argc);
 
-  retval = 0;  /* fail */
+  retval = 0;
   size = 0;
   envc = 0;
-  argv_len = NULL;
-  envv_len = NULL;
+  /* count number of environment strings */
   if (envv) {
     char const *const *pp;
     for (pp = envv; NULL != *pp; ++pp) {
       ++envc;
     }
   }
-  if (!argc || !envc) {
+  /* allocate space to hold length of vectors */
+  argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
+  envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
+  /* `argvv_len = malloc()` failed or `argc == 0` */
+  if (!argv_len) {
     goto cleanup;
   }
-  argv_len = malloc(argc * sizeof argv_len[0]);
-  envv_len = malloc(envc * sizeof envv_len[0]);
-
+  /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
+  if (!envv_len && envc) {
+    goto cleanup;
+  }
 
   /*
    * The following two loops cannot overflow.  The reason for this is
@@ -892,24 +896,29 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   uintptr_t             stack_ptr;
 
   CHECK(argc >= 0);
-  CHECK(argv || argc);
+  CHECK(argv || !argc);
 
-  retval = 0;  /* fail */
+  retval = 0;
   size = 0;
   envc = 0;
-  argv_len = NULL;
-  envv_len = NULL;
+  /* count number of environment strings */
   if (envv) {
     char const *const *pp;
     for (pp = envv; NULL != *pp; ++pp) {
       ++envc;
     }
   }
-  if (!argc || !envc) {
+  /* allocate space to hold length of vectors */
+  argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
+  envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
+  /* `argvv_len = malloc()` failed or `argc == 0` */
+  if (!argv_len) {
     goto cleanup;
   }
-  argv_len = malloc(argc * sizeof argv_len[0]);
-  envv_len = malloc(envc * sizeof envv_len[0]);
+  /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
+  if (!envv_len && envc) {
+    goto cleanup;
+  }
 
   /*
    * The following two loops cannot overflow.  The reason for this is
