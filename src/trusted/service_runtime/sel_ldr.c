@@ -1461,11 +1461,10 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   uintptr_t page_addr_parent = parent_offset + (entry->page_num << NACL_PAGESHIFT);
   size_t copy_size = entry->npages << NACL_PAGESHIFT;
 
-  /* don't capy pages if nap has no parent */
+  /* don't copy pages if nap has no parent */
   if (!parent_offset) {
     return;
   }
-
   NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
           entry->npages,
           entry->page_num,
@@ -1475,10 +1474,11 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
                             entry->prot, entry->flags|F_ANON_PRIV,
                             entry->desc, entry->offset, entry->file_size);
-
   if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) {
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   }
+
+  /* temporarily set RW page permissions for copy */
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
   NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
   if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
@@ -1492,6 +1492,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
 
+  /* reset to original page permissions */
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
   NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot);
   if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
@@ -1612,15 +1613,15 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_child);
 }
 
-/* Set up the fd table for each cage */
+/* set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id) {
-  nap->cage_id = cage_id;
-  nap->num_children = 0;
-  nap->num_lib = 3;
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
   /* set to the next unused (available for dup() etc.) file descriptor */
   nap->fd = 3;
+  nap->num_lib = 3;
+  nap->num_children = 0;
+  nap->cage_id = cage_id;
 }
 
