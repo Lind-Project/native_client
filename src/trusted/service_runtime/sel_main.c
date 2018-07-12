@@ -477,15 +477,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
   /*
-   * post condition established by the above code (in Hoare logic
-   * terminology):
-   *
-   * NULL == nap->nacl_file iff rpc_supplies_nexe
-   *
-   * so hence forth, testing !rpc_supplies_nexe suffices for
-   * establishing NULL != nap->nacl_file.
+   * either nap->nacl_file or rpc_supplies_nexe
+   * must be non-NULL, but not both
    */
-  CHECK(!!nap->nacl_file != !!rpc_supplies_nexe);
+  CHECK(!!nap->nacl_file ^ !!rpc_supplies_nexe);
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
