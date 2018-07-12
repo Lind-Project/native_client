@@ -329,8 +329,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
-  int             master_idx;
-  int             parent_idx;
 
   /*
    * mark this thread as dead; doesn't matter if some other thread is
@@ -342,41 +340,27 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     /*
      * remove self from parent's list of children
      */
-    NaClXMutexLock(&nap_master->children_mu);
-    NaClLog(1, "Decrementing parent child count for cage id: %d\n", nap_parent->cage_id);
-    master_idx = GetChildIdx(nap_master->children_ids, nap_master->num_children, nap->cage_id);
-    switch (master_idx) {
-    case -1:
-      NaClLog(1, "Index not found in master array: cage_id = %d\n", nap->cage_id);
-      break;
-    default:
-      nap_master->children_ids[master_idx] = 0;
-      NaClLog(1, "Master new child count: %d\n", --nap_master->num_children);
-      if (!DynArraySet(&nap_master->children, nap->cage_id, NULL)) {
-        NaClLog(1, "Failed to remove child master list: cage_id = %d\n", nap->cage_id);
-      }
-    }
-    NaClLog(1, "Signaling master from cage id: %d\n", nap->cage_id);
-    NaClXCondVarBroadcast(&nap_master->children_cv);
-    NaClXMutexUnlock(&nap_master->children_mu);
-    /* handle nested fork cases */
-    if (nap_master != nap_parent) {
-      NaClXMutexLock(&nap_parent->children_mu);
-      parent_idx = GetChildIdx(nap_parent->children_ids, nap_parent->num_children, nap->cage_id);
-      switch (parent_idx) {
+    for (struct NaClApp *nap_cur = nap_master; nap_cur; nap_cur = nap_parent) {
+      NaClLog(1, "[parent nap %d] starting cleanup: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
+      NaClXMutexLock(&nap_cur->children_mu);
+      int list_idx = GetChildIdx(nap_cur->children_ids, nap_cur->num_children, nap->cage_id);
+      switch (list_idx) {
       case -1:
-        NaClLog(1, "Index not found in parent array: cage_id = %d\n", nap->cage_id);
+        NaClLog(1, "[parent %d] index not found in id list: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
         break;
       default:
-        nap_parent->children_ids[parent_idx] = 0;
-        NaClLog(1, "Parent new child count: %d\n", --nap_parent->num_children);
-        if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
-          NaClLog(1, "Failed to remove child from parent list: cage_id = %d\n", nap->cage_id);
+        nap_cur->children_ids[list_idx] = 0;
+        NaClLog(1, "[parent %d] new child count: %d\n", -nap_cur->cage_id, -nap_cur->num_children);
+        if (!DynArraySet(&nap_cur->children, nap->cage_id, NULL)) {
+          NaClLog(1, "[parent %d] nap list removal failed: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
         }
       }
-      NaClLog(1, "Signaling parent from cage id: %d\n", nap->cage_id);
-      NaClXCondVarBroadcast(&nap_parent->children_cv);
-      NaClXMutexUnlock(&nap_parent->children_mu);
+      NaClXCondVarBroadcast(&nap_cur->children_cv);
+      NaClXMutexUnlock(&nap_cur->children_mu);
+      /* break after parent's cleanup */
+      if (nap_cur == nap_parent) {
+        break;
+      }
     }
   }
 
