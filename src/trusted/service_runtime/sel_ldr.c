@@ -215,7 +215,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->name_service = (struct NaClNameService *) malloc(
       sizeof *nap->name_service);
-  if (NULL == nap->name_service) {
+  if (!nap->name_service) {
     goto cleanup_cv;
   }
   if (!NaClNameServiceCtor(nap->name_service,
@@ -394,7 +394,7 @@ GENERIC_STORE(64)
 #undef GENERIC_STORE
 
 struct NaClPatchInfo *NaClPatchInfoCtor(struct NaClPatchInfo *self) {
-  if (NULL != self) {
+  if (self) {
     memset(self, 0, sizeof *self);
   }
   return self;
@@ -543,7 +543,7 @@ void  NaClMemRegionPrinter(void                   *state,
           (entry->page_num + entry->npages) << NACL_PAGESHIFT);
   gprintf(gp,   "prot   0x%08x\n", entry->prot);
   gprintf(gp,   "%sshared/backed by a file\n",
-          (NULL == entry->desc) ? "not " : "");
+          (!entry->desc) ? "not " : "");
 }
 
 void  NaClAppPrintDetails(struct NaClApp  *nap,
@@ -581,7 +581,7 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
   struct NaClDesc *result;
 
   result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
-  if (NULL != result) {
+  if (result) {
     NaClDescRef(result);
   }
 
@@ -680,7 +680,7 @@ int NaClAddThread(struct NaClApp        *nap,
 
 void NaClRemoveThreadMu(struct NaClApp  *nap,
                         int             thread_num) {
-  if (NULL == DynArrayGet(&nap->threads, thread_num)) {
+  if (!DynArrayGet(&nap->threads, thread_num)) {
      NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: thread to be removed is not in the table\n");
   }
@@ -720,7 +720,7 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
           nacl_desc,
           flag);
   dp = NaClDescIoDescMake(NaClHostDescPosixMake(host_os_desc, flag));
-  if (NULL == dp) {
+  if (!dp) {
     NaClLog(LOG_FATAL, "NaClAddHostDescriptor: NaClDescIoDescMake failed\n");
   }
   NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
@@ -742,7 +742,7 @@ void NaClAddImcHandle(struct NaClApp  *nap,
           (uintptr_t) h,
           nacl_desc);
   dp = (struct NaClDescImcDesc *) malloc(sizeof *dp);
-  if (NACL_FI_ERROR_COND("NaClAddImcHandle__malloc", NULL == dp)) {
+  if (NACL_FI_ERROR_COND("NaClAddImcHandle__malloc", !dp)) {
     NaClLog(LOG_FATAL, "NaClAddImcHandle: no memory\n");
   }
   if (NACL_FI_ERROR_COND("NaClAddImcHandle__ctor",
@@ -901,7 +901,7 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
           (uintptr_t) inherited_desc);
 
   channel = (struct NaClDescImcDesc *) malloc(sizeof *channel);
-  if (NULL == channel) {
+  if (!channel) {
     NaClLog(LOG_FATAL, "NaClSetUpBootstrapChannel: no memory\n");
   }
   if (!NaClDescImcDescCtor(channel, inherited_desc)) {
@@ -911,12 +911,12 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
             (uintptr_t) inherited_desc);
     return;
   }
-  if (NULL == nap->secure_service_address) {
+  if (!nap->secure_service_address) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: secure service address not set\n");
     return;
   }
-  if (NULL == nap->service_address) {
+  if (!nap->service_address) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: service address not set\n");
     return;
@@ -932,11 +932,12 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
   hdr.ndescv = descs;
   hdr.ndesc_length = NACL_ARRAY_SIZE(descs);
 
-  if (!channel)
+  if (!channel) {
     return;
+  }
   rv = NACL_VTBL(NaClDesc, channel)->SendMsg((struct NaClDesc *) channel, &hdr, 0);
   NaClXMutexLock(&nap->mu);
-  if (NULL != nap->bootstrap_channel) {
+  if (nap->bootstrap_channel) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: cannot have two bootstrap channels\n");
   }
@@ -993,7 +994,7 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
   rpc->result = NACL_SRPC_RESULT_INTERNAL;
 
   aux = strdup(in_args[1]->arrays.str);
-  if (NULL == aux) {
+  if (!aux) {
     rpc->result = NACL_SRPC_RESULT_NO_MEMORY;
     goto cleanup;
   }
@@ -1182,7 +1183,7 @@ NaClErrorCode NaClWaitForStartModuleCommand(struct NaClApp *nap) {
 }
 
 void NaClBlockIfCommandChannelExists(struct NaClApp *nap) {
-  if (NULL != nap->secure_service) {
+  if (nap->secure_service) {
     for (;;) {
       struct nacl_abi_timespec req;
       req.tv_sec = 1000;
@@ -1235,7 +1236,7 @@ static void NaClSecureReverseClientCallback(
   }
   nap->reverse_quota_interface = (struct NaClReverseQuotaInterface *)
       malloc(sizeof *nap->reverse_quota_interface);
-  if (NULL == nap->reverse_quota_interface ||
+  if (!nap->reverse_quota_interface ||
       NACL_FI_ERROR_COND(
           ("NaClSecureReverseClientCallback"
            "__NaClReverseQuotaInterfaceCtor"),
@@ -1263,7 +1264,7 @@ static void NaClSecureReverseClientSetup(struct NaClSrpcRpc     *rpc,
   NaClLog(4, "Entered NaClSecureReverseClientSetup\n");
 
   NaClXMutexLock(&nap->mu);
-  if (NULL != nap->reverse_client) {
+  if (nap->reverse_client) {
     NaClLog(LOG_FATAL, "Double reverse setup RPC\n");
   }
   if (NACL_REVERSE_CHANNEL_UNINITIALIZED !=
@@ -1275,7 +1276,7 @@ static void NaClSecureReverseClientSetup(struct NaClSrpcRpc     *rpc,
       NACL_REVERSE_CHANNEL_INITIALIZATION_STARTED;
   /* the reverse connection is still coming */
   rev = (struct NaClSecureReverseClient *) malloc(sizeof *rev);
-  if (NULL == rev) {
+  if (!rev) {
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
   }
@@ -1329,7 +1330,7 @@ void NaClSecureCommandChannel(struct NaClApp *nap) {
   secure_command_server = (struct NaClSecureService *) malloc(
       sizeof *secure_command_server);
   if (NACL_FI_ERROR_COND("NaClSecureCommandChannel__malloc",
-                         NULL == secure_command_server)) {
+                         !secure_command_server)) {
     NaClLog(LOG_FATAL, "Out of memory for secure command channel\n");
   }
   if (NACL_FI_ERROR_COND("NaClSecureCommandChannel__NaClSecureServiceCtor",
