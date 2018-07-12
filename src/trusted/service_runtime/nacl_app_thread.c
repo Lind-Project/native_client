@@ -43,6 +43,12 @@
  */
 struct NaClThreadContext *master_ctx;
 
+
+/*
+ * dynamically allocate and initilize a copy
+ * of the parents NaClApp structure which is
+ * used in NaClSysFork()
+ */
 struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
