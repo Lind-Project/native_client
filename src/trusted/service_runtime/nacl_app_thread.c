@@ -89,15 +89,17 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
      nap_master->num_children++;
   }
   if (nap_parent->children_ids[nap_parent->num_children]) {
-     nap_master->num_children++;
+     nap_parent->num_children++;
   }
   /* store cage_ids in both master and parent */
   nap_master->children_ids[nap_master->num_children++] = nap_child->cage_id;
   nap_parent->children_ids[nap_parent->num_children++] = nap_child->cage_id;
-  if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child))
+  if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child)) {
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
-  if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child))
+  }
+  if (!DynArraySet(&nap_master->children, nap_child->cage_id, nap_child)) {
     NaClLog(LOG_FATAL, "Failed to add child: cage_id = %u\n", nap_child->cage_id);
+  }
   NaClLog(1, "Master new child count: %d\n", nap_master->num_children);
   NaClLog(1, "Parent new child count: %d\n", nap_parent->num_children);
   NaClXMutexUnlock(&nap_master->children_mu);
@@ -109,10 +111,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-    NaClLog(1, "%s\n%s\n",
-            "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-            "or a corrupt nexe file may be responsible for this error.");
-    exit(EXIT_FAILURE);
+    NaClLog(LOG_FATAL, "%s\n%s\n",
+                       "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                       "or a corrupt nexe file may be responsible for this error.");
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
@@ -131,18 +132,17 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
   }
 
-  for (int old_fd = 0; old_fd < CAGING_FD_NUM; old_fd++) {
+  for (int old_fd = 0, new_fd; old_fd < CAGING_FD_NUM; old_fd++) {
     struct NaClDesc *old_nd;
-    int new_fd;
     old_nd = NaClGetDesc(nap_parent, old_fd);
     if (!old_nd) {
-      NaClLog(1, "NaClGetDesc() finished copying parent fd [%d] to child fd [%d]\n", old_fd - 1, new_fd - 1);
       break;
     }
     new_fd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, new_fd, old_nd);
     fd_cage_table[nap_child->cage_id][new_fd] = fd_cage_table[nap_parent->cage_id][old_fd];
     nap_child->fd++;
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", old_fd, new_fd);
   }
 
   return nap_child;
