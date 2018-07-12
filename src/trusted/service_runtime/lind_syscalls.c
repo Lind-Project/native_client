@@ -187,7 +187,7 @@ int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void
 {
     UNREFERENCED_PARAMETER(nap);
     UNREFERENCED_PARAMETER(inNum);
-    if(xchangedata) {
+    if (xchangedata) {
         free((void *)inArgs[1].ptr);
         free((void *)inArgs[2].ptr);
         free((void *)inArgs[3].ptr);
@@ -209,10 +209,10 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, v
     int64_t max_hfd = -1;
     NaClLog(1, "Entered LindSelectPreprocess inNum=%8u\n", inNum);
     max_fd = *(int64_t*)&inArgs[0].ptr;
-    if(inArgs[1].ptr) {
+    if (inArgs[1].ptr) {
         rs = *(fd_set*)inArgs[1].ptr;
-        inArgs[1].ptr=(uintptr_t)malloc(sizeof(fd_set));
-        if (NULL == (void*)inArgs[1].ptr) {
+        inArgs[1].ptr = (uintptr_t)malloc(sizeof(fd_set));
+        if (!inArgs[1].ptr) {
             retval = -NACL_ABI_ENOMEM;
             goto finish;
         }
@@ -220,8 +220,8 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, v
     }
     if(inArgs[2].ptr) {
         ws = *(fd_set*)inArgs[2].ptr;
-        inArgs[2].ptr=(uintptr_t)malloc(sizeof(fd_set));
-        if (NULL == (void*)inArgs[2].ptr) {
+        inArgs[2].ptr = (uintptr_t)malloc(sizeof(fd_set));
+        if (!inArgs[2].ptr) {
             retval = -NACL_ABI_ENOMEM;
             goto cleanup_rs;
         }
@@ -229,19 +229,19 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, v
     }
     if(inArgs[3].ptr) {
         es = *(fd_set*)inArgs[3].ptr;
-        inArgs[3].ptr=(uintptr_t)malloc(sizeof(fd_set));
-        if (NULL == (void*)inArgs[3].ptr) {
+        inArgs[3].ptr = (uintptr_t)malloc(sizeof(fd_set));
+        if (!inArgs[3].ptr) {
             retval = -NACL_ABI_ENOMEM;
             goto cleanup_ws;
         }
         FD_ZERO((fd_set*)inArgs[3].ptr);
     }
-    *xchangedata = malloc(sizeof(int)*(FD_SETSIZE+1));
-    if (NULL == *xchangedata) {
+    *xchangedata = malloc(sizeof(int) * (FD_SETSIZE + 1));
+    if (!*xchangedata) {
         retval = -NACL_ABI_ENOMEM;
         goto cleanup_es;
     }
-    memset(*xchangedata, 0xFF, sizeof(int)*FD_SETSIZE);
+    memset(*xchangedata, 0xFF, sizeof(int) * FD_SETSIZE);
     mapdata = &((int*)(*xchangedata))[1];
     NaClFastMutexLock(&nap->desc_mu);
     for(int i=0; i<max_fd; ++i) {
@@ -283,24 +283,24 @@ int LindSelectPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, v
             }
         }
     }
-    *(int64_t*)&inArgs[0].ptr = max_hfd+1;
-    ((int*)(*xchangedata))[0] = max_hfd+1;
-    NaClLog(1, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", *(int64_t*)&inArgs[0].ptr, max_fd);
+    *(int64_t *)&inArgs[0].ptr = max_hfd + 1;
+    ((int *)(*xchangedata))[0] = max_hfd + 1;
+    NaClLog(1, "max_fd is set to %"NACL_PRId64" was %"NACL_PRId64"\n", *(int64_t *)&inArgs[0].ptr, max_fd);
     NaClFastMutexUnlock(&nap->desc_mu);
     goto finish;
 cleanup_xdata:
     free(*xchangedata);
 cleanup_es:
     if(inArgs[3].ptr) {
-        free((void*)inArgs[3].ptr);
+        free((void *)inArgs[3].ptr);
     }
 cleanup_ws:
     if(inArgs[2].ptr) {
-        free((void*)inArgs[2].ptr);
+        free((void *)inArgs[2].ptr);
     }
 cleanup_rs:
     if(inArgs[1].ptr) {
-        free((void*)inArgs[1].ptr);
+        free((void *)inArgs[1].ptr);
     }
 finish:
     NaClLog(1, "%s\n", "Exiting LindSelectPreprocess");
@@ -387,7 +387,7 @@ cleanup:                                                                        
     UNREFERENCED_PARAMETER(inNum);                                                              \
     UNREFERENCED_PARAMETER(inArgs);                                                             \
     *xchangedata = malloc(sizeof(struct NaClHostDesc));                                         \
-    if (NULL == *xchangedata) {                                                                 \
+    if (!*xchangedata) {                                                                 \
       retval = -NACL_ABI_ENOMEM;                                                                \
       goto cleanup;                                                                             \
     }                                                                                           \
@@ -399,7 +399,7 @@ cleanup:                                                                        
       struct NaClDesc *ndp = {0};                                                               \
       UNREFERENCED_PARAMETER(inNum);                                                            \
       *xchangedata = malloc(sizeof(struct NaClHostDesc));                                       \
-      if (NULL == *xchangedata) {                                                               \
+      if (!*xchangedata) {                                                               \
         retval = -NACL_ABI_ENOMEM;                                                              \
         goto cleanup;                                                                           \
       }                                                                                         \
@@ -552,7 +552,7 @@ int LindSocketPairPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArg
     UNREFERENCED_PARAMETER(inNum);
     UNREFERENCED_PARAMETER(inArgs);
     *xchangedata = malloc(sizeof(struct NaClHostDesc)*2);
-    if (NULL == *xchangedata) {
+    if (!*xchangedata) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
@@ -603,19 +603,19 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, voi
         goto finish;
     }
     inpfds = (struct pollfd*)inArgs[2].ptr;
-    if(NULL == inpfds) {
+    if(!inpfds) {
         retval = -NACL_ABI_EINVAL;
         goto finish;
     }
     *xchangedata = malloc(sizeof(int)+sizeof(struct poll_map)*nfds);
-    if (NULL == *xchangedata) {
+    if (!*xchangedata) {
       retval = -NACL_ABI_ENOMEM;
       goto finish;
     }
     ((int*)(*xchangedata))[0] = nfds; //first sizeof(int) bytes contains # of fds
     mapdata = (struct poll_map*)&((int*)(*xchangedata))[1]; //map data begins after sizeof(int) bytes
     pfds = malloc(sizeof *pfds * nfds);
-    if (NULL == pfds) {
+    if (!pfds) {
       retval = -NACL_ABI_ENOMEM;
       goto cleanup_xdata;
     }
@@ -623,7 +623,7 @@ int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, voi
     for(int i=0; i<nfds; ++i) {
         pfds[i] = inpfds[i];
         ndp = NaClGetDescMu(nap, inpfds[i].fd);
-        if(NULL == ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
+        if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
             NaClDescSafeUnref(ndp);
             retval = -NACL_ABI_EINVAL;
             goto cleanup_pfds;
@@ -835,7 +835,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
-    if(outNum && !NaClCopyInFromUser(nap, outArgSys, (uintptr_t)outArgs, sizeof(LindArg)*outNum)) {
+    if (outNum && !NaClCopyInFromUser(nap, outArgSys, (uintptr_t)outArgs, sizeof(LindArg)*outNum)) {
         NaClLog(LOG_ERROR, "NaClSysLindSyscall: invalid output argument address\n");
         retval = -NACL_ABI_EFAULT;
         goto cleanup;
@@ -856,16 +856,18 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         int data[2] = {9001, 9002};
         int len = 8;
         int error = NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, data, len);
-        if (!error)
+        if (!error) {
             NaClLog(LOG_ERROR, "NaClCopyOutToUser: failed! \n");
+        }
         retval = 0;
         goto cleanup;
     }
 
-    if(stubs[callNum].pre) {
+    if (stubs[callNum].pre) {
         retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
-        if(retval)
+        if (retval) {
             goto cleanup;
+        }
     }
 
     callArgs = PyList_New(0);
@@ -873,7 +875,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
     PyTuple_SetItem(apiArg, 0, PyInt_FromLong(callNum));
     PyTuple_SetItem(apiArg, 1, callArgs);
 
-    for(i=0; i<inNum; ++i) {
+    for (i=0; i<inNum; ++i) {
         switch(inArgSys[i].type) {
         case AT_INT:
             NaClLog(1, "Int argument: %" NACL_PRId64 ", %" NACL_PRIu64 "\n",
