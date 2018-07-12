@@ -340,7 +340,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
         break;
       default:
         nap_cur->children_ids[list_idx] = 0;
-        NaClLog(1, "[parent %d] new child count: %d\n", --nap_cur->cage_id, --nap_cur->num_children);
+        NaClLog(1, "[parent %d] new child count: %d\n", nap_cur->cage_id, --nap_cur->num_children);
         if (!DynArraySet(&nap_cur->children, nap->cage_id, NULL)) {
           NaClLog(1, "[parent %d] nap list removal failed: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
         }
