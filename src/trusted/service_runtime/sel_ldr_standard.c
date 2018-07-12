@@ -785,28 +785,26 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   size_t                *envv_len;
   uintptr_t             stack_ptr;
 
-  retval = 0;  /* fail */
   CHECK(argc >= 0);
   CHECK(NULL != argv || 0 == argc);
 
+  retval = 0;  /* fail */
+  size = 0;
   envc = 0;
-  if (NULL != envv) {
+  argv_len = NULL;
+  envv_len = NULL;
+  if (envv) {
     char const *const *pp;
     for (pp = envv; NULL != *pp; ++pp) {
       ++envc;
     }
   }
-  envv_len = 0;
-  argv_len = !argc ? NULL : malloc(argc * sizeof argv_len[1]);
-  envv_len = !envc ? NULL : malloc(envc * sizeof envv_len[0]);
-  if (NULL == argv_len) {
+  if (!argc || !envc) {
     goto cleanup;
   }
-  if (NULL == envv_len && 0 != envc) {
-    goto cleanup;
-  }
+  argv_len = malloc(argc * sizeof argv_len[0]);
+  envv_len = malloc(envc * sizeof envv_len[0]);
 
-  size = 0;
 
   /*
    * The following two loops cannot overflow.  The reason for this is
@@ -987,28 +985,25 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size_t                *envv_len;
   uintptr_t             stack_ptr;
 
-  retval = 0;  /* fail */
   CHECK(argc >= 0);
   CHECK(argv || argc);
 
+  retval = 0;  /* fail */
+  size = 0;
   envc = 0;
-  if (NULL != envv) {
+  argv_len = NULL;
+  envv_len = NULL;
+  if (envv) {
     char const *const *pp;
     for (pp = envv; NULL != *pp; ++pp) {
       ++envc;
     }
   }
-  envv_len = 0;
-  argv_len = !argc ? NULL : malloc(argc * sizeof argv_len[0]);
-  envv_len = !envc ? NULL : malloc(envc * sizeof envv_len[0]);
-  if (NULL == argv_len) {
+  if (!argc || !envc) {
     goto cleanup;
   }
-  if (NULL == envv_len && 0 != envc) {
-    goto cleanup;
-  }
-
-  size = 0;
+  argv_len = malloc(argc * sizeof argv_len[0]);
+  envv_len = malloc(envc * sizeof envv_len[0]);
 
   /*
    * The following two loops cannot overflow.  The reason for this is
