@@ -613,6 +613,7 @@ int lind_listen (int sockfd, int backlog)
     LIND_API_PART3;
 }
 
+/* unimplemented */
 int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr_in *dest_addr, const void *buf)
 {
     UNREFERENCED_PARAMETER(sockfd);
@@ -621,14 +622,6 @@ int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const str
     UNREFERENCED_PARAMETER(addrlen);
     UNREFERENCED_PARAMETER(dest_addr);
     UNREFERENCED_PARAMETER(buf);
-    /*CHECK_NOT_NULL(dest_addr);;
-    CHECK_NOT_NULL(buf);;
-    LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iiiis#s#])", LIND_safe_net_sendto, sockfd, len, addrlen, dest_addr, addrlen, buf, len);
-    LIND_API_PART2;
-    LIND_API_PART3*/;
-
-    // unimplemented
     return 0;
 }
 
@@ -647,14 +640,6 @@ int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, con
     UNREFERENCED_PARAMETER(addrlen_in);
     UNREFERENCED_PARAMETER(addr);
     UNREFERENCED_PARAMETER(addrlen_out);
-
-    /*
-     * LIND_API_PART1;
-     * callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_getpeername, sockfd, addrlen);
-     * LIND_API_PART2;
-     * LIND_API_PART3;
-     */
-
     return 0;
 }
 
