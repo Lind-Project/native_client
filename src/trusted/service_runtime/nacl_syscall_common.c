@@ -97,44 +97,101 @@
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
 
+
+#define kKnownInvalidDescNumber (-1)
+#define kdefault_io_buffer_bytes_to_log 64ull
+#define kMaxUsableFileSize (SIZE_MAX >> 1)
+
+#define MIN(a, b) ((size_t)((a < b) ? a : b))
+
 struct NaClDescQuotaInterface;
-
-static size_t const kdefault_io_buffer_bytes_to_log = 64;
-
-/*
- * yiwen: my data for the in-process-pipe
- *
- * char pipe_buffer[16*4096];
- * int pipe_mutex;
- *
- * 0: pipe is empty, ready to write, cannot read; 1: pipe is full, ready to read, cannot write.
- * at initialization, it should be set to 0.
- */
-/* char *buffer_ptr; */
-
-static int32_t MunmapInternal(struct NaClApp *nap,
-                              uintptr_t sysaddr, size_t length);
-
-/*
- * OSX defines SIZE_T_MAX in i386/limits.h; Linux has SIZE_MAX;
- * Windows has none.
- *
- * TODO(bsy): remove when we put SIZE_T_MAX in a common header file.
- */
-#if !defined(SIZE_T_MAX)
-# define SIZE_T_MAX   (~(size_t)0ull)
-#endif
-
-static const size_t kMaxUsableFileSize = (SIZE_T_MAX >> 1);
-
-static INLINE size_t  size_min(size_t a, size_t b) {
-  return (a < b) ? a : b;
-}
-
-static int const kKnownInvalidDescNumber = -1;
 
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
+#if NACL_WINDOWS
+  static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t length) {
+    uintptr_t addr;
+    uintptr_t endaddr = sysaddr + length;
+    uintptr_t usraddr;
+    for (addr = sysaddr; addr < endaddr; addr += NACL_MAP_PAGESIZE) {
+      struct NaClVmmapEntry const *entry;
+      uintptr_t                   page_num;
+      uintptr_t                   offset;
+
+      usraddr = NaClSysToUser(nap, addr);
+
+      entry = NaClVmmapFindPage(&nap->mem_map, usraddr >> NACL_PAGESHIFT);
+      if (!entry) {
+        continue;
+      }
+      NaClLog(2, "NaClSysMunmap: addr 0x%08x, desc 0x%08"NACL_PRIxPTR"\n",
+              addr, (uintptr_t)entry->desc);
+
+      page_num = usraddr - (entry->page_num << NACL_PAGESHIFT);
+      offset = (uintptr_t) entry->offset + page_num;
+
+      if (entry->desc &&
+          offset < (uintptr_t) entry->file_size) {
+        if (!UnmapViewOfFile((void *) addr)) {
+          NaClLog(1, "MunmapInternal: UnmapViewOfFile failed to at addr"
+                  " 0x%08"NACL_PRIxPTR", error %d\n",
+                  addr, GetLastError());
+        }
+        /*
+        * Fill the address space hole that we opened
+        * with UnmapViewOfFile().
+        */
+        if (!VirtualAlloc((void *) addr, NACL_MAP_PAGESIZE, MEM_RESERVE,
+                          PAGE_READWRITE)) {
+          NaClLog(LOG_FATAL, "MunmapInternal: "
+                  "failed to fill hole with VirtualAlloc(), error %d\n",
+                  GetLastError());
+        }
+      } else {
+        /*
+         * Anonymous memory; we just decommit it and thus
+         * make it inaccessible.
+         */
+        if (!VirtualFree((void *) addr,
+                         NACL_MAP_PAGESIZE,
+                         MEM_DECOMMIT)) {
+          int error = GetLastError();
+          NaClLog(LOG_FATAL,
+                  ("MunmapInternal: Could not VirtualFree MEM_DECOMMIT"
+                   " addr 0x%08x, error %d (0x%x)\n"),
+                  addr, error, error);
+        }
+      }
+      NaClVmmapRemove(&nap->mem_map,
+                      usraddr >> NACL_PAGESHIFT,
+                      NACL_PAGES_PER_MAP);
+    }
+    return 0;
+  }
+#else /* NACL_WINDOWS */
+  static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t length) {
+    UNREFERENCED_PARAMETER(nap);
+    NaClLog(3, "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n", sysaddr, length);
+    /*
+     * Overwrite current mapping with inaccessible, anonymous
+     * zero-filled pages, which should be copy-on-write and thus
+     * relatively cheap.  Do not open up an address space hole.
+     */
+    if (MAP_FAILED == mmap((void *) sysaddr,
+                           length,
+                           PROT_NONE,
+                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+                           -1,
+                           (off_t) 0)) {
+      NaClLog(2, "mmap to put in anonymous memory failed, errno = %d\n", errno);
+      return -NaClXlateErrno(errno);
+    }
+    NaClVmmapRemove(&nap->mem_map,
+                    NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
+                    length >> NACL_PAGESHIFT);
+    return 0;
+  }
+#endif /* NACL_WINDOWS */
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   NaClCopyDropLock(natp->nap);
@@ -1558,7 +1615,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
   }
-  length = size_min(alloc_rounded_length, (size_t) host_rounded_file_bytes);
+  length = MIN(alloc_rounded_length, (size_t) host_rounded_file_bytes);
 
   /*
    * Lock the addr space.
@@ -1906,7 +1963,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
        * This is a fix for Windows, where we cannot pass a size that
        * goes beyond the non-page-rounded end of the file.
        */
-      size_t length_to_map = size_min(length, (size_t) file_bytes);
+      size_t length_to_map = MIN(length, (size_t) file_bytes);
 
       NaClLog(4,
               ("NaClSysMmap: (*ndp->Map)(,,0x%08"NACL_PRIxPTR","
@@ -2063,93 +2120,6 @@ cleanup:
   return retval;
 }
 
-#if NACL_WINDOWS
-static int32_t MunmapInternal(struct NaClApp *nap,
-                              uintptr_t sysaddr, size_t length) {
-  uintptr_t addr;
-  uintptr_t endaddr = sysaddr + length;
-  uintptr_t usraddr;
-  for (addr = sysaddr; addr < endaddr; addr += NACL_MAP_PAGESIZE) {
-    struct NaClVmmapEntry const *entry;
-    uintptr_t                   page_num;
-    uintptr_t                   offset;
-
-    usraddr = NaClSysToUser(nap, addr);
-
-    entry = NaClVmmapFindPage(&nap->mem_map, usraddr >> NACL_PAGESHIFT);
-    if (!entry) {
-      continue;
-    }
-    NaClLog(2, "NaClSysMunmap: addr 0x%08x, desc 0x%08"NACL_PRIxPTR"\n",
-            addr, (uintptr_t)entry->desc);
-
-    page_num = usraddr - (entry->page_num << NACL_PAGESHIFT);
-    offset = (uintptr_t) entry->offset + page_num;
-
-    if (entry->desc &&
-        offset < (uintptr_t) entry->file_size) {
-      if (!UnmapViewOfFile((void *) addr)) {
-        NaClLog(1, "MunmapInternal: UnmapViewOfFile failed to at addr"
-                " 0x%08"NACL_PRIxPTR", error %d\n",
-                addr, GetLastError());
-      }
-      /*
-      * Fill the address space hole that we opened
-      * with UnmapViewOfFile().
-      */
-      if (!VirtualAlloc((void *) addr, NACL_MAP_PAGESIZE, MEM_RESERVE,
-                        PAGE_READWRITE)) {
-        NaClLog(LOG_FATAL, "MunmapInternal: "
-                "failed to fill hole with VirtualAlloc(), error %d\n",
-                GetLastError());
-      }
-    } else {
-      /*
-       * Anonymous memory; we just decommit it and thus
-       * make it inaccessible.
-       */
-      if (!VirtualFree((void *) addr,
-                       NACL_MAP_PAGESIZE,
-                       MEM_DECOMMIT)) {
-        int error = GetLastError();
-        NaClLog(LOG_FATAL,
-                ("MunmapInternal: Could not VirtualFree MEM_DECOMMIT"
-                 " addr 0x%08x, error %d (0x%x)\n"),
-                addr, error, error);
-      }
-    }
-    NaClVmmapRemove(&nap->mem_map,
-                    usraddr >> NACL_PAGESHIFT,
-                    NACL_PAGES_PER_MAP);
-  }
-  return 0;
-}
-#else
-static int32_t MunmapInternal(struct NaClApp *nap,
-                              uintptr_t sysaddr, size_t length) {
-  UNREFERENCED_PARAMETER(nap);
-  NaClLog(3, "MunmapInternal(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS")\n", sysaddr, length);
-  /*
-   * Overwrite current mapping with inaccessible, anonymous
-   * zero-filled pages, which should be copy-on-write and thus
-   * relatively cheap.  Do not open up an address space hole.
-   */
-  if (MAP_FAILED == mmap((void *) sysaddr,
-                         length,
-                         PROT_NONE,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
-                         -1,
-                         (off_t) 0)) {
-    NaClLog(2, "mmap to put in anonymous memory failed, errno = %d\n", errno);
-    return -NaClXlateErrno(errno);
-  }
-  NaClVmmapRemove(&nap->mem_map,
-                  NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
-                  length >> NACL_PAGESHIFT);
-  return 0;
-}
-#endif
-
 int32_t NaClSysMunmap(struct NaClAppThread  *natp,
                       void                  *start,
                       size_t                length) {
@@ -2294,7 +2264,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
       }
 
       file_bytes = entry->file_size - offset;
-      chunk_size = size_min((size_t) file_bytes, NACL_MAP_PAGESIZE);
+      chunk_size = MIN((size_t) file_bytes, NACL_MAP_PAGESIZE);
       rounded_chunk_size = NaClRoundPage(chunk_size);
 
       NaClLog(2, "VirtualProtect(0x%08x, 0x%"NACL_PRIxS", %x)\n",
@@ -2360,7 +2330,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
 
       file_bytes = entry->file_size - entry->offset;
       rounded_file_bytes = NaClRoundPage((size_t) file_bytes);
-      prot_len = size_min(rounded_file_bytes, entry_len);
+      prot_len = MIN(rounded_file_bytes, entry_len);
 
       if (mprotect((void *) addr, prot_len, host_prot)) {
         NaClLog(1, "MprotectInternal: "
