@@ -111,7 +111,6 @@
 #define NACL_sys_test_syscall_2         112
 #define NACL_sys_lind_syscall           113
 
-// yiwen
 #define NACL_sys_pipe                   114
 #define NACL_sys_fork                   115
 #define NACL_sys_execv                  116
@@ -120,7 +119,6 @@
 #define NACL_sys_dup3                   119
 #define NACL_sys_wait                   120
 
-/* jp */
 #define NACL_sys_pipe2                  121
 
 #define NACL_MAX_SYSCALLS               122

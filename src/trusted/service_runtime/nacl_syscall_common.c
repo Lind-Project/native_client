@@ -29,7 +29,6 @@
 #include <string.h>
 #include <unistd.h>
 
-// yiwen
 #include <time.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
@@ -92,7 +91,6 @@
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
-// yiwen
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
 #include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
@@ -485,7 +483,6 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   return retval;
 }
 
-/* jp */
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp  *nap = natp->nap;
   int             retval, newfd;
@@ -586,7 +583,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
 
-  // yiwen
   int                  fd_retval; // this is the virtual fd returned to the cage
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
@@ -710,7 +706,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
      goto out;
   }
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   /* debug -jp */
@@ -748,7 +743,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
 
-  // yiwen
   int fd;
 
   NaClLog(1, "Entered NaClSysGetdents(0x%08"NACL_PRIxPTR","
@@ -756,7 +750,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
           " %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -831,7 +824,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   char const      *ellipsis = "";
   char* string;
 
-  // yiwen
   int             fd;
   int             read_data_size;
 
@@ -913,7 +905,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   size_t          log_bytes;
 
-  // yiwen
   int             fd;
 
   NaClLog(2, "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
@@ -924,7 +915,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   UNREFERENCED_PARAMETER(fd);
   NaClLog(2, "[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -990,14 +980,12 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   nacl_off64_t    retval64;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
-  // yiwen
   int             fd;
 
   NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -1059,7 +1047,6 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    ****************************************
    */
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -1112,7 +1099,6 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   NaClLog(2, "sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
           sizeof *nasp, sizeof *nasp);
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
@@ -1345,7 +1331,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   nacl_off64_t                file_bytes;
   nacl_off64_t                host_rounded_file_bytes;
   size_t                      alloc_rounded_file_bytes;
-  // yiwen
   int fd;
 
   holding_app_lock = 0;
@@ -1369,7 +1354,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
      */
     ndp = NULL;
   } else {
-    // yiwen
     fd = fd_cage_table[nap->cage_id][d];
     ndp = NaClGetDesc(nap, fd);
     if (!ndp) {
@@ -2631,7 +2615,6 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
     }
   }
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -2748,7 +2731,6 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   struct NaClDesc                       *new_desc[NACL_ABI_IMC_DESC_MAX];
   nacl_abi_size_t                       num_user_desc;
   struct NaClDesc                       *invalid_desc = NULL;
-  // yiwen
   int                                   fd;
 
   NaClLog(2, "Entered NaClSysImcRecvMsg(0x%08"NACL_PRIxPTR", %d,"
@@ -2819,7 +2801,6 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
     }
   }
 
-  // yiwen
   fd = fd_cage_table[nap->cage_id][d];
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -3826,7 +3807,6 @@ int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
   return -ENOSYS;
 }
 
-/* jp */
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NULL;
@@ -3883,7 +3863,6 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   return -ENOSYS;
 }
 
-/* jp */
 #define WAIT_ANY (-1)
 #define WAIT_ANY_PG 0
 

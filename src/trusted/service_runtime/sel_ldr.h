@@ -61,7 +61,6 @@
 #include "native_client/src/trusted/service_runtime/name_service/name_service.h"
 
 #include "native_client/src/trusted/validator/ncvalidate.h"
-// yiwen
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 EXTERN_C_BEGIN
@@ -636,7 +635,6 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status);
  */
 uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
 
-// yiwen
 void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t useraddr);
 void NaClLogSysMemoryContent(uintptr_t sysaddr);
 void NaClLogThreadContext(struct NaClAppThread *natp);
@@ -654,7 +652,6 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                          char               **argv,
                          char const *const  *envp) NACL_WUR;
 
-/* jp */
 int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClAppThread     *natp_parent,
                              struct NaClApp           *nap_child,

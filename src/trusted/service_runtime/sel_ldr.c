@@ -59,7 +59,6 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
 
-// yiwen
 double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;

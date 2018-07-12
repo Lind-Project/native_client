@@ -31,7 +31,6 @@
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 
-/* jp */
 EXTERN_C_BEGIN
 /* snprintf length limit for each argv string */
 #define ARG_LIMIT (1u << 12)
@@ -90,7 +89,6 @@ extern int lind_syscall_counter;
 extern int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 extern double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
 
-// yiwen
 extern int cage;
 extern double time_counter;
 extern double time_start;

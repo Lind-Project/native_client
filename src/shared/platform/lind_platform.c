@@ -15,7 +15,6 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 
-// yiwen
 int lind_syscall_counter;
 int lind_syscall_invoked_times[LIND_MAX_SYSCALLS];
 double lind_syscall_execution_time[LIND_MAX_SYSCALLS];
@@ -421,7 +420,6 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf)
 int lind_open (int flags, int mode, const char *path)
 {
     LIND_API_PART1;
-    // yiwen: debug
     // printf("\n [***Debug!***][lind_open] opening file: %s \n", path);
     callArgs = Py_BuildValue("(i[iis])", LIND_safe_fs_open, flags, mode, path);
     LIND_API_PART2;

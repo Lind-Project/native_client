@@ -64,7 +64,6 @@
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
 
 
-// yiwen
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include <time.h>
@@ -860,7 +859,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
   InitializeCage(nap, 1);
 
-  // yiwen: debug
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
@@ -875,7 +873,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClLog(1, "nap->command_num = %d, nap->binary_path = %s\n", nap->command_num, nap->binary_path);
 
-  /* jp */
   NaClLog(1, "%s\n", "Initializing pipe table mutexes/conditional variables.");
   for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
     NaClXMutexCtor(&pipe_table[i].mu);

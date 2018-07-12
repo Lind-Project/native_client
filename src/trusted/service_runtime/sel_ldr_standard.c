@@ -183,7 +183,6 @@ void NaClLogSysMemoryContent(uintptr_t sysaddr) {
   NaClLog(1, "[Memory] Memory content (string):       %s\n", (char *)addr);
 }
 
-/* jp */
 void NaClLogThreadContext(struct NaClAppThread *natp) {
   struct NaClThreadContext *ctx = &natp->user;
   UNREFERENCED_PARAMETER(ctx);
@@ -967,7 +966,6 @@ cleanup:
   return retval;
 }
 
-/* jp */
 int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClAppThread     *natp_parent,
                              struct NaClApp           *nap_child,

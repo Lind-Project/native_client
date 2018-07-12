@@ -26,12 +26,10 @@
 #include "native_client/src/trusted/service_runtime/nacl_tls.h"
 #include "native_client/src/trusted/service_runtime/osx/mach_thread_map.h"
 
-// yiwen
 #include "native_client/src/include/win/mman.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
-/* jp */
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
@@ -144,7 +142,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   return nap_child;
 }
 
-/* jp */
 void WINAPI NaClAppForkThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   struct NaClApp *nap = natp->nap;
@@ -301,7 +298,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
                                NACL_APP_THREAD_UNTRUSTED);
 
-  // yiwen:
   NaClLog(1, "%s\n", "[NaCl Main Loader] NaCl Loader: user program about to start running inside the cage!");
   /* NaClVmmapDebug(&natp->nap->mem_map, "parent vmmap:"); */
   NaClStartThreadInApp(natp, natp->user.prog_ctr);
@@ -539,7 +535,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
 }
 
-/* jp */
 int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
                            struct NaClAppThread     *natp_parent,
                            struct NaClApp           *nap_child,
@@ -799,7 +794,6 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClAlignedFree(natp);
 }
 
-/* jp */
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadPrintInfo] "
           "cage id = %d, prog_ctr = %#x, new_prog_ctr = %#x, sysret = %#x\n",
