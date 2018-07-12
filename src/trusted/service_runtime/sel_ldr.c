@@ -900,9 +900,10 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
           (uintptr_t) nap,
           (uintptr_t) inherited_desc);
 
-  channel = (struct NaClDescImcDesc *) malloc(sizeof *channel);
+  channel = malloc(sizeof *channel);
   if (!channel) {
     NaClLog(LOG_FATAL, "NaClSetUpBootstrapChannel: no memory\n");
+    return;
   }
   if (!NaClDescImcDescCtor(channel, inherited_desc)) {
     NaClLog(LOG_FATAL,
@@ -927,21 +928,18 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
   descs[0] = nap->secure_service_address;
   descs[1] = nap->service_address;
 
-  hdr.iov = (struct NaClImcMsgIoVec *) NULL;
+  hdr.iov = (struct NaClImcMsgIoVec *)NULL;
   hdr.iov_length = 0;
   hdr.ndescv = descs;
   hdr.ndesc_length = NACL_ARRAY_SIZE(descs);
 
-  if (!channel) {
-    return;
-  }
-  rv = NACL_VTBL(NaClDesc, channel)->SendMsg((struct NaClDesc *) channel, &hdr, 0);
+  rv = NACL_VTBL(NaClDesc, channel)->SendMsg((struct NaClDesc *)channel, &hdr, 0);
   NaClXMutexLock(&nap->mu);
   if (nap->bootstrap_channel) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: cannot have two bootstrap channels\n");
   }
-  nap->bootstrap_channel = (struct NaClDesc *) channel;
+  nap->bootstrap_channel = (struct NaClDesc *)channel;
   channel = NULL;
   NaClXMutexUnlock(&nap->mu);
 
