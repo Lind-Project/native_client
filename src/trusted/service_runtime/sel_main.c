@@ -193,25 +193,16 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct redir                  **redir_qend;
 
   struct NaClApp                state = {0};
+  struct NaClApp                *nap = &state;
+  struct NaClDesc               *blob_file = NULL;
+  struct GioFile                gout;
+  struct DynArray               env_vars;
+  struct NaClPerfCounter        time_all_main;
+  struct NaClEnvCleanser        env_cleanser;
+  NaClErrorCode                 errcode = LOAD_INTERNAL;
   int                           rpc_supplies_nexe = 0;
   int                           export_addr_to = -1;
-  struct NaClDesc               *blob_file = NULL;
-  char                          *blob_library_file = NULL;
-
-  struct NaClApp                *nap = &state;
-
-  // argc2 and argv2 defines the NaCl file we want to run for nap2.
-  // they will be used when we try to create the thread.
-  /* int argc2; */
-  /* char **argv2; */
-
-  struct GioFile                gout;
-  NaClErrorCode                 errcode = LOAD_INTERNAL;
-
   int                           ret_code;
-  struct DynArray               env_vars;
-
-  char                          *log_file = NULL;
   int                           verbosity = 0;
   int                           fuzzing_quit_after_load = 0;
   int                           debug_mode_bypass_acl_checks = 0;
@@ -219,24 +210,23 @@ int NaClSelLdrMain(int argc, char **argv) {
   int                           skip_qualification = 0;
   int                           handle_signals = 0;
   int                           enable_debug_stub = 0;
-  struct NaClPerfCounter        time_all_main;
+  char                          *blob_library_file = NULL;
+  char                          *log_file = NULL;
   const char                    **envp;
-  struct NaClEnvCleanser        env_cleanser;
 
   // yiwen: define variables for doing evaluation measurement
-  clock_t 			nacl_main_begin;
-  clock_t			nacl_main_finish;
-  clock_t			nacl_initialization_finish;
-  double			nacl_main_spent;
-  double			nacl_initialization_spent;
+  clock_t                       nacl_main_begin;
+  clock_t                       nacl_main_finish;
+  clock_t                       nacl_initialization_finish;
+  double                        nacl_main_spent;
+  double                        nacl_initialization_spent;
 
-  clock_t 			nacl_user_program_begin;
-  clock_t 			nacl_user_program_finish;
-  double			nacl_user_program_spent;
+  clock_t                       nacl_user_program_begin;
+  clock_t                       nacl_user_program_finish;
+  double                        nacl_user_program_spent;
   #ifdef SYSCALL_TIMING
-  int				i;
-  double			nacl_syscall_total_time;
-  double			lind_syscall_total_time;
+  double                        nacl_syscall_total_time;
+  double                        lind_syscall_total_time;
   #endif
 
 #if NACL_OSX
@@ -464,30 +454,27 @@ int NaClSelLdrMain(int argc, char **argv) {
    * result from getopt processing -- usually out-of-memory, which
    * shouldn't happen -- won't show up.
    */
-  if (NULL != log_file) {
+  if (log_file) {
     NaClLogSetFile(log_file);
   }
 
   if (rpc_supplies_nexe) {
     if (nap->nacl_file) {
-      NaClLog(1, "%s\n", "sel_ldr: mutually exclusive flags -f and -R both used");
-      exit(EXIT_FAILURE);
+      NaClLog(LOG_FATAL, "%s\n", "sel_ldr: mutually exclusive flags -f and -R both used");
     }
     /* post: NULL == nap->nacl_file */
     if (export_addr_to < 0) {
-      NaClLog(1, "%s\n", "sel_ldr: -R requires -X to set up secure command channel");
-      exit(EXIT_FAILURE);
+      NaClLog(LOG_FATAL, "%s\n", "sel_ldr: -R requires -X to set up secure command channel");
     }
   } else {
+    if (!nap->nacl_file && optind > argc) {
+      NaClLog(LOG_FATAL, "%s\n", "No nacl file specified");
+    }
+    /* post: NULL != nap->nacl_file */
     if (!nap->nacl_file && optind < argc) {
       nap->nacl_file = argv[optind];
       ++optind;
     }
-    if (!nap->nacl_file) {
-      NaClLog(1, "%s\n", "No nacl file specified");
-      exit(EXIT_FAILURE);
-    }
-    /* post: NULL != nap->nacl_file */
   }
   /*
    * post condition established by the above code (in Hoare logic
@@ -502,10 +489,17 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
-
   state.ignore_validator_result = debug_mode_ignore_validator > 0;
   state.skip_validator = debug_mode_ignore_validator > 1;
 
+/*
+ * `_HOST_OSX` is defined so that
+ * `if (... && _HOST_OSX)` expands
+ * to a valid conditional in when
+ * run through a linter
+ *
+ * -jp
+ */
 #if NACL_OSX
 # define _HOST_OSX 1
 #else
@@ -531,8 +525,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 #else
 # error Unknown host OS
 #endif
-#undef _HOST_OSX
   }
+#undef _HOST_OSX
 
   errcode = LOAD_OK;
 
@@ -589,8 +583,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * faults inside x86-64 sandboxed code.  The sandbox is not secure
    * on 64-bit Windows without this.
    */
-#if (NACL_WINDOWS && NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && \
-     NACL_BUILD_SUBARCH == 64)
+#if (NACL_WINDOWS && NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64)
   NaClPatchWindowsExceptionDispatcher();
 #endif
   NaClSignalTestCrashOnStartup();
@@ -599,7 +592,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    * Open both files first because (on Mac OS X at least)
    * NaClAppLoadFile() enables an outer sandbox.
    */
-  if (NULL != blob_library_file) {
+  if (blob_library_file) {
     NaClFileNameForValgrind(blob_library_file);
     blob_file = (struct NaClDesc *) NaClDescIoDescOpen(blob_library_file,
                                                        NACL_ABI_O_RDONLY, 0);
@@ -740,6 +733,14 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClGdbHook(&state);
   }
 
+/*
+ * `_HOST_OSX` is defined so that
+ * `if (... && _HOST_OSX)` expands
+ * to a valid conditional in when
+ * run through a linter
+ *
+ * -jp
+ */
 #if NACL_OSX
 # define _HOST_OSX 1
 #else
@@ -772,11 +773,11 @@ int NaClSelLdrMain(int argc, char **argv) {
    *
    * We cannot enable the sandbox if file access is enabled.
    */
-  if (!NaClAclBypassChecks && g_enable_outer_sandbox_func != NULL) {
+  if (!NaClAclBypassChecks && g_enable_outer_sandbox_func) {
     g_enable_outer_sandbox_func();
   }
 
-  if (NULL != blob_library_file) {
+  if (blob_library_file) {
     if (nap->irt_loaded) {
       NaClLog(1, "%s\n", "IRT loaded via command channel; ignoring -B irt");
     } else if (LOAD_OK == errcode) {
@@ -813,7 +814,7 @@ int NaClSelLdrMain(int argc, char **argv) {
    */
   fflush(NULL);
 
-  if (NULL != nap->secure_service) {
+  if (nap->secure_service) {
     NaClErrorCode start_result;
     /*
      * wait for start_module RPC call on secure channel thread.
@@ -941,7 +942,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
   NaClLog(1, "%s\n", "[NaClMain] Print out system call timing table: ");
   nacl_syscall_total_time = 0.0;
-  for (i = 0; i < NACL_MAX_SYSCALLS; i++) {
+  for (size_t i = 0; i < NACL_MAX_SYSCALLS; i++) {
     NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
     nacl_syscall_total_time +=  nacl_syscall_execution_time[i];
   }
@@ -950,7 +951,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
   NaClLog(1, "%s\n", "[NaClMain] Print out Lind system call timing table: ");
   lind_syscall_total_time = 0.0;
-  for (i = 0; i < LIND_MAX_SYSCALLS; i++) {
+  for (size_t i = 0; i < LIND_MAX_SYSCALLS; i++) {
     NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
     lind_syscall_total_time +=  lind_syscall_execution_time[i];
   }
@@ -958,13 +959,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
   #endif
-
-  // yiwen: test output for cage->lib_table[CACHED_LIB_NUM_MAX]
-  /*
-  printf("[*** TESTING! ***] nap->num_lib = %d \n", nap->num_lib);
-  for (j = 0; j < nap->num_lib; j++) {
-     printf("[*** TESTING! ***] fd = %d, filepath = %s \n", j, nap->lib_table[j].path);
-  } */
 
   NaClLog(1, "[Performance results] LindPythonInit(): %f \n", time_counter);
 
@@ -1010,11 +1004,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClExit(ret_code);
 
   /* silence unused variable warnings */
-  (void)nacl_main_spent;
-  (void)nacl_initialization_spent;
-  (void)nacl_user_program_begin;
-  (void)nacl_user_program_finish;
-  (void)nacl_user_program_spent;
+  UNREFERENCED_PARAMETER(nacl_main_spent);
+  UNREFERENCED_PARAMETER(nacl_initialization_spent);
+  UNREFERENCED_PARAMETER(nacl_user_program_begin);
+  UNREFERENCED_PARAMETER(nacl_user_program_finish);
+  UNREFERENCED_PARAMETER(nacl_user_program_spent);
 
   /* Unreachable, but having the return prevents a compiler error. */
   return ret_code;
