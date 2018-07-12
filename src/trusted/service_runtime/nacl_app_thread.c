@@ -73,15 +73,16 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
+  fork_num++;
 
-  /* make sure cage_id is unique and assign it to child */
-  InitializeCage(nap_child, nap_master->cage_id + ++fork_num);
   /* store cage_ids in both master and parent */
   for (struct NaClApp *nap_cur = nap_master; nap_cur; nap_cur = nap_parent) {
     NaClXMutexLock(&nap_cur->children_mu);
     if (nap_cur->children_ids[nap_cur->num_children]) {
        nap_cur->num_children++;
     }
+    /* make sure cage_id is unique and assign it to child */
+    InitializeCage(nap_child, nap_master->cage_id + fork_num);
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_cur->cage_id);
     nap_cur->children_ids[nap_cur->num_children++] = nap_child->cage_id;
     if (!DynArraySet(&nap_cur->children, nap_child->cage_id, nap_child)) {
@@ -89,6 +90,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     }
     NaClLog(1, "[nap %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
     NaClXMutexUnlock(&nap_cur->children_mu);
+
+    /* break after parent's cleanup */
+    if (nap_cur == nap_parent) {
+      break;
+    }
   }
 
   NaClAppInitialDescriptorHookup(nap_child);
