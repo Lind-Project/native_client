@@ -3785,13 +3785,30 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 }
 
 /*
- * TODO: implement pipe()
+ * TODO: find a cleaner way to implement pipe() -jp
  */
 int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
-  UNREFERENCED_PARAMETER(natp);
-  pipedes[0] = -1;
-  pipedes[1] = -1;
-  return -NACL_ABI_ENOSYS;
+  struct NaClApp *nap = natp->nap;
+  int32_t ret;
+  int pipe_fds[2];
+
+  ret = 0;
+  if (pipe(pipe_fds) == -1 || !NaClCopyOutToUser(nap, (uintptr_t)pipedes, pipe_fds, sizeof pipe_fds)) {
+    ret = -NACL_ABI_EFAULT;
+    goto out;
+  }
+  for (size_t i = 0; i < 2; i ++) {
+    if (nap->fd > FILE_DESC_MAX) {
+      ret = -NACL_ABI_EFAULT;
+      goto out;
+    }
+    NaClAddHostDescriptor(nap, pipe_fds[i], NACL_ABI_O_RDWR|NACL_ABI_O_APPEND, nap->fd);
+    fd_cage_table[nap->cage_id][nap->fd] = pipe_fds[i];
+    nap->fd++;
+  }
+
+out:
+  return ret;
 }
 
 int32_t NaClSysFork(struct NaClAppThread *natp) {
