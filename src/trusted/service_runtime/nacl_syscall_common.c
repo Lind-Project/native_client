@@ -16,6 +16,7 @@
  */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef _POSIX_C_SOURCE
 #  undef _POSIX_C_SOURCE
@@ -768,7 +769,7 @@ cleanup:
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   struct NaClApp  *nap = natp->nap;
   struct NaClDesc *ndp = NULL;
-  int             retval = -NACL_ABI_EBADF;
+  int             ret = -NACL_ABI_EBADF;
   int             fd = 0;
 
   NaClLog(1, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
@@ -784,6 +785,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
    */
   if (nap->cage_id > 1) {
      NaClLog(1, "cage_id: %d\n", nap->cage_id);
+     ret = 0;
      goto out;
   }
   fd = fd_cage_table[nap->cage_id][d];
@@ -791,7 +793,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* don't close pipe fds */
   if (fd == 8000 || fd == 8001) {
      NaClLog(1, "cage_id: %d fd = %d\n", nap->cage_id, fd);
-     retval = 0;
+     ret = 0;
      goto out;
   }
 
@@ -800,12 +802,12 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, d, NULL);
     NaClDescUnref(ndp);
-    retval = 0;
+    ret = 0;
   }
 
 out:
   NaClFastMutexUnlock(&nap->desc_mu);
-  return retval;
+  return ret;
 }
 
 int32_t NaClSysGetdents(struct NaClAppThread *natp,

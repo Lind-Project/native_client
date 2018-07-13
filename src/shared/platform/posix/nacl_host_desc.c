@@ -322,6 +322,7 @@ int NaClHostDescPosixDup(struct NaClHostDesc  *d,
 
   if (NULL == d) {
     NaClLog(LOG_FATAL, "NaClHostDescPosixDup: 'this' is NULL\n");
+    return -NACL_ABI_EBADF;
   }
   /*
    * Sanitize access flags.
@@ -356,6 +357,7 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
                           int                 flags) {
   if (NULL == d) {
     NaClLog(LOG_FATAL, "NaClHostDescPosixTake: 'this' is NULL\n");
+    return -NACL_ABI_EBADF;
   }
   /*
    * Sanitize access flags.
