@@ -551,15 +551,13 @@ int NaClSelLdrMain(int argc, char **argv) {
      * yiwen: temporarily skip this (caused gdb segmentation
      * fault, the seg fault signal was ignored somehow when
      * not running gdb.)
-     *
-     * NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
-     *                                      NaClRunSelQualificationTests());
      */
+    NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode,
+                                         NaClRunSelQualificationTests());
 
     /*
      * yiwen: temporarily define pq_error here, and assume that everything is Okay.
      */
-    NaClErrorCode pq_error = LOAD_OK;
     if (LOAD_OK != pq_error) {
       errcode = pq_error;
       nap->module_load_status = pq_error;
