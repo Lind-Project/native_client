@@ -80,7 +80,10 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 #define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_LOG_H__
 
+#undef _GNU_SOURCE
+#define _GNU_SOURCE 1
 #include <stdarg.h>
+#include <string.h>
 
 #include "native_client/src/include/nacl_base.h"
 
@@ -226,10 +229,10 @@ void NaClLogEnableTimestamp(void);
 void NaClLogDisableTimestamp(void);
 
 void NaClLogSetModuleVerbosity_mu(char const  *module_name,
-                                  int         verbosity);
+                                  int         mod_verbosity);
 
 void NaClLogSetModuleVerbosity(char const *module_name,
-                               int        verbosity);
+                               int        mod_verbosity);
 
 int NaClLogGetModuleVerbosity_mu(char const *module_name);
 
@@ -271,59 +274,90 @@ void NaClLog2(char const *module_name,
  * "naked" identifier in the macro definition, and so will take on the
  * argument list from the apparent argument list of NaClLog.
  */
-int NaClLogSetModule(char const *module_name);
+void NaClLogSetModule(char const *module_name);
 void NaClLogDoLogAndUnsetModule(int        detail_level,
                                 char const *fmt,
                                 ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-/*
- * TODO(bsy): With variadic macro support on the way, the macro below and
- * the comment following it could be improved for readability.
- */
 
+/*
+ * Variadic macros are here! -jp
+ */
 #ifdef NACL_LOG_MODULE_NAME
-# define NaClLog                              \
-  if (NaClLogSetModule(NACL_LOG_MODULE_NAME)) \
-    ;                                         \
-  else                                        \
-    NaClLogDoLogAndUnsetModule
-
-/*
- * User code has lines of the form
- *
- * NaClLog(detail_level, format_string, ...);
- *
- * We need to be usable without variadic macros.  So, when
- * NACL_LOG_MODULE_NAME is not defined, the NaClLog statement would
- * just invoke the NaClLog function.  When NACL_LOG_MODULE_NAME *is*
- * defined, however, it expands to:
- *
- * if (NaClLogSetModule(NACL_LOG_MODULE_NAME))
- *   ;
- * else
- *   NaClLogDoLogAndUnsetModule(detail_level, format_string, ...);
- *
- * Note that this is a syntactic macro, so that if the original code had
- *
- * if (foo)
- *   if (bar)
- *     NaClLog(LOG_WARNING, "EEeeep!\n");
- *   else
- *     printf("!bar\n");
- *
- * the macro expansion for NaClLog would not cause the "else" clauses
- * to mis-bind.
- *
- * Also note that the compiler may generate a warning/suggestion to
- * use braces.  This doesn't occur in the NaCl code base (esp w/
- * -Werror), but may have an impact on untrusted code that use this
- * module.
- */
+# undef NaClLog
+# define NaClLog(detail_level, fmt, args...)                \
+   do {                                                     \
+    NaClLogSetModule(NACL_LOG_MODULE_NAME);                 \
+    NaClLogDoLogAndUnsetModule(detail_level, fmt, ## args); \
+   } while (0)
 #endif
 
+/*
+ * debug version of NaClLog() which replaces the time stamp
+ * with current file name, function, and line number. the
+ * first argument to DPRINTF(), the logging level, defines
+ * how many -v flags are required in order for the log
+ * message to be printed.
+ *
+ * e.g.
+ *
+ * DPRINTF(3, "foo: %d", bar);
+ *
+ * requires three -v flags (`sel_ldr -vvv ...`) in order to be visible.
+ *
+ * -jp
+ */
 #define LOG_INFO    (-1)
 #define LOG_WARNING (-2)
 #define LOG_ERROR   (-3)
 #define LOG_FATAL   (-4)
+
+/* DPRINTF() is stubbed out unless either _DEBUG or NDEBUG is defined */
+#if defined(_DEBUG) || defined(NDEBUG)
+# undef DPRINTF
+# define DPRINTF(detail_level, fmt, args...)                                                   \
+        do {                                                                                   \
+                char *file;                                                                    \
+                /* strip directories */                                                        \
+                if ((file = strrchr(__FILE__, '/')) {                                          \
+                        file++;                                                                \
+                /* else __FILE__ contains no directories */                                    \
+                } else {                                                                       \
+                        file = __FILE__;                                                       \
+                }                                                                              \
+                /* disable pointless time stamp */                                             \
+                NaClLogDisableTimestamp();                                                     \
+                /* `## args` eats the comma if empty */                                        \
+                NaClLog(detail_level, "[%s() %s:%u] " fmt, __func__, file, __LINE__, ## args); \
+                NaClLogEnableTimestamp();                                                      \
+        } while (0)
+#else /* defined(_DEBUG) || defined(NDEBUG) */
+# undef DPRINTF
+# define DPRINTF(detail_level, fmt, args...) do {} while (0)
+#endif /* defined(_DEBUG) || defined(NDEBUG) */
+
+/*
+ * ABORT() is wrapper for NaClLog(LOG_FATAL, ...) that replaces the
+ * time stamp with current file name, function, and line number.
+ */
+#undef ABORT
+#define ABORT(fmt, args...)                                                                 \
+        do {                                                                                \
+                char *file;                                                                 \
+                /* strip directories */                                                     \
+                if ((file = strrchr(__FILE__, '/')) {                                       \
+                        file++;                                                             \
+                /* else __FILE__ contains no directories */                                 \
+                } else {                                                                    \
+                        file = __FILE__;                                                    \
+                }                                                                           \
+                /* disable pointless time stamp */                                          \
+                NaClLogDisableTimestamp();                                                  \
+                /* `## args` eats the comma if empty */                                     \
+                NaClLog(LOG_FATAL, "[%s() %s:%u] " fmt, __func__, file, __LINE__, ## args); \
+                /* NOT REACHED */                                                           \
+                NaClLogEnableTimestamp();                                                   \
+                abort();                                                                    \
+        } while (0)
 
 /*
  * Low-level logging code that requires manual lock manipulation.

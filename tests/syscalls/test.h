@@ -25,46 +25,22 @@ namespace test {
   // should not contain data specific to an instance of a test run, so that
   // golden output can be used if desired.
   bool Passed(const char *testname, const char *msg);
-}
+}  // namespace test
 
-// Simple test framework macros, as a poor man's gtest for untrusted NaCl code.
-//
-// A test program looks like this:
-//
-// int TestFoo() {
-//   START_TEST("Test Foo");
-//   EXPECT(Foo::ReturnTrue());
-//   EXPECT(Foo::ReturnFive == 5);
-//   END_TEST();
-// }
-//
-// int TestBar() {
-//   START_TEST("Test Bar");
-//   EXPECT(!Bar::ReturnFalse());
-//   END_TEST();
-// }
-//
-// int main() {
-//   int fail_count = 0;
-//   fail_count += TestFoo();
-//   fail_count += TestBar();
-//   std::exit(fail_count);
-// }
-#define START_TEST(TESTNAME) \
-    int _fail_count = 0; \
-    const char* const _test_name = TESTNAME;
+#define START_TEST(TESTNAME)                               \
+  int _fail_count = 0;                                     \
+  const char* const _test_name = TESTNAME;
 
-#define EXPECT(COND) \
-{\
-  if (COND) { \
-    ::test::Passed(_test_name, #COND); \
-  } else { \
+#define EXPECT(COND)                                       \
+  if (COND) {                                              \
+    ::test::Passed(_test_name, #COND);                     \
+  } else {                                                 \
     ::test::Failed(_test_name, #COND, __FILE__, __LINE__); \
-    ++_fail_count; \
-  } \
-}
+    ++_fail_count;                                         \
+  }
 
-#define END_TEST() \
-{ return _fail_count; }
+#define END_TEST() do { return _fail_count; } while (0)
 
-#endif  // TESTS_SYSCALLS_TEST_H_
+#endif  // NATIVE_CLIENT_TESTS_SYSCALLS_TEST_H_
+
+// vi:ft=cpp:

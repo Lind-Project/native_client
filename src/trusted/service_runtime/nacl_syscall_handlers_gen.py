@@ -21,6 +21,7 @@ import getopt
 import re
 import sys
 
+
 AUTOGEN_COMMENT = """\
 /*
  * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -50,8 +51,47 @@ void NaClSyscallTableInit() {
 IMPLEMENTATION_SKELETON = """\
 /* this function was automagically generated */
 static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
-%(members)s\
+  #ifdef SYSCALL_TIMING
+  int32_t retval;
+  clock_t nacl_sys_begin;
+  clock_t nacl_sys_finish;
+  #endif
+  #ifdef NACL_SYSCALL_TRACE_ENABLED
+  struct NaClApp *nap = natp->nap;
+  int32_t retval;
+#if %(arglist_not_empty)d
+  unsigned int i = 0;
+#endif
+  #endif
+  %(members)s\
+
+  #ifdef SYSCALL_TIMING
+  nacl_syscall_counter++;
+  nacl_syscall_invoked_times[%(num)s]++;
+  nacl_sys_begin = clock();
+  retval = %(name)s(natp%(arglist)s);
+  nacl_sys_finish = clock();
+  nacl_syscall_execution_time[%(num)s] += (double)(nacl_sys_finish - nacl_sys_begin) / CLOCKS_PER_SEC;
+  return retval;
+  #endif
+  #ifdef NACL_SYSCALL_TRACE_ENABLED
+  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [enter][syscall_depth = %%d]\\n", nap->cage_id, nacl_syscall_trace_level_counter);
+  printf("==> %(num)s(");
+#if %(arglist_not_empty)d
+  for (i = 0; i < sizeof(p)/4; i++) {
+    printf("%%x,", *((uint32_t *)&p+i));
+  }
+#endif
+  printf(")\\n");
+  nacl_syscall_trace_level_counter++;
+  retval = %(name)s(natp%(arglist)s);
+  nacl_syscall_trace_level_counter--;
+  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [exit][syscall_depth = %%d] \\n", nap->cage_id, nacl_syscall_trace_level_counter);
+  return retval;
+  #endif
+
   return %(name)s(natp%(arglist)s);
+
 }
 
 /*
@@ -100,6 +140,7 @@ SYSCALL_LIST = [
     ('NACL_sys_nameservice', 'NaClSysNameService', ['int *desc_in_out']),
     ('NACL_sys_dup', 'NaClSysDup', ['int oldfd']),
     ('NACL_sys_dup2', 'NaClSysDup2', ['int oldfd', 'int newfd']),
+    ('NACL_sys_dup3', 'NaClSysDup3', ['int oldfd', 'int newfd', 'int flags']),
     ('NACL_sys_open', 'NaClSysOpen',
      ['char *pathname', 'int flags', 'int mode']),
     ('NACL_sys_close', 'NaClSysClose', ['int d']),
@@ -203,6 +244,12 @@ SYSCALL_LIST = [
     ('NACL_sys_test_infoleak', 'NaClSysTestInfoLeak', []),
     ('NACL_sys_test_crash', 'NaClSysTestCrash', ['int crash_type']),
     ('NACL_sys_lind_syscall', 'NaClSysLindSyscall', ['uint32_t callNum', 'uint32_t inNum', 'void *inArgs', 'uint32_t outNum', 'void *outArgs']),
+    ('NACL_sys_pipe', 'NaClSysPipe', ['uint32_t *pipedes']),
+    ('NACL_sys_fork', 'NaClSysFork', []),
+    ('NACL_sys_execv', 'NaClSysExecv', []),
+    ('NACL_sys_execve', 'NaClSysExecve', ['void *path', 'void *argv', 'void *envp']),
+    ('NACL_sys_waitpid', 'NaClSysWaitpid', ['uint32_t pid', 'uint32_t *stat_loc', 'uint32_t options']),
+    ('NACL_sys_wait', 'NaClSysWait', ['uint32_t *stat_loc']),
     ]
 
 
@@ -297,8 +344,10 @@ def PrintSyscallTableInitializer(protos, ostr):
 def PrintImplSkel(architecture, protos, ostr):
   print >>ostr, AUTOGEN_COMMENT
   for syscall_number, func_name, alist in protos:
-    values = { 'name' : func_name,
+    values = { 'num' : syscall_number,
+               'name' : func_name,
                'arglist' : ArgList(architecture, alist),
+               'arglist_not_empty' : 1 if ArgList(architecture, alist) else 0,
                'arg_type_list' :
                    ', '.join(['struct NaClAppThread *natp'] + alist),
                'members' : MemoryArgStruct(architecture, func_name, alist),

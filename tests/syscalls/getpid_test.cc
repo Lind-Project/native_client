@@ -9,20 +9,20 @@
  * Test for getpid syscall.
  */
 
-#ifdef USE_RAW_SYSCALLS
-#include "native_client/src/untrusted/nacl/syscall_bindings_trampoline.h"
-#endif
-#include "native_client/tests/syscalls/test.h"  //NOLINT
-
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 
 #ifdef USE_RAW_SYSCALLS
-#define GETPID NACL_SYSCALL(getpid)
+# include "native_client/src/untrusted/nacl/syscall_bindings_trampoline.h"
+#endif
+#include "native_client/tests/syscalls/test.h"  //NOLINT
+
+#ifdef USE_RAW_SYSCALLS
+# define GETPID NACL_SYSCALL(getpid)
 #else
-#define GETPID getpid
+# define GETPID getpid
 #endif
 
 bool TestGetPid() {

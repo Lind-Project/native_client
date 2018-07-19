@@ -47,15 +47,14 @@ NaClErrorCode NaClAllocAddrSpaceAslr(struct NaClApp *nap,
    * at least a function call as well as possibly a TLS/TSD read if
    * module-specific logging verbosity level comparisons are needed.
    */
-  NaClLog(LOG_INFO,
-          ("Native Client module will be loaded at"
-           " base address 0x%016"NACL_PRIxPTR"\n"),
+  NaClLog(1, "Native Client module will be loaded at"
+          " base address 0x%016"NACL_PRIxPTR"\n",
           nap->mem_start);
 
   hole_start = NaClRoundAllocPage(nap->data_end);
 
   if (nap->stack_size >= ((uintptr_t) 1U) << nap->addr_bits) {
-    NaClLog(LOG_FATAL, "NaClAllocAddrSpace: stack too large!");
+    NaClLog(1, "%s\n", "NaClAllocAddrSpace: stack too large!");
   }
   stack_start = (((uintptr_t) 1U) << nap->addr_bits) - nap->stack_size;
   stack_start = NaClTruncAllocPage(stack_start);
@@ -129,7 +128,6 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                NULL,
                0,
                0);
-
   start_addr = nap->mem_start + NACL_SYSCALL_START_ADDR;
   /*
    * The next pages up to NACL_TRAMPOLINE_END are the trampolines.
@@ -145,11 +143,10 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
   if (0 != (err = NaClMprotect((void *) start_addr,
                                region_size,
                                PROT_READ | PROT_EXEC))) {
-    NaClLog(LOG_ERROR,
-            ("NaClMemoryProtection: "
-             "NaClMprotect(0x%08"NACL_PRIxPTR", "
-             "0x%08"NACL_PRIxS", 0x%x) failed, "
-             "error %d (trampoline + code)\n"),
+    NaClLog(1, "NaClMemoryProtection: "
+            "NaClMprotect(0x%08"NACL_PRIxPTR", "
+            "0x%08"NACL_PRIxS", 0x%x) failed, "
+            "error %d (trampoline + code)\n",
             start_addr, region_size, PROT_READ | PROT_EXEC,
             err);
     return LOAD_MPROTECT_FAIL;
@@ -215,11 +212,10 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
     if (0 != (err = NaClMprotect((void *) start_addr,
                                  region_size,
                                  PROT_READ))) {
-      NaClLog(LOG_ERROR,
-              ("NaClMemoryProtection: "
-               "NaClMprotect(0x%08"NACL_PRIxPTR", "
-               "0x%08"NACL_PRIxS", 0x%x) failed, "
-               "error %d (rodata)\n"),
+      NaClLog(1, "NaClMemoryProtection: "
+              "NaClMprotect(0x%08"NACL_PRIxPTR", "
+              "0x%08"NACL_PRIxS", 0x%x) failed, "
+              "error %d (rodata)\n",
               start_addr, region_size, PROT_READ,
               err);
       return LOAD_MPROTECT_FAIL;
@@ -251,11 +247,10 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
     if (0 != (err = NaClMprotect((void *) start_addr,
                                  region_size,
                                  PROT_READ | PROT_WRITE))) {
-      NaClLog(LOG_ERROR,
-              ("NaClMemoryProtection: "
-               "NaClMprotect(0x%08"NACL_PRIxPTR", "
-               "0x%08"NACL_PRIxS", 0x%x) failed, "
-               "error %d (data)\n"),
+      NaClLog(1, "NaClMemoryProtection: "
+              "NaClMprotect(0x%08"NACL_PRIxPTR", "
+              "0x%08"NACL_PRIxS", 0x%x) failed, "
+              "error %d (data)\n",
               start_addr, region_size, PROT_READ | PROT_WRITE,
               err);
       return LOAD_MPROTECT_FAIL;
@@ -284,11 +279,10 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
   if (0 != (err = NaClMprotect((void *) start_addr,
                                NaClRoundAllocPage(nap->stack_size),
                                PROT_READ | PROT_WRITE))) {
-    NaClLog(LOG_ERROR,
-            ("NaClMemoryProtection: "
+    NaClLog(1, "NaClMemoryProtection: "
              "NaClMprotect(0x%08"NACL_PRIxPTR", "
              "0x%08"NACL_PRIxS", 0x%x) failed, "
-             "error %d (stack)\n"),
+             "error %d (stack)\n",
             start_addr, region_size, PROT_READ | PROT_WRITE,
             err);
     return LOAD_MPROTECT_FAIL;
