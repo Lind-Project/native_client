@@ -891,28 +891,21 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count) {
   struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
   size_t          log_bytes;
   char const      *ellipsis = "";
-  char* string;
-
-  int             fd;
-  int             read_data_size;
-
-  UNREFERENCED_PARAMETER(read_data_size);
-  UNREFERENCED_PARAMETER(string);
 
   NaClLog(2, "Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  fd = fd_cage_table[nap->cage_id][d];
-
   ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
@@ -937,8 +930,14 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
-  read_result = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                 Read)(ndp, (void *) sysaddr, count);
+  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
+  /* special case for pipe() */
+  if (read_result == -NACL_ABI_ENOSYS) {
+    read_result = read(fd, (void *)sysaddr, count);
+    if (read_result < 0) {
+      read_result = -errno;
+    }
+  }
   NaClVmIoHasEnded(nap,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
@@ -973,6 +972,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      void                 *buf,
                      size_t               count) {
   struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -980,17 +980,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   size_t          log_bytes;
 
-  int             fd;
-
   NaClLog(2, "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-  fd = fd_cage_table[nap->cage_id][d];
-  UNREFERENCED_PARAMETER(fd);
-  NaClLog(2, "[Debug][Cage %d] From NaClSysWrite: d = %d, fd = %d \n", nap->cage_id, d, fd);
-
-  fd = fd_cage_table[nap->cage_id][d];
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1028,7 +1021,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
-  write_result = (*((struct NaClDescVtbl const *)ndp->base.vtbl)->Write)(ndp, (void *) sysaddr, count);
+  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+  /* special case for pipe() */
+  if (write_result == -NACL_ABI_ENOSYS) {
+    write_result = write(fd, (void *)sysaddr, count);
+    if (write_result < 0) {
+      write_result = -errno;
+    }
+  }
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
                    (uint32_t)(((uintptr_t)buf) + count - 1));
@@ -3787,24 +3787,48 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 /*
  * TODO: find a cleaner way to implement pipe() -jp
  */
-int32_t NaClSysPipe (struct NaClAppThread  *natp, uint32_t *pipedes) {
+int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   struct NaClApp *nap = natp->nap;
-  int32_t ret;
+  struct NaClDesc *ndp;
+  int32_t ret = 0;
   int pipe_fds[2];
+  int nacl_fds[2];
+  int flags;
 
-  ret = 0;
-  if (pipe(pipe_fds) == -1 || !NaClCopyOutToUser(nap, (uintptr_t)pipedes, pipe_fds, sizeof pipe_fds)) {
+  if (pipe(pipe_fds) < 0) {
     ret = -NACL_ABI_EFAULT;
     goto out;
   }
+
+  /* sanitize fds */
   for (size_t i = 0; i < 2; i ++) {
     if (nap->fd > FILE_DESC_MAX) {
       ret = -NACL_ABI_EFAULT;
       goto out;
     }
-    NaClAddHostDescriptor(nap, pipe_fds[i], NACL_ABI_O_RDWR|NACL_ABI_O_APPEND, nap->fd);
+    /* set flags for the read and write ends of the pipe */
+    switch (i) {
+    case 0:
+      flags = NACL_ABI_O_RDONLY;
+      break;
+    case 1:
+      flags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
+      break;
+    default:
+      /* something went terribly wrong */
+      ret = -NACL_ABI_EFAULT;
+      goto out;
+    }
+    ndp = NaClDescIoDescFromDescAllocCtor(pipe_fds[i], flags);
+    NaClSetDesc(nap, pipe_fds[i], ndp);
     fd_cage_table[nap->cage_id][nap->fd] = pipe_fds[i];
+    nacl_fds[i] = nap->fd;
     nap->fd++;
+  }
+
+  /* copy out sanitized fds */
+  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof nacl_fds)) {
+      ret = -NACL_ABI_EFAULT;
   }
 
 out:
