@@ -790,13 +790,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
   fd = fd_cage_table[nap->cage_id][d];
 
-  /* don't close pipe fds */
-  if (fd == 8000 || fd == 8001) {
-     NaClLog(1, "cage_id: %d fd = %d\n", nap->cage_id, fd);
-     ret = 0;
-     goto out;
-  }
-
   /* Unref the desc_tbl */
   if ((ndp = NaClGetDescMu(nap, fd))) {
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
