@@ -697,6 +697,11 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   retval = 0;
   size = 0;
   envc = 0;
+
+  /* TODO: fix this (currently broken) -jp */
+  nap->clean_environ = 0;
+  /* nap->clean_environ = envv & UNTRUSTED_ADDR_MASK; */
+
   /* count number of environment strings */
   if (envv) {
     char const *const *pp;
@@ -704,6 +709,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
       ++envc;
     }
   }
+
   /* allocate space to hold length of vectors */
   argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
   envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);

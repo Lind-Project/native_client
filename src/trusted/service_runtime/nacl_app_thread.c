@@ -49,10 +49,10 @@ struct NaClThreadContext *master_ctx;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_child = calloc(1, sizeof *nap_child);
-  struct NaClApp *nap_parent = natp->nap;
+  struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
 
   CHECK(nap_master);

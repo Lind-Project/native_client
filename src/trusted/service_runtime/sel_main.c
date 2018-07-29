@@ -893,21 +893,20 @@ int NaClSelLdrMain(int argc, char **argv) {
   // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
-  NaClEnvCleanserDtor(&env_cleanser);
 
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
-  DynArrayDtor(&env_vars);
 
   // yiwen: waiting for running cages to exit
   ret_code = NaClWaitForMainThreadToExit(nap);
-  nacl_user_program_finish = clock();
 
+  nacl_user_program_finish = clock();
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
-
   NaClPerfCounterMark(&time_all_main, "SelMainEnd");
   NaClPerfCounterIntervalTotal(&time_all_main);
+  NaClEnvCleanserDtor(&env_cleanser);
+  DynArrayDtor(&env_vars);
 
   /*
    * exit_group or equiv kills any still running threads while module

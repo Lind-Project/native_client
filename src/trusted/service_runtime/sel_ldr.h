@@ -151,6 +151,8 @@ struct NaClApp {
   char                      *binary_path;
   char                      *binary_command;
   char                      *nacl_file;
+  char const *const         *clean_environ;
+
   /* set to the next unused (available for dup() etc.) file descriptor */
   int                       fd;
 
