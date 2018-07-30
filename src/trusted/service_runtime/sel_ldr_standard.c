@@ -733,11 +733,11 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
@@ -787,8 +787,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   /*
    * Write strings and char * arrays to stack.
    */
-  stack_ptr = NaClUserToSysAddrRange(nap, NaClGetInitialStackTop(nap) - size,
-                                     size);
+  stack_ptr = NaClUserToSysAddrRange(nap, NaClGetInitialStackTop(nap) - size, size);
   if (stack_ptr == kNaClBadAddress) {
     retval = 0;
     goto cleanup;
@@ -816,7 +815,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
@@ -825,7 +824,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t) strp);
     NaClLog(2, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
@@ -835,9 +834,9 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = 0;  /* envp[envc] is NULL.  */
 
   /* Push an auxv */
-  if (0 != nap->user_entry_pt) {
+  if (nap->user_entry_pt) {
     *p++ = AT_ENTRY;
-    *p++ = (uint32_t) nap->user_entry_pt;
+    *p++ = (uint32_t)nap->user_entry_pt;
   }
   *p++ = AT_NULL;
   *p++ = 0;
@@ -907,6 +906,11 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
+
+  /* TODO: fix this (currently broken) -jp */
+  nap_child->clean_environ = 0;
+  /* nap_child->clean_environ = envv & UNTRUSTED_ADDR_MASK; */
+
   /* count number of environment strings */
   if (envv) {
     char const *const *pp;
@@ -914,6 +918,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
       ++envc;
     }
   }
+
   /* allocate space to hold length of vectors */
   argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
   envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
@@ -937,15 +942,14 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
-
 
   /*
    * NaCl modules are ILP32, so the argv, envv pointers, as well as
@@ -992,9 +996,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   /*
    * Write strings and char * arrays to stack.
    */
-  stack_ptr = NaClUserToSysAddrRange(nap_child,
-                                     NaClGetInitialStackTop(nap_child) - size,
-                                     size);
+  stack_ptr = NaClUserToSysAddrRange(nap_child, NaClGetInitialStackTop(nap_child) - size, size);
   if (stack_ptr == kNaClBadAddress) {
     retval = 0;
     goto cleanup;
@@ -1002,7 +1004,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
 
-  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
+  VCHECK(0 == (stack_ptr & NACL_STACK_ALIGN_MASK),
          ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
 
   p = (uint32_t *)stack_ptr;
@@ -1015,15 +1017,15 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    */
   if (NACL_STACK_GETS_ARG) {
     uint32_t *argloc = p++;
-    *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
+    *argloc = (uint32_t)NaClSysToUser(nap_child, (uintptr_t) p);
   }
 
   *p++ = 0;  /* Cleanup function pointer, always NULL.  */
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", argv[i]);
@@ -1031,8 +1033,8 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) strp);
     NaClLog(2, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", envv[i]);
