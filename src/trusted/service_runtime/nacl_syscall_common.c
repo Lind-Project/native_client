@@ -3873,25 +3873,19 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   struct NaClEnvCleanser env_cleanser;
   struct DynArray env_vars;
   char const *const *new_envv = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  char *sys_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
   char *new_path = (void *)NaClUserToSysAddr(nap, (uintptr_t)path);
-  char *new_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
+  char *new_argp = sys_argp ? strdup(sys_argp) : NULL;
+  char *binary_command = sys_argp ? strdup(sys_argp) : NULL;
   char **child_argv = NULL;
   char **new_argv = NULL;
-  int child_argc = 0;
-  int new_argc = 0;
-  int ret;
+  int child_argc = 1;
+  int new_argc = 1;
+  int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve starts!");
 
-  /*
-   * TODO:
-   * all failure conditions except `!NaClCreateMainThread()`
-   * return -NACL_ABI_ENOMEM. maybe it would be useful to make
-   * error codes more specific. -jp
-   */
-  ret = -NACL_ABI_ENOMEM;
-
-  /* TODO: correctly use environment argument -jp */
+  /* TODO: correctly handle environment -jp */
   UNREFERENCED_PARAMETER(new_envv);
   new_envv = envp = NULL;
 
@@ -3899,16 +3893,18 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   if (envp) {
     if (!DynArrayCtor(&env_vars, 0)) {
       NaClLog(1, "%s\n", "Failed to allocate env var array");
-      goto env_ctor_fail;
+      goto fail;
     }
     if (!DynArraySet(&env_vars, 0, NULL)) {
       NaClLog(1, "%s\n", "Adding env_vars NULL terminator failed");
-      goto cleanser_fail;
+      DynArrayDtor(&env_vars);
+      goto fail;
     }
     NaClEnvCleanserCtor(&env_cleanser, 0);
     if (!NaClEnvCleanserInit(&env_cleanser, new_envv, (char const *const *)env_vars.ptr_array)) {
       NaClLog(1, "%s\n", "Failed to initialise env cleanser");
-      goto cleanser_fail;
+      DynArrayDtor(&env_vars);
+      goto fail;
     }
     new_envv = NaClEnvCleanserEnvironment(&env_cleanser);
   }
@@ -3916,30 +3912,34 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
 
   /* setup argv and argc */
   if (!new_path || !new_argp || !*new_argp) {
-    goto alloc_fail;
+    DynArrayDtor(&env_vars);
+    NaClEnvCleanserDtor(&env_cleanser);
+    ret = -NACL_ABI_ENOEXEC;
+    goto fail;
   }
-  /*
-   * for (char *cur = *new_argv; cur; new_argc++, cur++) { [> no-op <] }
-   */
-  for (char *cur = strtok(new_argp, " "); cur; new_argc++, cur = strtok(NULL, " ")) { /* no-op */ }
   new_argv = calloc(1 + new_argc, sizeof(*new_argv));
   if (!new_argv) {
-    goto alloc_fail;
+    DynArrayDtor(&env_vars);
+    NaClEnvCleanserDtor(&env_cleanser);
+    goto fail;
   }
+  for (char *cur = strtok(new_argp, " "); cur; new_argc++, cur = strtok(NULL, " ")) { /* no-op */ }
   for (int i = 0; i < new_argc; i++) {
     char *arg = strtok(i ? NULL : new_argp, " ");
     new_argv[i] = strdup(arg);
   }
   new_argv[new_argc] = NULL;
   nap->command_num = new_argc;
-  nap->binary_path = calloc(1, strlen(new_path)+ 1);
-  nap->binary_command = nap->binary_path;
+  nap->binary_path = new_path ? strdup(new_path) : NULL;
+  nap->binary_command = binary_command;
   if (!nap->binary_path || !nap->binary_command) {
-    goto alloc_fail;
+    DynArrayDtor(&env_vars);
+    NaClEnvCleanserDtor(&env_cleanser);
+    free(new_argv);
+    goto fail;
   }
-  memcpy(nap->binary_path, new_path, strlen(new_path) + 1);
 
-  /* setup new NaClApp */
+  /* setup new "child" NaClApp */
   child_argc = 3 + nap->command_num;
   child_argv = calloc(child_argc + 2, sizeof *child_argv);
   child_argv[0] = "NaClMain";
@@ -3949,6 +3949,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
      child_argv[3] = nap->binary_path;
      NaClLog(1, "[NaClSysFork] binary path: %s \n", nap->binary_path);
   }
+  /* check if there are arguments to the command */
   if (nap->command_num > 1) {
      for (int i = 0; i < new_argc; i++) {
        child_argv[i + 4] = strdup(new_argv[i]);
@@ -3964,9 +3965,12 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   NaClLog(1, "argc = %d, path = %s, command = %s\n", nap->command_num, nap->binary_command, nap->binary_path);
   if (!NaClCreateMainThread(nap_child, child_argc, child_argv, new_envv)) {
     NaClLog(1, "%s\n", "[NaClSysExecve] executing new program failed!");
-    goto create_thread_fail;
+    DynArrayDtor(&env_vars);
+    NaClEnvCleanserDtor(&env_cleanser);
+    free(new_argv);
+    ret = -NACL_ABI_ENOEXEC;
+    goto fail;
   }
-
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
@@ -3974,16 +3978,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   free(new_argv);
 
   /* success */
-  return 0;
+  ret = 0;
 
-create_thread_fail:
-  ret = -NACL_ABI_ENOEXEC;
-alloc_fail:
-  NaClEnvCleanserDtor(&env_cleanser);
-cleanser_fail:
-  DynArrayDtor(&env_vars);
-env_ctor_fail:
-  free(new_argv);
+fail:
+  free(new_argp);
+  free(binary_command);
   return ret;
 }
 
