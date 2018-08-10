@@ -85,7 +85,9 @@ DESTDIR ?=
 
 # We can't use CFLAGS and LDFLAGS since they are passed to sub-makes and
 # those override configure parameters.
-USER_CFLAGS = -O2 -g3 -Wno-implicit-fallthrough -Wno-unused-but-set-variable
+USER_CFLAGS += -O0
+USER_CFLAGS += -Wno-cpp -Wno-implicit-fallthrough -Wno-pedantic
+USER_CFLAGS += -Wno-c++-compat -Wno-unused-but-set-variable
 USER_LDFLAGS =
 
 # By default all toolchain executables are x86-32 executables, use
@@ -505,8 +507,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CXXFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-nolibc)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-nolibc)
@@ -570,8 +572,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+	    CXXFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-nolibc)" \
 	    --prefix=$(PREGCC_PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-nolibc)
@@ -595,8 +597,7 @@ endif
 # by the Native Client threads package build.
 ##################################################################
 
-NEWLIB_CFLAGS = -O2 \
-		-D_I386MACH_ALLOW_HW_INTERRUPTS \
+NEWLIB_CFLAGS = -D_I386MACH_ALLOW_HW_INTERRUPTS \
 		-DSIGNAL_PROVIDED \
 		-mtls-use-call
 
@@ -646,7 +647,7 @@ GLIBC_BUILD_DIR = BUILD/build-glibc-$(CROSSARCH)
 GLIBC_CC = $(PREGCC_PREFIX)/bin/$(CROSSARCH)-gcc
 
 # CFLAGS for building glibc.
-GLIBC_CFLAGS = -O2 -g3
+GLIBC_CFLAGS = -O2 -g $(USER_CFLAGS)
 
 ARCH_DEST = $(DESTDIR)$(PREFIX)/$(CROSSARCH)
 ARCH_DEST_INC_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/include
@@ -666,9 +667,9 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	mkdir -p BUILD/build-glibc32/lib
 	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
 	  MAKE=$(MAKE_COMPAT) \
-	  BUILD_CC="gcc -O2 -g3 -Wl,--warn-unresolved-symbols" \
+	  BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
 	  CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
-	  CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
+	  CFLAGS="-mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
 	  libc_cv_forced_unwind=yes \
 	  libc_cv_c_cleanup=yes \
 	  libc_cv_slibdir=/lib32 \
@@ -690,9 +691,9 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 	mkdir -p BUILD/build-glibc64
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
 	    MAKE=$(MAKE_COMPAT) \
-	    BUILD_CC="gcc -O2 -g3" \
+	    BUILD_CC="gcc -O2 -g" \
 	    CC="$(GLIBC_CC) -m64" \
-	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+	    CFLAGS="-mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
 	    libc_cv_c_cleanup=yes \
 	    libc_cv_slibdir=/lib \
@@ -710,9 +711,9 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
 updateglibc:
 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
 	    MAKE=$(MAKE_COMPAT) \
-	    BUILD_CC="gcc -O2 -g3 " \
+	    BUILD_CC="gcc -O2 -g" \
 	    CC="$(GLIBC_CC) -m64" \
-	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+	    CFLAGS="-mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 	    libc_cv_forced_unwind=yes \
 	    libc_cv_c_cleanup=yes \
 	    libc_cv_slibdir=/lib \
@@ -808,8 +809,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-glibc)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-glibc)" \
+	    CFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-glibc)" \
+	    CXXFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-glibc)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-glibc)
@@ -862,8 +863,8 @@ endif
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 	    LDFLAGS="$(USER_LDFLAGS)" \
-	    CFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-newlib)" \
-	    CXXFLAGS_FOR_TARGET="-O2 -g3 $(GCC_CFLAGS_FOR_TARGET-newlib)" \
+	    CFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-newlib)" \
+	    CXXFLAGS_FOR_TARGET="$(GCC_CFLAGS_FOR_TARGET-newlib)" \
 	    --prefix=$(PREFIX) \
 	    $(GCC_CONFIGURE_FLAGS) \
 	    $(GCC_CONFIGURE_FLAGS-newlib)
@@ -893,8 +894,8 @@ ifeq ($(PLATFORM),win)
 	cd BUILD/build-gdb-$(CROSSARCH) && \
 	  CC="x86_64-w64-mingw32-gcc -m32" \
 	  CC_FOR_BUILD="x86_64-w64-mingw32-gcc -m32" \
-	  LDFLAGS="$(USER_LDFLAGS)" \
 	  CFLAGS="$(USER_CFLAGS)" \
+	  LDFLAGS="$(USER_LDFLAGS)" \
 	  ../../SRC/gdb/configure \
 	    --prefix=$(PREFIX) \
 	    --without-python \
@@ -907,8 +908,8 @@ ifeq ($(PLATFORM),win)
 else
 	cd BUILD/build-gdb-$(CROSSARCH) && \
 	  CC="gcc -m32" \
-	  LDFLAGS="$(USER_LDFLAGS)" \
 	  CFLAGS="$(USER_CFLAGS)" \
+	  LDFLAGS="$(USER_LDFLAGS)" \
 	  ../../SRC/gdb/configure \
 	    --prefix=$(PREFIX) \
 	    --target=x86_64-nacl \
