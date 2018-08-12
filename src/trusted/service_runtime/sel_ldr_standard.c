@@ -706,7 +706,6 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   retval = 0;
   size = 0;
   envc = 0;
-  nap->clean_environ = envv;
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
     ++envc;
@@ -774,8 +773,8 @@ int NaClCreateMainThread(struct NaClApp     *nap,
     retval = 0;
     goto cleanup;
   }
-  size += ptr_tbl_size + NACL_STACK_ALIGN_MASK;
-  size &= ~NACL_STACK_ALIGN_MASK;
+  size += ptr_tbl_size;
+  size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap->stack_size) {
     retval = 0;
@@ -900,7 +899,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   uintptr_t             stack_ptr;
-  /* struct NaClApp        *nap_master = ((struct NaClAppThread *)master_ctx)->nap; */
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -908,14 +906,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
-
-  /* TODO: fix broken environment handling -jp */
-  UNREFERENCED_PARAMETER(envv);
-  envv = calloc(1, sizeof *envv);
-  if (!envv) {
-    NaClLog(1, "%s\n", "Failed to allocate env var vector");
-    goto cleanup;
-  }
 
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
@@ -978,18 +968,14 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0)
                   + (3 + argc + 1 + envc + 1 + auxv_entries * 2))
                   * sizeof(uint32_t));
-  /* must hold master lock when accessing fork_num */
-  /* NaClXMutexLock(&nap_master->mu); */
-  /*                 - fork_num) */
-  /* NaClXMutexUnlock(&nap_master->mu); */
 
   if (SIZE_MAX - size < ptr_tbl_size) {
     NaClLog(LOG_WARNING, "NaClCreateMainThread() ptr_tbl_size caused copy to overflow!?!\n");
     retval = 0;
     goto cleanup;
   }
-  size += ptr_tbl_size + NACL_STACK_ALIGN_MASK;
-  size &= ~NACL_STACK_ALIGN_MASK;
+  size += ptr_tbl_size;
+  size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap_child->stack_size) {
     retval = 0;

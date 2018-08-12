@@ -875,16 +875,13 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClXCondVarCtor(&pipe_table[i].cv);
   }
 
-  // yiwen: this records the finishing time of the NaCl initialization / setup
+  NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
+  nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
-
-  // yiwen: before the creation of the first cage
-  NaClLog(1, "%s\n\n", "[NaCl Main Loader] NaCl Loader: before creation of the cage to run user program!");
-
   if (!NaClCreateMainThread(nap,
                             argc - optind,
                             argv + optind,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
+                            nap->clean_environ)) {
      NaClLog(1, "%s\n", "creating main thread failed");
      goto done;
   }

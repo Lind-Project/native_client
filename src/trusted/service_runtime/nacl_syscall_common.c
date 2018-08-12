@@ -3856,7 +3856,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp->nap);
   ret = nap_child->cage_id;
-  if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, NULL)) {
+  /* TODO: correctly parse environment -jp */
+  nap_child->clean_environ = nap->clean_environ;
+  if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
     goto out;
@@ -3893,7 +3895,6 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     }
     new_envv = NaClEnvCleanserEnvironment(&env_cleanser);
   }
-  nap->clean_environ = new_envv;
 
   /* setup argv and argc */
   ret = -NACL_ABI_ENOEXEC;
@@ -3947,11 +3948,14 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
 
+  /* TODO: correctly parse environment -jp */
+  UNREFERENCED_PARAMETER(new_envv);
+  new_envv = nap_child->clean_environ = nap->clean_environ;
   /* TODO: fix dynamic text validation -jp */
-  nap_child->ignore_validator_result = 1;
+  nap_child->skip_validator = 1;
 
   /* execute new binary */
-  NaClLog(1, "argc = %d, path = %s, command = %s\n", nap->command_num, nap->binary_command, nap->binary_path);
+  NaClLog(1, "path = %s, command = %s\n", nap->binary_command, nap->binary_path);
   if (!NaClCreateMainThread(nap_child, child_argc, child_argv, new_envv)) {
     NaClLog(1, "%s\n", "[NaClSysExecve] executing new program failed!");
     NaClEnvCleanserDtor(&env_cleanser);
