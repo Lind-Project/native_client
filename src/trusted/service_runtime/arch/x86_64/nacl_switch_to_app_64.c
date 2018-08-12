@@ -7,7 +7,7 @@
 /*
  * NaCl Service Runtime, C-level context switch code.
  */
-
+#include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/arch/x86/sel_rt.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
@@ -37,6 +37,13 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
                                    nacl_reg_t           new_prog_ctr) {
   struct NaClApp            *nap;
   struct NaClThreadContext  *context;
+  nacl_reg_t                secure_stack_ptr;
+  static THREAD int         ignored_ret;
+
+  UNREFERENCED_PARAMETER(secure_stack_ptr);
+  if (!natp) {
+    pthread_exit(&ignored_ret);
+  }
 
 #if !NACL_WINDOWS
   /*
@@ -54,7 +61,7 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
    * This is not suitable for Windows because we do not reserve 32
    * bytes for the shadow space.
    */
-  nacl_reg_t  secure_stack_ptr = NaClGetStackPtr();
+  secure_stack_ptr = NaClGetStackPtr();
 
   NaClLog(6,
           "NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",

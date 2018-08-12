@@ -3855,6 +3855,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp->nap);
+  nap_child->running = 0;
   ret = nap_child->cage_id;
   /* TODO: correctly parse environment -jp */
   nap_child->clean_environ = nap->clean_environ;
@@ -3870,6 +3871,7 @@ out:
 }
 
 int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp) {
+  struct NaClApp  *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser;
@@ -3947,6 +3949,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   }
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
+  nap_child->running = 0;
 
   /* TODO: correctly parse environment -jp */
   UNREFERENCED_PARAMETER(new_envv);

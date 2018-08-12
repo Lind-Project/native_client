@@ -888,17 +888,18 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   /*
    * Compute size of string tables for argv and envv
    */
+  size_t                size;
+  size_t                ptr_tbl_size;
+  uintptr_t             stack_ptr;
+  uint32_t              *p;
+  int                   i;
   int                   retval;
   int                   envc;
-  size_t                size;
   int                   auxv_entries;
-  size_t                ptr_tbl_size;
-  int                   i;
-  uint32_t              *p;
   char                  *strp;
   size_t                *argv_len;
   size_t                *envv_len;
-  uintptr_t             stack_ptr;
+  static THREAD int     ignored_ret;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -906,6 +907,13 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
+
+  NaClXMutexLock(&nap_child->mu);
+
+  /* thread is already spawned for some reason... */
+  if (nap_child->running) {
+    goto already_running;
+  }
 
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
@@ -1039,13 +1047,12 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = AT_NULL;
   *p++ = 0;
 
-  NaClLog(LOG_INFO,
+  NaClLog(1,
           "p (%p) == stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
           (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
   CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size);
 
   /* now actually spawn the thread */
-  NaClXMutexLock(&nap_child->mu);
   nap_child->running = 1;
   NaClXMutexUnlock(&nap_child->mu);
 
@@ -1079,8 +1086,14 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 cleanup:
   free(argv_len);
   free(envv_len);
+  NaClXMutexUnlock(&nap_child->mu);
 
   return retval;
+
+/* NO RETURN */
+already_running:
+  NaClXMutexUnlock(&nap_child->mu);
+  pthread_exit(&ignored_ret);
 }
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {

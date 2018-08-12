@@ -876,7 +876,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
-  nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
+  nap->clean_environ = 0;
+  /* nap->clean_environ = (char const *const *)environ; */
+  /* nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser); */
   nacl_initialization_finish = clock();
   if (!NaClCreateMainThread(nap,
                             argc - optind,
