@@ -106,7 +106,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
                      struct nacl_abi_stat *nasp);
 
 int32_t NaClSysStat(struct NaClAppThread *natp,
-                    const char           *path,
+                    const char           *pathname,
                     struct nacl_abi_stat *nasp);
 
 int32_t NaClSysMkdir(struct NaClAppThread *natp,
@@ -217,7 +217,7 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr);
 
 int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
-                            void                 *eip,
+                            void                 *prog_ctr,
                             uint32_t             stack_ptr,
                             uint32_t             thread_ptr,
                             uint32_t             second_thread_ptr);
