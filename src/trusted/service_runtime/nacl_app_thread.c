@@ -672,13 +672,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 #if defined(_DEBUG) || defined (NDEBUG)
 # define NUM_STACK_VALS 16
 # define TYPE_TO_EXAMINE uintptr_t
-# define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                            \
-        do {                                                                                     \
-          unsigned char *addr = (unsigned char *)(ADDR);                                         \
-          UNREFERENCED_PARAMETER(addr);                                                          \
-          NaClLog(2, "[Memory] Memory addr:                   %p\n", (void *)addr);                \
-          NaClLog(2, "[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
-          NaClLog(2, "[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
+# define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                                   \
+        do {                                                                                            \
+          unsigned char *addr = (unsigned char *)(ADDR);                                                \
+          UNREFERENCED_PARAMETER(addr);                                                                 \
+          NaClLog(2, "[Memory] Memory addr: %p\n", (void *)addr);                                       \
+          NaClLog(2, "[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr));      \
+          NaClLog(2, "[Memory] Memory content (raw): " FMT "\n", *(TYPE *)addr);                        \
         } while (0)
   for (size_t i = 0; i < NUM_STACK_VALS; i++) {
     NaClLog(2, "child_stack[%zu]:\n", i);
@@ -718,10 +718,15 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * NaClThreadCtor() will succeed.
    */
   natp_child->host_thread_is_defined = 1;
-  nap_child->in_fork = 1;
 
   NaClXCondVarBroadcast(&nap_parent->cv);
   NaClXMutexUnlock(&nap_parent->mu);
+  NaClXMutexUnlock(&nap_child->mu);
+
+  /* TODO: figure out a better way to avoid extra instance spawns -jp */
+  NaClThreadYield();
+  NaClXMutexLock(&nap_child->mu);
+  nap_child->in_fork = 0;
   NaClXMutexUnlock(&nap_child->mu);
 
   if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {

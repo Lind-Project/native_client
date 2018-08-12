@@ -910,10 +910,11 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   NaClXMutexLock(&nap_child->mu);
 
-  /* thread is already spawned for some reason... */
-  if (nap_child->running) {
+  /* guard against extra spawned instances */
+  if (nap_child->running || nap_child->in_fork) {
     goto already_running;
   }
+  nap_child->in_fork = 1;
 
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
@@ -1073,6 +1074,12 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
   NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
   NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
+
+  /* TODO: figure out a better way to avoid extra instance spawns -jp */
+  NaClThreadYield();
+  NaClXMutexLock(&nap_child->mu);
+  nap_child->in_fork = 0;
+  NaClXMutexUnlock(&nap_child->mu);
 
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
