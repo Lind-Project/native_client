@@ -308,8 +308,8 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type);
 
 int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes);
 int32_t NaClSysFork(struct NaClAppThread  *natp);
-int32_t NaClSysExecve(struct NaClAppThread  *natp, void* path, void* argv, void* envp);
-int32_t NaClSysExecv(struct NaClAppThread  *natp, void *path, void *argv);
+int32_t NaClSysExecve(struct NaClAppThread  *natp, void* pathname, void* argp, void* envp);
+int32_t NaClSysExecv(struct NaClAppThread  *natp, void *pathname, void *argp);
 int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options);
 
 int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc);
