@@ -280,7 +280,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
     NaClLog(4, "last internal data addr 0x%08"NACL_PRIxPTR"\n",
             last_internal_data_addr);
 
-    if (NULL == NaClVmmapFindPageIter(&nap->mem_map,
+    if (!NaClVmmapFindPageIter(&nap->mem_map,
                                       usr_last_data_page,
                                       &iter)
         || NaClVmmapIterAtEnd(&iter)) {
@@ -3869,25 +3869,25 @@ out:
 
 int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp) {
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = NULL;
+  struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser;
   struct DynArray env_vars;
   char const *const *new_envv = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
   char *sys_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
   char *new_path = (void *)NaClUserToSysAddr(nap, (uintptr_t)path);
-  char *new_argp = sys_argp ? strdup(sys_argp) : NULL;
-  char *binary_command = sys_argp ? strdup(sys_argp) : NULL;
-  char **child_argv = NULL;
-  char **new_argv = NULL;
+  char *new_argp = sys_argp ? strdup(sys_argp) : 0;
+  char *binary_command = sys_argp ? strdup(sys_argp) : 0;
+  char **child_argv = 0;
+  char **new_argv = 0;
   int child_argc = 1;
   int new_argc = 1;
   int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve starts!");
 
-  /* TODO: correctly handle environment -jp */
+  /* TODO: fix broken environment handling -jp */
   UNREFERENCED_PARAMETER(new_envv);
-  new_envv = envp = NULL;
+  new_envv = envp = 0;
 
   /* setup environment */
   if (envp) {
@@ -3895,7 +3895,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
       NaClLog(1, "%s\n", "Failed to allocate env var array");
       goto fail;
     }
-    if (!DynArraySet(&env_vars, 0, NULL)) {
+    if (!DynArraySet(&env_vars, 0, 0)) {
       NaClLog(1, "%s\n", "Adding env_vars NULL terminator failed");
       DynArrayDtor(&env_vars);
       goto fail;
@@ -3923,18 +3923,18 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  for (char *cur = strtok(new_argp, " "); cur; new_argc++, cur = strtok(NULL, " ")) { /* no-op */ }
+  for (char *cur = strtok(new_argp, " "); cur; new_argc++, cur = strtok(0, " ")) { /* no-op */ }
   for (int i = 0; i < new_argc; i++) {
-    char *arg = strtok(i ? NULL : new_argp, " ");
-    new_argv[i] = arg ? strdup(arg) : NULL;
+    char *arg = strtok(i ? 0 : new_argp, " ");
+    new_argv[i] = arg ? strdup(arg) : 0;
     if (!arg) {
       new_argc = i;
       break;
     }
   }
-  new_argv[new_argc] = NULL;
+  new_argv[new_argc] = 0;
   nap->command_num = new_argc;
-  nap->binary_path = new_path ? strdup(new_path) : NULL;
+  nap->binary_path = new_path ? strdup(new_path) : 0;
   nap->binary_command = binary_command;
   if (!nap->binary_path || !nap->binary_command) {
     DynArrayDtor(&env_vars);
@@ -3945,7 +3945,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
 
   /* setup new "child" NaClApp */
   child_argc = 3 + nap->command_num;
-  child_argv = calloc(child_argc + 2, sizeof *child_argv);
+  child_argv = calloc(child_argc + 4, sizeof *child_argv);
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
@@ -3956,10 +3956,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   /* check if there are arguments to the command */
   if (nap->command_num > 1) {
      for (int i = 0; i < new_argc; i++) {
-       child_argv[i + 4] = strdup(new_argv[i]);
+       child_argv[i + 3] = strdup(new_argv[i]);
        free(new_argv[i]);
      }
-     child_argv[new_argc + 4] = NULL;
+     child_argv[new_argc + 3] = 0;
      NaClLog(1, "[NaClSysFork] binary command: %s \n", nap->binary_command);
   }
   NaClLogThreadContext(natp);
@@ -4008,7 +4008,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   /* seconds between thread switching */
   NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = NULL;
+  struct NaClApp *nap_child = 0;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = (int *)sysaddr;
   int pid_max = 0;
