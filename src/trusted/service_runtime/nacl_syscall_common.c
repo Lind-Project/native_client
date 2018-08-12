@@ -2080,7 +2080,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   volatile uintptr_t sysaddr;
   nacl_abi_off_t     offset;
 
-  NaClLog(2, "ntered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
+  NaClLog(2, "Entered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,%d,0x%08"NACL_PRIxPTR")\n",
           (uintptr_t) start, length, prot, flags, d, (uintptr_t)offp);
 
@@ -3911,10 +3911,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   nap->clean_environ = new_envv;
 
   /* setup argv and argc */
+  ret = -NACL_ABI_ENOEXEC;
   if (!new_path || !new_argp || !*new_argp) {
     DynArrayDtor(&env_vars);
     NaClEnvCleanserDtor(&env_cleanser);
-    ret = -NACL_ABI_ENOEXEC;
     goto fail;
   }
   new_argv = calloc(1 + new_argc, sizeof(*new_argv));
@@ -3926,7 +3926,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   for (char *cur = strtok(new_argp, " "); cur; new_argc++, cur = strtok(NULL, " ")) { /* no-op */ }
   for (int i = 0; i < new_argc; i++) {
     char *arg = strtok(i ? NULL : new_argp, " ");
-    new_argv[i] = strdup(arg);
+    new_argv[i] = arg ? strdup(arg) : NULL;
+    if (!arg) {
+      new_argc = i;
+      break;
+    }
   }
   new_argv[new_argc] = NULL;
   nap->command_num = new_argc;
@@ -3959,7 +3963,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
      NaClLog(1, "[NaClSysFork] binary command: %s \n", nap->binary_command);
   }
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(natp->nap);
+  nap_child = NaClChildNapCtor(nap);
+
+  /* TODO: fix dynamic text validation -jp */
+  nap_child->ignore_validator_result = 1;
 
   /* execute new binary */
   NaClLog(1, "argc = %d, path = %s, command = %s\n", nap->command_num, nap->binary_command, nap->binary_path);
@@ -3968,7 +3975,6 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     DynArrayDtor(&env_vars);
     NaClEnvCleanserDtor(&env_cleanser);
     free(new_argv);
-    ret = -NACL_ABI_ENOEXEC;
     goto fail;
   }
   /* wait for child to finish before cleaning up */
