@@ -76,6 +76,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
+  nap_child->in_fork = 0;
 
   /* must hold master lock when accessing fork_num */
   NaClXMutexLock(&nap_master->mu);
@@ -535,6 +536,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClAppThread *natp_child;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
+  static THREAD int ignored_ret;
 
   if (!nap_parent->running) {
     return 0;
@@ -542,6 +544,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
+
+  /* guard against extra spawned instances */
+  if (nap_child->in_fork) {
+    goto already_running;
+  }
+  nap_child->in_fork = 1;
 
   /* make a copy of parent thread context */
   parent_ctx = natp_parent->user;
@@ -661,7 +669,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
   natp_child->user.rbp = child_ctx.rsp + base_ptr_offset;
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) || defined (NDEBUG)
 # define NUM_STACK_VALS 16
 # define TYPE_TO_EXAMINE uintptr_t
 # define NaClLogSysMemoryContentType(TYPE, FMT, ADDR)                                            \
@@ -689,17 +697,17 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
 # undef NUM_STACK_VALS
 # undef TYPE_TO_EXAMINE
 # undef NaClLogSysMemoryContentType
-#endif /* defined(_DEBUG) */
+#endif /* defined(_DEBUG) || defined (NDEBUG) */
 
   /*
    * setup TLS slot in the global nacl_user array
    */
   natp_child->user.tls_idx = nap_child->cage_id;
-  /* natp_child->user.tls_idx = child_ctx.tls_idx; */
   if (nacl_user[natp_child->user.tls_idx]) {
-    NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
+    NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
+    goto already_running;
   }
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
@@ -710,6 +718,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * NaClThreadCtor() will succeed.
    */
   natp_child->host_thread_is_defined = 1;
+  nap_child->in_fork = 1;
 
   NaClXCondVarBroadcast(&nap_parent->cv);
   NaClXMutexUnlock(&nap_parent->mu);
@@ -727,6 +736,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   }
 
   return 1;
+
+already_running:
+    NaClXCondVarBroadcast(&nap_parent->cv);
+    NaClXMutexUnlock(&nap_parent->mu);
+    NaClXMutexUnlock(&nap_child->mu);
+    pthread_exit(&ignored_ret);
 }
 
 int NaClAppThreadSpawn(struct NaClApp *nap,
