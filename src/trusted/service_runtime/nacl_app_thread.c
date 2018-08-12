@@ -75,7 +75,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
+
+  /* must hold master lock when accessing fork_num */
+  NaClXMutexLock(&nap_master->mu);
   fork_num++;
+  NaClXMutexUnlock(&nap_master->mu);
 
   /* store cage_ids in both master and parent */
   for (struct NaClApp *nap_cur = nap_master; nap_cur; nap_cur = nap_parent) {
@@ -88,7 +92,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_cur->cage_id);
     nap_cur->children_ids[nap_cur->num_children++] = nap_child->cage_id;
     if (!DynArraySet(&nap_cur->children, nap_child->cage_id, nap_child)) {
-      NaClLog(LOG_FATAL, "[nap %u] failed to add child: cage_id = %d\n", nap_cur->cage_id, nap_child->cage_id);
+      NaClLog(LOG_FATAL, "[nap %u] failed adding child id: %d\n", nap_cur->cage_id, nap_child->cage_id);
     }
     NaClLog(1, "[nap %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
     NaClXMutexUnlock(&nap_cur->children_mu);
