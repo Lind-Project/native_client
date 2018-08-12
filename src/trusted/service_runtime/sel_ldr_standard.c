@@ -48,6 +48,15 @@
 #include "native_client/src/trusted/service_runtime/sel_util.h"
 #include "native_client/src/trusted/service_runtime/sel_addrspace.h"
 
+
+/*
+ * always points at original program context
+ *
+ * -jp
+ */
+struct NaClThreadContext *master_ctx;
+
+
 /*
  * Fill from static_text_end to end of that page with halt
  * instruction, which is at least NACL_HALT_LEN in size when no
@@ -784,7 +793,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
 
   NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
 
-  VCHECK(0 == (stack_ptr & NACL_STACK_ALIGN_MASK),
+  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
          ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
 
   p = (uint32_t *)stack_ptr;
@@ -830,7 +839,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = AT_NULL;
   *p++ = 0;
 
-  NaClLog(LOG_INFO,
+  NaClLog(1,
           "p (%p) == stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
           (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
   CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size);
@@ -891,6 +900,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   uintptr_t             stack_ptr;
+  /* struct NaClApp        *nap_master = ((struct NaClAppThread *)master_ctx)->nap; */
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -898,7 +908,15 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
-  nap_child->clean_environ = envv ? envv : nap_parent->clean_environ;
+
+  /* TODO: fix broken environment handling -jp */
+  UNREFERENCED_PARAMETER(envv);
+  envv = calloc(1, sizeof *envv);
+  if (!envv) {
+    NaClLog(1, "%s\n", "Failed to allocate env var vector");
+    goto cleanup;
+  }
+
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
     ++envc;
@@ -960,6 +978,10 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0)
                   + (3 + argc + 1 + envc + 1 + auxv_entries * 2))
                   * sizeof(uint32_t));
+  /* must hold master lock when accessing fork_num */
+  /* NaClXMutexLock(&nap_master->mu); */
+  /*                 - fork_num) */
+  /* NaClXMutexUnlock(&nap_master->mu); */
 
   if (SIZE_MAX - size < ptr_tbl_size) {
     NaClLog(LOG_WARNING, "NaClCreateMainThread() ptr_tbl_size caused copy to overflow!?!\n");
@@ -998,7 +1020,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    */
   if (NACL_STACK_GETS_ARG) {
     uint32_t *argloc = p++;
-    *argloc = (uint32_t)NaClSysToUser(nap_child, (uintptr_t) p);
+    *argloc = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)p);
   }
 
   *p++ = 0;  /* Cleanup function pointer, always NULL.  */

@@ -72,6 +72,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
   nap_child->ignore_validator_result = nap_parent->ignore_validator_result;
   nap_child->skip_validator = nap_parent->skip_validator;
+  nap_child->user_entry_pt = nap_parent->user_entry_pt;
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
