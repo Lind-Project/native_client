@@ -3871,31 +3871,45 @@ out:
 }
 
 int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp) {
-  struct NaClApp  *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser;
-  char const *const *new_envv = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  char const *const *sys_envv = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  char **new_envv = 0;
   char *sys_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
   char *new_path = (void *)NaClUserToSysAddr(nap, (uintptr_t)path);
   char *new_argp = sys_argp ? strdup(sys_argp) : 0;
   char *binary_command = sys_argp ? strdup(sys_argp) : 0;
   char **child_argv = 0;
   char **new_argv = 0;
-  int child_argc = 1;
-  int new_argc = 1;
+  int child_argc = 0;
+  int new_argc = 0;
+  int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve starts!");
 
   /* setup environment */
-  if (new_envv) {
-    NaClEnvCleanserCtor(&env_cleanser, 0);
-    if (!NaClEnvCleanserInit(&env_cleanser, new_envv, 0)) {
-      NaClLog(1, "%s\n", "Failed to initialise env cleanser");
+  if (sys_envv) {
+    /* count number of environment strings */
+    for (char **pp = (char **)sys_envv; pp && *pp; ++pp) {
+      ++new_envc;
+    }
+    new_envv = calloc(1 + new_envc, sizeof *new_envv);
+    if (!new_envv) {
       goto fail;
     }
-    new_envv = NaClEnvCleanserEnvironment(&env_cleanser);
+    for (char **pp = (char **)sys_envv, **new_pp = new_envv; pp && *pp; ++pp, ++new_pp) {
+      char *env_entry = (void *)NaClUserToSysAddr(nap, (uintptr_t)*pp);
+      *new_pp = strdup(env_entry);
+    }
+    new_envv[new_envc] = 0;
+    NaClEnvCleanserCtor(&env_cleanser, 0);
+    if (!NaClEnvCleanserInit(&env_cleanser, (char const *const *)new_envv, 0)) {
+      NaClLog(1, "%s\n", "Failed to initialize environment cleanser");
+      goto fail;
+    }
+    nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   }
 
   /* setup argv and argc */
@@ -3904,7 +3918,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  new_argv = calloc(1 + new_argc, sizeof(*new_argv));
+  new_argv = calloc(1 + new_argc, sizeof *new_argv);
   if (!new_argv) {
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
@@ -3950,16 +3964,13 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
-
-  /* TODO: correctly parse environment -jp */
-  UNREFERENCED_PARAMETER(new_envv);
-  new_envv = nap_child->clean_environ = nap->clean_environ;
+  nap_child->clean_environ = nap->clean_environ;
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
 
   /* execute new binary */
   NaClLog(1, "path = %s, command = %s\n", nap->binary_command, nap->binary_path);
-  if (!NaClCreateMainThread(nap_child, child_argc, child_argv, new_envv)) {
+  if (!NaClCreateMainThread(nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysExecve] executing new program failed!");
     NaClEnvCleanserDtor(&env_cleanser);
     free(new_argv);
@@ -3975,6 +3986,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
   ret = 0;
 
 fail:
+  for (char **p = new_envv; p && *p; p++) {
+    free(*p);
+  }
+  free(new_envv);
   free(new_argp);
   free(binary_command);
   return ret;
