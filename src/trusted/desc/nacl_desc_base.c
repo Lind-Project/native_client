@@ -183,7 +183,7 @@ int NaClDescInternalizeCtor(struct NaClDesc *vself,
   rv = 1;
  done:
   if (!rv) {
-    (*NACL_VTBL(NaClRefCount, vself)->Dtor)((struct NaClRefCount *) vself);
+    NACL_VTBL(NaClRefCount, vself)->Dtor((struct NaClRefCount *)vself);
   }
   return rv;
 }

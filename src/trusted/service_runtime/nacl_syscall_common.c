@@ -742,20 +742,21 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     NaClLog(1, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
             (uintptr_t) hd, path, flags, mode, retval);
     if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      retval = NaClSetAvail(nap, ((struct NaClDesc *)NaClDescIoDescMake(hd)));
       NaClLog(1, "Entered into open file table at %d\n", retval);
     }
   }
 
 cleanup:
-  // yiwen: now translate the real fds to virtual fds and return them to the cage
+  /* yiwen: now translate the real fds to virtual fds and return them to the cage */
   fd_cage_table[nap->cage_id][nap->fd] = retval;
-  fd_retval = nap->fd;
-  nap->fd++;
+  fd_retval = nap->fd++;
 
-  // yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
-  //        this will be used when trying to check if a lib has been cached in our system
-  // yiwen: do sanity check for the given fd first before our registration
+  /*
+   * yiwen: register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
+   *        this will be used when trying to check if a lib has been cached in our system
+   * yiwen: do sanity check for the given fd first before our registration
+   */
   if (fd_retval > CACHED_LIB_NUM_MAX) {
      strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
      nap->num_lib++;
@@ -783,7 +784,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
    * FIXME: maybe there is a better way to avoid
    * segfaults trying to close child fds... -jp
    */
-  if (nap->cage_id > 1) {
+  if (d < 3 || nap->cage_id > 1) {
      NaClLog(1, "cage_id: %d\n", nap->cage_id);
      ret = 0;
      goto out;
@@ -833,7 +834,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * |count| is arbitrary and we wouldn't want to have to allocate
    * memory in trusted address space to match.
    */
-  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) dirp, count);
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)dirp, count);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, " illegal address for directory data\n");
     retval = -NACL_ABI_EFAULT;
@@ -853,10 +854,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * cause mmap to be slower on Windows.
    */
   NaClXMutexLock(&nap->mu);
-  getdents_ret = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Getdents)(ndp,
-                            (void *) sysaddr,
-                            count);
+  getdents_ret = ((struct NaClDescVtbl const *) ndp->base.vtbl)->Getdents(ndp, (void *) sysaddr, count);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
@@ -865,11 +863,11 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     NaClLog(LOG_FATAL, "Overflow in Getdents: return value is %"NACL_PRIxS,
             getdents_ret);
   } else {
-    retval = (int32_t) getdents_ret;
+    retval = (int32_t)getdents_ret;
   }
   if (retval > 0) {
     NaClLog(4, "getdents returned %d bytes\n", retval);
-    NaClLog(8, "getdents result: %.*s\n", retval, (char *) sysaddr);
+    NaClLog(8, "getdents result: %.*s\n", retval, (char *)sysaddr);
   } else {
     NaClLog(4, "getdents returned %d\n", retval);
   }
