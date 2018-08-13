@@ -3832,41 +3832,47 @@ out:
 
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = NULL;
-  int ret;
-  char **child_argv;
-  int child_argc;
+  struct NaClApp *nap_child = 0;
+  char **child_argv = 0;
+  int child_argc = 0;
+  int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysFork] NaCl fork starts!");
 
-  /* parent */
-  child_argc = 3 + nap->command_num;
-  child_argv = calloc(child_argc + 2, sizeof *child_argv);
+  /* setup new "child" NaClApp */
+  child_argc = 4 + nap->command_num;
+  child_argv = calloc(4 + nap->command_num, sizeof *child_argv);
+  if (!child_argv) {
+    NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
+    goto fail;
+  }
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
-  if (nap->binary_path) {
-     child_argv[3] = nap->binary_path;
-     NaClLog(1, "[NaClSysFork] binary path: %s \n", nap->binary_path);
+  child_argv[3] = nap->binary_path ? nap->binary_path : 0;
+  if (nap->command_num) {
+    child_argv[4] = nap->binary_command ? nap->binary_command : 0;
   }
-  if (nap->command_num > 1) {
-     child_argv[4] = nap->binary_command;
-     NaClLog(1, "[NaClSysFork] binary command: %s \n", nap->binary_command);
-  }
+  NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
+  NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp->nap);
   nap_child->running = 0;
   ret = nap_child->cage_id;
   /* TODO: correctly parse environment -jp */
   nap_child->clean_environ = nap->clean_environ;
+
+  /* start fork thread */
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
-    ret = -NACL_ABI_ENOMEM;
-    goto out;
+    ret = -NACL_ABI_ENOEXEC;
+    goto fail;
   }
-  NaClLog(1, "[fork_num = %u, cage_id = %u, parent_id = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
-out:
+  /* success */
+  NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
+
+fail:
   return ret;
 }
 
@@ -3968,15 +3974,15 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
   child_argv[3] = nap->binary_path;
-  NaClLog(1, "[NaClSysFork] binary path: %s \n", nap->binary_path);
+  NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
   /* check if there are arguments to the command */
-  if (new_argc) {
-     for (int i = 0; i < new_argc; i++) {
+  if (nap->command_num) {
+     for (int i = 0; i < nap->command_num; i++) {
        child_argv[i + 4] = strdup(new_argv[i]);
      }
-     child_argv[new_argc + 4] = 0;
-     NaClLog(1, "[NaClSysFork] binary command: %s \n", nap->binary_command);
   }
+  child_argv[nap->command_num + 4] = 0;
+  NaClLog(1, "[NaClSysFork] binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
