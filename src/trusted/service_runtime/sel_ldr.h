@@ -146,10 +146,10 @@ struct NaClApp {
   struct NaClApp            *parent;
   struct NaClApp            *master;
 
-  // yiwen: store the path of the execuable running inside this cage(as the main thread)
-  int                       command_num;
-  char                      *binary_path;
-  char                      *binary_command;
+  /* yiwen: store the path of the execuable running inside this cage(as the main thread) */
+  int                       argc;
+  char                      **argv;
+  char                      *binary;
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;

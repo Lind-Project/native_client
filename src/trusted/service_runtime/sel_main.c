@@ -859,15 +859,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
-  nap->command_num = argc - optind - 3;
-  nap->binary_path = malloc(strlen((argv + optind)[3]) + 1);
-  strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
-  if (nap->command_num > 1) {
-     nap->binary_command = malloc(strlen((argv + optind)[4]) + 1);
-     strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
-  }
-
-  NaClLog(1, "nap->command_num = %d, nap->binary_path = %s\n", nap->command_num, nap->binary_path);
+  nap->argc = argc - optind;
+  nap->argv = argv + optind;
+  nap->binary = argv[optind + 3];
 
   NaClLog(1, "%s\n", "Initializing pipe table mutexes/conditional variables.");
   for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
@@ -876,8 +870,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
-  /* nap->clean_environ = 0; */
-  /* nap->clean_environ = (char const *const *)environ; */
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
   if (!NaClCreateMainThread(nap,

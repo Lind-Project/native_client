@@ -3837,36 +3837,12 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLog(1, "%s\n", "[NaClSysFork] NaCl fork starts!");
 
   /* setup new "child" NaClApp */
-  child_argc = 3 + nap->command_num;
-  child_argv = calloc(4 + nap->command_num, sizeof *child_argv);
-  if (!child_argv) {
-    NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
-    goto fail;
-  }
-  child_argv[0] = "NaClMain";
-  child_argv[1] = "--library-path";
-  child_argv[2] = "/lib/glibc";
-  child_argv[3] = nap->binary_path;
-  if (nap->command_num > 1) {
-    char *new_argp = nap->binary_command ? strdup(nap->binary_command) : 0;
-    for (int i = 0; new_argp && i < nap->command_num; i++) {
-      char *arg = strtok(i ? 0 : new_argp, " ");
-      child_argv[i] = arg ? strdup(arg) : 0;
-      if (!arg) {
-        break;
-      }
-    }
-    free(new_argp);
-  }
-  child_argv[child_argc] = 0;
-  NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
-  NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp->nap);
+  child_argc = nap_child->argc;
+  child_argv = nap_child->argv;
   nap_child->running = 0;
   ret = nap_child->cage_id;
-  /* TODO: correctly parse environment -jp */
-  nap_child->clean_environ = nap->clean_environ;
 
   /* start fork thread */
   if (!NaClCreateMainForkThread(nap, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
@@ -3886,18 +3862,17 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser = {0};
-  char *tmp = 0;
-  char *sys_envp = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
-  char *sys_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argp);
-  char *sys_pathname = (void *)NaClUserToSysAddr(nap, (uintptr_t)pathname);
-  char *new_envp = sys_envp ? strdup(sys_envp) : 0;
-  char *new_argp = sys_argp ? strdup(sys_argp) : 0;
-  char *binary_command = sys_argp ? strdup(sys_argp) : 0;
-  char *binary_pathname = sys_pathname ? strdup(sys_pathname) : 0;
   char **child_argv = 0;
   char **new_argv = 0;
   char **new_envv = 0;
-  int child_argc = 1;
+  char *sys_pathname = (void *)NaClUserToSysAddr(nap, (uintptr_t)pathname);
+  char *sys_envp = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  char *sys_argp = (void *)NaClUserToSysAddr(nap, (uintptr_t)argp);
+  char *new_envp = sys_envp ? strdup(sys_envp) : 0;
+  char *new_argp = sys_argp ? strdup(sys_argp) : 0;
+  char *binary = sys_pathname ? strdup(sys_pathname) : 0;
+  char *tmp = 0;
+  int child_argc = 0;
   int new_argc = 0;
   int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
@@ -3935,12 +3910,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   }
 
   /* setup argv and argc */
-  if (!new_argp) {
+  if (!sys_argp) {
     NaClLog(LOG_ERROR, "%s\n", "Passed a NULL pointer in argp");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  /* count number of argument strings */
   new_argc++;
   tmp = strdup(new_argp);
   for (char *cur = strtok(tmp, " "); cur; new_argc++, cur = strtok(0, " ")) { /* no-op */ }
@@ -3948,6 +3922,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   new_argv = calloc(1 + new_argc, sizeof *new_argv);
   if (!new_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_argv");
+    NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
   for (int i = 0; i < new_argc; i++) {
@@ -3958,18 +3933,10 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
     }
   }
   new_argv[new_argc] = 0;
-  nap->command_num = new_argc;
-  nap->binary_path = binary_pathname;
-  nap->binary_command = binary_command;
-  if (!nap->binary_path || !nap->binary_command) {
-    NaClLog(LOG_ERROR, "%s\n", "Passed a NULL pointer in pathname");
-    NaClEnvCleanserDtor(&env_cleanser);
-    goto fail;
-  }
 
   /* setup new "child" NaClApp */
-  child_argc = 3 + nap->command_num;
-  child_argv = calloc(4 + nap->command_num, sizeof *child_argv);
+  child_argc = new_argc + 3;
+  child_argv = calloc(child_argc + 1, sizeof *child_argv);
   if (!child_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
     NaClEnvCleanserDtor(&env_cleanser);
@@ -3978,25 +3945,26 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
-  child_argv[3] = nap->binary_path;
-  if (nap->command_num > 1) {
-    for (int i = 0; i < new_argc; i++) {
-      child_argv[i + 4] = new_argv[i] ? strdup(new_argv[i]) : 0;
-    }
+  for (int i = 0; i < new_argc; i++) {
+    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : 0;
   }
   child_argv[child_argc] = 0;
-  NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
-  NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
+  nap->argc = child_argc;
+  nap->argv = child_argv;
+  if (binary) {
+    free(nap->argv[3]);
+    nap->argv[3] = strdup(binary);
+  }
+  nap->binary = child_argv[3];
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
-  nap_child->clean_environ = nap->clean_environ;
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
 
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;
-  NaClLog(1, "path = %s, command = %s\n", nap->binary_command, nap->binary_path);
+  NaClLog(1, "binary = %s\n", nap->binary);
   if (!NaClCreateMainThread(nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "NaClCreateMainForkThread() failed");
     NaClEnvCleanserDtor(&env_cleanser);
@@ -4021,8 +3989,7 @@ fail:
   free(new_argv);
   free(new_envp);
   free(new_argp);
-  free(binary_command);
-  free(binary_pathname);
+  free(binary);
   return ret;
 }
 
