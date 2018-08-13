@@ -3846,11 +3846,11 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
-  child_argv[3] = nap->binary_path ? nap->binary_path : 0;
+  child_argv[3] = nap->binary_path;
   if (nap->command_num > 1) {
-    child_argv[4] = nap->binary_command ? nap->binary_command : 0;
+    child_argv[3] = nap->binary_command;
   }
-  child_argv[child_argc] = 0;
+  child_argv[4] = 0;
   NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
   NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
@@ -3957,11 +3957,11 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
-  child_argv[3] = nap->binary_path ? nap->binary_path : 0;
+  child_argv[3] = nap->binary_path;
   if (nap->command_num > 1) {
-    child_argv[4] = nap->binary_command ? nap->binary_command : 0;
+    child_argv[3] = nap->binary_command;
   }
-  child_argv[child_argc] = 0;
+  child_argv[4] = 0;
   NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
   NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
