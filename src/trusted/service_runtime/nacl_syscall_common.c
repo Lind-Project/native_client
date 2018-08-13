@@ -3817,8 +3817,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     ndp = NaClDescIoDescFromDescAllocCtor(pipe_fds[i], flags);
     NaClSetDesc(nap, pipe_fds[i], ndp);
     fd_cage_table[nap->cage_id][nap->fd] = pipe_fds[i];
-    nacl_fds[i] = nap->fd;
-    nap->fd++;
+    nacl_fds[i] = nap->fd++;
   }
 
   /* copy out sanitized fds */

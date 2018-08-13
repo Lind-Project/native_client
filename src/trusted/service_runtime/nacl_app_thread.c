@@ -105,7 +105,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     }
   }
 
-  NaClAppInitialDescriptorHookup(nap_child);
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -130,18 +129,18 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClLog(LOG_FATAL, "Launch service threads failed\n");
   }
 
-  for (int old_fd = 0, new_fd; old_fd < CAGING_FD_NUM; old_fd++) {
+  NaClXMutexLock(&nap_parent->mu);
+  for (int old_fd = 0, new_fd = old_fd; old_fd < nap_parent->fd; new_fd = ++old_fd) {
     struct NaClDesc *old_nd;
     old_nd = NaClGetDesc(nap_parent, old_fd);
     if (!old_nd) {
-      break;
+      continue;
     }
-    new_fd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, new_fd, old_nd);
-    fd_cage_table[nap_child->cage_id][new_fd] = fd_cage_table[nap_parent->cage_id][old_fd];
-    nap_child->fd++;
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", old_fd, new_fd);
+    fd_cage_table[nap_child->cage_id][nap_child->fd++] = new_fd;
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", old_fd, nap_child->fd - 1);
   }
+  NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
