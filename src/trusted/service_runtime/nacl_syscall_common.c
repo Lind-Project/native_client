@@ -3840,8 +3840,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLog(1, "%s\n", "[NaClSysFork] NaCl fork starts!");
 
   /* setup new "child" NaClApp */
-  child_argc = 3 + nap->command_num;
-  child_argv = calloc(3 + nap->command_num, sizeof *child_argv);
+  child_argc = 2 + nap->command_num;
+  child_argv = calloc(4 + nap->command_num, sizeof *child_argv);
   if (!child_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
     goto fail;
@@ -3853,6 +3853,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   if (nap->command_num > 1) {
     child_argv[4] = nap->binary_command ? nap->binary_command : 0;
   }
+  child_argv[child_argc] = 0;
   NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
   NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
@@ -3891,8 +3892,8 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   char **child_argv = 0;
   char **new_envv = 0;
   int child_argc = 1;
-  int new_argc = 1;
-  int new_envc = 1;
+  int new_argc = 0;
+  int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
@@ -3901,6 +3902,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   NaClEnvCleanserCtor(&env_cleanser, 0);
   if (new_envp) {
     /* count number of environment strings */
+    new_envc++;
     tmp = strdup(new_envp);
     for (char *cur = strtok(tmp, " "); cur; new_envc++, cur = strtok(0, " ")) { /* no-op */ }
     free(tmp);
@@ -3934,6 +3936,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
     goto fail;
   }
   /* count number of argument strings */
+  new_argc++;
   tmp = strdup(new_argp);
   for (char *cur = strtok(tmp, " "); cur; new_argc++, cur = strtok(0, " ")) { /* no-op */ }
   free(tmp);
@@ -3947,8 +3950,8 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   }
 
   /* setup new "child" NaClApp */
-  child_argc = 3 + nap->command_num;
-  child_argv = calloc(3 + nap->command_num, sizeof *child_argv);
+  child_argc = 2 + nap->command_num;
+  child_argv = calloc(4 + nap->command_num, sizeof *child_argv);
   if (!child_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
     NaClEnvCleanserDtor(&env_cleanser);
@@ -3961,6 +3964,7 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *pathname, void *argp, v
   if (nap->command_num > 1) {
     child_argv[4] = nap->binary_command ? nap->binary_command : 0;
   }
+  child_argv[child_argc] = 0;
   NaClLog(1, "binary path: %s\n", nap->binary_path ? nap->binary_path : "(nil)");
   NaClLog(1, "binary command: %s \n", nap->binary_command ? nap->binary_command : "(nil)");
   NaClLogThreadContext(natp);
