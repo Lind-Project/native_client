@@ -784,18 +784,24 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
    * FIXME: maybe there is a better way to avoid
    * segfaults trying to close child fds... -jp
    */
-  if (d < 3 || nap->cage_id > 1) {
+  if (nap->cage_id > 1) {
      NaClLog(1, "cage_id: %d\n", nap->cage_id);
      ret = 0;
      goto out;
   }
   fd = fd_cage_table[nap->cage_id][d];
 
+  /* don't try to close already closed fds */
+  if (fd < 0) {
+    goto out;
+  }
+
   /* Unref the desc_tbl */
   if ((ndp = NaClGetDescMu(nap, fd))) {
-    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t)ndp);
     NaClSetDescMu(nap, d, NULL);
     NaClDescUnref(ndp);
+    fd_cage_table[nap->cage_id][d] = -1;
     ret = 0;
   }
 
