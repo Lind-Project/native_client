@@ -548,20 +548,26 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
+  /* check for closed fds */
+  if (oldfd < 0) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   if (nap->fd > FILE_DESC_MAX) {
     ret = -NACL_ABI_EBADF;
-    goto done;
+    goto out;
   }
   if (!(old_nd = NaClGetDesc(nap, oldfd))) {
     ret= -NACL_ABI_EBADF;
-    goto done;
+    goto out;
   }
   ret = newfd = NaClSetAvail(nap, old_nd);
   NaClSetDesc(nap, newfd, old_nd);
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   nap->fd++;
 
-done:
+out:
   return ret;
 }
 
@@ -576,19 +582,25 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
 
+  /* check for closed fds */
+  if (oldfd < 0) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   if (oldfd == newfd) {
     ret = oldfd;
-    goto done;
+    goto out;
   }
   if (nap->fd > FILE_DESC_MAX) {
     ret = -NACL_ABI_EBADF;
-    goto done;
+    goto out;
   }
   fd_cage_table[nap->cage_id][newfd] = fd_cage_table[nap->cage_id][oldfd];
   ret = newfd;
   nap->fd++;
 
-done:
+out:
   return ret;
 }
 
@@ -610,19 +622,25 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
    */
   UNREFERENCED_PARAMETER(flags);
 
+  /* check for closed fds */
+  if (oldfd < 0) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   if (oldfd == newfd) {
     ret = -NACL_ABI_EINVAL;
-    goto done;
+    goto out;
   }
   if (nap->fd++ > FILE_DESC_MAX) {
     ret = -NACL_ABI_EBADF;
-    goto done;
+    goto out;
   }
   fd_cage_table[nap->cage_id][nap->fd] = fd_cage_table[nap->cage_id][oldfd];
   ret = newfd;
   nap->fd++;
 
-done:
+out:
   return ret;
 }
 
@@ -801,7 +819,16 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t)ndp);
     NaClSetDescMu(nap, d, NULL);
     NaClDescUnref(ndp);
-    fd_cage_table[nap->cage_id][d] = -1;
+    /* invalidate all fd references */
+    for (sig_atomic_t cage_idx = 0; cage_idx < fork_num; cage_idx++) {
+      for (size_t fd_idx = 0; fd_idx < CAGING_FD_NUM; fd_idx++) {
+        if (fd_cage_table[cage_idx][fd_idx] == fd) {
+          fd_cage_table[cage_idx][fd_idx] = -1;
+          /* found the needle so break from the inner loop to the next cage id */
+          break;
+        }
+      }
+    }
     ret = 0;
   }
 
@@ -903,18 +930,24 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
-    goto cleanup;
+    goto out;
   }
 
   /*
@@ -962,7 +995,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
-cleanup:
+out:
   return retval;
 }
 
@@ -984,18 +1017,24 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
-    goto cleanup;
+    goto out;
   }
 
   /*
@@ -1037,7 +1076,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
-cleanup:
+out:
   return retval;
 }
 
@@ -1062,15 +1101,21 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
   fd = fd_cage_table[nap->cage_id][d];
 
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof offset)) {
     retval = -NACL_ABI_EFAULT;
-    goto cleanup_unref;
+    goto out_unref;
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
@@ -1086,9 +1131,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
-cleanup_unref:
+out_unref:
   NaClDescUnref(ndp);
-cleanup:
+out:
   return retval;
 }
 
@@ -1122,6 +1167,12 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    */
 
   fd = fd_cage_table[nap->cage_id][d];
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -1174,6 +1225,12 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
           sizeof *nasp, sizeof *nasp);
 
   fd = fd_cage_table[nap->cage_id][d];
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
