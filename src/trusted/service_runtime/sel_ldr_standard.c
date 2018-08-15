@@ -788,7 +788,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
     goto cleanup;
   }
 
-  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
+  NaClLog(1, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
 
   VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
          ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
@@ -812,7 +812,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
 
   for (i = 0; i < argc && argv && argv[i]; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
-    NaClLog(2, "copying arg %d  %p -> %p\n",
+    NaClLog(1, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", argv[i]);
     strp += argv_len[i];
@@ -821,7 +821,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
 
   for (i = 0; i < envc && envv && envv[i]; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
-    NaClLog(2, "copying env %d  %p -> %p\n",
+    NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", envv[i]);
     strp += envv_len[i];
@@ -862,8 +862,8 @@ int NaClCreateMainThread(struct NaClApp     *nap,
     memset((void *)stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
 
-  NaClLog(2, "system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  NaClLog(2, "  user stack ptr : %016"NACL_PRIxPTR"\n",
+  NaClLog(1, "system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+  NaClLog(1, "  user stack ptr : %016"NACL_PRIxPTR"\n",
           NaClSysToUserStackAddr(nap, stack_ptr));
 
   /* e_entry is user addr */
@@ -981,14 +981,12 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   if (SIZE_MAX - size < ptr_tbl_size) {
     NaClLog(LOG_WARNING, "NaClCreateMainThread() ptr_tbl_size caused copy to overflow!?!\n");
-    retval = 0;
     goto cleanup;
   }
   size += ptr_tbl_size;
   size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap_child->stack_size) {
-    retval = 0;
     goto cleanup;
   }
 
@@ -997,11 +995,10 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    */
   stack_ptr = NaClUserToSysAddrRange(nap_child, NaClGetInitialStackTop(nap_child) - size, size);
   if (stack_ptr == kNaClBadAddress) {
-    retval = 0;
     goto cleanup;
   }
 
-  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
+  NaClLog(1, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
 
   VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
          ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
@@ -1015,7 +1012,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    * in a register and that's set in NaClStartThreadInApp.
    */
   if (NACL_STACK_GETS_ARG) {
-    uint32_t *argloc = p++;;
+    uint32_t *argloc = p++;
     *argloc = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)p);
   }
 
@@ -1024,8 +1021,8 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = argc;
 
   for (i = 0; i < argc && argv && argv[i]; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(2, "copying arg %d  %p -> %p\n",
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+    NaClLog(1, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", argv[i]);
     strp += argv_len[i];
@@ -1033,8 +1030,8 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = 0;  /* argv[argc] is NULL.  */
 
   for (i = 0; i < envc && envv && envv[i]; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(2, "copying env %d  %p -> %p\n",
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+    NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", envv[i]);
     strp += envv_len[i];
@@ -1056,7 +1053,6 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
             (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
   }
   /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
-
 
   /* now actually spawn the thread */
   nap_child->running = 1;
