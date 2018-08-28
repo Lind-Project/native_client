@@ -14,13 +14,86 @@
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
+#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
+#include "native_client/src/trusted/service_runtime/nacl_config.h"
+#include "native_client/src/shared/platform/lind_platform.h"
 
 EXTERN_C_BEGIN
+/* snprintf length limit for each argv string */
+#define PROT_RW (NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE)
+#define PROT_RX (NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC)
+#define F_ANON_PRIV (NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS)
+#ifndef SIZE_T_MAX
+# define SIZE_T_MAX (~(size_t)0)
+#endif
+#define LD_FILE "/lib/glibc/runnable-ld.so"
+/* 32 bit mask */
+#define UNTRUSTED_ADDR_MASK 0xffffffffu
+
+/* extract uint64_t object representation */
+#define OBJ_REP_64(X) (((uint64_t)(X)[0] << (0 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[1] << (1 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[2] << (2 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[3] << (3 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[4] << (4 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[5] << (5 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
+                     | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
+
+enum {
+  PIPE_NUM_MAX = 16,
+  CACHED_LIB_NUM_MAX = 32,
+  CAGING_LIB_PATH_MAX = 64,
+  FILE_DESC_MAX = 256,
+  CHILD_NUM_MAX = 256,
+  CAGING_FD_NUM  = 256,
+  ARG_LIMIT = 4096,
+  PIPE_BUF_MAX = 4906
+};
+
+/*
+ * struct for storing the <file_path, mem_addr>
+ * relation which is being used by our "shared
+ * libs caching" mechanism
+ */
+struct CachedLibTable {
+  char path[CAGING_LIB_PATH_MAX];
+  void *mem_addr;
+};
+
 struct NaClThreadContext;
 struct NaClAppThread;
 struct NaClMutex;
 struct NaClApp;
+
+/*
+ * always points at original program context
+ */
+extern struct NaClThreadContext *master_ctx;
+
+extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
+extern double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
+extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
+extern int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
+extern int nacl_syscall_trace_level_counter;
+extern int nacl_syscall_counter;
+extern int lind_syscall_counter;
+extern double time_counter;
+extern double time_start;
+extern double time_end;
+extern int cage;
+
+/*
+ * this is the lookup table used, when checking if a lib has
+ * already been loaded previously, and will contain the shared
+ * memory address for the lib if it has been loaded before.
+ */
+extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+extern int cached_lib_num;
+extern int pipe_mutex[PIPE_NUM_MAX];
+extern int pipe_transfer_over[PIPE_NUM_MAX];
+extern char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 
 #if NACL_WINDOWS
 __declspec(dllexport)
@@ -56,8 +129,22 @@ void  NaClGlobalModuleFini(void);
 /* this is defined in src/trusted/service_runtime/arch/<arch>/ sel_rt.h */
 void NaClInitGlobals(void);
 
-static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(
-    uint32_t thread_index) {
+static INLINE void NaClPatchAddr(uintptr_t child_bits,
+                                 uintptr_t parent_bits,
+                                 uintptr_t *start,
+                                 size_t cnt) {
+  for (size_t i = 0; i < cnt; i++) {
+    /* skip addresses with matching high bits */
+    if (!((parent_bits ^ start[i]) >> NACL_PAGESHIFT)) {
+      continue;
+    }
+    NaClLog(2, "patching %p\n", (void *)start[i]);
+    start[i] = child_bits | (start[i] & UNTRUSTED_ADDR_MASK);
+    NaClLog(2, "new addr %p\n", (void *)start[i]);
+  }
+}
+
+static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(uint32_t thread_index) {
   DCHECK(thread_index < NACL_THREAD_MAX);
   return NaClAppThreadFromThreadContext(nacl_user[thread_index]);
 }
