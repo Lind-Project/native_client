@@ -8,17 +8,19 @@
 #ifndef LIND_PLATFORM_H_
 #define LIND_PLATFORM_H_
 
-#undef _POSIX_C_SOURCE
-#undef _XOPEN_SOURCE
-
 #include <sys/types.h>
 #if NACL_LINUX
-#include <sys/statfs.h>
+# include <sys/statfs.h>
 #endif
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/poll.h>
+
+/* avoid errors caused by conflicts with feature_test_macros(7) */
+#undef _POSIX_C_SOURCE
+#undef _XOPEN_SOURCE
+
 #include <unistd.h>
 #include <stdint.h>
 #include <Python.h>
@@ -26,8 +28,8 @@
 #include "native_client/src/shared/platform/lind_stat.h"
 
 #if NACL_OSX
-#define sockaddr_in sockaddr
-#define __SOCKADDR_ARG struct sockaddr
+# define sockaddr_in sockaddr
+# define __SOCKADDR_ARG struct sockaddr
 #endif
 
 #define LIND_debug_noop                 1

@@ -5,12 +5,14 @@
  *      Author: sji
  */
 
-#undef _POSIX_C_SOURCE
-
-#include <Python.h>
-
 #include <stdio.h>
 #include <assert.h>
+
+/* avoid errors caused by conflicts with feature_test_macros(7) */
+#undef _POSIX_C_SOURCE
+#undef _XOPEN_SOURCE
+
+#include <Python.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <stdlib.h>

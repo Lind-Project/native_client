@@ -4,18 +4,14 @@
  * found in the LICENSE file.
  */
 
-/* avoid errors caused by code included when defined */
-#undef _POSIX_C_SOURCE
-#undef _XOPEN_SOURCE
-
 /*
  * NaCl service run-time, non-platform specific system call helper routines.
  */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
-/* avoid errors caused by code included when defined */
+#include <sys/stat.h>
+#include <sys/types.h>
+
+/* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
 
@@ -23,7 +19,6 @@
 #include <Python.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <time.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"

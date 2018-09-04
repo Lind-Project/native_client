@@ -5,7 +5,9 @@
  *      Author: sji
  */
 
+/* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
+#undef _XOPEN_SOURCE
 
 #include <Python.h>
 #include <errno.h>
@@ -26,6 +28,7 @@ static int initialized;
 
 #define REPY_RELPATH "../repy/"
 
+/* wrap goto statement to guard against early if/else termination */
 #define GOTO_ERROR_IF_NULL(x) do { if (!(x)) goto error; } while (0)
 
 PyObject *CallPythonFunc(PyObject *context, const char *func, PyObject *args)
