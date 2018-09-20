@@ -81,25 +81,20 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&nap_master->children_mu);
 
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (struct NaClApp *nap_cur = nap_master; nap_cur; nap_cur = nap_parent) {
-    NaClXMutexLock(&nap_cur->children_mu);
-    if (nap_cur->children_ids[nap_cur->num_children]) {
-       nap_cur->num_children++;
+  for (struct NaClApp *cur = nap_master; cur == nap_master || cur == nap_parent; cur = nap_parent) {
+    NaClXMutexLock(&cur->children_mu);
+    if (cur->children_ids[cur->num_children]) {
+       cur->num_children++;
     }
     /* make sure cage_id is unique and assign it to child */
     InitializeCage(nap_child, nap_master->cage_id + fork_num);
-    NaClLog(1, "[nap %d] incrementing num_children\n", nap_cur->cage_id);
-    nap_cur->children_ids[nap_cur->num_children++] = nap_child->cage_id;
-    if (!DynArraySet(&nap_cur->children, nap_child->cage_id, nap_child)) {
-      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_cur->cage_id, nap_child->cage_id);
+    NaClLog(1, "[nap %d] incrementing num_children\n", cur->cage_id);
+    cur->children_ids[cur->num_children++] = nap_child->cage_id;
+    if (!DynArraySet(&cur->children, nap_child->cage_id, nap_child)) {
+      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", cur->cage_id, nap_child->cage_id);
     }
-    NaClLog(1, "[nap %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
-    NaClXMutexUnlock(&nap_cur->children_mu);
-
-    /* break after parent's cleanup */
-    if (nap_cur == nap_parent) {
-      break;
-    }
+    NaClLog(1, "[nap %d] new child count: %d\n", cur->cage_id, cur->num_children);
+    NaClXMutexUnlock(&cur->children_mu);
   }
 
   NaClAppInitialDescriptorHookup(nap_child);
@@ -204,7 +199,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * __m256 objects are passed (8 mod 32 if __m256), after the call.
    * Note the current doc (as of 2009-12-09) at
    *
-   *   http://www.x86-64.org/documentation/abi.pdf
+   *   https://raw.githubusercontent.com/Lind-Project/native_client/master/documentation/x86-64_ABI.pdf
    *
    * is wrong since it claims (%rsp-8) should be 0 mod 16 or mod 32
    * after the call, and it should be (%rsp+8) == 0 mod 16 or 32.
@@ -336,27 +331,23 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
 
   if (nap_master && nap_parent) {
     /* remove self from parent's list of children */
-    for (struct NaClApp *nap_cur = nap_master; nap_cur; nap_cur = nap_parent) {
-      NaClXMutexLock(&nap_cur->children_mu);
-      list_idx = GetChildIdx(nap_cur->children_ids, nap_cur->num_children, nap->cage_id);
+    for (struct NaClApp *cur = nap_master; cur == nap_master || cur == nap_parent; cur = nap_parent) {
+      NaClXMutexLock(&cur->children_mu);
+      list_idx = GetChildIdx(cur->children_ids, cur->num_children, nap->cage_id);
       switch (list_idx) {
       case -1:
-        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
+        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", cur->cage_id, nap->cage_id);
         break;
       default:
-        nap_cur->num_children--;
-        nap_cur->children_ids[list_idx] = 0;
-        NaClLog(1, "[parent %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
-        if (!DynArraySet(&nap_cur->children, nap->cage_id, NULL)) {
-          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
+        cur->num_children--;
+        cur->children_ids[list_idx] = 0;
+        NaClLog(1, "[parent %d] new child count: %d\n", cur->cage_id, cur->num_children);
+        if (!DynArraySet(&cur->children, nap->cage_id, NULL)) {
+          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", cur->cage_id, nap->cage_id);
         }
       }
-      NaClXCondVarBroadcast(&nap_cur->children_cv);
-      NaClXMutexUnlock(&nap_cur->children_mu);
-      /* break after parent's cleanup */
-      if (nap_cur == nap_parent) {
-        break;
-      }
+      NaClXCondVarBroadcast(&cur->children_cv);
+      NaClXMutexUnlock(&cur->children_mu);
     }
   }
 
