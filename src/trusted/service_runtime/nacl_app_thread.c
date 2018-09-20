@@ -662,7 +662,7 @@ int NaClAppThreadSpawn(struct NaClApp *nap,
   natp->host_thread_is_defined = 1;
   if (!NaClThreadCtor(&natp->host_thread, NaClAppThreadLauncher, (void *) natp,
                       NACL_KERN_STACK_SIZE)) {
-     /*
+    /*
      * No other thread saw the NaClAppThread, so it is OK that
      * host_thread was not initialized despite host_thread_is_defined
      * being set.

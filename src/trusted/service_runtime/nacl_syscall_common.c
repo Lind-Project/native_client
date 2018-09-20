@@ -556,8 +556,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
-  const char           glibc_prefix[] = "/lib/glibc/";
-  const char           tls_prefix[] = "/lib/glibc/tls/";
+  const char           *glibc_prefix = "/lib/glibc/";
+  const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
 
@@ -633,7 +633,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
             (uintptr_t) hd, path, retval);
     if (!retval) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      NaClLog(1, "Entered directory into open file table at %d\n", retval);
+      NaClLog(1, "added directory to open file table at %d\n", retval);
     }
   } else {
     struct NaClHostDesc  *hd;
@@ -667,7 +667,7 @@ cleanup:
      nap->num_lib++;
   }
 
-  NaClLog(1, "[*** Debug ***][Open] fd = %d, filepath = %s \n", fd_retval, path);
+  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
 }
