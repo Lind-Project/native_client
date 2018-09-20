@@ -199,7 +199,7 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
    * __m256 objects are passed (8 mod 32 if __m256), after the call.
    * Note the current doc (as of 2009-12-09) at
    *
-   *   https://raw.githubusercontent.com/Lind-Project/native_client/master/documentation/x86-64_ABI.pdf
+   *   https://github.com/Lind-Project/native_client/raw/fork_implementation/documentation/x86-64_ABI.pdf
    *
    * is wrong since it claims (%rsp-8) should be 0 mod 16 or mod 32
    * after the call, and it should be (%rsp+8) == 0 mod 16 or 32.
