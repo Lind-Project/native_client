@@ -851,21 +851,6 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
-    /* yiwen: handle lind_pipe here.
-     *        the pipe() call should initialize the pipe buffer
-     *        and returns two fds for the pipe
-     */
-    if (callNum == 61) {
-        int data[2] = {9001, 9002};
-        int len = 8;
-        int error = NaClCopyOutToUser(nap, (uintptr_t)outArgSys[0].ptr, data, len);
-        if (!error) {
-            NaClLog(LOG_ERROR, "NaClCopyOutToUser: failed! \n");
-        }
-        retval = 0;
-        goto cleanup;
-    }
-
     if (stubs[callNum].pre) {
         retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
         if (retval) {
