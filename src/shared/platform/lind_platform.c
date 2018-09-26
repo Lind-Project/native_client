@@ -26,8 +26,6 @@ PyObject *py_context;
 
 static int initialized;
 
-#define REPY_RELPATH "../repy/"
-
 /* wrap goto statement to guard against early if/else termination */
 #define GOTO_ERROR_IF_NULL(x) do { if (!(x)) goto error; } while (0)
 
@@ -104,15 +102,17 @@ int LindPythonInit(void)
 
     path = PySys_GetObject("path");
     GOTO_ERROR_IF_NULL(path);
-    PyList_Append(path, PyString_FromString(REPY_RELPATH));
+    PyList_Append(path, PyString_FromString("../repy/"));
 
     repylib_name = PyString_FromString("repylib");
     py_repylib = PyImport_Import(repylib_name);
     GOTO_ERROR_IF_NULL(py_repylib);
     repy_main_func = PyObject_GetAttrString(py_repylib, "repy_main");
     GOTO_ERROR_IF_NULL(repy_main_func);
-    repy_main_args = Py_BuildValue("([sssss])", "lind", "--safebinary", REPY_RELPATH"restrictions.lind",
-            REPY_RELPATH"lind_server.py", "./dummy.nexe");
+    repy_main_args = Py_BuildValue("([sssss])", "lind", "--safebinary",
+                                   "../repy/restrictions.lind",
+                                   "../repy/lind_server.py",
+                                   "./dummy.nexe");
     result = PyObject_CallObject(repy_main_func, repy_main_args);
     GOTO_ERROR_IF_NULL(result);
     PyOS_AfterFork();
@@ -312,33 +312,6 @@ cleanup:
             _offset += ((int*)_data)[(current)];                        \
         }
 
-#define DUMP_DATA(x) printf(#x" = %#lx\n", (uint64_t)(x))
-
-#if 0
-# define DUMP_STAT(x)                                                  \
-        do {                                                           \
-            DUMP_DATA((x)->st_dev);                                    \
-            DUMP_DATA((x)->st_ino);                                    \
-            DUMP_DATA((x)->st_nlink);                                  \
-            DUMP_DATA((x)->st_mode);                                   \
-            DUMP_DATA(S_ISREG((x)->st_mode));                          \
-            DUMP_DATA(S_ISDIR((x)->st_mode));                          \
-            DUMP_DATA(S_ISCHR((x)->st_mode));                          \
-            DUMP_DATA(S_ISBLK((x)->st_mode));                          \
-            DUMP_DATA(S_ISFIFO((x)->st_mode));                         \
-            DUMP_DATA(S_ISLNK((x)->st_mode));                          \
-            DUMP_DATA(S_ISSOCK((x)->st_mode));                         \
-            DUMP_DATA((x)->st_uid);                                    \
-            DUMP_DATA((x)->st_gid);                                    \
-            DUMP_DATA((x)->st_rdev);                                   \
-            DUMP_DATA((x)->st_size);                                   \
-            DUMP_DATA((x)->st_blksize);                                \
-            DUMP_DATA((x)->st_blocks);                                 \
-        } while (0)
-#else
-# define DUMP_STAT(x) do {/* no-op */} while (0)
-#endif
-
 int lind_pread(int fd, void *buf, int count, off_t offset)
 {
     off_t cur_pos=0;
@@ -415,14 +388,12 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf)
     callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_xstat, version, path);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
-    DUMP_STAT(buf);
     LIND_API_PART3;
 }
 
 int lind_open (int flags, int mode, const char *path)
 {
     LIND_API_PART1;
-    // printf("\n [***Debug!***][lind_open] opening file: %s \n", path);
     callArgs = Py_BuildValue("(i[iis])", LIND_safe_fs_open, flags, mode, path);
     LIND_API_PART2;
     LIND_API_PART3;
@@ -480,7 +451,6 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf)
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fxstat, fd, version);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
-    DUMP_STAT(buf);
     LIND_API_PART3;
 }
 
