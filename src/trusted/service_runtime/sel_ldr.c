@@ -62,7 +62,6 @@
 double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;
-int cage = 1001;
 
 /*
  * `fd_cage_table[cage_id][fd] = real fd`
