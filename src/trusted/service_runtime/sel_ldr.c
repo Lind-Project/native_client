@@ -34,6 +34,7 @@
 #include "native_client/src/trusted/gio/gio_shm.h"
 #include "native_client/src/trusted/interval_multiset/nacl_interval_range_tree_intern.h"
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
+#include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
@@ -46,6 +47,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_reverse_quota_interface.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_handlers.h"
+#include "native_client/src/trusted/service_runtime/nacl_text.h"
 #include "native_client/src/trusted/service_runtime/nacl_valgrind_hooks.h"
 #include "native_client/src/trusted/service_runtime/name_service/default_name_service.h"
 #include "native_client/src/trusted/service_runtime/name_service/name_service.h"
@@ -57,8 +59,27 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
 
+double time_counter = 0.0;
+double time_start = 0.0;
+double time_end = 0.0;
+
+/*
+ * `fd_cage_table[cage_id][fd] = real fd`
+ *
+ * The [fd] idx is the virtual fd visible to the cages.
+ *
+ * -jp
+ */
+volatile sig_atomic_t fork_num;
+struct Pipe pipe_table[PIPE_NUM_MAX];
+int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
+int cached_lib_num;
+
+// yiwen: lookup table for <file_path, mem_addr>
+struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+
 static int IsEnvironmentVariableSet(char const *env_name) {
-  return NULL != getenv(env_name);
+  return !!getenv(env_name);
 }
 
 static int ShouldEnableDyncodeSyscalls(void) {
@@ -71,7 +92,7 @@ static int ShouldEnableDynamicLoading(void) {
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
                                 struct NaClSyscallTableEntry *table) {
-  struct NaClDescEffectorLdr  *effp;
+  struct NaClDescEffectorLdr  *effp = NULL;
 
   /* The validation cache will be injected later, if it exists. */
   nap->validation_cache = NULL;
@@ -80,30 +101,22 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
-  nap->cpu_features = (NaClCPUFeatures *) malloc(
-      nap->validator->CPUFeatureSize);
-  if (NULL == nap->cpu_features) {
+  nap->cpu_features = malloc(nap->validator->CPUFeatureSize);
+  if (!nap->cpu_features) {
     goto cleanup_none;
   }
   nap->validator->GetCurrentCPUFeatures(nap->cpu_features);
   nap->fixed_feature_cpu_mode = 0;
-
   nap->addr_bits = NACL_MAX_ADDR_BITS;
-
   nap->stack_size = NACL_DEFAULT_STACK_MAX;
   nap->initial_nexe_max_code_bytes = 0;
-
   nap->aux_info = NULL;
-
   nap->mem_start = 0;
 
-#if (NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 \
-     && NACL_BUILD_SUBARCH == 32)
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   nap->pcrel_thunk = 0;
   nap->pcrel_thunk_end = 0;
-#endif
-#if (NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 \
-     && NACL_BUILD_SUBARCH == 64)
+#elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   nap->nacl_syscall_addr = 0;
   nap->get_tls_fast_path1_addr = 0;
   nap->get_tls_fast_path2_addr = 0;
@@ -115,7 +128,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->rodata_start = 0;
   nap->data_start = 0;
   nap->data_end = 0;
-
   nap->initial_entry_pt = 0;
   nap->user_entry_pt = 0;
 
@@ -125,49 +137,50 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!DynArrayCtor(&nap->desc_tbl, 2)) {
     goto cleanup_threads;
   }
-  if (!NaClVmmapCtor(&nap->mem_map)) {
+  if (!DynArrayCtor(&nap->children, 2)) {
     goto cleanup_desc_tbl;
   }
+  if (!NaClVmmapCtor(&nap->mem_map)) {
+    goto cleanup_children;
+  }
 
-  nap->mem_io_regions = (struct NaClIntervalMultiset *) malloc(
-      sizeof(struct NaClIntervalRangeTree));
-  if (NULL == nap->mem_io_regions) {
+  nap->mem_io_regions = malloc(sizeof *nap->mem_io_regions);
+  if (!nap->mem_io_regions) {
     goto cleanup_mem_map;
   }
 
-  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *)
-                                 nap->mem_io_regions)) {
+  if (!NaClIntervalRangeTreeCtor((struct NaClIntervalRangeTree *)nap->mem_io_regions)) {
     free(nap->mem_io_regions);
     nap->mem_io_regions = NULL;
     goto cleanup_mem_map;
   }
 
-  effp = (struct NaClDescEffectorLdr *) malloc(sizeof *effp);
-  if (NULL == effp) {
+  effp = malloc(sizeof *effp);
+  if (!effp) {
     goto cleanup_mem_io_regions;
   }
   if (!NaClDescEffectorLdrCtor(effp, nap)) {
     goto cleanup_effp_free;
   }
   nap->effp = (struct NaClDescEffector *) effp;
-
   nap->enable_dyncode_syscalls = ShouldEnableDyncodeSyscalls();
   nap->use_shm_for_dynamic_text = ShouldEnableDynamicLoading();
   nap->text_shm = NULL;
+
   if (!NaClMutexCtor(&nap->dynamic_load_mutex)) {
     goto cleanup_effp_free;
   }
+  if (!NaClMutexCtor(&nap->children_mu)) {
+    goto cleanup_dynamic_load_mutex;
+  }
   nap->dynamic_page_bitmap = NULL;
-
   nap->dynamic_regions = NULL;
   nap->num_dynamic_regions = 0;
   nap->dynamic_regions_allocated = 0;
   nap->dynamic_delete_generation = 0;
-
   nap->dynamic_mapcache_offset = 0;
   nap->dynamic_mapcache_size = 0;
   nap->dynamic_mapcache_ret = 0;
-
   nap->service_port = NULL;
   nap->service_address = NULL;
   nap->secure_service_port = NULL;
@@ -176,19 +189,16 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->secure_service = NULL;
   nap->irt_loaded = 0;
   nap->main_exe_prevalidated = 0;
-
-  nap->manifest_proxy = NULL;
-  nap->kernel_service = NULL;
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
+
   if (!NaClResourceNaClAppInit(&nap->resources, nap)) {
     goto cleanup_dynamic_load_mutex;
   }
   nap->reverse_client = NULL;
   nap->reverse_channel_initialization_state =
       NACL_REVERSE_CHANNEL_UNINITIALIZED;
-
   if (!NaClMutexCtor(&nap->mu)) {
-    goto cleanup_dynamic_load_mutex;
+    goto cleanup_children_mutex;
   }
   if (!NaClCondVarCtor(&nap->cv)) {
     goto cleanup_mu;
@@ -200,13 +210,11 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 #endif
 
   nap->syscall_table = table;
-
   nap->module_load_status = LOAD_STATUS_UNKNOWN;
   nap->module_may_start = 0;  /* only when secure_service != NULL */
-
   nap->name_service = (struct NaClNameService *) malloc(
       sizeof *nap->name_service);
-  if (NULL == nap->name_service) {
+  if (!nap->name_service) {
     goto cleanup_cv;
   }
   if (!NaClNameServiceCtor(nap->name_service,
@@ -300,6 +308,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   NaClCondVarDtor(&nap->cv);
  cleanup_mu:
   NaClMutexDtor(&nap->mu);
+ cleanup_children_mutex:
+  NaClMutexDtor(&nap->children_mu);
  cleanup_dynamic_load_mutex:
   NaClMutexDtor(&nap->dynamic_load_mutex);
  cleanup_effp_free:
@@ -309,6 +319,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->mem_io_regions = NULL;
  cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
+ cleanup_children:
+  DynArrayDtor(&nap->children);
  cleanup_desc_tbl:
   DynArrayDtor(&nap->desc_tbl);
  cleanup_threads:
@@ -381,7 +393,7 @@ GENERIC_STORE(64)
 #undef GENERIC_STORE
 
 struct NaClPatchInfo *NaClPatchInfoCtor(struct NaClPatchInfo *self) {
-  if (NULL != self) {
+  if (self) {
     memset(self, 0, sizeof *self);
   }
   return self;
@@ -530,7 +542,7 @@ void  NaClMemRegionPrinter(void                   *state,
           (entry->page_num + entry->npages) << NACL_PAGESHIFT);
   gprintf(gp,   "prot   0x%08x\n", entry->prot);
   gprintf(gp,   "%sshared/backed by a file\n",
-          (NULL == entry->desc) ? "not " : "");
+          (!entry->desc) ? "not " : "");
 }
 
 void  NaClAppPrintDetails(struct NaClApp  *nap,
@@ -568,7 +580,7 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
   struct NaClDesc *result;
 
   result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
-  if (NULL != result) {
+  if (result) {
     NaClDescRef(result);
   }
 
@@ -585,7 +597,7 @@ void NaClSetDescMu(struct NaClApp   *nap,
 
   if (!DynArraySet(&nap->desc_tbl, d, ndp)) {
     NaClLog(LOG_FATAL,
-            "NaClSetDesc: could not set descriptor %d to 0x%08"
+            "NaClSetDesc: could not set descriptor %d to 0x%#08"
             NACL_PRIxPTR"\n",
             d,
             (uintptr_t) ndp);
@@ -650,6 +662,7 @@ int NaClAddThreadMu(struct NaClApp        *nap,
             pos);
   }
   ++nap->num_threads;
+
   return (int) pos;
 }
 
@@ -666,17 +679,17 @@ int NaClAddThread(struct NaClApp        *nap,
 
 void NaClRemoveThreadMu(struct NaClApp  *nap,
                         int             thread_num) {
-  if (NULL == DynArrayGet(&nap->threads, thread_num)) {
-    NaClLog(LOG_FATAL,
+  if (!DynArrayGet(&nap->threads, thread_num)) {
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: thread to be removed is not in the table\n");
   }
   if (nap->num_threads == 0) {
-    NaClLog(LOG_FATAL,
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: num_threads cannot be 0!!!\n");
   }
   --nap->num_threads;
   if (!DynArraySet(&nap->threads, thread_num, (struct NaClAppThread *) NULL)) {
-    NaClLog(LOG_FATAL,
+     NaClLog(LOG_FATAL,
             "NaClRemoveThreadMu:: DynArraySet at position %d failed\n",
             thread_num);
   }
@@ -701,15 +714,20 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   struct NaClDescIoDesc *dp;
 
   NaClLog(4,
-          "NaClAddHostDescriptor: host %d as nacl desc %d, flag 0x%x\n",
+          "NaClAddHostDescriptor: host %d as nacl desc %d, flag %#x\n",
           host_os_desc,
           nacl_desc,
           flag);
   dp = NaClDescIoDescMake(NaClHostDescPosixMake(host_os_desc, flag));
-  if (NULL == dp) {
+  if (!dp) {
     NaClLog(LOG_FATAL, "NaClAddHostDescriptor: NaClDescIoDescMake failed\n");
   }
-  NaClSetDesc(nap, nacl_desc, (struct NaClDesc *) dp);
+  NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
+  if (host_os_desc >= FILE_DESC_MAX) {
+    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large for fd_maps\n", host_os_desc);
+    return;
+  }
+  nap->fd_maps[host_os_desc] = (struct NaClDesc *)dp;
 }
 
 void NaClAddImcHandle(struct NaClApp  *nap,
@@ -723,7 +741,7 @@ void NaClAddImcHandle(struct NaClApp  *nap,
           (uintptr_t) h,
           nacl_desc);
   dp = (struct NaClDescImcDesc *) malloc(sizeof *dp);
-  if (NACL_FI_ERROR_COND("NaClAddImcHandle__malloc", NULL == dp)) {
+  if (NACL_FI_ERROR_COND("NaClAddImcHandle__malloc", !dp)) {
     NaClLog(LOG_FATAL, "NaClAddImcHandle: no memory\n");
   }
   if (NACL_FI_ERROR_COND("NaClAddImcHandle__ctor",
@@ -765,33 +783,40 @@ static struct {
  * that the redirection succeeded in *some* phase.
  */
 static void NaClProcessRedirControl(struct NaClApp *nap) {
+  char const      *env = NULL;
+  struct NaClDesc *ndp = NULL;
+  int d = 0;
+  char const *env_name = NULL;
+  int nacl_flags = 0;
+  int mode = 0;
 
-  size_t          ix;
-  char const      *env;
-  struct NaClDesc *ndp;
+  for (size_t ix = 0; ix < NACL_ARRAY_SIZE(g_nacl_redir_control); ix++, ndp = NULL) {
+    CHECK(ix < INT_MAX);
+    d = g_nacl_redir_control[ix].d;
+    env_name = g_nacl_redir_control[ix].env_name;
+    nacl_flags = g_nacl_redir_control[ix].nacl_flags;
+    mode = g_nacl_redir_control[ix].mode;
 
-  for (ix = 0; ix < NACL_ARRAY_SIZE(g_nacl_redir_control); ++ix) {
-    ndp = NULL;
-    if (NULL != (env = getenv(g_nacl_redir_control[ix].env_name))) {
-      NaClLog(4, "getenv(%s) -> %s\n", g_nacl_redir_control[ix].env_name, env);
-      ndp = NaClResourceOpen((struct NaClResource *) &nap->resources,
+    if ((env = getenv(env_name))) {
+      NaClLog(1, "getenv(%s) -> %s\n", env_name, env);
+      ndp = NaClResourceOpen((struct NaClResource *)&nap->resources,
                              env,
-                             g_nacl_redir_control[ix].nacl_flags,
-                             g_nacl_redir_control[ix].mode);
-      NaClLog(4, " NaClResourceOpen returned %"NACL_PRIxPTR"\n",
-              (uintptr_t) ndp);
+                             nacl_flags,
+                             mode);
+      NaClLog(1, " NaClResourceOpen returned %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     }
 
-    if (NULL != ndp) {
-      NaClLog(4, "Setting descriptor %d\n", (int) ix);
-      NaClSetDesc(nap, (int) ix, ndp);
-    } else if (NACL_RESOURCE_PHASE_START == nap->resource_phase) {
-      /*
-       * Environment not set or redirect failed -- handle default inheritance.
-       */
-      NaClAddHostDescriptor(nap, g_nacl_redir_control[ix].d,
-                            g_nacl_redir_control[ix].nacl_flags, (int) ix);
+    if (ndp) {
+      NaClLog(1, "Setting descriptor %d\n", (int)ix);
+      NaClSetDesc(nap, (int)ix, ndp);
+      continue;
     }
+
+     /*
+      * Environment not set or redirect failed -- handle default inheritance.
+      */
+    if (NACL_RESOURCE_PHASE_START == nap->resource_phase)
+      NaClAddHostDescriptor(nap, d, nacl_flags, (int)ix);
   }
 }
 
@@ -817,8 +842,8 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
-  struct NaClDesc *secure_pair[2];
-  struct NaClDesc *pair[2];
+  struct NaClDesc *secure_pair[2] = {0};
+  struct NaClDesc *pair[2] = {0};
 
   NaClLog(3, "Entered NaClCreateServiceSocket\n");
 
@@ -826,12 +851,7 @@ void NaClCreateServiceSocket(struct NaClApp *nap) {
                          0 != NaClCommonDescMakeBoundSock(secure_pair))) {
     NaClLog(LOG_FATAL, "Cound not create secure service socket\n");
   }
-  NaClLog(4,
-          "got bound socket at 0x%08"NACL_PRIxPTR", "
-          "addr at 0x%08"NACL_PRIxPTR"\n",
-          (uintptr_t) secure_pair[0],
-          (uintptr_t) secure_pair[1]);
-
+  NaClLog(1, "got bound socket at %p, addr at %p\n", (void *)secure_pair[0], (void *)secure_pair[1]);
   NaClDescSafeUnref(nap->secure_service_port);
   nap->secure_service_port = secure_pair[0];
 
@@ -870,19 +890,19 @@ void NaClCreateServiceSocket(struct NaClApp *nap) {
  */
 void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
                                NaClHandle      inherited_desc) {
-  struct NaClDescImcDesc      *channel;
-  struct NaClImcTypedMsgHdr   hdr;
-  struct NaClDesc             *descs[2];
-  ssize_t                     rv;
+  struct NaClDescImcDesc      *channel = NULL;
+  struct NaClImcTypedMsgHdr   hdr = {0};
+  struct NaClDesc             *descs[2] = {0};
+  ssize_t                     rv = 0;
 
-  NaClLog(4,
-          "NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
+  NaClLog(1, "NaClSetUpBootstrapChannel(0x%08"NACL_PRIxPTR", %"NACL_PRIdPTR")\n",
           (uintptr_t) nap,
           (uintptr_t) inherited_desc);
 
-  channel = (struct NaClDescImcDesc *) malloc(sizeof *channel);
-  if (NULL == channel) {
+  channel = malloc(sizeof *channel);
+  if (!channel) {
     NaClLog(LOG_FATAL, "NaClSetUpBootstrapChannel: no memory\n");
+    return;
   }
   if (!NaClDescImcDescCtor(channel, inherited_desc)) {
     NaClLog(LOG_FATAL,
@@ -891,12 +911,12 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
             (uintptr_t) inherited_desc);
     return;
   }
-  if (NULL == nap->secure_service_address) {
+  if (!nap->secure_service_address) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: secure service address not set\n");
     return;
   }
-  if (NULL == nap->service_address) {
+  if (!nap->service_address) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: service address not set\n");
     return;
@@ -907,19 +927,18 @@ void NaClSetUpBootstrapChannel(struct NaClApp  *nap,
   descs[0] = nap->secure_service_address;
   descs[1] = nap->service_address;
 
-  hdr.iov = (struct NaClImcMsgIoVec *) NULL;
+  hdr.iov = (struct NaClImcMsgIoVec *)NULL;
   hdr.iov_length = 0;
   hdr.ndescv = descs;
   hdr.ndesc_length = NACL_ARRAY_SIZE(descs);
 
-  rv = (*NACL_VTBL(NaClDesc, channel)->SendMsg)((struct NaClDesc *) channel,
-                                                &hdr, 0);
+  rv = NACL_VTBL(NaClDesc, channel)->SendMsg((struct NaClDesc *)channel, &hdr, 0);
   NaClXMutexLock(&nap->mu);
-  if (NULL != nap->bootstrap_channel) {
+  if (nap->bootstrap_channel) {
     NaClLog(LOG_FATAL,
             "NaClSetUpBootstrapChannel: cannot have two bootstrap channels\n");
   }
-  nap->bootstrap_channel = (struct NaClDesc *) channel;
+  nap->bootstrap_channel = (struct NaClDesc *)channel;
   channel = NULL;
   NaClXMutexUnlock(&nap->mu);
 
@@ -972,7 +991,7 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
   rpc->result = NACL_SRPC_RESULT_INTERNAL;
 
   aux = strdup(in_args[1]->arrays.str);
-  if (NULL == aux) {
+  if (!aux) {
     rpc->result = NACL_SRPC_RESULT_NO_MEMORY;
     goto cleanup;
   }
@@ -1114,12 +1133,12 @@ static void NaClSecureChannelStartModuleRpc(struct NaClSrpcRpc     *rpc,
 
   NaClXMutexLock(&nap->mu);
   if (nap->module_may_start) {
-    NaClLog(LOG_ERROR, "Duplicate StartModule RPC?!?\n");
     status = LOAD_DUP_START_MODULE;
+    NaClLog(LOG_ERROR, "Duplicate StartModule RPC?!? status: [%u]\n", status);
   } else {
     nap->module_may_start = 1;
   }
-  NaClLog(4, "NaClSecureChannelStartModuleRpc: broadcasting\n");
+  NaClLog(1, "%s\n", "NaClSecureChannelStartModuleRpc: broadcasting");
   NaClXCondVarBroadcast(&nap->cv);
   NaClXMutexUnlock(&nap->mu);
 
@@ -1161,7 +1180,7 @@ NaClErrorCode NaClWaitForStartModuleCommand(struct NaClApp *nap) {
 }
 
 void NaClBlockIfCommandChannelExists(struct NaClApp *nap) {
-  if (NULL != nap->secure_service) {
+  if (nap->secure_service) {
     for (;;) {
       struct nacl_abi_timespec req;
       req.tv_sec = 1000;
@@ -1214,7 +1233,7 @@ static void NaClSecureReverseClientCallback(
   }
   nap->reverse_quota_interface = (struct NaClReverseQuotaInterface *)
       malloc(sizeof *nap->reverse_quota_interface);
-  if (NULL == nap->reverse_quota_interface ||
+  if (!nap->reverse_quota_interface ||
       NACL_FI_ERROR_COND(
           ("NaClSecureReverseClientCallback"
            "__NaClReverseQuotaInterfaceCtor"),
@@ -1242,7 +1261,7 @@ static void NaClSecureReverseClientSetup(struct NaClSrpcRpc     *rpc,
   NaClLog(4, "Entered NaClSecureReverseClientSetup\n");
 
   NaClXMutexLock(&nap->mu);
-  if (NULL != nap->reverse_client) {
+  if (nap->reverse_client) {
     NaClLog(LOG_FATAL, "Double reverse setup RPC\n");
   }
   if (NACL_REVERSE_CHANNEL_UNINITIALIZED !=
@@ -1254,7 +1273,7 @@ static void NaClSecureReverseClientSetup(struct NaClSrpcRpc     *rpc,
       NACL_REVERSE_CHANNEL_INITIALIZATION_STARTED;
   /* the reverse connection is still coming */
   rev = (struct NaClSecureReverseClient *) malloc(sizeof *rev);
-  if (NULL == rev) {
+  if (!rev) {
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
   }
@@ -1308,7 +1327,7 @@ void NaClSecureCommandChannel(struct NaClApp *nap) {
   secure_command_server = (struct NaClSecureService *) malloc(
       sizeof *secure_command_server);
   if (NACL_FI_ERROR_COND("NaClSecureCommandChannel__malloc",
-                         NULL == secure_command_server)) {
+                         !secure_command_server)) {
     NaClLog(LOG_FATAL, "Out of memory for secure command channel\n");
   }
   if (NACL_FI_ERROR_COND("NaClSecureCommandChannel__NaClSecureServiceCtor",
@@ -1422,3 +1441,186 @@ static void StopForDebuggerInit (uintptr_t mem_start) {
 void NaClGdbHook(struct NaClApp const *nap) {
   StopForDebuggerInit(nap->mem_start);
 }
+
+/*
+ * Passed to NaClVmmapVisit in order to copy a memory region from
+ * an NaClApp to a child process (used when forking).
+ *
+ * -jp
+ *
+ * preconditions:
+ * * target_state must be a pointer to a valid, initialized NaClApp.
+ *
+ */
+static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
+  struct NaClApp *target = target_state;
+  uintptr_t offset = target->mem_start;
+  uintptr_t parent_offset = target->parent ? target->parent->mem_start : 0;
+  uintptr_t page_addr_child = offset + (entry->page_num << NACL_PAGESHIFT);
+  uintptr_t page_addr_parent = parent_offset + (entry->page_num << NACL_PAGESHIFT);
+  size_t copy_size = entry->npages << NACL_PAGESHIFT;
+
+  /* don't copy pages if nap has no parent */
+  if (!parent_offset) {
+    return;
+  }
+  NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
+          entry->npages,
+          entry->page_num,
+          copy_size,
+          (void *)page_addr_parent,
+          (void *)page_addr_child);
+  NaClVmmapAddWithOverwrite(&target->mem_map, entry->page_num, entry->npages,
+                            entry->prot, entry->flags|F_ANON_PRIV,
+                            entry->desc, entry->offset, entry->file_size);
+  if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+  }
+
+  /* temporarily set RW page permissions for copy */
+  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
+  NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot|PROT_RW);
+  if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  }
+  if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+  }
+
+  /* copy data pages point to */
+  memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
+
+  /* reset to original page permissions */
+  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
+  NaClVmmapChangeProt(&target->parent->mem_map, entry->page_num, entry->npages, entry->prot);
+  if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  }
+  if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+  }
+}
+
+/*
+ * Passed to NaClDyncodeVisit in order to copy a dynamic region from
+ * an NaClApp to a child process (used when forking).
+ *
+ * -jp
+ *
+ * preconditions:
+ * * target_state must be a pointer to a valid, initialized NaClApp.
+ *
+ */
+static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
+  struct NaClApp *target = target_state;
+  uintptr_t offset = target->mem_start;
+  uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
+  uintptr_t start = (region->start & UNTRUSTED_ADDR_MASK) + offset;
+  if (NaClMprotect((void *)start, region->size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
+  }
+  NaClLog(1, "copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
+  NaClDynamicRegionCreate(target, start, region->size, region->is_mmap);
+  memcpy((void *)start, (void *)region->start, region->size);
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof(uintptr_t));
+  if (NaClMprotect((void *)start, region->size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
+  }
+}
+
+/*
+ * Copy the entire address execution context of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
+ * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
+ */
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
+  size_t stack_size = nap_parent->stack_size;
+  size_t dyncode_size = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start - NACL_HALT_SLED_SIZE;
+  size_t stack_npages = stack_size >> NACL_PAGESHIFT;
+  size_t dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
+  void *dyncode_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
+  void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
+  void *stackaddr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
+                                                          NaClGetInitialStackTop(nap_parent) - stack_size,
+                                                          stack_size);
+  void *stackaddr_child = (void *)NaClUserToSysAddrRange(nap_child,
+                                                         NaClGetInitialStackTop(nap_child) - stack_size,
+                                                         stack_size);
+  uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
+  uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
+  uintptr_t stack_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)stackaddr_parent) >> NACL_PAGESHIFT;
+  uintptr_t stack_pnum_child = NaClSysToUser(nap_child, (uintptr_t)stackaddr_child) >> NACL_PAGESHIFT;
+
+  UNREFERENCED_PARAMETER(dyncode_pnum_parent);
+  UNREFERENCED_PARAMETER(stack_pnum_parent);
+
+  NaClLog(1, "dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
+  NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
+  NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClPrintAddressSpaceLayout(nap_child);
+
+  /* copy page mappings */
+  if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
+  }
+  if (NaClMprotect(dyncode_child, dyncode_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
+  }
+  if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
+  }
+  if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
+  }
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                            stack_pnum_child, stack_npages,
+                            PROT_RW, F_ANON_PRIV, NULL, 0, 0);
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                            dyncode_pnum_child, dyncode_npages,
+                            PROT_RW, F_ANON_PRIV, NULL, 0, 0);
+
+  /* copy stack and dynamic text mappings */
+  nap_child->break_addr = nap_parent->break_addr;
+  memcpy(dyncode_child, dyncode_parent, dyncode_size);
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
+  NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
+          stack_size,
+          stack_size,
+          stackaddr_parent,
+          stackaddr_child);
+  memcpy(stackaddr_child, stackaddr_parent, stack_size);
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
+  NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
+  NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
+  NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
+  if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
+  }
+  if (NaClMprotect(dyncode_child, dyncode_size, PROT_RX) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
+  }
+
+  NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
+  NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClLog(1, "%s\n", "nap_child address space after copy:");
+  NaClPrintAddressSpaceLayout(nap_child);
+}
+
+/* set up the fd table for each cage */
+void InitializeCage(struct NaClApp *nap, int cage_id) {
+  fd_cage_table[cage_id][0] = 0;
+  fd_cage_table[cage_id][1] = 1;
+  fd_cage_table[cage_id][2] = 2;
+  /* set to the next unused (available for dup() etc.) file descriptor */
+  nap->fd = 3;
+  nap->num_lib = 3;
+  nap->num_children = 0;
+  nap->cage_id = cage_id;
+}
+

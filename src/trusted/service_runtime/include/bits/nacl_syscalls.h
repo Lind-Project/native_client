@@ -22,15 +22,16 @@
 
 #define NACL_sys_dup                     8
 #define NACL_sys_dup2                    9
-#define NACL_sys_open                   10
-#define NACL_sys_close                  11
-#define NACL_sys_read                   12
-#define NACL_sys_write                  13
-#define NACL_sys_lseek                  14
-#define NACL_sys_ioctl                  15
-#define NACL_sys_stat                   16
-#define NACL_sys_fstat                  17
-#define NACL_sys_chmod                  18
+#define NACL_sys_dup3                   10
+#define NACL_sys_open                   11
+#define NACL_sys_close                  12
+#define NACL_sys_read                   13
+#define NACL_sys_write                  14
+#define NACL_sys_lseek                  15
+#define NACL_sys_ioctl                  16
+#define NACL_sys_stat                   17
+#define NACL_sys_fstat                  18
+#define NACL_sys_chmod                  19
 /* no fchmod emulation on windows */
 
 #define NACL_sys_brk                    20
@@ -109,8 +110,19 @@
  */
 #define NACL_sys_test_syscall_1         111
 #define NACL_sys_test_syscall_2         112
-#define NACL_sys_lind_syscall         113
+#define NACL_sys_lind_syscall           113
 
-#define NACL_MAX_SYSCALLS               114
+#define NACL_sys_pipe                   114
+#define NACL_sys_pipe2                  115
+#define NACL_sys_fork                   116
+#define NACL_sys_execv                  117
+#define NACL_sys_execve                 118
+#define NACL_sys_getppid                119
+#define NACL_sys_waitpid                120
+#define NACL_sys_wait                   121
+#define NACL_sys_wait4                  122
+#define NACL_sys_sigprocmask            123
+
+#define NACL_MAX_SYSCALLS               256
 
 #endif
