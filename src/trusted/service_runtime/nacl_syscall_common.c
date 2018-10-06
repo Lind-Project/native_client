@@ -856,18 +856,24 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
-    goto cleanup;
+    goto out;
   }
 
   /*
@@ -883,13 +889,39 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
   read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
+
   /* special case for pipe() */
   if (read_result == -NACL_ABI_ENOSYS) {
-    read_result = read(fd, (void *)sysaddr, count);
-    if (read_result < 0) {
-      read_result = -errno;
+    read_result = 0;
+    NaClFastMutexLock(&pipe_table[fd].mu);
+    pipe_table[fd].xfer_done = false;
+    if (pipe_table[fd].is_closed) {
+        read_result = -NACL_ABI_EBADFD;
+        goto fd_closed;
     }
+    NaClFastMutexUnlock(&pipe_table[fd].mu);
+    for (;;) {
+      ssize_t ret;
+      if ((ret = read(fd, (void *)sysaddr, count - read_result)) < 0) {
+        if (errno == EINTR || errno == EAGAIN) {
+          continue;
+        }
+        /* error during write() */
+        read_result = -errno;
+        break;
+      }
+      /* done reading */
+      if (!ret) {
+        break;
+      }
+      read_result += ret;
+    }
+    NaClFastMutexLock(&pipe_table[fd].mu);
+fd_closed:
+    pipe_table[fd].xfer_done = true;
+    NaClFastMutexUnlock(&pipe_table[fd].mu);
   }
+
   NaClVmIoHasEnded(nap,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
@@ -915,7 +947,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
-cleanup:
+out:
   return retval;
 }
 
@@ -941,14 +973,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
-    goto cleanup;
+    goto out;
   }
 
   /*
@@ -975,13 +1007,39 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+
   /* special case for pipe() */
   if (write_result == -NACL_ABI_ENOSYS) {
-    write_result = write(fd, (void *)sysaddr, count);
-    if (write_result < 0) {
-      write_result = -errno;
+    write_result = 0;
+    NaClFastMutexLock(&pipe_table[fd].mu);
+    pipe_table[fd].xfer_done = false;
+    if (pipe_table[fd].is_closed) {
+        write_result = -NACL_ABI_EBADFD;
+        goto fd_closed;
     }
+    NaClFastMutexUnlock(&pipe_table[fd].mu);
+    for (;;) {
+      ssize_t ret;
+      if ((ret = write(fd, (void *)sysaddr, count - write_result)) < 0) {
+        if (errno == EINTR || errno == EAGAIN) {
+          continue;
+        }
+        /* error during write() */
+        write_result = -errno;
+        break;
+      }
+      /* done writing */
+      if (!ret) {
+        break;
+      }
+      write_result += ret;
+    }
+    NaClFastMutexLock(&pipe_table[fd].mu);
+fd_closed:
+    pipe_table[fd].xfer_done = true;
+    NaClFastMutexUnlock(&pipe_table[fd].mu);
   }
+
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
                    (uint32_t)(((uintptr_t)buf) + count - 1));
@@ -991,7 +1049,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
-cleanup:
+out:
   return retval;
 }
 
@@ -1016,15 +1074,21 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
   fd = fd_cage_table[nap->cage_id][d];
 
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    goto out;
   }
 
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof offset)) {
     retval = -NACL_ABI_EFAULT;
-    goto cleanup_unref;
+    goto out_unref;
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
@@ -1040,9 +1104,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
-cleanup_unref:
+out_unref:
   NaClDescUnref(ndp);
-cleanup:
+out:
   return retval;
 }
 
@@ -1076,6 +1140,12 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    */
 
   fd = fd_cage_table[nap->cage_id][d];
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -1128,6 +1198,12 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
           sizeof *nasp, sizeof *nasp);
 
   fd = fd_cage_table[nap->cage_id][d];
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -3862,11 +3938,15 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_EFAULT;
       goto out;
     }
+
+    /* setup pipe table entry */
+    NaClFastMutexLock(&pipe_table[pipe_fds[i]].mu);
+    pipe_table[pipe_fds[i]].is_closed = false;
     ndp = NaClDescIoDescFromDescAllocCtor(pipe_fds[i], flags);
     NaClSetDesc(nap, pipe_fds[i], ndp);
     fd_cage_table[nap->cage_id][nap->fd] = pipe_fds[i];
-    nacl_fds[i] = nap->fd;
-    nap->fd++;
+    nacl_fds[i] = nap->fd++;
+    NaClFastMutexUnlock(&pipe_table[pipe_fds[i]].mu);
   }
 
   /* copy out sanitized fds */
