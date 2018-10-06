@@ -3958,6 +3958,11 @@ out:
   return ret;
 }
 
+int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags) {
+  UNREFERENCED_PARAMETER(flags);
+  return NaClSysPipe(natp, pipedes);
+}
+
 int32_t NaClSysFork(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = NULL;
@@ -4017,27 +4022,29 @@ int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void 
 #define WAIT_ANY (-1)
 #define WAIT_ANY_PG 0
 
-int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
-                       uint32_t pid,
+int32_t NaClSysWaitpid(struct NaClAppThread *natp,
+                       int pid,
                        uint32_t *stat_loc,
-                       uint32_t options) {
+                       int options) {
+  volatile int cage_id = pid;
   /* seconds between thread switching */
   NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = NULL;
+  struct NaClApp *nap_child = 0;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
-  int *stat_loc_ptr = (int *)sysaddr;
-  int nap_id = pid;
+  int *stat_loc_ptr = sysaddr == kNaClBadAddress ? NULL : (int *)sysaddr;
   int pid_max = 0;
   int ret = 0;
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
 
   CHECK(nap->num_children < NACL_THREAD_MAX);
-  *stat_loc_ptr = 0;
+  if (stat_loc_ptr) {
+    *stat_loc_ptr = 0;
+  }
   for (int i = 0; i < nap->num_children; i++)
     pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
-  if (!nap->num_children || nap_id > pid_max) {
+  if (!nap->num_children || cage_id > pid_max) {
     ret = -NACL_ABI_ECHILD;
     goto out;
   }
@@ -4045,10 +4052,10 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   /*
    * explicit child pid given
    */
-  if (nap_id > 0 && nap_id <= pid_max) {
+  if (cage_id > 0 && cage_id <= pid_max) {
     /* make sure children exists */
     NaClXMutexLock(&nap->children_mu);
-    nap_child = DynArrayGet(&nap->children, nap_id);
+    nap_child = DynArrayGet(&nap->children, cage_id);
     if (!nap_child) {
       ret = -NACL_ABI_ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
@@ -4057,7 +4064,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
     }
     NaClLog(1, "Thread children count: %d\n", nap->num_children);
     /* wait for child to finish */
-    while (DynArrayGet(&nap->children, nap_id)) {
+    while (DynArrayGet(&nap->children, cage_id)) {
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
       /* NaClXCondVarWait(&nap->children_cv, &nap->children_mu); */
     }
@@ -4071,8 +4078,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
    *
    * -jp
    */
-  if (nap_id <= 0) {
-    int cur_idx = 0;
+  if (cage_id <= 0) {
+    volatile int cur_idx = 0;
     for (;;) {
       /* make sure children exist */
       NaClXMutexLock(&nap->children_mu);
@@ -4083,13 +4090,13 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
         goto out;
       }
       /* wait for next child to exit */
-      nap_id = nap->children_ids[cur_idx];
-      if (nap_id && (nap_child = DynArrayGet(&nap->children, nap_id))) {
+      cage_id = nap->children_ids[cur_idx];
+      if (cage_id && (nap_child = DynArrayGet(&nap->children, cage_id))) {
         NaClLog(1, "Thread children count: %d\n", nap->num_children);
         NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
         /* exit if selected child has finished */
-        if (!DynArrayGet(&nap->children, nap_id)) {
-          ret = nap_id;
+        if (!DynArrayGet(&nap->children, cage_id)) {
+          ret = cage_id;
           NaClXCondVarBroadcast(&nap->children_cv);
           NaClXMutexUnlock(&nap->children_mu);
           goto out;
@@ -4104,18 +4111,18 @@ int32_t NaClSysWaitpid(struct NaClAppThread  *natp,
   }
 
 out:
-  if (nap_child) {
+  if (nap_child && stat_loc_ptr) {
     *stat_loc_ptr = nap_child->exit_status;
   }
-  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", nap_id);
-  NaClLog(1, "[NaClSysWaitpid] status = %d \n", *stat_loc_ptr);
+  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", cage_id);
+  NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
   NaClLog(1, "[NaClSysWaitpid] ret = %d \n", ret);
 
   return ret;
 }
 
-int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
+int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc) {
   struct NaClApp *nap = natp->nap;
   int ret;
 
@@ -4130,4 +4137,17 @@ int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc) {
 out:
   NaClLog(1, "[NaClSysWait] ret = %d \n", ret);
   return ret;
+}
+
+int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage) {
+  UNREFERENCED_PARAMETER(rusage);
+  return NaClSysWaitpid(natp, pid, stat_loc, options);
+}
+
+int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set, void *oldset) {
+  UNREFERENCED_PARAMETER(natp);
+  UNREFERENCED_PARAMETER(how);
+  UNREFERENCED_PARAMETER(set);
+  UNREFERENCED_PARAMETER(oldset);
+  return 0;
 }
