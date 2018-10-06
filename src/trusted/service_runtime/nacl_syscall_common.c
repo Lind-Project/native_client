@@ -181,9 +181,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
     NaClLog(4, "last internal data addr 0x%08"NACL_PRIxPTR"\n",
             last_internal_data_addr);
 
-    if (NULL == NaClVmmapFindPageIter(&nap->mem_map,
-                                      usr_last_data_page,
-                                      &iter)
+    if (!NaClVmmapFindPageIter(&nap->mem_map, usr_last_data_page, &iter)
         || NaClVmmapIterAtEnd(&iter)) {
       NaClLog(LOG_FATAL, ("current break (0x%08"NACL_PRIxPTR", "
                           "sys 0x%08"NACL_PRIxPTR") "
@@ -2792,7 +2790,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   recv_hdr.iov_length = kern_nanimh.iov_length;
 
   recv_hdr.ndescv = new_desc;
-  recv_hdr.ndesc_length = NACL_ARRAY_SIZE(new_desc);
+  recv_hdr.ndesc_length = sizeof new_desc / sizeof *new_desc;
   memset(new_desc, 0, sizeof new_desc);
 
   recv_hdr.flags = 0;  /* just to make it obvious; IMC will clear it for us */
@@ -2881,7 +2879,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
 cleanup:
   /* copy out updated desc count, flags */
   if (retval < 0) {
-    for (i = 0; i < NACL_ARRAY_SIZE(new_desc); ++i) {
+    for (i = 0; i < sizeof new_desc / sizeof *new_desc; ++i) {
       if (new_desc[i]) {
         NaClDescUnref(new_desc[i]);
         new_desc[i] = NULL;
