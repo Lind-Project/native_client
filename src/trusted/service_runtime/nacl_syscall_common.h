@@ -26,6 +26,7 @@ struct NaClSocketAddress;
 struct NaClDesc;
 struct NaClImcMsgHdr;
 struct nacl_abi_stat;
+struct rusage;
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp);
 
@@ -47,6 +48,7 @@ int32_t NaClStatAclCheck(struct NaClApp *nap,
                          char const     *path);
 
 int32_t NaClSysGetpid(struct NaClAppThread *natp);
+int32_t NaClSysGetppid(struct NaClAppThread *natp);
 
 int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status);
@@ -106,7 +108,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
                      struct nacl_abi_stat *nasp);
 
 int32_t NaClSysStat(struct NaClAppThread *natp,
-                    const char           *path,
+                    const char           *pathname,
                     struct nacl_abi_stat *nasp);
 
 int32_t NaClSysMkdir(struct NaClAppThread *natp,
@@ -217,7 +219,7 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr);
 
 int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
-                            void                 *eip,
+                            void                 *prog_ctr,
                             uint32_t             stack_ptr,
                             uint32_t             thread_ptr,
                             uint32_t             second_thread_ptr);
@@ -306,13 +308,15 @@ int32_t NaClSysTestInfoLeak(struct NaClAppThread *natp);
 
 int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type);
 
-int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes);
-int32_t NaClSysFork(struct NaClAppThread  *natp);
-int32_t NaClSysExecv(struct NaClAppThread  *natp);
-int32_t NaClSysExecve(struct NaClAppThread  *natp, void *path, void *argv, void *envp);
-int32_t NaClSysWaitpid(struct NaClAppThread  *natp, uint32_t pid, uint32_t *stat_loc, uint32_t options);
-
-int32_t NaClSysWait(struct NaClAppThread  *natp, uint32_t *stat_loc);
+int32_t NaClSysPipe(struct NaClAppThread *natp, uint32_t *pipedes);
+int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags);
+int32_t NaClSysFork(struct NaClAppThread *natp);
+int32_t NaClSysExecve(struct NaClAppThread *natp, void* pathname, void* argv, void* envp);
+int32_t NaClSysExecv(struct NaClAppThread *natp, void *pathname, void *argv);
+int32_t NaClSysWaitpid(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options);
+int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc);
+int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage);
+int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set, void *oldset);
 
 EXTERN_C_END
 

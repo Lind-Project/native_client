@@ -244,12 +244,16 @@ SYSCALL_LIST = [
     ('NACL_sys_test_infoleak', 'NaClSysTestInfoLeak', []),
     ('NACL_sys_test_crash', 'NaClSysTestCrash', ['int crash_type']),
     ('NACL_sys_lind_syscall', 'NaClSysLindSyscall', ['uint32_t callNum', 'uint32_t inNum', 'void *inArgs', 'uint32_t outNum', 'void *outArgs']),
-    ('NACL_sys_pipe', 'NaClSysPipe', ['uint32_t *pipedes']),
     ('NACL_sys_fork', 'NaClSysFork', []),
-    ('NACL_sys_execv', 'NaClSysExecv', []),
+    ('NACL_sys_execv', 'NaClSysExecv', ['void *path', 'void *argv']),
     ('NACL_sys_execve', 'NaClSysExecve', ['void *path', 'void *argv', 'void *envp']),
-    ('NACL_sys_waitpid', 'NaClSysWaitpid', ['uint32_t pid', 'uint32_t *stat_loc', 'uint32_t options']),
+    ('NACL_sys_pipe', 'NaClSysPipe', ['uint32_t *pipedes']),
+    ('NACL_sys_pipe2', 'NaClSysPipe2', ['uint32_t *pipedes', 'int flags']),
+    ('NACL_sys_getppid', 'NaClSysGetppid', []),
+    ('NACL_sys_waitpid', 'NaClSysWaitpid', ['int pid', 'uint32_t *stat_loc', 'int options']),
     ('NACL_sys_wait', 'NaClSysWait', ['uint32_t *stat_loc']),
+    ('NACL_sys_wait4', 'NaClSysWait4', ['int pid', 'uint32_t *stat_loc', 'int options', 'void *rusage']),
+    ('NACL_sys_sigprocmask', 'NaClSysSigProcMask', ['int how', 'const void *set', 'void *oldset']),
     ]
 
 
