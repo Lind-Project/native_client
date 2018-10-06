@@ -832,31 +832,30 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
-  nap->command_num = argc - optind - 3;
-  nap->binary_path = malloc(strlen((argv + optind)[3]) + 1);
-  strncpy(nap->binary_path, (argv + optind)[3], strlen((argv + optind)[3]) + 1);
-  if (nap->command_num > 1) {
-     nap->binary_command = malloc(strlen((argv + optind)[4]) + 1);
-     strncpy(nap->binary_command, (argv + optind)[4], strlen((argv + optind)[4]) + 1);
-  }
+  nap->argc = argc - optind;
+  nap->argv = argv + optind;
+  nap->binary = argv[optind + 3];
 
-  NaClLog(1, "nap->command_num = %d, nap->binary_path = %s\n", nap->command_num, nap->binary_path);
   NaClLog(1, "%s\n", "Initializing pipe table mutexes/conditional variables.");
 
   for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
-    NaClXMutexCtor(&pipe_table[i].mu);
-    NaClXCondVarCtor(&pipe_table[i].cv);
+    if (!NaClFastMutexCtor(&pipe_table[i].mu)) {
+      NaClLog(LOG_ERROR, "%s\n", "pipe mutex ctor failed");
+      goto done;
+    }
+    pipe_table[i].xfer_done = true;
+    pipe_table[i].is_closed = false;
   }
 
-  nacl_initialization_finish = clock();
-
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
+  nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
+  nacl_initialization_finish = clock();
   if (!NaClCreateMainThread(nap,
                             argc - optind,
                             argv + optind,
-                            NaClEnvCleanserEnvironment(&env_cleanser))) {
-     NaClLog(1, "%s\n", "creating main thread failed");
-     goto done;
+                            nap->clean_environ)) {
+    NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
+    goto done;
   }
   nacl_user_program_begin = clock();
 
@@ -875,6 +874,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClPerfCounterIntervalLast(&time_all_main);
   NaClPerfCounterMark(&time_all_main, "SelMainEnd");
   NaClPerfCounterIntervalTotal(&time_all_main);
+  NaClEnvCleanserDtor(&env_cleanser);
+  DynArrayDtor(&env_vars);
 
   /*
    * exit_group or equiv kills any still running threads while module
