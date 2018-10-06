@@ -538,6 +538,7 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   struct NaClAppThread *natp_child;
   struct NaClThreadContext child_ctx;
   struct NaClThreadContext parent_ctx;
+  static THREAD int ignored_ret;
 
   if (!nap_parent->running) {
     return 0;
@@ -546,10 +547,18 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClXMutexLock(&nap_parent->mu);
   NaClXMutexLock(&nap_child->mu);
 
+  /* guard against extra spawned instances */
+  if (nap_child->in_fork) {
+    goto already_running;
+  }
+  nap_child->in_fork = 1;
+
+  /* make a copy of parent thread context */
+  parent_ctx = natp_parent->user;
+
   /*
    * make space to copy the parent stack
    */
-  parent_ctx = natp_parent->user;
   nap_child->stack_size = nap_parent->stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
   stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
@@ -621,11 +630,11 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    * setup TLS slot in the global nacl_user array
    */
   natp_child->user.tls_idx = nap_child->cage_id;
-  /* natp_child->user.tls_idx = child_ctx.tls_idx; */
   if (nacl_user[natp_child->user.tls_idx]) {
-    NaClLog(LOG_FATAL, "nacl_user[%u] not NULL (%p)\n)",
+    NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
             natp_child->user.tls_idx,
             (void *)nacl_user[natp_child->user.tls_idx]);
+    goto already_running;
   }
   nacl_user[natp_child->user.tls_idx] = &natp_child->user;
   NaClTlsSetTlsValue1(natp_child, user_tls1);
@@ -641,8 +650,13 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   NaClXMutexUnlock(&nap_parent->mu);
   NaClXMutexUnlock(&nap_child->mu);
 
-  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher,
-                      natp_child, NACL_KERN_STACK_SIZE)) {
+  /* TODO: figure out a better way to avoid extra instance spawns -jp */
+  NaClThreadYield();
+  NaClXMutexLock(&nap_child->mu);
+  nap_child->in_fork = 0;
+  NaClXMutexUnlock(&nap_child->mu);
+
+  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
     /*
     * No other thread saw the NaClAppThread, so it is OK that
     * host_thread was not initialized despite host_thread_is_defined
@@ -654,6 +668,12 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
   }
 
   return 1;
+
+already_running:
+    NaClXCondVarBroadcast(&nap_parent->cv);
+    NaClXMutexUnlock(&nap_parent->mu);
+    NaClXMutexUnlock(&nap_child->mu);
+    pthread_exit(&ignored_ret);
 }
 
 int NaClAppThreadSpawn(struct NaClApp *nap,

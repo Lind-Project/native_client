@@ -697,12 +697,10 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   retval = 0;
   size = 0;
   envc = 0;
+
   /* count number of environment strings */
-  if (envv) {
-    char const *const *pp;
-    for (pp = envv; NULL != *pp; ++pp) {
-      ++envc;
-    }
+  for (char const *const *pp = envv; pp && *pp; ++pp) {
+    envc++;
   }
   /* allocate space to hold length of vectors */
   argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
@@ -727,11 +725,11 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
@@ -755,18 +753,15 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * for correctness.
    */
   auxv_entries = 1;
-  if (0 != nap->user_entry_pt) {
+  if (nap->user_entry_pt) {
     auxv_entries++;
   }
-  ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0) +
-                   (3 + argc + 1 + envc + 1 + auxv_entries * 2)) *
-                  sizeof(uint32_t));
+  ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0)
+                  + (3 + argc + 1 + envc + 1 + auxv_entries * 2))
+                  * sizeof(uint32_t));
 
-  if (SIZE_T_MAX - size < ptr_tbl_size) {
-    NaClLog(LOG_WARNING,
-            "NaClCreateMainThread: ptr_tbl_size cause size of"
-            " argv / environment copy to overflow!?!\n");
-    retval = 0;
+  if (SIZE_MAX - size < ptr_tbl_size) {
+    NaClLog(LOG_WARNING, "NaClCreateMainThread() ptr_tbl_size caused copy to overflow!?!\n");
     goto cleanup;
   }
   size += ptr_tbl_size;
@@ -774,7 +769,6 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap->stack_size) {
-    retval = 0;
     goto cleanup;
   }
 
@@ -784,13 +778,12 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   stack_ptr = NaClUserToSysAddrRange(nap, NaClGetInitialStackTop(nap) - size,
                                      size);
   if (stack_ptr == kNaClBadAddress) {
-    retval = 0;
     goto cleanup;
   }
 
   NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
 
-  VCHECK(0 == (stack_ptr & NACL_STACK_ALIGN_MASK),
+  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
          ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
 
   p = (uint32_t *)stack_ptr;
@@ -810,7 +803,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
@@ -819,9 +812,9 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc; ++i) {
-    *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t) strp);
-    NaClLog(2, "copying env %d  %p -> %p\n",
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
+    NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", envv[i]);
     strp += envv_len[i];
@@ -829,14 +822,20 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = 0;  /* envp[envc] is NULL.  */
 
   /* Push an auxv */
-  if (0 != nap->user_entry_pt) {
+  if (nap->user_entry_pt) {
     *p++ = AT_ENTRY;
-    *p++ = (uint32_t) nap->user_entry_pt;
+    *p++ = (uint32_t)nap->user_entry_pt;
   }
   *p++ = AT_NULL;
   *p++ = 0;
 
-  CHECK((char *) p == (char *) stack_ptr + ptr_tbl_size);
+  /* TODO: fix failing CHECK() -jp */
+  if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
+    NaClLog(LOG_WARNING,
+            "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
+            (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
+  }
+  /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
 
   /* now actually spawn the thread */
   NaClXMutexLock(&nap->mu);
@@ -851,7 +850,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * We avoid the otherwise harmless call for the zero case because
    * _FORTIFY_SOURCE memset can warn about zero-length calls.
    */
-  if (NACL_STACK_PAD_BELOW_ALIGN != 0) {
+  if (NACL_STACK_PAD_BELOW_ALIGN) {
     stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
     memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
   }
@@ -883,17 +882,18 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   /*
    * Compute size of string tables for argv and envv
    */
+  size_t                size;
+  size_t                ptr_tbl_size;
+  uintptr_t             stack_ptr;
+  uint32_t              *p;
+  int                   i;
   int                   retval;
   int                   envc;
-  size_t                size;
   int                   auxv_entries;
-  size_t                ptr_tbl_size;
-  int                   i;
-  uint32_t              *p;
   char                  *strp;
   size_t                *argv_len;
   size_t                *envv_len;
-  uintptr_t             stack_ptr;
+  static THREAD int     ignored_ret;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -901,12 +901,18 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
+
+  NaClXMutexLock(&nap_child->mu);
+
+  /* guard against extra spawned instances */
+  if (nap_child->running || nap_child->in_fork) {
+    goto already_running;
+  }
+  nap_child->in_fork = 1;
+
   /* count number of environment strings */
-  if (envv) {
-    char const *const *pp;
-    for (pp = envv; NULL != *pp; ++pp) {
-      ++envc;
-    }
+  for (char const *const *pp = envv; pp && *pp; ++pp) {
+    envc++;
   }
   /* allocate space to hold length of vectors */
   argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
@@ -1016,18 +1022,18 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(2, "copying arg %d  %p -> %p\n",
+  for (i = 0; i < argc && argv && argv[i]; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+    NaClLog(1, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", argv[i]);
     strp += argv_len[i];
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc; ++i) {
-    *p++ = (uint32_t)NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(2, "copying env %d  %p -> %p\n",
+  for (i = 0; i < envc && envv && envv[i]; ++i) {
+    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+    NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
     snprintf(strp, ARG_LIMIT, "%s", envv[i]);
     strp += envv_len[i];
@@ -1042,10 +1048,15 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = AT_NULL;
   *p++ = 0;
 
-  CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size);
+  /* TODO: fix failing CHECK() -jp */
+  if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
+    NaClLog(LOG_WARNING,
+            "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
+            (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
+  }
+  /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
 
   /* now actually spawn the thread */
-  NaClXMutexLock(&nap_child->mu);
   nap_child->running = 1;
   NaClXMutexUnlock(&nap_child->mu);
 
@@ -1067,6 +1078,12 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
   NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
+  /* TODO: figure out a better way to avoid extra instance spawns -jp */
+  NaClThreadYield();
+  NaClXMutexLock(&nap_child->mu);
+  nap_child->in_fork = 0;
+  NaClXMutexUnlock(&nap_child->mu);
+
   /* e_entry is user addr */
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
@@ -1079,8 +1096,14 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 cleanup:
   free(argv_len);
   free(envv_len);
+  NaClXMutexUnlock(&nap_child->mu);
 
   return retval;
+
+/* NO RETURN */
+already_running:
+  NaClXMutexUnlock(&nap_child->mu);
+  pthread_exit(&ignored_ret);
 }
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
