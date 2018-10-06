@@ -348,6 +348,21 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   return pid;
 }
 
+int32_t NaClSysGetppid(struct NaClAppThread *natp) {
+  int32_t ppid;
+  struct NaClApp *nap = natp->nap;
+
+  if (!nap->parent) {
+    ppid = 0;
+    goto out;
+  }
+  ppid = nap->parent->cage_id;
+
+out:
+  NaClLog(1, "NaClSysGetpid: returning %d\n", ppid);
+  return ppid;
+}
+
 int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
