@@ -49,10 +49,11 @@ struct NaClThreadContext *master_ctx;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
   struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
-  struct NaClApp *nap_parent = natp->nap;
+  struct NaClApp *nap_parent = nap;
+  struct NaClApp *nap_arr[] = {nap_master, nap_parent};
   NaClErrorCode *mod_status = NULL;
 
   CHECK(nap_master);
@@ -65,36 +66,49 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   }
   mod_status = &nap_child->module_load_status;
-  nap_child->command_num = nap_parent->command_num;
-  nap_child->binary_path = nap_parent->binary_path;
-  nap_child->binary_command = nap_parent->binary_command;
+  nap_child->argc = nap_parent->argc;
+  nap_child->argv = nap_parent->argv;
+  nap_child->binary = nap_parent->binary;
+  nap_child->clean_environ = nap->clean_environ;
   nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
+  nap_child->ignore_validator_result = nap_parent->ignore_validator_result;
+  nap_child->skip_validator = nap_parent->skip_validator;
+  nap_child->user_entry_pt = nap_parent->user_entry_pt;
   nap_child->parent_id = nap_parent->cage_id;
-  nap_child->master = nap_master;
   nap_child->parent = nap_parent;
+  nap_child->master = nap_master;
+  nap_child->in_fork = 0;
 
   /* fork generation count */
   NaClXMutexLock(&nap_master->children_mu);
   fork_num++;
   NaClXMutexUnlock(&nap_master->children_mu);
 
+  /* avoid incrementing child count twice */
+  if (nap_master == nap_parent) {
+    nap_arr[0] = NULL;
+  }
+
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (struct NaClApp *nap_cur = nap_master; nap_cur == nap_master || nap_cur == nap_parent; nap_cur = nap_parent) {
-    NaClXMutexLock(&nap_cur->children_mu);
-    if (nap_cur->children_ids[nap_cur->num_children]) {
-       nap_cur->num_children++;
+  for (size_t i = 0; i < sizeof nap_arr / sizeof *nap_arr; i++) {
+    if (!nap_arr[i]) {
+      continue;
+    }
+    NaClXMutexLock(&nap_arr[i]->children_mu);
+    if (nap_arr[i]->children_ids[nap_arr[i]->num_children]) {
+      nap_arr[i]->num_children++;
     }
     /* make sure cage_id is unique and assign it to child */
     InitializeCage(nap_child, nap_master->cage_id + fork_num);
-    NaClLog(1, "[nap %d] incrementing num_children\n", nap_cur->cage_id);
-    nap_cur->children_ids[nap_cur->num_children++] = nap_child->cage_id;
-    if (!DynArraySet(&nap_cur->children, nap_child->cage_id, nap_child)) {
-      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_cur->cage_id, nap_child->cage_id);
+    NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
+    nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
+    if (!DynArraySet(&nap_arr[i]->children, nap_child->cage_id, nap_child)) {
+      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_arr[i]->cage_id, nap_child->cage_id);
     }
-    NaClLog(1, "[nap %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
-    NaClXMutexUnlock(&nap_cur->children_mu);
+    NaClLog(1, "[nap %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
+    NaClXMutexUnlock(&nap_arr[i]->children_mu);
   }
 
   NaClAppInitialDescriptorHookup(nap_child);
@@ -124,18 +138,18 @@ struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp) {
   }
 
   /* duplicate file descriptor table */
-  for (int old_fd = 0, new_fd; old_fd < CAGING_FD_NUM; old_fd++) {
+  NaClXMutexLock(&nap_parent->mu);
+  for (int old_fd = nap_child->fd, new_fd = old_fd; old_fd < nap_parent->fd; new_fd = ++old_fd) {
     struct NaClDesc *old_nd;
     old_nd = NaClGetDesc(nap_parent, old_fd);
     if (!old_nd) {
-      break;
+      continue;
     }
-    new_fd = NaClSetAvail(nap_child, old_nd);
     NaClSetDesc(nap_child, new_fd, old_nd);
-    fd_cage_table[nap_child->cage_id][new_fd] = fd_cage_table[nap_parent->cage_id][old_fd];
-    nap_child->fd++;
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", old_fd, new_fd);
+    fd_cage_table[nap_child->cage_id][nap_child->fd++] = new_fd;
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", old_fd, nap_child->fd - 1);
   }
+  NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
@@ -320,7 +334,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   int             list_idx;
 
   if (master_ctx) {
-    nap_master = ((struct NaClAppThread *)master_ctx)->nap;;
+    nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   }
 
   /*
@@ -330,24 +344,32 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   if (nap_master && nap_parent) {
+    struct NaClApp *nap_arr[] = {nap_master, nap_parent};
+    /* avoid incrementing child count twice */
+    if (nap_master == nap_parent) {
+      nap_arr[0] = NULL;
+    }
     /* remove self from parent's list of children */
-    for (struct NaClApp *nap_cur = nap_master; nap_cur == nap_master || nap_cur == nap_parent; nap_cur = nap_parent) {
-      NaClXMutexLock(&nap_cur->children_mu);
-      list_idx = GetChildIdx(nap_cur->children_ids, nap_cur->num_children, nap->cage_id);
+    for (size_t i = 0; i < sizeof nap_arr / sizeof *nap_arr; i++) {
+      if (!nap_arr[i]) {
+        continue;
+      }
+      NaClXMutexLock(&nap_arr[i]->children_mu);
+      list_idx = GetChildIdx(nap_arr[i]->children_ids, nap_arr[i]->num_children, nap->cage_id);
       switch (list_idx) {
       case -1:
-        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
+        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
         break;
       default:
-        nap_cur->num_children--;
-        nap_cur->children_ids[list_idx] = 0;
-        NaClLog(1, "[parent %d] new child count: %d\n", nap_cur->cage_id, nap_cur->num_children);
-        if (!DynArraySet(&nap_cur->children, nap->cage_id, NULL)) {
-          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", nap_cur->cage_id, nap->cage_id);
+        nap_arr[i]->num_children--;
+        nap_arr[i]->children_ids[list_idx] = 0;
+        NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
+        if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
+          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
         }
       }
-      NaClXCondVarBroadcast(&nap_cur->children_cv);
-      NaClXMutexUnlock(&nap_cur->children_mu);
+      NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
+      NaClXMutexUnlock(&nap_arr[i]->children_mu);
     }
   }
 

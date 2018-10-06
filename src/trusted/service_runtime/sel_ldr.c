@@ -189,6 +189,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->secure_service = NULL;
   nap->irt_loaded = 0;
   nap->main_exe_prevalidated = 0;
+  nap->manifest_proxy = NULL;
+  nap->kernel_service = NULL;
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
 
   if (!NaClResourceNaClAppInit(&nap->resources, nap)) {
