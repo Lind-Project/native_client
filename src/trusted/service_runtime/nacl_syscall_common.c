@@ -520,7 +520,11 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     ret= -NACL_ABI_EBADF;
     goto out;
   }
+  if (fd_cage_table[nap->cage_id][newfd]) {
+    NaClSysClose(natp, newfd);
+  }
   new_desc = NaClSetAvail(nap, old_nd);
+  NaClSetDesc(nap, new_desc, old_nd);
   fd_cage_table[nap->cage_id][newfd] = new_desc;
   nap->fd = newfd;
   ret = nap->fd++;
@@ -568,7 +572,11 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
     ret= -NACL_ABI_EBADF;
     goto out;
   }
+  if (fd_cage_table[nap->cage_id][newfd]) {
+    NaClSysClose(natp, newfd);
+  }
   new_desc = NaClSetAvail(nap, old_nd);
+  NaClSetDesc(nap, new_desc, old_nd);
   fd_cage_table[nap->cage_id][newfd] = new_desc;
   nap->fd = newfd;
   ret = nap->fd++;
