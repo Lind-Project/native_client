@@ -725,11 +725,11 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv && argv[i]; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; i++) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc && envv && envv[i]; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; i++) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
@@ -803,7 +803,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv && argv[i]; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; i++) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
     NaClLog(2, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
@@ -812,7 +812,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc && envv && envv[i]; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; i++) {
     *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
     NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
@@ -937,11 +937,11 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; ++i) {
+  for (i = 0; i < argc && argv; i++) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; ++i) {
+  for (i = 0; i < envc; i++) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
@@ -1022,7 +1022,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   *p++ = envc;
   *p++ = argc;
 
-  for (i = 0; i < argc && argv && argv[i]; ++i) {
+  for (i = 0; i < argc && argv && argv[i]; i++) {
     *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
     NaClLog(1, "copying arg %d  %p -> %p\n",
             i, (void *)argv[i], (void *)strp);
@@ -1031,7 +1031,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   }
   *p++ = 0;  /* argv[argc] is NULL.  */
 
-  for (i = 0; i < envc && envv && envv[i]; ++i) {
+  for (i = 0; i < envc && envv && envv[i]; i++) {
     *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
     NaClLog(1, "copying env %d  %p -> %p\n",
             i, (void *)envv[i], (void *)strp);
