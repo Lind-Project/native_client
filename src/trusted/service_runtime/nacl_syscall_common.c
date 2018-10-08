@@ -520,6 +520,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     ret= -NACL_ABI_EBADF;
     goto out;
   }
+  /* check if file descriptor exists (stdin is not a valid file descriptor) */
   if (fd_cage_table[nap->cage_id][newfd]) {
     NaClSysClose(natp, newfd);
   }
@@ -755,13 +756,15 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
   fd = fd_cage_table[nap->cage_id][d];
 
-  /* Unref the desc_tbl */
-  if ((ndp = NaClGetDescMu(nap, fd))) {
+  /* unref the descriptor_table */
+  if (fd && (ndp = NaClGetDescMu(nap, fd))) {
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, d, NULL);
     NaClDescUnref(ndp);
     ret = 0;
   }
+  /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
+  fd_cage_table[nap->cage_id][d] = 0;
 
 out:
   NaClFastMutexUnlock(&nap->desc_mu);
