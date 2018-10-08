@@ -50,7 +50,7 @@ struct NaClThreadContext *master_ctx;
  * used in NaClSysFork()
  */
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
-  struct NaClApp *nap_child = NaClAlignedMalloc(sizeof *nap_child, __alignof(struct NaClApp));
+  struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_parent = nap;
   struct NaClApp *nap_arr[] = {nap_master, nap_parent};
@@ -61,7 +61,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   CHECK(nap_child);
 
   NaClLog(1, "%s\n", "Entered NaClChildNapCtor()");
-  memset(nap_child, 0, sizeof *nap_child);
+  memset(nap_child, 0, sizeof(*nap_child));
   if (!NaClAppCtor(nap_child)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   }
@@ -92,7 +92,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   }
 
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (size_t i = 0; i < sizeof nap_arr / sizeof *nap_arr; i++) {
+  for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
     if (!nap_arr[i]) {
       continue;
     }
@@ -350,7 +350,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
       nap_arr[0] = NULL;
     }
     /* remove self from parent's list of children */
-    for (size_t i = 0; i < sizeof nap_arr / sizeof *nap_arr; i++) {
+    for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
       if (!nap_arr[i]) {
         continue;
       }
@@ -453,7 +453,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   struct NaClAppThread *natp;
   uint32_t tls_idx;
 
-  natp = NaClAlignedMalloc(sizeof *natp, __alignof(struct NaClAppThread));
+  natp = NaClAlignedMalloc(sizeof(*natp), __alignof(struct NaClAppThread));
   if (!natp) {
     return NULL;
   }
