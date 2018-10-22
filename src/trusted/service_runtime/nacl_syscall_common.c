@@ -539,9 +539,6 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
                     int                   newfd,
                     int                   flags) {
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *old_nd;
-  int old_desc;
-  int new_desc;
   int ret;
 
   NaClLog(1, "%s\n", "[dup3] Entered dup3!");
@@ -549,41 +546,14 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   NaClLog(1, "[dup3] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup3] newfd = %d \n", newfd);
 
+  UNREFERENCED_PARAMETER(nap);
+  UNREFERENCED_PARAMETER(ret);
   /*
-   * TODO: implement flags -jp
+   * TODO: implement dup3 flags -jp
    */
   UNREFERENCED_PARAMETER(flags);
 
-  /* check for closed fds */
-  if (oldfd < 0) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
-  if (oldfd == newfd) {
-    ret = -NACL_ABI_EINVAL;
-    goto out;
-  }
-  if (nap->fd++ > FILE_DESC_MAX) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-  old_desc = fd_cage_table[nap->cage_id][oldfd];
-  if (!(old_nd = NaClGetDesc(nap, old_desc))) {
-    ret= -NACL_ABI_EBADF;
-    goto out;
-  }
-  if (fd_cage_table[nap->cage_id][newfd]) {
-    NaClSysClose(natp, newfd);
-  }
-  new_desc = NaClSetAvail(nap, old_nd);
-  NaClSetDesc(nap, new_desc, old_nd);
-  fd_cage_table[nap->cage_id][newfd] = new_desc;
-  nap->fd = newfd;
-  ret = nap->fd++;
-
-out:
-  return ret;
+  return NaClSysDup2(natp, oldfd, newfd);
 }
 
 static uint32_t CopyPathFromUser(struct NaClApp *nap,
