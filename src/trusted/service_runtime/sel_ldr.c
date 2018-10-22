@@ -189,6 +189,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->secure_service = NULL;
   nap->irt_loaded = 0;
   nap->main_exe_prevalidated = 0;
+  nap->manifest_proxy = NULL;
+  nap->kernel_service = NULL;
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
 
   if (!NaClResourceNaClAppInit(&nap->resources, nap)) {
@@ -374,7 +376,7 @@ static void NaClStoreMem(uintptr_t  addr,
 
   CHECK(nbytes <= 8);
 
-  for (i = 0; i < nbytes; ++i) {
+  for (i = 0; i < nbytes; i++) {
     ((uint8_t *) addr)[i] = (uint8_t) value;
     value = value >> 8;
   }
@@ -414,25 +416,25 @@ void  NaClApplyPatchToMemory(struct NaClPatchInfo  *patch) {
   reloc = patch->dst - patch->src;
 
 
-  for (i = 0; i < patch->num_abs64; ++i) {
+  for (i = 0; i < patch->num_abs64; i++) {
     offset = patch->abs64[i].target - patch->src;
     target_addr = patch->dst + offset;
     NaClStore64(target_addr, patch->abs64[i].value);
   }
 
-  for (i = 0; i < patch->num_abs32; ++i) {
+  for (i = 0; i < patch->num_abs32; i++) {
     offset = patch->abs32[i].target - patch->src;
     target_addr = patch->dst + offset;
     NaClStore32(target_addr, (uint32_t) patch->abs32[i].value);
   }
 
-  for (i = 0; i < patch->num_abs16; ++i) {
+  for (i = 0; i < patch->num_abs16; i++) {
     offset = patch->abs16[i].target - patch->src;
     target_addr = patch->dst + offset;
     NaClStore16(target_addr, (uint16_t) patch->abs16[i].value);
   }
 
-  for (i = 0; i < patch->num_rel64; ++i) {
+  for (i = 0; i < patch->num_rel64; i++) {
     offset = patch->rel64[i] - patch->src;
     target_addr = patch->dst + offset;
     NaClStore64(target_addr, NaClLoad64(target_addr) - reloc);
@@ -449,7 +451,7 @@ void  NaClApplyPatchToMemory(struct NaClPatchInfo  *patch) {
    * expensive way to save a few bytes per reloc.
    */
 #if NACL_TARGET_SUBARCH == 32
-  for (i = 0; i < patch->num_rel32; ++i) {
+  for (i = 0; i < patch->num_rel32; i++) {
     offset = patch->rel32[i] - patch->src;
     target_addr = patch->dst + offset;
     NaClStore32(target_addr,

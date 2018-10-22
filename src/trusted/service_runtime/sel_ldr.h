@@ -82,9 +82,8 @@ struct NaClValidationMetadata;
 
 struct Pipe {
   bool xfer_done;
-  unsigned char pipe_buf[PIPE_BUF_MAX];
-  struct NaClMutex mu;
-  struct NaClCondVar cv;
+  bool is_closed;
+  struct NaClFastMutex mu;
 };
 
 extern volatile sig_atomic_t fork_num;
@@ -146,11 +145,13 @@ struct NaClApp {
   volatile sig_atomic_t     num_lib;
   volatile sig_atomic_t     parent_id;
 
-  // yiwen: store the path of the execuable running inside this cage(as the main thread)
-  int                       command_num;
-  char                      *binary_path;
-  char                      *binary_command;
+  /* yiwen: store the path of the execuable running inside this cage(as the main thread) */
+  int                       argc;
+  char                      **argv;
+  char                      *binary;
   char                      *nacl_file;
+  char const *const         *clean_environ;
+  volatile int              in_fork;
   /* set to the next unused (available for dup() etc.) file descriptor */
   int                       fd;
 

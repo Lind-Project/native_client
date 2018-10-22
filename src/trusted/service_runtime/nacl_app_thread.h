@@ -150,7 +150,7 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 };
 
-struct NaClApp *NaClChildNapCtor(struct NaClAppThread *natp);
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap);
 
 void WINAPI NaClAppForkThreadLauncher(void *state);
 void WINAPI NaClAppThreadLauncher(void *state);
