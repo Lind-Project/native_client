@@ -4156,7 +4156,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     /* wait for child to finish */
     while (DynArrayGet(&nap->children, cage_id)) {
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
-      /* NaClXCondVarWait(&nap->children_cv, &nap->children_mu); */
     }
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
@@ -4185,14 +4184,14 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
         NaClLog(1, "Thread children count: %d\n", nap->num_children);
         NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
         /* exit if selected child has finished */
-        if (!DynArrayGet(&nap->children, cage_id)) {
+        if (!(nap_child = DynArrayGet(&nap->children, cage_id)) || !nap_child->running) {
           ret = cage_id;
           NaClXCondVarBroadcast(&nap->children_cv);
           NaClXMutexUnlock(&nap->children_mu);
           goto out;
         }
       }
-      if (++cur_idx >= nap->num_children) {
+      if (++cur_idx > CHILD_NUM_MAX) {
         cur_idx = 0;
       }
       NaClXCondVarBroadcast(&nap->children_cv);

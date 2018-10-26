@@ -81,26 +81,30 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->master = nap_master;
   nap_child->in_fork = 0;
 
-  /* fork generation count */
-  NaClXMutexLock(&nap_master->children_mu);
-  fork_num++;
-  NaClXMutexUnlock(&nap_master->children_mu);
-
   /* avoid incrementing child count twice */
   if (nap_master == nap_parent) {
     nap_arr[0] = NULL;
   }
 
+  /* don't lock master twice */
+  NaClXMutexLock(&nap_master->children_mu);
+  if (nap_parent != nap_master) {
+    NaClXMutexLock(&nap_parent->children_mu);
+  }
+  /* increment fork generation count (both master and parent mutexes need to be held */
+  fork_num++;
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
   for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
     if (!nap_arr[i]) {
       continue;
     }
-    NaClXMutexLock(&nap_arr[i]->children_mu);
-    if (nap_arr[i]->children_ids[nap_arr[i]->num_children]) {
-      nap_arr[i]->num_children++;
-    }
     /* make sure cage_id is unique and assign it to child */
+    while (nap_arr[i]->children_ids[nap_arr[i]->num_children]) {
+      if (nap_arr[i]->num_children++ > CHILD_NUM_MAX) {
+        NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
+      }
+      fork_num++;
+    }
     InitializeCage(nap_child, nap_master->cage_id + fork_num);
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
     nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
@@ -108,7 +112,11 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
       NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_arr[i]->cage_id, nap_child->cage_id);
     }
     NaClLog(1, "[nap %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
-    NaClXMutexUnlock(&nap_arr[i]->children_mu);
+  }
+  /* don't unlock master twice */
+  NaClXMutexUnlock(&nap_master->children_mu);
+  if (nap_parent != nap_master) {
+    NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
   NaClAppInitialDescriptorHookup(nap_child);
@@ -343,18 +351,22 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    */
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
+    /* remove self from parent's list of children */
   if (nap_master && nap_parent) {
     struct NaClApp *nap_arr[] = {nap_master, nap_parent};
     /* avoid incrementing child count twice */
     if (nap_master == nap_parent) {
       nap_arr[0] = NULL;
     }
-    /* remove self from parent's list of children */
+    /* don't lock master twice */
+    NaClXMutexLock(&nap_master->children_mu);
+    if (nap_parent != nap_master) {
+      NaClXMutexLock(&nap_parent->children_mu);
+    }
     for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
       if (!nap_arr[i]) {
         continue;
       }
-      NaClXMutexLock(&nap_arr[i]->children_mu);
       list_idx = GetChildIdx(nap_arr[i]->children_ids, nap_arr[i]->num_children, nap->cage_id);
       switch (list_idx) {
       case -1:
@@ -369,7 +381,11 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
         }
       }
       NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
-      NaClXMutexUnlock(&nap_arr[i]->children_mu);
+    }
+    /* don't unlock master twice */
+    NaClXMutexUnlock(&nap_master->children_mu);
+    if (nap_parent != nap_master) {
+      NaClXMutexUnlock(&nap_parent->children_mu);
     }
   }
 
