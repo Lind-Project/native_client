@@ -4075,6 +4075,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   nap_child->running = 0;
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
+  nap_child->main_exe_prevalidated = 1;
 
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;

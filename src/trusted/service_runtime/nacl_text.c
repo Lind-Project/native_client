@@ -466,7 +466,7 @@ static void MakeDynamicCodePagesVisible(struct NaClApp *nap,
 #if NACL_WINDOWS
   NaClUntrustedThreadsResumeAll(nap);
 #else
-  if (NaClMprotect(user_addr, size, PROT_READ | PROT_EXEC) != 0) {
+  if (NaClMprotect(user_addr, size, PROT_RX) != 0) {
     NaClLog(LOG_FATAL, "MakeDynamicCodePageVisible: NaClMprotect() failed\n");
   }
 #endif

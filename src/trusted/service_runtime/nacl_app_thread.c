@@ -100,7 +100,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     }
     /* make sure cage_id is unique and assign it to child */
     while (nap_arr[i]->children_ids[nap_arr[i]->num_children]) {
-      if (nap_arr[i]->num_children++ > CHILD_NUM_MAX) {
+      if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
         NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
       }
       fork_num++;
