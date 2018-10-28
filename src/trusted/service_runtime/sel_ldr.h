@@ -646,7 +646,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
 int NaClCreateMainThread(struct NaClApp     *nap,
                          int                argc,
                          char               **argv,
-                         char const *const  *envp) NACL_WUR;
+                         char const *const  *envv) NACL_WUR;
 
 int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                              struct NaClAppThread     *natp_parent,
