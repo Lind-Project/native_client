@@ -94,7 +94,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   /* increment fork generation count (both master and parent mutexes need to be held */
   fork_num++;
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
+  for (size_t i = 0; i < sizeof (nap_arr) / sizeof (*nap_arr); i++) {
     if (!nap_arr[i]) {
       continue;
     }
