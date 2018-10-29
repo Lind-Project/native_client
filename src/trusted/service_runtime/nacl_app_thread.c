@@ -91,23 +91,21 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   if (nap_parent != nap_master) {
     NaClXMutexLock(&nap_parent->children_mu);
   }
-  /* increment fork generation count (both master and parent mutexes need to be held */
-  fork_num++;
+  /*
+   * increment fork generation count and generate child
+   * cage_id (both master and parent mutexes need to be held
+   */
+  InitializeCage(nap_child, nap_master->cage_id + ++fork_num);
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (size_t i = 0; i < sizeof (nap_arr) / sizeof (*nap_arr); i++) {
+  for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
     if (!nap_arr[i]) {
       continue;
     }
-    /* make sure cage_id is unique and assign it to child */
-    while (nap_arr[i]->children_ids[nap_arr[i]->num_children]) {
-      if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
-        NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
-      }
-      fork_num++;
-    }
-    InitializeCage(nap_child, nap_master->cage_id + fork_num);
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
     nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
+    if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
+      NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
+    }
     if (!DynArraySet(&nap_arr[i]->children, nap_child->cage_id, nap_child)) {
       NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_arr[i]->cage_id, nap_child->cage_id);
     }
