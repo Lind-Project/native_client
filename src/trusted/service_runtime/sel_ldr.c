@@ -1588,8 +1588,9 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
 
   /* copy dynamic text mappings */
   nap_child->break_addr = nap_parent->break_addr;
-  memmove(dyncode_child, dyncode_parent, dyncode_size);
-  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
+  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClCopyDynamicText()\n", nap_child->cage_id);
+  }
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
   NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
