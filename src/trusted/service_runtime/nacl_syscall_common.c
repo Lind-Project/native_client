@@ -713,20 +713,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClFastMutexLock(&nap->desc_mu);
 
-  /*
-   * only close master fds
-   *
-   * FIXME: maybe there is a better way to avoid
-   * segfaults trying to close child fds... -jp
-   */
-  if (nap->cage_id > 1) {
-     NaClLog(1, "cage_id: %d\n", nap->cage_id);
-     ret = 0;
-     goto out;
-  }
-  fd = fd_cage_table[nap->cage_id][d];
-
   /* unref the descriptor_table */
+  fd = fd_cage_table[nap->cage_id][d];
   if (fd && (ndp = NaClGetDescMu(nap, fd))) {
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, d, NULL);
@@ -736,7 +724,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = 0;
 
-out:
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
 }
