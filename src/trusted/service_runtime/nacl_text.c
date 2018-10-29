@@ -674,7 +674,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
   if (!nap->skip_validator) {
     validator_result = NaClValidateCode(nap, dest, code_copy, size, metadata);
   } else {
-    NaClLog(LOG_ERROR, "VALIDATION SKIPPED.\n");
+    NaClLog(1, "VALIDATION SKIPPED.\n");
     validator_result = LOAD_OK;
   }
 

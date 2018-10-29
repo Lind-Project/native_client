@@ -831,7 +831,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
 
   /* TODO: fix failing CHECK() -jp */
   if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
-    NaClLog(LOG_WARNING,
+    NaClLog(1,
             "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
             (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
   }
@@ -1050,7 +1050,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   /* TODO: fix failing CHECK() -jp */
   if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
-    NaClLog(LOG_WARNING,
+    NaClLog(1,
             "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
             (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
   }
