@@ -912,23 +912,13 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
 #endif
 
 /*
- * Passed to NaClVmmapVisit in order to copy a memory region from
- * an NaClApp to a child process (used when forking).
+ * Copy the entire dynamic text section in an NaClApp to a child process.
  *
  * preconditions:
- * * target_state must be a pointer to a valid, initialized NaClApp
+ * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
+ * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClVmCopyMemoryRegion(void *target_state, struct NaClVmmapEntry *entry);
-
-/*
- * Copy the entire address space of an NaClApp to a child
- * process.
- *
- * preconditions:
- * * `child` must be a pointer to a valid, initialized NaClApp
- * * Caller must hold both the nap->mu and the child->mu mutexes
- */
-void NaClVmCopyAddressSpace(struct NaClApp *nap, struct NaClApp *child);
+void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child);
 
 /*
  * Copy the entire address execution context of an NaClApp to a child

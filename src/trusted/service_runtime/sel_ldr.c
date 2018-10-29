@@ -1538,36 +1538,23 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
 }
 
 /*
- * Copy the entire address execution context of an NaClApp to a child
- * process.
+ * Copy the entire dynamic text section in an NaClApp to a child process.
  *
  * preconditions:
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
-  size_t stack_size = nap_parent->stack_size;
+void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
   size_t dyncode_size = nap_parent->dynamic_text_end - nap_parent->dynamic_text_start;
-  size_t stack_npages = stack_size >> NACL_PAGESHIFT;
   size_t dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
   void *dyncode_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
-  void *stackaddr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
-                                                          NaClGetInitialStackTop(nap_parent) - stack_size,
-                                                          stack_size);
-  void *stackaddr_child = (void *)NaClUserToSysAddrRange(nap_child,
-                                                         NaClGetInitialStackTop(nap_child) - stack_size,
-                                                         stack_size);
   uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
   uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
-  uintptr_t stack_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)stackaddr_parent) >> NACL_PAGESHIFT;
-  uintptr_t stack_pnum_child = NaClSysToUser(nap_child, (uintptr_t)stackaddr_child) >> NACL_PAGESHIFT;
 
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
-  UNREFERENCED_PARAMETER(stack_pnum_parent);
 
   NaClLog(1, "dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
-  NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
   NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
@@ -1579,22 +1566,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   if (NaClMprotect(dyncode_child, dyncode_size, PROT_RW) == -1) {
       NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
   }
-  if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
-  }
-  if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
-  }
 
-  /* add stack mapping */
-  NaClVmmapAdd(&nap_child->mem_map,
-               stack_pnum_child,
-               stack_npages,
-               PROT_RW,
-               F_ANON_PRIV,
-               NULL,
-               0,
-               0);
   /* add guard page mapping */
   NaClVmmapAdd(&nap_child->mem_map,
                0,
@@ -1614,17 +1586,10 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                0,
                0);
 
-  /* copy stack and dynamic text mappings */
+  /* copy dynamic text mappings */
   nap_child->break_addr = nap_parent->break_addr;
   memmove(dyncode_child, dyncode_parent, dyncode_size);
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, dyncode_child, dyncode_size / sizeof(uintptr_t));
-  NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
-          stack_size,
-          stack_size,
-          stackaddr_parent,
-          stackaddr_child);
-  memmove(stackaddr_child, stackaddr_parent, stack_size);
-  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
   NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
@@ -1640,6 +1605,62 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClLog(1, "%s\n", "nap_child address space after copy:");
   NaClPrintAddressSpaceLayout(nap_child);
+}
+
+/*
+ * Copy the entire address execution context of an NaClApp to a child
+ * process.
+ *
+ * preconditions:
+ * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
+ * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
+ */
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
+  size_t stack_size = nap_parent->stack_size;
+  size_t stack_npages = stack_size >> NACL_PAGESHIFT;
+  void *stackaddr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
+                                                          NaClGetInitialStackTop(nap_parent) - stack_size,
+                                                          stack_size);
+  void *stackaddr_child = (void *)NaClUserToSysAddrRange(nap_child,
+                                                         NaClGetInitialStackTop(nap_child) - stack_size,
+                                                         stack_size);
+  uintptr_t stack_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)stackaddr_parent) >> NACL_PAGESHIFT;
+  uintptr_t stack_pnum_child = NaClSysToUser(nap_child, (uintptr_t)stackaddr_child) >> NACL_PAGESHIFT;
+
+  UNREFERENCED_PARAMETER(stack_pnum_parent);
+
+  NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
+  NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
+  NaClPrintAddressSpaceLayout(nap_parent);
+  NaClPrintAddressSpaceLayout(nap_child);
+
+  /* add stack mapping */
+  if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
+  }
+  if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
+  }
+  NaClVmmapAdd(&nap_child->mem_map,
+               stack_pnum_child,
+               stack_npages,
+               PROT_RW,
+               F_ANON_PRIV,
+               NULL,
+               0,
+               0);
+
+  /* copy stack */
+  NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
+          stack_size,
+          stack_size,
+          stackaddr_parent,
+          stackaddr_child);
+  memmove(stackaddr_child, stackaddr_parent, stack_size);
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
+
+  /*and dynamic text mappings */
+  NaClCopyDynamicText(nap_parent, nap_child);
 }
 
 /* set up the fd table for each cage */
