@@ -4026,10 +4026,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   int new_argc = 0;
   int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
-  size_t dyncode_size;
-  size_t dyncode_npages;
-  void *dyncode_child;
-  uintptr_t dyncode_pnum_child;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
 
@@ -4110,6 +4106,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
     nap->argv[3] = strdup(binary);
   }
   nap->binary = child_argv[3];
+
+  /* initialize child from parent state */
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
@@ -4118,21 +4116,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   nap_child->main_exe_prevalidated = 1;
 
   /* map dynamic text into child */
-  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClSysExecve()\n", nap_child->cage_id);
-  }
-  dyncode_size = nap_child->dynamic_text_end - nap->dynamic_text_start;
-  dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
-  dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
-  dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
-  NaClVmmapAdd(&nap_child->mem_map,
-               dyncode_pnum_child,
-               dyncode_npages,
-               PROT_RX,
-               NACL_ABI_MAP_PRIVATE,
-               nap_child->text_shm,
-               0,
-               dyncode_size);
+  NaClCopyDynamicText(nap, nap_child);
 
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;
