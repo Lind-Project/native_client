@@ -481,6 +481,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   }
   new_desc = NaClSetAvail(nap, old_nd);
   fd_cage_table[nap->cage_id][nap->fd] = new_desc;
+  /* update current maximum file descriptor number */
   ret = nap->fd++;
 
 out:
@@ -527,7 +528,10 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   new_desc = NaClSetAvail(nap, old_nd);
   NaClSetDesc(nap, new_desc, old_nd);
   fd_cage_table[nap->cage_id][newfd] = new_desc;
-  nap->fd = newfd;
+  /* update current maximum file descriptor number */
+  if (newfd > nap->fd) {
+    nap->fd = newfd;
+  }
   ret = nap->fd++;
 
 out:
@@ -710,6 +714,11 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClLog(1, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
+
+  /* there is no standard input to close, but return success anyway */
+  if (!d) {
+    return 0;
+  }
 
   NaClFastMutexLock(&nap->desc_mu);
 
