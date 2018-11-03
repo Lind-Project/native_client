@@ -356,7 +356,7 @@ static uint64_t NaClLoadMem(uintptr_t addr,
 
 #define GENERIC_LOAD(bits) \
   static uint ## bits ## _t NaClLoad ## bits(uintptr_t addr) { \
-    return (uint ## bits ## _t) NaClLoadMem(addr, sizeof(uint ## bits ## _t)); \
+    return (uint ## bits ## _t) NaClLoadMem(addr, sizeof (uint ## bits ## _t)); \
   }
 
 #if NACL_TARGET_SUBARCH == 32
@@ -385,7 +385,7 @@ static void NaClStoreMem(uintptr_t  addr,
 #define GENERIC_STORE(bits) \
   static void NaClStore ## bits(uintptr_t addr, \
                                 uint ## bits ## _t v) { \
-    NaClStoreMem(addr, sizeof(uint ## bits ## _t), v); \
+    NaClStoreMem(addr, sizeof (uint ## bits ## _t), v); \
   }
 
 GENERIC_STORE(16)
@@ -1497,7 +1497,7 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
 
   /* copy data pages point to */
   memmove((void *)page_addr_child, (void *)page_addr_parent, copy_size);
-  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof(uintptr_t));
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof (uintptr_t));
 
   /* reset to original page permissions */
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
@@ -1531,8 +1531,8 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
   NaClLog(1, "copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
   NaClDynamicRegionCreate(target, start, region->size, region->is_mmap);
   memmove((void *)start, (void *)region->start, region->size);
-  NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof(uintptr_t));
-  if (NaClMprotect((void *)start, region->size, PROT_RX) == -1) {
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof (uintptr_t));
+  if (NaClMprotect((void *)start, region->size, PROT_RWX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
 }
@@ -1658,7 +1658,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
           stackaddr_parent,
           stackaddr_child);
   memmove(stackaddr_child, stackaddr_parent, stack_size);
-  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof(uintptr_t));
+  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof (uintptr_t));
 
   /*and dynamic text mappings */
   NaClCopyDynamicText(nap_parent, nap_child);
