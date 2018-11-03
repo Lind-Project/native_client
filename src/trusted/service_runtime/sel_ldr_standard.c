@@ -873,8 +873,7 @@ cleanup:
   return retval;
 }
 
-int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
-                             struct NaClAppThread     *natp_parent,
+int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,
@@ -894,6 +893,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   static THREAD int     ignored_ret;
+  struct NaClApp        *nap_parent;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -901,6 +901,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
+  nap_parent = natp_parent->nap;
 
   NaClXMutexLock(&nap_child->mu);
 
