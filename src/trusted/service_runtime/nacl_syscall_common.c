@@ -4110,7 +4110,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(nap);
-  nap_child->running = 1;
+  nap_child->running = 0;
+  nap->running = 0;
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
   nap_child->main_exe_prevalidated = 1;
