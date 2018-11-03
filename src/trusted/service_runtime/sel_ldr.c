@@ -1473,14 +1473,14 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
           copy_size,
           (void *)page_addr_parent,
           (void *)page_addr_child);
-  NaClVmmapAdd(&target->mem_map,
-               entry->page_num,
-               entry->npages,
-               entry->prot,
-               entry->flags,
-               entry->desc,
-               entry->offset,
-               entry->file_size);
+  NaClVmmapAddWithOverwrite(&target->mem_map,
+                            entry->page_num,
+                            entry->npages,
+                            entry->prot,
+                            entry->flags,
+                            entry->desc,
+                            entry->offset,
+                            entry->file_size);
   if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, NACL_ABI_MAP_ANON)) {
     NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   }
@@ -1529,10 +1529,12 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
   NaClLog(1, "copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
-  NaClDynamicRegionCreate(target, start, region->size, region->is_mmap);
+  if (NaClTextDyncodeCreate(target, start, (void *)region->start, region->size, NULL)) {
+    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
+  }
   memmove((void *)start, (void *)region->start, region->size);
   NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof (uintptr_t));
-  if (NaClMprotect((void *)start, region->size, PROT_RWX) == -1) {
+  if (NaClMprotect((void *)start, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
 }
@@ -1559,47 +1561,10 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
-  /* copy page mappings */
-  if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
-  }
-  if (NaClMprotect(dyncode_child, dyncode_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
-  }
-
-  /* add guard page mapping */
-  NaClVmmapAdd(&nap_child->mem_map,
-               0,
-               NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
-               NACL_ABI_PROT_NONE,
-               NACL_ABI_MAP_PRIVATE,
-               NULL,
-               0,
-               0);
-  /* add shm text mapping */
-  NaClVmmapAdd(&nap_child->mem_map,
-               dyncode_pnum_child,
-               dyncode_npages,
-               PROT_RW,
-               MAP_ANON_PRIV,
-               NULL,
-               0,
-               0);
-
-  /* copy dynamic text mappings */
-  nap_child->break_addr = nap_parent->break_addr;
-  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClCopyDynamicText()\n", nap_child->cage_id);
-  }
+  /* copy page mappings and dynamic text */
   NaClDyncodeVisit(nap_child, NaClCopyDynamicRegion, nap_parent);
   NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
   NaClVmmapChangeProt(&nap_child->mem_map, dyncode_pnum_child, dyncode_npages, PROT_RX);
-  if (NaClMprotect(dyncode_parent, dyncode_size, PROT_RX) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent dynamic text NaClMprotect failed!");
-  }
-  if (NaClMprotect(dyncode_child, dyncode_size, PROT_RX) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
-  }
 
   NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");
@@ -1642,14 +1607,14 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
       NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
   }
-  NaClVmmapAdd(&nap_child->mem_map,
-               stack_pnum_child,
-               stack_npages,
-               PROT_RW,
-               MAP_ANON_PRIV,
-               NULL,
-               0,
-               0);
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                            stack_pnum_child,
+                            stack_npages,
+                            PROT_RW,
+                            MAP_ANON_PRIV,
+                            NULL,
+                            0,
+                            0);
 
   /* copy stack */
   NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
@@ -1661,6 +1626,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size / sizeof (uintptr_t));
 
   /*and dynamic text mappings */
+  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClCopyDynamicText()\n", nap_child->cage_id);
+  }
   NaClCopyDynamicText(nap_parent, nap_child);
 }
 

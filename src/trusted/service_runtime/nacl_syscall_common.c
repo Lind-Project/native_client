@@ -4115,9 +4115,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   nap_child->skip_validator = 1;
   nap_child->main_exe_prevalidated = 1;
 
-  /* map dynamic text into child */
-  NaClCopyDynamicText(nap, nap_child);
-
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
