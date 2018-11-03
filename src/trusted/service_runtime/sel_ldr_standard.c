@@ -920,10 +920,12 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
   /* `argvv_len = malloc()` failed or `argc == 0` */
   if (!argv_len) {
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has argv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
   /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
   if (!envv_len && envc) {
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has envv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
 
@@ -938,15 +940,14 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; i++) {
+  for (i = 0; i < argc && argv && argv[i]; i++) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; i++) {
+  for (i = 0; i < envc && envv && envv[i]; i++) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
-
 
   /*
    * NaCl modules are ILP32, so the argv, envv pointers, as well as
@@ -986,7 +987,11 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap_child->stack_size) {
-    retval = 0;
+    NaClLog(LOG_WARNING,
+            "NaClCreateMainForkThread failed: cage_id %d stack is too small! [size: %zu > stack_size: %zu]\n",
+            nap_child->cage_id,
+            size,
+            nap_child->stack_size);
     goto cleanup;
   }
 
@@ -997,7 +1002,7 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
                                      NaClGetInitialStackTop(nap_child) - size,
                                      size);
   if (stack_ptr == kNaClBadAddress) {
-    retval = 0;
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
     goto cleanup;
   }
 
