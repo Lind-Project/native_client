@@ -1581,7 +1581,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
                dyncode_pnum_child,
                dyncode_npages,
                PROT_RW,
-               F_ANON_PRIV,
+               MAP_ANON_PRIV,
                NULL,
                0,
                0);
@@ -1646,7 +1646,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                stack_pnum_child,
                stack_npages,
                PROT_RW,
-               F_ANON_PRIV,
+               MAP_ANON_PRIV,
                NULL,
                0,
                0);
