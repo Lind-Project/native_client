@@ -6,8 +6,6 @@ services:
   - docker
 git:
     depth: 1
-git:
-  submodules: false
 
 matrix:
   include:
@@ -21,9 +19,6 @@ matrix:
             - build-essential
             - gcc-multilib
             - g++-multilib
-
-before_install:
-    - git submodule update --init --recursive --remote .
 
 script:
     - docker build -t alyptik/lind:naclruntime .
