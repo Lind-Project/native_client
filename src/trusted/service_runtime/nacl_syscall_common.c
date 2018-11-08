@@ -4027,6 +4027,15 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   int new_argc = 0;
   int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
+  void *dyncode_child;
+  size_t dyncode_size;
+  size_t dyncode_npages;
+  size_t tramp_size;
+  size_t tramp_npages;
+  uintptr_t dyncode_pnum_child;
+  uintptr_t parent_start_addr;
+  uintptr_t child_start_addr;
+  uintptr_t tramp_pnum;
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
 
@@ -4116,6 +4125,114 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
   nap_child->main_exe_prevalidated = 1;
+  /* calculate page addresses and sizes */
+  dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
+  dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
+  dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
+  tramp_size = NaClRoundPage(nap->static_text_end - NACL_SYSCALL_START_ADDR);
+  tramp_npages = tramp_size >> NACL_PAGESHIFT;
+  dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
+  parent_start_addr = nap->mem_start + NACL_SYSCALL_START_ADDR;
+  child_start_addr = nap_child->mem_start + NACL_SYSCALL_START_ADDR;
+  tramp_pnum = NaClSysToUser(nap, parent_start_addr) >> NACL_PAGESHIFT;
+
+  /* map dynamic text into child */
+  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClSysExecve()\n", nap_child->cage_id);
+  }
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                            dyncode_pnum_child,
+                            dyncode_npages,
+                            PROT_RX,
+                            NACL_ABI_MAP_PRIVATE,
+                            nap_child->text_shm,
+                            0,
+                            dyncode_size);
+
+  /* add guard page mapping */
+  NaClVmmapAdd(&nap_child->mem_map,
+               0,
+               NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
+               NACL_ABI_PROT_NONE,
+               NACL_ABI_MAP_PRIVATE,
+               NULL,
+               0,
+               0);
+
+  /*
+   * The next pages up to NACL_TRAMPOLINE_END are the trampolines.
+   * Immediately following that is the loaded text section.
+   * These are collectively marked as PROT_READ | PROT_EXEC.
+   */
+  NaClLog(3,
+          ("Trampoline/text region start 0x%08"NACL_PRIxPTR","
+           " size 0x%08"NACL_PRIxS", end 0x%08"NACL_PRIxPTR"\n"),
+          child_start_addr,
+          tramp_size,
+          child_start_addr + tramp_size);
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW)) {
+    NaClLog(LOG_FATAL, "NaClMemoryProtection: "
+            "NaClMprotect(0x%08"NACL_PRIxPTR", "
+            "0x%08"NACL_PRIxS", 0x%x) failed\n",
+            child_start_addr,
+            tramp_size,
+            PROT_RW);
+  }
+  /* allocate and map child trampoline pages */
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                            tramp_pnum,
+                            tramp_npages,
+                            PROT_RW,
+                            MAP_ANON_PRIV,
+                            NULL,
+                            0,
+                            0);
+  if (!NaClPageAllocFlags((void **)&child_start_addr, tramp_size, NACL_ABI_MAP_ANON)) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+  }
+
+  /* temporarily set RW page permissions for copy */
+  NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RW);
+  NaClVmmapChangeProt(&nap->mem_map, tramp_pnum, tramp_npages, PROT_RW);
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  }
+  if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+  }
+
+  /* setup trampolines */
+  nap_child->nacl_syscall_addr = 0;
+  NaClLog(2, "Initializing arch switcher\n");
+  NaClInitSwitchToApp(nap_child);
+  NaClLog(2, "Installing trampoline\n");
+  NaClLoadTrampoline(nap_child);
+  NaClLog(2, "Installing springboard\n");
+  NaClLoadSpringboard(nap_child);
+  /* copy the trampolines from parent */
+  memmove((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
+  NaClPatchAddr(nap_child->mem_start, nap->mem_start, (uintptr_t *)child_start_addr, tramp_size);
+
+  /*
+   * NaClMemoryProtection also initializes the mem_map w/ information
+   * about the memory pages and their current protection value.
+   *
+   * The contents of the dynamic text region will get remapped as
+   * non-writable.
+   */
+  NaClLog(2, "Applying memory protection\n");
+  if (NaClMemoryProtection(nap_child) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "%s\n", "child NaClMemoryProtection failed!");
+  }
+
+  /* reset permissions to executable */
+  NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  NaClVmmapChangeProt(&nap->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
+  }
+  if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+  }
 
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;

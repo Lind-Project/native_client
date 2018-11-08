@@ -1064,6 +1064,7 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
 
   /* now actually spawn the thread */
   nap_child->running = 1;
+  NaClXCondVarBroadcast(&nap_child->cv);
   NaClXMutexUnlock(&nap_child->mu);
 
   NaClVmHoleWaitToStartThread(nap_child);
