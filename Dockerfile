@@ -15,24 +15,15 @@ USER lind
 WORKDIR /home/lind/lind_project/
 RUN git pull -t -j8
 RUN git submodule update --recursive --remote .
-RUN ./mklind -q nacl
-RUN ./mklind -q repy
-RUN ./mklind -q install
-RUN x86_64-nacl-gcc test_cases/fork.c -o lind/repy/repy/fork
-RUN x86_64-nacl-gcc test_cases/hello.c -o lind/repy/repy/hello
+RUn for t in nacl repy install; do ./mklind -q "$t"; done
+RUN env x86_64-nacl-gcc test_cases/fork.c -o lind/repy/repy/fork
+RUN env x86_64-nacl-gcc test_cases/hello.c -o lind/repy/repy/hello
 WORKDIR /home/lind/lind_project/test_cases/bash/
 RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
 RUN make install
 
 WORKDIR /home/lind/lind_project/lind/repy/repy/
-RUN lindfs cp ./bin/
-RUN lindfs cp ./lib/
-RUN lindfs cp ./share/
-RUN lindfs cp ./fork
-RUN lindfs cp ./hello
-RUN lindfs cp ./.bashrc
-RUN lindfs cp ./.bash_logout
-RUN lindfs cp ./.bash_profile
+RUN for f in ./bin/ ./lib/ ./share/ ./fork ./hello ./.bashrc ./.bash_logout ./.bash_profile; do lindfs cp "$f"; done
 RUN script -qfc "$(printf '%q ' lind /fork)" /dev/null
 RUN script -qfc "$(printf '%q ' lind /hello)" /dev/null
 RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
