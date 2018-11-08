@@ -65,6 +65,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_copy.h"
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
+#include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_handlers.h"
 #include "native_client/src/trusted/service_runtime/nacl_text.h"
 #include "native_client/src/trusted/service_runtime/nacl_thread_nice.h"
@@ -2936,7 +2937,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   recv_hdr.iov_length = kern_nanimh.iov_length;
 
   recv_hdr.ndescv = new_desc;
-  recv_hdr.ndesc_length = sizeof(new_desc) / sizeof(*new_desc);
+  recv_hdr.ndesc_length = sizeof(new_desc);
   memset(new_desc, 0, sizeof(new_desc));
 
   recv_hdr.flags = 0;  /* just to make it obvious; IMC will clear it for us */

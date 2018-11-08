@@ -45,6 +45,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_resource.h"
 #include "native_client/src/trusted/service_runtime/nacl_reverse_quota_interface.h"
+#include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_handlers.h"
 #include "native_client/src/trusted/service_runtime/nacl_text.h"
@@ -1496,8 +1497,8 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
   }
 
   /* copy data pages point to */
-  memmove((void *)page_addr_child, (void *)page_addr_parent, copy_size);
-  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size / sizeof (uintptr_t));
+  memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
+  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
 
   /* reset to original page permissions */
   NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
@@ -1522,19 +1523,28 @@ static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
  */
 static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
   struct NaClApp *target = target_state;
+  uintptr_t start = region->start & UNTRUSTED_ADDR_MASK;
   uintptr_t offset = target->mem_start;
-  uintptr_t parent_offset = target->parent ? target->parent->mem_start : master_ctx->r15;
-  uintptr_t start = (region->start & UNTRUSTED_ADDR_MASK) + offset;
-  if (NaClMprotect((void *)start, region->size, PROT_RW) == -1) {
+  uintptr_t parent_offset = region->start - start;
+  void *dyncode_addr = (void *)(start | target->mem_start);
+  NaClVmmapAddWithOverwrite(&target->mem_map,
+                            start >> NACL_PAGESHIFT,
+                            region->size >> NACL_PAGESHIFT,
+                            PROT_RX,
+                            NACL_ABI_MAP_PRIVATE,
+                            target->text_shm,
+                            (region->start & UNTRUSTED_ADDR_MASK) - target->dynamic_text_start,
+                            region->size);
+  if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
-  NaClLog(1, "copying dynamic code from (%p) to (%p)\n", (void *)start, (void *)region->start);
-  if (NaClTextDyncodeCreate(target, start, (void *)region->start, region->size, NULL)) {
+  NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
+  if (!NaClDynamicRegionCreate(target, (uintptr_t)dyncode_addr, region->size, 1)) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
-  memmove((void *)start, (void *)region->start, region->size);
-  NaClPatchAddr(offset, parent_offset, (uintptr_t *)start, region->size / sizeof (uintptr_t));
-  if (NaClMprotect((void *)start, region->size, PROT_RX) == -1) {
+  memcpy(dyncode_addr, (void *)region->start, region->size);
+  NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
+  if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
 }

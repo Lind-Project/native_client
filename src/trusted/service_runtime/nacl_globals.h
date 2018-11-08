@@ -130,12 +130,17 @@ void  NaClGlobalModuleFini(void);
 /* this is defined in src/trusted/service_runtime/arch/<arch>/ sel_rt.h */
 void NaClInitGlobals(void);
 
-static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t cnt) {
+static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t size) {
+  size_t cnt = size / sizeof(uintptr_t);
   for (size_t i = 0; i < cnt; i++) {
-    if ((parent_bits >> NACL_PAGESHIFT) != (start[i] >> NACL_PAGESHIFT))
+    if ((start[i] & ~UNTRUSTED_ADDR_MASK) != parent_bits) {
       continue;
+    }
     NaClLog(1, "patching %p\n", (void *)start[i]);
-    start[i] = child_bits | (start[i] & UNTRUSTED_ADDR_MASK);
+    /* clear upper bits */
+    start[i] &= UNTRUSTED_ADDR_MASK;
+    /* add child prefix */
+    start[i] |= child_bits;
     NaClLog(1, "new addr %p\n", (void *)start[i]);
   }
 }
