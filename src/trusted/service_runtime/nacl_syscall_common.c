@@ -1234,6 +1234,46 @@ cleanup:
   return retval;
 }
 
+int32_t NaClSysLStat(struct NaClAppThread  *natp,
+                    const char            *pathname,
+                    struct nacl_abi_stat  *buf) {
+  struct NaClApp      *nap = natp->nap;
+  int32_t             retval = -NACL_ABI_EINVAL;
+  char                path[NACL_CONFIG_PATH_MAX];
+  nacl_host_stat_t    stbuf;
+
+  NaClLog(2, "Entered NaClSysLStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
+           " 0x%08"NACL_PRIxPTR")\n",
+          (uintptr_t)natp,(uintptr_t)pathname, (uintptr_t)buf);
+
+  retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
+  if (retval) {
+    goto cleanup;
+  }
+
+  retval = NaClStatAclCheck(nap, path);
+  if (retval) {
+    goto cleanup;
+  }
+
+  /*
+   * Perform a host stat.
+   */
+  retval = NaClHostDescStat(path, &stbuf);
+  if (!retval) {
+    struct nacl_abi_stat abi_stbuf;
+
+    retval = NaClAbiStatHostDescStatXlateCtor(&abi_stbuf,
+                                              &stbuf);
+    if (!NaClCopyOutToUser(nap, (uintptr_t) buf,
+                           &abi_stbuf, sizeof(abi_stbuf))) {
+      retval = -NACL_ABI_EFAULT;
+    }
+  }
+cleanup:
+  return retval;
+}
+
 int32_t NaClSysMkdir(struct NaClAppThread *natp,
                      uint32_t             pathname,
                      int                  mode) {

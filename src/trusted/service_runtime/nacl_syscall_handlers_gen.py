@@ -254,6 +254,7 @@ SYSCALL_LIST = [
     ('NACL_sys_wait', 'NaClSysWait', ['uint32_t *stat_loc']),
     ('NACL_sys_wait4', 'NaClSysWait4', ['int pid', 'uint32_t *stat_loc', 'int options', 'void *rusage']),
     ('NACL_sys_sigprocmask', 'NaClSysSigProcMask', ['int how', 'const void *set', 'void *oldset']),
+    ('NACL_sys_lstat', 'NaClSysLStat', ['const char *path', 'struct nacl_abi_stat *nasp']),
     ]
 
 
