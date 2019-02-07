@@ -749,7 +749,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    *
    * NB: the underlying OS would have limited the amount of space used
    * for argv and envv -- on linux, it is ARG_MAX, or 128KB -- and
-   * hence the overflow check is for obvious auditability rather than
+   * hence the overflow check is for obvious audibility rather than
    * for correctness.
    */
   auxv_entries = 1;
