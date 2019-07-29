@@ -17,7 +17,7 @@
 
 #include <algorithm>
 
-#include "breakpad/src/google_breakpad/common/minidump_format.h"
+#include "native_client/breakpad/src/google_breakpad/common/minidump_format.h"
 #include "native_client/src/include/elf_constants.h"
 #include "native_client/src/include/nacl/nacl_exception.h"
 #include "native_client/src/include/nacl/nacl_minidump.h"
@@ -433,7 +433,7 @@ void nacl_minidump_register_crash_handler(void) {
       // Truncate the ID if necessary.  The minidump format uses a 16
       // byte ID, whereas ELF build IDs are typically 20-byte SHA1
       // hashes.
-      memcpy(&g_module_build_id, data_ptr,
+      memcpy(& g_module_build_id, data_ptr,
              std::min(size, sizeof(g_module_build_id)));
       g_module_build_id_set = 1;
     }
@@ -453,6 +453,6 @@ void nacl_minidump_set_module_name(const char *module_name) {
 void nacl_minidump_set_module_build_id(
     const uint8_t data[NACL_MINIDUMP_BUILD_ID_SIZE]) {
   assert(sizeof(g_module_build_id) == NACL_MINIDUMP_BUILD_ID_SIZE);
-  memcpy(&g_module_build_id, data, NACL_MINIDUMP_BUILD_ID_SIZE);
+  memcpy(& g_module_build_id, data, NACL_MINIDUMP_BUILD_ID_SIZE);
   g_module_build_id_set = 1;
 }
