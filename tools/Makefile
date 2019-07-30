@@ -138,7 +138,7 @@ endif
 # use, obviously - and this is not always the case: for example they are not
 # available on MacOS, on 64bit linux you generally can find 64bit versions of
 # them, but not 32bit versions, etc).
-SRCDIR = ../../../third_party
+SRCDIR = ../../../src/third_party
 
 ifeq ($(PLATFORM), win)
   # Ugh, Cygwin and spaces in paths don't work well.
