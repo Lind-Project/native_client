@@ -36,7 +36,7 @@
 
 #include <stddef.h>
 
-#include "google_breakpad/common/breakpad_types.h"
+#include "native_client/google_breakpad/common/breakpad_types.h"
 
 typedef enum {
   MD_EXCEPTION_CODE_PS3_UNKNOWN = 0,

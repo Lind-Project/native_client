@@ -17,7 +17,7 @@
 
 #include <algorithm>
 
-#include "native_client/breakpad/src/google_breakpad/common/minidump_format.h"
+#include "native_client/google_breakpad/common/minidump_format.h"
 #include "native_client/src/include/elf_constants.h"
 #include "native_client/src/include/nacl/nacl_exception.h"
 #include "native_client/src/include/nacl/nacl_minidump.h"

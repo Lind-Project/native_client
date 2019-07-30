@@ -37,7 +37,7 @@
 
 #include <sys/types.h>
 
-#include "google_breakpad/common/minidump_format.h"
+#include "native_client/google_breakpad/common/minidump_format.h"
 
 namespace google_breakpad {
 
