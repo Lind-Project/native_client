@@ -13,7 +13,7 @@ import sys
 # http://code.google.com/p/nativeclient/issues/detail?id=1928
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-scons_dir = os.path.join(root, 'third_party', 'scons-2.0.1', 'engine')
+scons_dir = os.path.join(root, 'src/third_party', 'scons-2.0.1', 'engine')
 sys.path.insert(0, scons_dir)
 
 if __name__ == "__main__":
