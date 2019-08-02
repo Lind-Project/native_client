@@ -566,6 +566,7 @@ endif
 	mkdir $(PREGCC_BUILD_DIR)
 	cd $(PREGCC_BUILD_DIR) && \
 	PATH=$(BUILDPATH) \
+	MAKEINFO=missing \
 	$(GCC_SRC_DIR)/configure \
 	    CC="$(GCC_CC)" \
 	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
