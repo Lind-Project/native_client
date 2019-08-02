@@ -456,7 +456,7 @@ ifeq ($(PLATFORM), mac)
 GCC_CC = clang -m$(HOST_TOOLCHAIN_BITS) -fgnu89-inline
 GCC_CXX = clang++ -m$(HOST_TOOLCHAIN_BITS)
 else
-GCC_CC = gcc -m$(HOST_TOOLCHAIN_BITS)
+GCC_CC = gcc -m$(HOST_TOOLCHAIN_BITS) -fgnu89-inline
 GCC_CXX = g++ -m$(HOST_TOOLCHAIN_BITS)
 endif
 
