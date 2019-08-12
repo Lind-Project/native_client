@@ -11,7 +11,7 @@ import subprocess
 import sys
 import zlib
 sys.path.append("./common")
-sys.path.append('../third_party')
+sys.path.append('../src/third_party')
 
 from SCons.Errors import UserError
 from SCons.Script import GetBuildFailures
