@@ -764,3 +764,18 @@ int lind_flock (int fd, int operation)
     LIND_API_PART3;
 }
 
+int lind_pipe(int* pipefds){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[])", LIND_safe_sys_pipe);
+    LIND_API_PART2;
+    COPY_DATA(pipefds, 2*sizeof(int))
+    LIND_API_PART3;
+}
+
+int lind_pipe2(int* pipefds, int flags){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_pipe, flags);
+    LIND_API_PART2;
+    COPY_DATA(pipefds, 2*sizeof(int))
+    LIND_API_PART3;
+}
