@@ -9,6 +9,7 @@
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
 
+#include <stdio.h>
 #include <Python.h>
 #include <errno.h>
 
