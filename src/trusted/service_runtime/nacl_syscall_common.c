@@ -652,7 +652,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
    * open-as-a-file and open-as-a-dir, the type of the object that the
    * path refers to can change.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
 
   /* Windows does not have S_ISDIR(m) macro */
   if (!retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
@@ -1229,7 +1229,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -1269,7 +1269,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
