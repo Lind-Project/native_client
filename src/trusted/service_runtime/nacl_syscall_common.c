@@ -663,6 +663,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
+    /* Assign CageID to HostDir */
+    hd->cageid = nap->cage_id;
+    
     retval = NaClHostDirOpen(hd, path);
     NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
             (uintptr_t) hd, path, retval);
@@ -678,6 +681,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
+    /* Assign CageID to Host Descriptor */
+    hd->cageid = nap->cage_id;
+
     retval = NaClHostDescOpen(hd, path, flags, mode);
     NaClLog(1, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
             (uintptr_t) hd, path, flags, mode, retval);
