@@ -929,6 +929,10 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
+    /* Add cageID to end of callArgs to send to Repy Dispatcher */
+    PyList_Append(callArgs, PyInt_FromLong(nap->cage_id));
+
+    
     response = CallPythonFunc(py_context, "LindSyscall", apiArg);
     if (!response) {
         goto error;
