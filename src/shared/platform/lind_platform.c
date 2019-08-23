@@ -780,3 +780,10 @@ int lind_pipe2(int* pipefds, int flags){
     COPY_DATA(pipefds, 2*sizeof(int))
     LIND_API_PART3;
 }
+
+int lind_fork(int newcageid){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_fork, flags);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}

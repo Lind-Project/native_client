@@ -754,6 +754,7 @@ StubType stubs[] = {
         {0}, /* 65 */
         {0}, /* 66 LIND_sys_pipe */
         {0}, /* 67 LIND_sys_pipe2 */
+        {0}, /* 68 LIND_fs_fork */
 
 };
 
