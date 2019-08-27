@@ -18,7 +18,8 @@
 #include "native_client/src/trusted/nacl_base/nacl_refcount.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
-#define MAX_TEST_DESCS 8
+#define MAX_TEST_DESCS	8
+#define CAGE_TEST_ID	0
 
 char *exe_path = NULL;
 
@@ -139,7 +140,7 @@ void sender_thread(void) {
     header.ndesc_length = test_case[ix].num_desc;
     for (dix = 0; dix < header.ndesc_length; ++dix) {
       desc_buf[dix] = (struct NaClDesc *)
-          NaClDescIoDescOpen(exe_path, NACL_ABI_O_RDONLY, 0);
+          NaClDescIoDescOpen(exe_path, NACL_ABI_O_RDONLY, 0, CAGE_TEST_ID);
       err = ((*NACL_VTBL(NaClDesc, desc_buf[dix])->SetMetadata)
              (desc_buf[dix], test_case[ix].descs[dix].metadata_type,
               (uint32_t) strlen(test_case[ix].descs[dix].metadata_string),

@@ -37,6 +37,8 @@
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 
+#define CAGE_TEST_ID	0
+
 void Usage(void) {
   fprintf(stderr, "Usage: gio_nacl_desc_test src_file dst_file\n");
 }
@@ -195,7 +197,7 @@ int main(int ac,
   NaClSecureRngModuleInit();
   NaClGlobalSecureRngInit();
 
-  src = NaClDescIoDescOpen(av[1], NACL_ABI_O_RDONLY, 0);
+  src = NaClDescIoDescOpen(av[1], NACL_ABI_O_RDONLY, 0, CAGE_TEST_ID);
   if (NULL == src) {
     fprintf(stderr, "could not open %s for read\n", av[1]);
     Usage();
@@ -205,7 +207,8 @@ int main(int ac,
                            NACL_ABI_O_WRONLY|
                            NACL_ABI_O_TRUNC|
                            NACL_ABI_O_CREAT,
-                           0666);
+                           0666,
+			   CAGE_TEST_ID);
   if (NULL == dst) {
     fprintf(stderr, "could not open %s for write\n", av[2]);
     Usage();
@@ -238,7 +241,8 @@ int main(int ac,
                            NACL_ABI_O_WRONLY|
                            NACL_ABI_O_TRUNC|
                            NACL_ABI_O_CREAT,
-                           0666);
+                           0666,
+			   CAGE_TEST_ID);
   if (NULL == dst) {
     fprintf(stderr, "could not open %s for write\n", av[2]);
     Usage();
