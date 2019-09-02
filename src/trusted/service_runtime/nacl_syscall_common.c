@@ -4012,6 +4012,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   /* success */
+  lind_fork(ret);
   NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 fail:
