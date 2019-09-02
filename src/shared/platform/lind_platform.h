@@ -99,7 +99,7 @@ struct select_results {
     fd_set e;
 };
 
-int GetHostFdFromLindFd(int lindFd);
+int GetHostFdFromLindFd(int lindFd, int cageid);
 
 int LindPythonInit(void);
 int LindPythonFinalize(void);

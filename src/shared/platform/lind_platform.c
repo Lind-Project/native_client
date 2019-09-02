@@ -166,18 +166,18 @@ cleanup:
     return retval;
 }
 
-int GetHostFdFromLindFd(int lindFd)
+int GetHostFdFromLindFd(int lindFd, int cageid)
 {
     int retval = -1;
-    PyObject *pyLindFd = NULL;
     PyObject *pyHostFd = NULL;
+    PyObject *args = NULL;
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
     if(lindFd < 0) {
         goto cleanup;
     }
-    pyLindFd = PyInt_FromLong(lindFd);
-    pyHostFd = CallPythonFunc1(py_context, "GetHostFdFromLindFd", pyLindFd);
+    args = Py_BuildValue("(ii)", lindFd, cageid);
+    pyHostFd = CallPythonFunc(py_context, "GetHostFdFromLindFd", args);
     GOTO_ERROR_IF_NULL(pyHostFd);
     if(!PyInt_CheckExact(pyHostFd)) {
         goto error;
@@ -187,7 +187,7 @@ int GetHostFdFromLindFd(int lindFd)
 error:
     PyErr_Print();
 cleanup:
-    Py_XDECREF(pyLindFd);
+    Py_XDECREF(args);
     Py_XDECREF(pyHostFd);
     NaClLog(3, "host_fd:%d for lind_fd:%d\n", retval, lindFd);
     PyGILState_Release(gstate);

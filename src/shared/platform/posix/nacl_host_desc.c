@@ -156,7 +156,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     desc = d->d;
   }
   if(-1 != desc) {
-      desc = GetHostFdFromLindFd(desc);
+      desc = GetHostFdFromLindFd(desc, d->cageid);
   }
   /*
    * Translate prot, flags to host_prot, host_flags.
