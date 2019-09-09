@@ -648,8 +648,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
                          char               **argv,
                          char const *const  *envv) NACL_WUR;
 
-int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
-                             struct NaClAppThread     *natp_parent,
+int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,

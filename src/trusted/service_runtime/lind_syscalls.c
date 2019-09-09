@@ -747,7 +747,14 @@ StubType stubs[] = {
         {LindEpollWaitPreprocess, LindEpollWaitPostprocess, 0}, /* 58 epoll_wait */
         {LindCommonPreprocess, 0, 0}, /* 59 sendmsg */
         {LindCommonPreprocess, 0, 0}, /* 60 */
-        {0} /* 61 LIND_sys_pipe */
+        {0}, /* 61 */
+        {0}, /* 62 */
+        {0}, /* 63 */
+        {0}, /* 64 */
+        {0}, /* 65 */
+        {0}, /* 66 LIND_sys_pipe */
+        {0}, /* 67 LIND_sys_pipe2 */
+
 };
 
 

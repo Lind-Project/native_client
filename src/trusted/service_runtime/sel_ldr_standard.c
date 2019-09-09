@@ -749,7 +749,7 @@ int NaClCreateMainThread(struct NaClApp     *nap,
    *
    * NB: the underlying OS would have limited the amount of space used
    * for argv and envv -- on linux, it is ARG_MAX, or 128KB -- and
-   * hence the overflow check is for obvious auditability rather than
+   * hence the overflow check is for obvious audibility rather than
    * for correctness.
    */
   auxv_entries = 1;
@@ -873,8 +873,7 @@ cleanup:
   return retval;
 }
 
-int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
-                             struct NaClAppThread     *natp_parent,
+int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
                              struct NaClApp           *nap_child,
                              int                      argc,
                              char                     **argv,
@@ -894,6 +893,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   static THREAD int     ignored_ret;
+  struct NaClApp        *nap_parent;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -901,6 +901,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   retval = 0;
   size = 0;
   envc = 0;
+  nap_parent = natp_parent->nap;
 
   NaClXMutexLock(&nap_child->mu);
 
@@ -919,10 +920,12 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
   /* `argvv_len = malloc()` failed or `argc == 0` */
   if (!argv_len) {
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has argv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
   /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
   if (!envv_len && envc) {
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has envv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
 
@@ -937,15 +940,14 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
    * data.  We are assuming that the caller is non-adversarial and the
    * code does not look like string data....
    */
-  for (i = 0; i < argc && argv; i++) {
+  for (i = 0; i < argc && argv && argv[i]; i++) {
     argv_len[i] = strlen(argv[i]) + 1;
     size += argv_len[i];
   }
-  for (i = 0; i < envc; i++) {
+  for (i = 0; i < envc && envv && envv[i]; i++) {
     envv_len[i] = strlen(envv[i]) + 1;
     size += envv_len[i];
   }
-
 
   /*
    * NaCl modules are ILP32, so the argv, envv pointers, as well as
@@ -985,7 +987,11 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
   size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
 
   if (size > nap_child->stack_size) {
-    retval = 0;
+    NaClLog(LOG_WARNING,
+            "NaClCreateMainForkThread failed: cage_id %d stack is too small! [size: %zu > stack_size: %zu]\n",
+            nap_child->cage_id,
+            size,
+            nap_child->stack_size);
     goto cleanup;
   }
 
@@ -996,7 +1002,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
                                      NaClGetInitialStackTop(nap_child) - size,
                                      size);
   if (stack_ptr == kNaClBadAddress) {
-    retval = 0;
+    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
     goto cleanup;
   }
 
@@ -1058,6 +1064,7 @@ int NaClCreateMainForkThread(struct NaClApp           *nap_parent,
 
   /* now actually spawn the thread */
   nap_child->running = 1;
+  NaClXCondVarBroadcast(&nap_child->cv);
   NaClXMutexUnlock(&nap_child->mu);
 
   NaClVmHoleWaitToStartThread(nap_child);
