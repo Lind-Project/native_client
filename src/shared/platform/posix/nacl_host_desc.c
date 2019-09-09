@@ -245,6 +245,12 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
   return 0;
 }
 
+int NaClHostDescPipe(struct NaClHostDesc  *d,
+                            int fd,
+                            int flags) {
+  return NaClHostDescCtor(d, fd, flags);
+}
+
 int NaClHostDescOpen(struct NaClHostDesc  *d,
                      char const           *path,
                      int                  flags,

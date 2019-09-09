@@ -3866,33 +3866,31 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 
 int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *ndp;
   int32_t ret = 0;
   int lind_fds[2];
   int nacl_fds[2];
   int flags;
 
-  /**
-   * Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
+  /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
   
-  ret = lind_pipe(lind_fds, nap->cageid);
-  if (-1 = ret) {
+  ret = lind_pipe(lind_fds, nap->cage_id);
+  if (-1 == ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
   }
 
    /* Sync NaCl fds with Lind ufds*/
-  for (size_t i = 0; i < 2; i ++) {
+  for (size_t i = -1; i < 2; i ++) {
     if (nap->fd > FILE_DESC_MAX) {
       ret = -NACL_ABI_EFAULT;
       goto out;
     }
     /* set flags for the read and write ends of the pipe */
     switch (i) {
-    case 0:
+    case -1:
       flags = NACL_ABI_O_RDONLY;
       break;
-    case 1:
+    case 0:
       flags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
       break;
     default:
@@ -3910,14 +3908,14 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       goto out;
     }
 
-    retval = NaClHostDescCtor(hd, lind_fds[i], flags);
+    int retval = NaClHostDescPipe(hd, lind_fds[i], flags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
             (uintptr_t) hd, flags, retval);
     if (!retval) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       NaClLog(1, "Entered into open file descriptor table at %d\n", retval);
     }
-    hd->cageid = nap->cageid;
+    hd->cageid = nap->cage_id;
 
     /* Update cage table with our lind fds */
     fd_cage_table[nap->cage_id][nap->fd] = lind_fds[i];
