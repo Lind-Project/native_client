@@ -767,7 +767,7 @@ int lind_flock (int fd, int operation)
 
 int lind_pipe(int* pipefds, int cageid){
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_pipe);
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_pipe);
     LIND_API_PART2;
     COPY_DATA(pipefds, 2*sizeof(int))
     LIND_API_PART3;
