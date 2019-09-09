@@ -72,7 +72,6 @@ double time_end = 0.0;
  * -jp
  */
 volatile sig_atomic_t fork_num;
-struct Pipe pipe_table[PIPE_NUM_MAX];
 int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 int cached_lib_num;
 

@@ -80,14 +80,7 @@ struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
 
-struct Pipe {
-  bool xfer_done;
-  bool is_closed;
-  struct NaClFastMutex mu;
-};
-
 extern volatile sig_atomic_t fork_num;
-extern struct Pipe pipe_table[PIPE_NUM_MAX];
 extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
 extern int cached_lib_num;
 
