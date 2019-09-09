@@ -3875,7 +3875,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   /**
    * Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
   
-  ret = lind_pipe(lind_fds);
+  ret = lind_pipe(lind_fds, nap->cageid);
   if (-1 = ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
