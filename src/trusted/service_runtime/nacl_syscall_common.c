@@ -723,6 +723,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   NaClLog(1, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d);
 
+  printf("Closing NaCl fd: %d in cage %d\n", d, nap->cage_id);
+
+
   /* there is no standard input to close, but return success anyway */
   if (!d) {
     return 0;
@@ -841,6 +844,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+
+  printf("Reading from NaCl fd: %d in cage %d\n", d, nap->cage_id);
+
+
   /* check for closed fds */
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -916,6 +923,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   char const      *ellipsis = "";
   struct NaClDesc *ndp;
   size_t          log_bytes;
+
+  printf("Writing to NaCl fd: %d in cage %d\n", d, nap->cage_id);
 
   NaClLog(2, "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
@@ -3880,17 +3889,17 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   }
 
    /* Sync NaCl fds with Lind ufds*/
-  for (size_t i = -1; i < 2; i ++) {
+  for (int i = 0; i < 2; i++) {
     if (nap->fd > FILE_DESC_MAX) {
       ret = -NACL_ABI_EFAULT;
       goto out;
     }
     /* set flags for the read and write ends of the pipe */
     switch (i) {
-    case -1:
+    case 0:
       flags = NACL_ABI_O_RDONLY;
       break;
-    case 0:
+    case 1:
       flags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
       break;
     default:
@@ -3907,6 +3916,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_ENOMEM;
       goto out;
     }
+    hd->cageid = nap->cage_id;
 
     int retval = NaClHostDescPipe(hd, lind_fds[i], flags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
@@ -3915,13 +3925,20 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       NaClLog(1, "Entered into open file descriptor table at %d\n", retval);
     }
-    hd->cageid = nap->cage_id;
+    
 
     /* Update cage table with our lind fds */
-    fd_cage_table[nap->cage_id][nap->fd] = lind_fds[i];
-    nacl_fds[i] = nap->fd++;
+    fd_cage_table[nap->cage_id][nap->fd] = retval;
+    nacl_fds[i] = nap->fd;
+    nap->fd++;
+
+    if (i == 0) printf("Pipe: Read end - Lind: %d  NaCL: %d Host: %d Flags: %d \n", hd->d, nacl_fds[i], retval,  hd->flags);
+    if (i == 1) printf("Pipe: Write end - Lind: %d  NaCL: %d Host: %d Flags: %d \n", hd->d, nacl_fds[i], retval, hd->flags);
+
+
   }
 
+  printf("Pipe opened.");
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
