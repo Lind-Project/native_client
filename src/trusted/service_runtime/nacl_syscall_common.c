@@ -652,7 +652,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
    * open-as-a-file and open-as-a-dir, the type of the object that the
    * path refers to can change.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
 
   /* Windows does not have S_ISDIR(m) macro */
   if (!retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
@@ -663,6 +663,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
+    /* We need to assign a CageID to NaCl HostDirectories and HostDescriptors so that we can access cageid from Lind RPC calls*/
+    hd->cageid = nap->cage_id;
+    
     retval = NaClHostDirOpen(hd, path);
     NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
             (uintptr_t) hd, path, retval);
@@ -678,6 +681,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
+    /* Assign CageID to Host Descriptor */
+    hd->cageid = nap->cage_id;
+
     retval = NaClHostDescOpen(hd, path, flags, mode);
     NaClLog(1, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
             (uintptr_t) hd, path, flags, mode, retval);
@@ -1229,7 +1235,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -1269,7 +1275,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf);
+  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -4006,6 +4012,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   }
 
   /* success */
+  lind_fork(ret);
   NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 fail:

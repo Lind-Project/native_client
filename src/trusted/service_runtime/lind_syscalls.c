@@ -754,6 +754,7 @@ StubType stubs[] = {
         {0}, /* 65 */
         {0}, /* 66 LIND_sys_pipe */
         {0}, /* 67 LIND_sys_pipe2 */
+        {0}, /* 68 LIND_fs_fork */
 
 };
 
@@ -936,6 +937,10 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
+    /* Add cageID to end of callArgs to send to Repy Dispatcher */
+    PyList_Append(callArgs, PyInt_FromLong(nap->cage_id));
+
+    
     response = CallPythonFunc(py_context, "LindSyscall", apiArg);
     if (!response) {
         goto error;

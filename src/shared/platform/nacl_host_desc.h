@@ -301,7 +301,8 @@ extern int NaClHostDescFstat(struct NaClHostDesc  *d,
 extern int NaClHostDescClose(struct NaClHostDesc  *d) NACL_WUR;
 
 extern int NaClHostDescStat(char const        *host_os_pathname,
-                            nacl_host_stat_t  *nasp) NACL_WUR;
+                            nacl_host_stat_t  *nasp,
+			    int cageid) NACL_WUR;
 
 /*
  * Create directory

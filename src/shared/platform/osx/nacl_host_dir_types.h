@@ -24,6 +24,8 @@ struct NaClHostDir {
   size_t            cur_byte;
   size_t            nbytes;
   char              dirent_buf[NACL_DIRENT_BUF_BYTES];
+  int               cageid;
 };
+
 
 #endif  /* NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_OSX_NACL_HOST_DIR_TYPES_H_ */

@@ -81,7 +81,7 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
   }
 
   NaClLog(3, "NaClHostDirOpen: invoking open(%s)\n", path);
-  fd = lind_open(O_RDONLY, 0, path);
+  fd = lind_open(O_RDONLY, 0, path, d->cageid);
   NaClLog(3, "NaClHostDirOpen: got DIR* %d\n", fd);
   if (-1 == fd) {
     NaClLog(LOG_ERROR,
@@ -89,14 +89,14 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
     return -NaClXlateErrno(errno);
   }
   /* check that it is really a directory */
-  if (-1 == lind_fxstat(fd, 1, &stbuf)) {
+  if (-1 == lind_fxstat(fd, 1, &stbuf, d->cageid)) {
     NaClLog(LOG_ERROR,
             "NaClHostDirOpen: fstat failed?!?  errno %d\n", errno);
-    (void) lind_close(fd);
+    (void) lind_close(fd, d->cageid);
     return -NaClXlateErrno(errno);
   }
   if (!S_ISDIR(stbuf.st_mode)) {
-    (void) lind_close(fd);
+    (void) lind_close(fd, d->cageid);
     return -NACL_ABI_ENOTDIR;
   }
   rv = NaClHostDirCtor(d, fd);
@@ -179,7 +179,8 @@ static ssize_t NaClStreamDirents(struct NaClHostDir *d,
       CHECK(d->cur_byte == d->nbytes);
       retval = lind_getdents(d->fd,
                         sizeof d->dirent_buf,
-                        (char* )(struct dirent *) d->dirent_buf);
+                        (char* )(struct dirent *) d->dirent_buf
+			d->cageid);
       if (-1 == retval) {
         if (xferred > 0) {
           /* next time through, we'll pick up the error again */
@@ -249,7 +250,7 @@ int NaClHostDirClose(struct NaClHostDir *d) {
     NaClLog(LOG_FATAL, "NaClHostDirClose: 'this' is NULL\n");
   }
   NaClLog(3, "NaClHostDirClose(%d)\n", d->fd);
-  retval = lind_close(d->fd);
+  retval = lind_close(d->fd, d->cageid);
   d->fd = -1;
   NaClMutexDtor(&d->mu);
   return (-1 == retval) ? -NaClXlateErrno(errno) : retval;
