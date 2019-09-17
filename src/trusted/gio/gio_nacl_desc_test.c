@@ -208,7 +208,7 @@ int main(int ac,
                            NACL_ABI_O_TRUNC|
                            NACL_ABI_O_CREAT,
                            0666,
-			   CAGE_TEST_ID);
+			                     CAGE_TEST_ID);
   if (NULL == dst) {
     fprintf(stderr, "could not open %s for write\n", av[2]);
     Usage();

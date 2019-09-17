@@ -663,7 +663,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
       retval = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
-    /* Assign CageID to HostDir */
+    /* We need to assign a CageID to NaCl HostDirectories and HostDescriptors so that we can access cageid from Lind RPC calls*/
     hd->cageid = nap->cage_id;
     
     retval = NaClHostDirOpen(hd, path);
