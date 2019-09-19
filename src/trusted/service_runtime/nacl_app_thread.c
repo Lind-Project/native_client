@@ -148,14 +148,16 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   NaClXMutexLock(&nap_parent->mu);
   for (int parent_fd = nap_child->fd; parent_fd <= nap_parent->fd; parent_fd++) {
 
+    /* Retrive the host fd we had stored in the Cage Table for the parent */
+    int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];
+
     /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */
     struct NaClDesc *parent_nd;
-    parent_nd = NaClGetDesc(nap_parent, parent_fd);
+    parent_nd = NaClGetDesc(nap_parent, parent_host_fd);
     if (!parent_nd) {
       continue;
     }
-    /* Retrive the host fd we had stored in the Cage Table for the parent */
-    int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];
+    parent_nd->open_refs++;
 
     /* Set a new NaClDescriptor in the child duplicating the parent's nd with the parent fd we had stored in cage table  */
     NaClSetDesc(nap_child, parent_host_fd, parent_nd);

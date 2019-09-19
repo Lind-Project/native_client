@@ -410,6 +410,9 @@ int lind_close (int fd, int cageid)
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
+    printf("in lind read reading from cageid: %d fd: %d\n", cageid, fd);
+
+
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
     LIND_API_PART2;
@@ -418,7 +421,12 @@ int lind_read (int fd, int size, void *buf, int cageid)
 }
 
 int lind_write (int fd, size_t count, const void *buf, int cageid)
-{ 
+{
+
+    printf("in lind write writing to cageid: %d fd: %d\n", cageid, fd);
+    printf("%s\n", buf);
+
+
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);

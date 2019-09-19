@@ -619,6 +619,7 @@ int32_t NaClSetAvailMu(struct NaClApp  *nap,
   }
 
   NaClSetDescMu(nap, (int) pos, ndp);
+  ndp->open_refs = 1;
 
   return (int32_t) pos;
 }

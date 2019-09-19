@@ -735,11 +735,24 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   /* unref the descriptor_table */
   fd = fd_cage_table[nap->cage_id][d];
-  if (fd && (ndp = NaClGetDescMu(nap, fd))) {
+  ndp = NaClGetDescMu(nap, fd);
+  ndp->open_refs--;
+
+  /* We're going to check how many references are left before closing it through NaCl */
+  if (fd && ndp && !ndp->open_refs){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, d, NULL);
     NaClDescUnref(ndp);
     ret = 0;
+  }
+  else {
+    /* If there are still references, lets just close it in the lind cage */
+    
+    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+
+    struct NaClHostDesc *hd = self->hd;
+
+    ret = lind_close(hd->d, hd->cageid);
   }
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = 0;

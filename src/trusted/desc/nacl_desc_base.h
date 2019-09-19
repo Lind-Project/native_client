@@ -441,6 +441,7 @@ struct NaClDesc {
   int32_t metadata_type;
   uint32_t metadata_num_bytes;
   uint8_t *metadata;
+  int open_refs;
 };
 
 /*
