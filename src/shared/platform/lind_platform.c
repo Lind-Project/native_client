@@ -789,9 +789,9 @@ int lind_pipe2(int* pipefds, int flags){
     LIND_API_PART3;
 }
 
-int lind_fork(int newcageid){
+int lind_fork(int newcageid, int cageid){
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_fork, newcageid);
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fork, newcageid, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
