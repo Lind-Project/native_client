@@ -155,6 +155,6 @@ int lind_getegid (gid_t * buf);
 int lind_flock (int fd, int operation);
 int lind_pipe(int* pipefds, int cageid);
 int lind_pipe2(int* pipefds, int flags);
-int lind_fork(int newcageid);
+int lind_fork(int newcageid, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
