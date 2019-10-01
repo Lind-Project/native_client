@@ -686,8 +686,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     hd->cageid = nap->cage_id;
 
     retval = NaClHostDescOpen(hd, path, flags, mode);
-    NaClLog(1, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
-            (uintptr_t) hd, path, flags, mode, retval);
+    NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
+            nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
     if (!retval) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       NaClLog(1, "Entered into open file table at %d\n", retval);
@@ -722,8 +722,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   // printf("Printing desc table at start of close for posterity...\n");
   // print_desctbl(nap);
-  NaClLog(1, "Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
-          (uintptr_t) natp, d);
+  NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, d);
 
   // printf("Closing NaCl fd: %d in cage %d\n", d, nap->cage_id);
 
@@ -744,9 +744,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   /* We're going to check how many references are left before closing it through NaCl */
   if (fd && ndp){
-    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-    // printf("Printing desc table at before set desc mu for posterity...\n");
-    // print_desctbl(nap);
+    // NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+    // // printf("Printing desc table at before set desc mu for posterity...\n");
+    // // print_desctbl(nap);
     NaClSetDescMu(nap, fd, NULL);
     // printf("Printing desc table after setdesc, before descunref for posterity...\n");
     // print_desctbl(nap);
@@ -855,10 +855,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   size_t          log_bytes;
   char const      *ellipsis = "";
 
-  NaClLog(2, "Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
+  NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
 
   //printf("Reading from NaCl fd: %d in cage %d\n", d, nap->cage_id);
@@ -942,10 +942,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   // printf("Writing to NaCl fd: %d in cage %d\n", d, nap->cage_id);
 
-  NaClLog(2, "Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);

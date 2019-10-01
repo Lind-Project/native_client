@@ -187,8 +187,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     /* Set childs cage table with the current fd to the old parent host fd */
     fd_cage_table[nap_child->cage_id][nap_child->fd++] = child_host_fd;
 
-    // printf("We copied Parent cage fd: %d with parent host fd: %d and lind fd: %d\n", parent_fd, parent_host_fd, parent_hd->d);
-    // printf("to child cage fd: %d with child host fd: %d and lind fd: %d\n", nap_child->fd - 1, child_host_fd, child_hd->d);
+    printf("We copied Parent cage fd: %d with parent host fd: %d and lind fd: %d\n", parent_fd, parent_host_fd, parent_hd->d);
+    printf("to child cage fd: %d with child host fd: %d and lind fd: %d\n", nap_child->fd - 1, child_host_fd, child_hd->d);
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", parent_fd, nap_child->fd - 1);
   }
