@@ -720,13 +720,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   int             ret = -NACL_ABI_EBADF;
   int             fd = 0;
 
-  // printf("Printing desc table at start of close for posterity...\n");
-  // print_desctbl(nap);
   NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, d);
-
-  // printf("Closing NaCl fd: %d in cage %d\n", d, nap->cage_id);
-
 
   /* there is no standard input to close, but return success anyway */
   if (!d) {
@@ -735,27 +730,17 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClFastMutexLock(&nap->desc_mu);
 
-  /* unref the descriptor_table */
+  /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
   fd = fd_cage_table[nap->cage_id][d];
   ndp = NaClGetDescMu(nap, fd);
 
-  // printf("Closing: In cage %d closing fd %d with ndp 0x%08"NACL_PRIxPTR"\n", nap->cage_id, fd, (uintptr_t) ndp);
-  // print_desctbl(nap);
-
-  /* We're going to check how many references are left before closing it through NaCl */
+  /* If we have an fd and nacl descriptor, lets close it */
   if (fd && ndp){
-    // NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-    // // printf("Printing desc table at before set desc mu for posterity...\n");
-    // // print_desctbl(nap);
+    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, fd, NULL);
-    // printf("Printing desc table after setdesc, before descunref for posterity...\n");
-    // print_desctbl(nap);
     NaClDescUnref(ndp);
     ret = 0;
   }
-
-  // printf("Now closed: cage %d closing fd %d with ndp 0x%08"NACL_PRIxPTR"\n", nap->cage_id, fd, (uintptr_t) ndp);
-  // print_desctbl(nap);
 
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = 0;
@@ -860,10 +845,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-
-  //printf("Reading from NaCl fd: %d in cage %d\n", d, nap->cage_id);
-
-
   /* check for closed fds */
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -939,8 +920,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   char const      *ellipsis = "";
   struct NaClDesc *ndp;
   size_t          log_bytes;
-
-  // printf("Writing to NaCl fd: %d in cage %d\n", d, nap->cage_id);
 
   NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
@@ -3934,9 +3913,12 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     }
     hd->cageid = nap->cage_id;
 
+    /* Set up Host Descriptor via Pipe wrapper */
+
     int retval = NaClHostDescPipe(hd, lind_fds[i], flags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
             (uintptr_t) hd, flags, retval);
+    /* Then let's make a NaCl descriptor and insert it into NaCls descriptor system */
     if (!retval) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       NaClLog(1, "Entered into open file descriptor table at %d\n", retval);
@@ -3947,14 +3929,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     fd_cage_table[nap->cage_id][nap->fd] = retval;
     nacl_fds[i] = nap->fd;
     nap->fd++;
-
-    // if (i == 0) printf("Pipe: Read end - Lind: %d  NaCL: %d Host: %d Flags: %d \n", hd->d, nacl_fds[i], retval,  hd->flags);
-    // if (i == 1) printf("Pipe: Write end - Lind: %d  NaCL: %d Host: %d Flags: %d \n", hd->d, nacl_fds[i], retval, hd->flags);
-
-
   }
-
-  // printf("Pipe opened.");
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
