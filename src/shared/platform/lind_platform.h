@@ -82,8 +82,8 @@
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
 
-#define LIND_safe_sys_pipe              66
-#define LIND_safe_sys_pipe2             67
+#define LIND_safe_fs_pipe              66
+#define LIND_safe_fs_pipe2             67
 #define LIND_safe_fs_fork               68
 
 #define LIND_comp_cia                   105
@@ -153,8 +153,8 @@ int lind_geteuid (uid_t * buf);
 int lind_getgid (gid_t * buf);
 int lind_getegid (gid_t * buf);
 int lind_flock (int fd, int operation);
-int lind_pipe(int* pipefds);
+int lind_pipe(int* pipefds, int cageid);
 int lind_pipe2(int* pipefds, int flags);
-int lind_fork(int newcageid);
+int lind_fork(int newcageid, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

@@ -163,6 +163,13 @@ extern int NaClHostDescUnmapUnsafe(void   *start_addr,
  */
 #define NACL_ALLOWED_OPEN_FLAGS \
   (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND)
+/*
+ * Wrapper for creating Pipe descriptor
+ * Calls Ctor
+ */
+extern int NaClHostDescPipe(struct NaClHostDesc  *d,
+                            int fd,
+                            int flags) NACL_WUR;
 
 /*
  * Constructor for a NaClHostDesc object.
