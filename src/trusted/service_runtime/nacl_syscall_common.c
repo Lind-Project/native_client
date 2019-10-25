@@ -728,7 +728,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return 0;
   }
 
-  //NaClFastMutexLock(&nap->desc_mu);
+  NaClFastMutexLock(&nap->desc_mu);
 
   /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
   fd = fd_cage_table[nap->cage_id][d];
@@ -745,7 +745,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = 0;
 
- // NaClFastMutexUnlock(&nap->desc_mu);
+  NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
 }
 
