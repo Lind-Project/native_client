@@ -494,7 +494,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
       NaClLog(LOG_FATAL, "NaClSysDup: Error initializing new descriptor\n");
   }
 
-  new_hd->d = lind_dup (old_hd->d, nap->cage_id);
+  new_hd->d = lind_dup(old_hd->d, nap->cage_id);
   new_hd->flags = old_hd->flags;
   new_hd->cageid = nap->cage_id;
 
