@@ -498,11 +498,11 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   new_hd->flags = old_hd->flags;
   new_hd->cageid = nap->cage_id;
 
-  /* We've got to put that parent NaClDescriptor back in there... */
-  NaClSetDesc(nap, old_hostfd, old_nd);
-
   /* Set new nacl desc as available */
   int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
+
+  /* We've got to put that old NaClDescriptor back in there... */
+  NaClSetDesc(nap, old_hostfd, old_nd);
 
   fd_cage_table[nap->cage_id][nap->fd] = new_hostfd;
 
@@ -518,8 +518,10 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   newfd) {
   struct NaClApp *nap = natp->nap;
   struct NaClDesc *old_nd;
-  int old_desc;
-  int new_desc;
+  struct NaClDesc *new_nd;
+
+  int old_hostfd;
+  int new_hostfd;
   int ret;
 
   NaClLog(1, "%s\n", "[dup2] Entered dup2!");
@@ -541,23 +543,70 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     ret = -NACL_ABI_EBADF;
     goto out;
   }
-  old_desc = fd_cage_table[nap->cage_id][oldfd];
-  if (!(old_nd = NaClGetDesc(nap, old_desc))) {
-    ret= -NACL_ABI_EBADF;
+
+  /* Get old host fd from cage table, and use that to get nacl descriptor */
+  old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+  
+  if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
+    ret = -NACL_ABI_EBADF;
     goto out;
   }
-  /* check if file descriptor exists (stdin is not a valid file descriptor) */
+
+  /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *old_self = (struct NaClDescIoDesc *) &old_nd->base;
+  struct NaClHostDesc *old_hd = old_self->hd;
+
+  /* Check if newfd exists */
+
   if (fd_cage_table[nap->cage_id][newfd]) {
-    NaClSysClose(natp, newfd);
+    /* Retrieve host fd, get nacl descriptor */
+    new_hostfd = fd_cage_table[nap->cage_id][newfd];
+    if (!(new_nd = NaClGetDesc(nap, new_hostfd))) {
+      ret = -NACL_ABI_EBADF;
+      goto out;
+    }
+
+    /* Translate from NaCl Desc to Host Desc */
+    struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
+    struct NaClHostDesc *new_hd = new_self->hd;
+
+    new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
+    new_hd->flags = old_hd->flags;
+    new_hd->cageid = nap->cage_id;
+
+    /* Re-add the nacl desc to the nap */
+    NaClSetDesc(nap, new_hostfd, new_nd);
   }
-  new_desc = NaClSetAvail(nap, old_nd);
-  NaClSetDesc(nap, new_desc, old_nd);
-  fd_cage_table[nap->cage_id][newfd] = new_desc;
+  else {
+    
+    /* Create and set vars for new hd */
+    struct NaClHostDesc *new_hd;
+    new_hd = malloc(sizeof(*new_hd));
+    if (!new_hd) {
+        NaClLog(LOG_FATAL, "NaClSysDup2: Error initializing new descriptor\n");
+    }
+
+    /* We have to use regular dup at this point because were creating a lind FD from scratch */
+
+    new_hd->d = lind_dup(old_hd->d, nap->cage_id);
+    new_hd->flags = old_hd->flags;
+    new_hd->cageid = nap->cage_id;
+
+    /* Set new nacl desc as available */
+    int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
+    /* and add the new hostfd to the cage table */
+    fd_cage_table[nap->cage_id][newfd] = new_hostfd;
+  }
+  
+  /* We've got to put that old NaClDescriptor back in there... */
+  NaClSetDesc(nap, old_hostfd, old_nd);
+  
   /* update current maximum file descriptor number */
   if (newfd > nap->fd) {
     nap->fd = newfd;
   }
-  ret = nap->fd++;
+
+  ret = newfd;
 
 out:
   return ret;
