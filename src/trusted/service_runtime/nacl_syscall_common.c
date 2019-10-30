@@ -459,7 +459,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp *nap = natp->nap;
   struct NaClDesc *old_nd;
-  int old_desc;
+  int old_hostfd;
   int new_desc;
   int ret;
 
@@ -475,14 +475,37 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
-  old_desc = fd_cage_table[nap->cage_id][oldfd];
-  if (!(old_nd = NaClGetDesc(nap, old_desc))) {
+
+  old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+
+  if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
     ret= -NACL_ABI_EBADF;
     goto out;
   }
-  new_desc = NaClSetAvail(nap, old_nd);
 
-  fd_cage_table[nap->cage_id][nap->fd] = new_desc;
+  /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &old_nd->base;
+  struct NaClHostDesc *old_hd = self->hd;
+
+  /* Create and set vars for child hd */
+  struct NaClHostDesc *new_hd;
+  new_hd = malloc(sizeof(*new_hd));
+  if (!new_hd) {
+      NaClLog(LOG_FATAL, "NaClSysDup: Error initializing new descriptor\n");
+  }
+
+  new_hd->d = lind_dup (old_hd->d, nap->cage_id);
+  new_hd->flags = old_hd->flags;
+  new_hd->cageid = nap->cage_id;
+
+  /* We've got to put that parent NaClDescriptor back in there... */
+  NaClSetDesc(nap, old_hostfd, old_nd);
+
+  /* Set new nacl desc as available */
+  int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
+
+  fd_cage_table[nap->cage_id][nap->fd] = new_hostfd;
+
   /* update current maximum file descriptor number */
   ret = nap->fd++;
 
