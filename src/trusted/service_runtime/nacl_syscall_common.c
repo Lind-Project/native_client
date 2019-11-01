@@ -602,9 +602,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClSetDesc(nap, old_hostfd, old_nd);
   
   /* update current maximum file descriptor number */
-  if (newfd > nap->fd) {
-    nap->fd = newfd;
-  }
+  // if (newfd > nap->fd) {
+  //   nap->fd = newfd;
+  // }
 
   ret = newfd;
 
