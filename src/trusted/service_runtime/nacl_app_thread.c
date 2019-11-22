@@ -188,7 +188,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", parent_fd, nap_child->fd - 1);
   }
-
   NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
