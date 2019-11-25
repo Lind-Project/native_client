@@ -498,10 +498,10 @@ int lind_dup (int oldfd, int cageid)
     LIND_API_PART3;
 }
 
-int lind_dup2 (int oldfd, int newfd)
+int lind_dup2 (int oldfd, int newfd, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_dup, oldfd, newfd);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_dup2, oldfd, newfd, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

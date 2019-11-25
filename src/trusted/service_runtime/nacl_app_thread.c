@@ -190,7 +190,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   }
   NaClXMutexUnlock(&nap_parent->mu);
 
-
   return nap_child;
 }
 

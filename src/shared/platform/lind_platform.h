@@ -127,7 +127,7 @@ int lind_statfs (const char *path, struct lind_statfs *buf);
 int lind_noop (void);
 int lind_getpid (pid_t * buf);
 int lind_dup (int oldfd, int cageid);
-int lind_dup2 (int oldfd, int newfd);
+int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
 int lind_fcntl_get (int fd, int cmd);
 int lind_fcntl_set (int fd, int cmd, long set_op);

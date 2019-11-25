@@ -1749,3 +1749,14 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->cage_id = cage_id;
 }
 
+void print_desctbl(struct NaClApp *nap)
+{
+  printf("--------------------------");
+  printf("printing desc table for nap w cageid: %d\n", nap->cage_id);
+  printf("ptr array at length %d\n", nap->desc_tbl.num_entries);
+  for (int i = 0; i < nap->desc_tbl.num_entries; i++)
+  {
+    printf("Pointer for %d 0x%" PRIXPTR "\n", i, (uintptr_t)nap->desc_tbl.ptr_array[i]);
+  }
+  printf("---------------------------");
+}
