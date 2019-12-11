@@ -4055,13 +4055,15 @@ fail:
   return ret;
 }
 
-int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, void *envp) {
+int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, int argc, char *const *envp, int envc) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser = {0};
-  char *sys_pathname = (void *)NaClUserToSysAddr(nap, (uintptr_t)pathname);
-  char **sys_envp = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
-  char **sys_argv = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
+  char *sys_pathname = NaClUserToSysAddr(nap, path);
+  char **sys_envp = NaClUserToSysAddr(nap, envp);
+  char **sys_argv = NaClUserToSysAddr(nap, argv);
+
+  char* arg1 = NaClUserToSysAddr(nap, sys_argv[0]);
   char *binary = sys_pathname ? strdup(sys_pathname) : 0;
   char **child_argv = 0;
   char **new_argv = 0;
@@ -4307,7 +4309,8 @@ fail:
 }
 
 int32_t NaClSysExecv(struct NaClAppThread *natp, void *pathname, void *argv) {
-  return NaClSysExecve(natp, pathname, argv, 0);
+  char* envp[] = { NULL };
+  return NaClSysExecve(natp, pathname, argv, 0, envp, 0);
 }
 
 #define WAIT_ANY (-1)
