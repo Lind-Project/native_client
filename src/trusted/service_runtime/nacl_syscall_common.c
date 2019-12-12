@@ -4059,9 +4059,10 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser = {0};
-  char *sys_pathname = NaClUserToSysAddr(nap, path);
-  char **sys_envp = NaClUserToSysAddr(nap, envp);
-  char **sys_argv = NaClUserToSysAddr(nap, argv);
+  char *sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
+
+  uint32_t* sys_envp = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  uint32_t* sys_argv = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)argv);
 
   char* arg1 = NaClUserToSysAddr(nap, sys_argv[0]);
   char *binary = sys_pathname ? strdup(sys_pathname) : 0;
