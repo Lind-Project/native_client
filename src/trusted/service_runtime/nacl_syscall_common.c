@@ -4084,7 +4084,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
   binary = sys_pathname ? strdup(sys_pathname) : 0;
 
-  /* Convert to a Sys Pointer for argv** */
+  /* 
+    Convert to a Sys Pointer for argv** 
+    We need to turn these to uint32_t pointers for now because these are still NaCl pointers
+    We'll convert to a char** later.
+  */
   sys_argv_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)argv);
 
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
@@ -4176,9 +4180,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
   nap_child->in_fork = 0;
+
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
   nap_child->main_exe_prevalidated = 1;
+  
   /* calculate page addresses and sizes */
   dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
