@@ -316,7 +316,7 @@ int32_t NaClSysPipe(struct NaClAppThread *natp, uint32_t *pipedes);
 int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags);
 int32_t NaClSysFork(struct NaClAppThread *natp);
 int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, char *const *envp);
-int32_t NaClSysExecv(struct NaClAppThread *natp, void *pathname, void *argv);
+int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv);
 int32_t NaClSysWaitpid(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options);
 int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc);
 int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage);
