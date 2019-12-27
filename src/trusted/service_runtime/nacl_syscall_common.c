@@ -4055,14 +4055,14 @@ fail:
   return ret;
 }
 
-int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, void *envp) {
+int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, char *const *envp) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser = {0};
-  char *sys_pathname = (void *)NaClUserToSysAddr(nap, (uintptr_t)pathname);
-  char **sys_envp = (void *)NaClUserToSysAddr(nap, (uintptr_t)envp);
-  char **sys_argv = (void *)NaClUserToSysAddr(nap, (uintptr_t)argv);
-  char *binary = sys_pathname ? strdup(sys_pathname) : 0;
+  char *sys_pathname;
+  uint32_t *sys_argv_ptr;
+  uint32_t *sys_envp_ptr = { NULL };
+  char *binary; 
   char **child_argv = 0;
   char **new_argv = 0;
   char **new_envp = 0;
@@ -4080,13 +4080,28 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   uintptr_t child_start_addr;
   uintptr_t tramp_pnum;
 
+  /* Convert pathname from user path, set binary */
+  sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
+  binary = sys_pathname ? strdup(sys_pathname) : 0;
+
+  /* 
+    Convert to a Sys Pointer for argv** 
+    We need to turn these to uint32_t pointers for now because these are still NaCl pointers
+    We'll convert to a char** later.
+  */
+  sys_argv_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)argv);
+
+  /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
+  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
+
+
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
 
-  /* set up environment */
+  /* set up environment, only do this if we initially were passed an environment*/
   NaClEnvCleanserCtor(&env_cleanser, 0);
-  if (sys_envp) {
+  if (envp) {
     /* count number of environment strings */
-    for (char **pp = sys_envp; *pp; ++pp) {
+    for (char **pp = sys_envp_ptr; *pp; ++pp) {
       new_envc++;
     }
     new_envp = calloc(new_envc + 1, sizeof(*new_envp));
@@ -4096,7 +4111,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
       goto fail;
     }
     for (int i = 0; i < new_envc; i++) {
-      char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp[i]);
+      char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
       env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
       new_envp[i] = env ? strdup(env) : 0;
       if (!env) {
@@ -4113,12 +4128,12 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   }
 
   /* set up argv and argc */
-  if (!sys_argv) {
+  if (!sys_argv_ptr) {
     NaClLog(LOG_ERROR, "%s\n", "Passed a NULL pointer in argp");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  for (char **pp = sys_argv; *pp; ++pp) {
+  for (char **pp = sys_argv_ptr; *pp; ++pp) {
     new_argc++;
   }
   new_argv = calloc(new_argc + 1, sizeof(*new_argv));
@@ -4128,7 +4143,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
     goto fail;
   }
   for (int i = 0; i < new_argc; i++) {
-    char *arg = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_argv[i]);
+    char *arg = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_argv_ptr[i]);
     arg = (uintptr_t)arg == kNaClBadAddress ? 0 : arg;
     new_argv[i] = arg ? strdup(arg) : 0;
     if (!arg) {
@@ -4165,9 +4180,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, void *pathname, void *argv, vo
   nap_child = NaClChildNapCtor(nap);
   nap_child->running = 0;
   nap_child->in_fork = 0;
+
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
   nap_child->main_exe_prevalidated = 1;
+  
   /* calculate page addresses and sizes */
   dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
@@ -4306,8 +4323,8 @@ fail:
   return ret;
 }
 
-int32_t NaClSysExecv(struct NaClAppThread *natp, void *pathname, void *argv) {
-  return NaClSysExecve(natp, pathname, argv, 0);
+int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
+  return NaClSysExecve(natp, path, argv, NULL);
 }
 
 #define WAIT_ANY (-1)
