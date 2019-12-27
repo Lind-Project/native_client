@@ -4323,10 +4323,8 @@ fail:
   return ret;
 }
 
-int32_t NaClSysExecv(struct NaClAppThread *natp, void *pathname, void *argv) {
-  struct NaClApp *nap = natp->nap;
-
-  return NaClSysExecve(natp, pathname, argv, NULL);
+int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
+  return NaClSysExecve(natp, path, argv, NULL);
 }
 
 #define WAIT_ANY (-1)
