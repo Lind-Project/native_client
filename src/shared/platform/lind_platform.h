@@ -49,6 +49,8 @@
 #define LIND_fs_ioctl                   15
 #define LIND_safe_fs_fxstat             17
 #define LIND_safe_fs_fstatfs            19
+#define LIND_safe_fs_mmap               21
+#define LIND_safe_fs_munmap             22
 #define LIND_safe_fs_getdents           23
 #define LIND_safe_fs_dup                24
 #define LIND_safe_fs_dup2               25
@@ -156,5 +158,7 @@ int lind_flock (int fd, int operation);
 int lind_pipe(int* pipefds, int cageid);
 int lind_pipe2(int* pipefds, int flags);
 int lind_fork(int newcageid, int cageid);
+int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
+int lind_munmap(void *addr, size_t length, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
