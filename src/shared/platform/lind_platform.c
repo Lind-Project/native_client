@@ -787,3 +787,17 @@ int lind_fork(int newcageid, int cageid){
     LIND_API_PART2;
     LIND_API_PART3;
 }
+
+int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(l[lliiili])", LIND_safe_fs_mmap, (long) addr, length, prot, flags, fd, offset, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
+
+int lind_munmap(void *addr, size_t length, int cageid){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[lli])", LIND_safe_fs_munmap, (long) addr, length, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
