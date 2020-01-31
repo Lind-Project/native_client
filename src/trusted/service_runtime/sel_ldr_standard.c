@@ -1091,14 +1091,19 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   nap_child->in_fork = 0;
   NaClXMutexUnlock(&nap_child->mu);
 
-  /* e_entry is user addr */
+  /* e_entry is user addr 
+ *
+ *  Note we transfer the parent's TLS value to the new thread spawn,
+ *  Unlike the main thread creation where we suggest values.
+ *
+ * */
   retval = NaClAppForkThreadSpawn(nap_parent,
                                   natp_parent,
                                   nap_child,
                                   nap_child->initial_entry_pt,
                                   NaClSysToUserStackAddr(nap_child, stack_ptr),
-                                  (uint32_t)nap_child->break_addr,
-                                  0);
+                                  (uint32_t)natp_parent->user.tls_value1,
+				  (uint32_t)natp_parent->user.tls_value2);
 
 cleanup:
   free(argv_len);
