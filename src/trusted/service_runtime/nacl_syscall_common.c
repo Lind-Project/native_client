@@ -4296,6 +4296,15 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   }
 
+  /* Copy fd table in SafePOSIX */
+  NaClXMutexLock(&nap->mu); 
+  NaClXMutexLock(&nap_child->mu); 
+
+  lind_fork(ret, nap->cage_id);
+  
+  NaClXMutexUnlock(&nap_child->mu);
+  NaClXMutexUnlock(&nap->mu);
+
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
