@@ -4300,7 +4300,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClXMutexLock(&nap->mu); 
   NaClXMutexLock(&nap_child->mu); 
 
-  lind_fork(ret, nap->cage_id);
+  lind_fork(nap_child->cage_id, nap->cage_id);
   
   NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap->mu);
