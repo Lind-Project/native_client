@@ -4288,13 +4288,17 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   /* reset permissions to executable */
-  NaClLog(2, "Setting permissions to executable\n");
-
+  NaClLog(2, "Setting child permissions to executable\n");
   NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  NaClLog(2, "Setting parent permissions to executable\n");
   NaClVmmapChangeProt(&nap->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+
+  NaClLog(2, "Child mprotect\n");
   if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
   }
+  NaClLog(2, "Parent mprotect\n");
+
   if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   }
