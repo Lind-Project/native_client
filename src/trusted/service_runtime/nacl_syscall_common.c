@@ -4288,9 +4288,12 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   /* reset permissions to executable */
+  NaClLog(2, "Setting permissions to executable\n");
+
   NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
   NaClVmmapChangeProt(&nap->mem_map, tramp_pnum, tramp_npages, PROT_RX);
   if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
   }
   if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
@@ -4299,9 +4302,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu); 
   NaClXMutexLock(&nap_child->mu); 
-
+  NaClLog(2, "Copying fd table in SafePOSIX\n");
   lind_fork(nap_child->cage_id, nap->cage_id);
-  
   NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap->mu);
 
