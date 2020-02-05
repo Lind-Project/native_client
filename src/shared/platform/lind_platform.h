@@ -57,7 +57,8 @@
 #define LIND_safe_fs_statfs             26
 #define LIND_safe_fs_fcntl              28
 
-#define LIND_sys_getpid                 31
+#define LIND_safe_sys_getppid                30
+#define LIND_safe_sys_getpid                 31
 
 #define LIND_safe_net_socket            32
 #define LIND_safe_net_bind              33
@@ -127,7 +128,6 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct lind_statfs *buf);
 int lind_statfs (const char *path, struct lind_statfs *buf);
 int lind_noop (void);
-int lind_getpid (pid_t * buf);
 int lind_dup (int oldfd, int cageid);
 int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
@@ -160,5 +160,7 @@ int lind_pipe2(int* pipefds, int flags);
 int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
+int lind_getpid(int cageid);
+int lind_getppid(int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

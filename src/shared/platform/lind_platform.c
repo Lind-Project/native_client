@@ -65,25 +65,6 @@ error:
     return 0;
 }
 
-static PyObject *CallPythonFunc1(PyObject *context, const char *func, PyObject *arg)
-{
-    PyObject *func_obj = NULL;
-    PyObject *args = NULL;
-    PyObject *result = NULL;
-    func_obj = PyDict_GetItemString(context, func);
-    GOTO_ERROR_IF_NULL(func_obj);
-    args = Py_BuildValue("(O)", arg);
-    GOTO_ERROR_IF_NULL(args);
-    result = PyObject_CallObject(func_obj, args);
-    GOTO_ERROR_IF_NULL(result);
-    return result;
-error:
-    PyErr_Print();
-    Py_XDECREF(func_obj);
-    Py_XDECREF(args);
-    return 0;
-}
-
 int LindPythonInit(void)
 {
     PyObject *path = NULL;
@@ -481,15 +462,6 @@ int lind_noop (void)
     LIND_API_PART3;
 }
 
-int lind_getpid (pid_t *buf)
-{
-    LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_sys_getpid);
-    LIND_API_PART2;
-    COPY_DATA(buf, sizeof(*buf))
-    LIND_API_PART3;
-}
-
 int lind_dup (int oldfd, int cageid)
 {
     LIND_API_PART1;
@@ -765,7 +737,8 @@ int lind_flock (int fd, int operation)
     LIND_API_PART3;
 }
 
-int lind_pipe(int* pipefds, int cageid){
+int lind_pipe(int* pipefds, int cageid)
+{
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_pipe, cageid);
     LIND_API_PART2;
@@ -773,7 +746,8 @@ int lind_pipe(int* pipefds, int cageid){
     LIND_API_PART3;
 }
 
-int lind_pipe2(int* pipefds, int flags){
+int lind_pipe2(int* pipefds, int flags)
+{
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_pipe2, flags);
     LIND_API_PART2;
@@ -781,23 +755,42 @@ int lind_pipe2(int* pipefds, int flags){
     LIND_API_PART3;
 }
 
-int lind_fork(int newcageid, int cageid){
+int lind_fork(int newcageid, int cageid)
+{
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fork, newcageid, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid){
+int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid)
+{
     LIND_API_PART1;
     callArgs = Py_BuildValue("(l[lliiili])", LIND_safe_fs_mmap, (long) addr, length, prot, flags, fd, offset, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_munmap(void *addr, size_t length, int cageid){
+int lind_munmap(void *addr, size_t length, int cageid)
+{
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[lli])", LIND_safe_fs_munmap, (long) addr, length, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
+}
+
+int lind_getpid(int cageid)
+{
+  LIND_API_PART1;
+  callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getpid, cageid);
+  LIND_API_PART2;
+  LIND_API_PART3;
+}
+
+int lind_getppid(int cageid)
+{
+  LIND_API_PART1;
+  callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getppid, cageid);
+  LIND_API_PART2;
+  LIND_API_PART3;
 }
