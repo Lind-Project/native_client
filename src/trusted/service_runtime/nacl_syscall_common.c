@@ -4126,9 +4126,12 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  for (char **pp = sys_argv_ptr; *pp; ++pp) {
+
+  uint32_t *countptr = sys_argv_ptr;
+  while (countptr[new_argc] != NULL) {
     new_argc++;
   }
+
   new_argv = calloc(new_argc + 1, sizeof(*new_argv));
   if (!new_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_argv");
