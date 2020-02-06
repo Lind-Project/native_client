@@ -767,19 +767,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
 cleanup:
-  /* yiwen: now translate the real fds to virtual fds and return them to the cage */
+  /* now translate the real fds to virtual fds and return them to the cage */
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
   nap->fd++;
-
-  /*
-   * register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
-   * this will be used when trying to check if a lib has been cached in our system
-   */
-  if (fd_retval > CACHED_LIB_NUM_MAX) {
-     strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
-     nap->num_lib++;
-  }
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
@@ -4288,13 +4279,28 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   /* reset permissions to executable */
+  NaClLog(2, "Setting child permissions to executable\n");
   NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  NaClLog(2, "Setting parent permissions to executable\n");
   NaClVmmapChangeProt(&nap->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+
+  NaClLog(2, "Child mprotect\n");
   if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
   }
+  NaClLog(2, "Parent mprotect\n");
+
   if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   }
+
+  /* Copy fd table in SafePOSIX */
+  NaClXMutexLock(&nap->mu); 
+  NaClXMutexLock(&nap_child->mu); 
+  NaClLog(2, "Copying fd table in SafePOSIX\n");
+  lind_fork(nap_child->cage_id, nap->cage_id);
+  NaClXMutexUnlock(&nap_child->mu);
+  NaClXMutexUnlock(&nap->mu);
 
   /* execute new binary */
   ret = -NACL_ABI_ENOEXEC;
