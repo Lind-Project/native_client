@@ -42,16 +42,12 @@ EXTERN_C_BEGIN
                      | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
                      | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
 
-enum {
-  PIPE_NUM_MAX = 16,
-  CACHED_LIB_NUM_MAX = 32,
-  CAGING_LIB_PATH_MAX = 64,
-  FILE_DESC_MAX = 1024,
-  CHILD_NUM_MAX = 256,
-  CAGING_FD_NUM  = 1024,
-  ARG_LIMIT = 4096,
-  PIPE_BUF_MAX = 4906
-};
+#define  CACHED_LIB_NUM_MAX   32
+#define  CAGING_LIB_PATH_MAX  64
+#define  FILE_DESC_MAX        1024
+#define  CAGING_FD_NUM        FILE_DESC_MAX
+#define  CHILD_NUM_MAX        256
+#define  ARG_LIMIT            4096
 
 /*
  * struct for storing the <file_path, mem_addr>
