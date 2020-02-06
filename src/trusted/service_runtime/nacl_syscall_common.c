@@ -767,19 +767,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
 cleanup:
-  /* yiwen: now translate the real fds to virtual fds and return them to the cage */
+  /* now translate the real fds to virtual fds and return them to the cage */
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
   nap->fd++;
-
-  // /*
-  //  * register the fd and lib_path info for the cage, in lib_table[CACHED_LIB_NUM_MAX]
-  //  * this will be used when trying to check if a lib has been cached in our system
-  //  */
-  // if (fd_retval > CACHED_LIB_NUM_MAX) {
-  //    strncpy(nap->lib_table[fd_retval].path, path, strlen(path) + 1);
-  //    nap->num_lib++;
-  // }
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 

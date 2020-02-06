@@ -81,8 +81,7 @@ struct NaClValidationCache;
 struct NaClValidationMetadata;
 
 extern volatile sig_atomic_t fork_num;
-extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-extern int cached_lib_num;
+extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -128,8 +127,6 @@ struct NaClApp {
   struct DynArray           children;
   struct NaClApp            *parent;
   struct NaClApp            *master;
-  /* store the <file_path, fd, mem_addr> for each cage, fd is used as the index */
-  struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
   /* mappings of `int fd` numbers to `NaClDesc *` */
   struct NaClDesc           *fd_maps[FILE_DESC_MAX];
   volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
