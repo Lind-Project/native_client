@@ -4096,7 +4096,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   
     /* Count amount of env from acquired NaCl pointer */
     uint32_t *envcountptr = sys_envp_ptr;
-    while (envcountptr[new_argc] != NULL) {
+    while (envcountptr[new_envc] != NULL) {
       new_envc++;
     }
 
