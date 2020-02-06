@@ -88,9 +88,6 @@ extern int cage;
  */
 extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
 extern int cached_lib_num;
-extern int pipe_mutex[PIPE_NUM_MAX];
-extern int pipe_transfer_over[PIPE_NUM_MAX];
-extern char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 
 #if NACL_WINDOWS
 __declspec(dllexport)
