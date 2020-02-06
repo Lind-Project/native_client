@@ -71,13 +71,6 @@ extern double time_start;
 extern double time_end;
 extern int cage;
 
-/*
- * this is the lookup table used, when checking if a lib has
- * already been loaded previously, and will contain the shared
- * memory address for the lib if it has been loaded before.
- */
-extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
-extern int cached_lib_num;
 
 #if NACL_WINDOWS
 __declspec(dllexport)
