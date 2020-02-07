@@ -4093,10 +4093,13 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   /* set up environment, only do this if we initially were passed an environment*/
   NaClEnvCleanserCtor(&env_cleanser, 0);
   if (envp) {
-    /* count number of environment strings */
-    for (char **pp = sys_envp_ptr; *pp; ++pp) {
+  
+    /* Count amount of env from acquired NaCl pointer */
+    uint32_t *envcountptr = sys_envp_ptr;
+    while (envcountptr[new_envc] != NULL) {
       new_envc++;
     }
+
     new_envp = calloc(new_envc + 1, sizeof(*new_envp));
     if (!new_envp) {
       NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_envv");
@@ -4126,9 +4129,13 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  for (char **pp = sys_argv_ptr; *pp; ++pp) {
+  
+  /* Count amount of args from acquired NaCl pointer */
+  uint32_t *argcountptr = sys_argv_ptr;
+  while (argcountptr[new_argc] != NULL) {
     new_argc++;
   }
+
   new_argv = calloc(new_argc + 1, sizeof(*new_argv));
   if (!new_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_argv");
@@ -4319,6 +4326,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   ret = 0;
 
 fail:
+
+
   for (char **pp = new_envp; pp && *pp; pp++) {
     free(*pp);
   }
