@@ -4317,6 +4317,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
+  nap_child->parent = nap;
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
