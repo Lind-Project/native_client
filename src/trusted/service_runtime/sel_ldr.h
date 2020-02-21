@@ -1012,7 +1012,6 @@ static INLINE void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
   NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
 
-void print_desctbl(struct NaClApp *nap);
 
 EXTERN_C_END
 

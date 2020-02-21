@@ -61,7 +61,7 @@
 #define LIND_safe_net_bind              33
 #define LIND_safe_net_send              34
 #define LIND_safe_net_sendto            35
-#define LIND_safe_net_recv              36
+#define LIND_safe_net_recv              362
 #define LIND_safe_net_recvfrom          37
 #define LIND_safe_net_connect           38
 #define LIND_safe_net_listen            39
@@ -154,7 +154,7 @@ int lind_getgid (gid_t * buf);
 int lind_getegid (gid_t * buf);
 int lind_flock (int fd, int operation);
 int lind_pipe(int* pipefds, int cageid);
-int lind_pipe2(int* pipefds, int flags);
+int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
 int lind_fork(int newcageid, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

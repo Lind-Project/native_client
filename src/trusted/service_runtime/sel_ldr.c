@@ -1,4 +1,4 @@
-/*
+./*
  * Copyright (c) 2012 The Native Client Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
@@ -1743,16 +1743,4 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->num_lib = 3;
   nap->num_children = 0;
   nap->cage_id = cage_id;
-}
-
-void print_desctbl(struct NaClApp *nap)
-{
-  printf("--------------------------");
-  printf("printing desc table for nap w cageid: %d\n", nap->cage_id);
-  printf("ptr array at length %d\n", nap->desc_tbl.num_entries);
-  for (int i = 0; i < nap->desc_tbl.num_entries; i++)
-  {
-    printf("Pointer for %d 0x%" PRIXPTR "\n", i, (uintptr_t)nap->desc_tbl.ptr_array[i]);
-  }
-  printf("---------------------------");
 }
