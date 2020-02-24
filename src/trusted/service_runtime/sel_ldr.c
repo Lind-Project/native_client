@@ -72,12 +72,7 @@ double time_end = 0.0;
  * -jp
  */
 volatile sig_atomic_t fork_num;
-struct Pipe pipe_table[PIPE_NUM_MAX];
-int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-int cached_lib_num;
-
-// yiwen: lookup table for <file_path, mem_addr>
-struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);
@@ -620,7 +615,7 @@ int32_t NaClSetAvailMu(struct NaClApp  *nap,
   }
 
   NaClSetDescMu(nap, (int) pos, ndp);
-
+  
   return (int32_t) pos;
 }
 
@@ -1749,4 +1744,3 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->num_children = 0;
   nap->cage_id = cage_id;
 }
-

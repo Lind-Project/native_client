@@ -134,6 +134,11 @@ ARG_REGISTERS = {
 # refer to syscall arguments from this snapshot, rather than from the
 # untrusted memory locations.
 
+# This list generates syscall function stubs
+# It includes its defined value, its reference in nacl_syscall_common.c
+# and its parameters to be generated.
+# Note: We cannot give double pointers as paramaters so instead
+# we define them as void here and give them as the actual parameter in nacl_syscall_common
 
 SYSCALL_LIST = [
     ('NACL_sys_null', 'NaClSysNull', []),

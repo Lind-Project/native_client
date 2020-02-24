@@ -80,16 +80,8 @@ struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
 
-struct Pipe {
-  bool xfer_done;
-  bool is_closed;
-  struct NaClFastMutex mu;
-};
-
 extern volatile sig_atomic_t fork_num;
-extern struct Pipe pipe_table[PIPE_NUM_MAX];
-extern int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-extern int cached_lib_num;
+extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -135,8 +127,6 @@ struct NaClApp {
   struct DynArray           children;
   struct NaClApp            *parent;
   struct NaClApp            *master;
-  /* store the <file_path, fd, mem_addr> for each cage, fd is used as the index */
-  struct CachedLibTable     lib_table[CACHED_LIB_NUM_MAX];
   /* mappings of `int fd` numbers to `NaClDesc *` */
   struct NaClDesc           *fd_maps[FILE_DESC_MAX];
   volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
@@ -1021,6 +1011,7 @@ static INLINE void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
           nap->user_entry_pt);
   NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
+
 
 EXTERN_C_END
 

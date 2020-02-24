@@ -37,6 +37,8 @@
 # define UNLINK(f)  unlink(f)
 #endif
 
+#define CAGE_TEST_ID	0
+
 char *gProgram = NULL;
 
 uint64_t gNumBytes;
@@ -271,7 +273,7 @@ int main(int ac, char **av) {
    */
   if (NULL == (ndip = NaClDescIoDescOpen(file_path,
                                          NACL_ABI_O_RDWR | NACL_ABI_O_CREAT,
-                                         0777))) {
+                                         0777, CAGE_TEST_ID))) {
     fprintf(stderr, "%s could not open file %s\n", gProgram, file_path);
     exit_status = 3;
     goto cleanup_file;

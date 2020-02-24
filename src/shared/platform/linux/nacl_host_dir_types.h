@@ -27,6 +27,7 @@ struct NaClHostDir {
   size_t            cur_byte;
   size_t            nbytes;
   char              dirent_buf[NACL_DIRENT_BUF_BYTES];
+  int               cageid;
 };
 
 EXTERN_C_END

@@ -172,13 +172,18 @@ struct NaClDesc *NaClDescIoDescFromDescAllocCtor(int desc,
 
 struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
                                           int mode,
-                                          int perms) {
+                                          int perms,
+					  int cage_id) {
   struct NaClHostDesc *nhdp;
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
     NaClLog(LOG_FATAL, "NaClDescIoDescOpen: no memory for %s\n", path);
   }
+  
+  /* Set cageid for HostDesc, important for NaCl Runtime fds */
+  nhdp->cageid = cage_id;
+  
   if (0 != NaClHostDescOpen(nhdp, path, mode, perms)) {
     NaClLog(4,
             "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",

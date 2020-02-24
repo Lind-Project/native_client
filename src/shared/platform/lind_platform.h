@@ -61,7 +61,7 @@
 #define LIND_safe_net_bind              33
 #define LIND_safe_net_send              34
 #define LIND_safe_net_sendto            35
-#define LIND_safe_net_recv              36
+#define LIND_safe_net_recv              362
 #define LIND_safe_net_recvfrom          37
 #define LIND_safe_net_connect           38
 #define LIND_safe_net_listen            39
@@ -82,8 +82,9 @@
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
 
-#define LIND_safe_sys_pipe              66
-#define LIND_safe_sys_pipe2             67
+#define LIND_safe_fs_pipe              66
+#define LIND_safe_fs_pipe2             67
+#define LIND_safe_fs_fork               68
 
 #define LIND_comp_cia                   105
 #define LIND_comp_call                  106
@@ -98,7 +99,7 @@ struct select_results {
     fd_set e;
 };
 
-int GetHostFdFromLindFd(int lindFd);
+int GetHostFdFromLindFd(int lindFd, int cageid);
 
 int LindPythonInit(void);
 int LindPythonFinalize(void);
@@ -106,28 +107,28 @@ int LindPythonFinalize(void);
 PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args);
 int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len);
 
-int lind_pread(int fd, void* buf, int count, off_t offset);
-int lind_pwrite(int fd, const void *buf, int count, off_t offset);
+int lind_pread(int fd, void* buf, int count, off_t offset, int cageid);
+int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid);
 int lind_access (int version, const char *file);
 int lind_unlink (const char *name);
 int lind_link (const char *from, const char *to);
 int lind_chdir (const char *name);
 int lind_mkdir (int mode, const char *path);
 int lind_rmdir (const char *path);
-int lind_xstat (int version, const char *path, struct lind_stat *buf);
-int lind_open (int flags, int mode, const char *path);
-int lind_close (int fd);
-int lind_read (int fd, int size, void *buf);
-int lind_write (int fd, size_t count, const void *buf);
-int lind_lseek (off_t offset, int fd, int whence);
-int lind_fxstat (int fd, int version, struct lind_stat *buf);
+int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid);
+int lind_open (int flags, int mode, const char *path, int cageid);
+int lind_close (int fd, int cageid);
+int lind_read (int fd, int size, void *buf, int cageid);
+int lind_write (int fd, size_t count, const void *buf, int cageid);
+int lind_lseek (off_t offset, int fd, int whence, int cageid);
+int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct lind_statfs *buf);
 int lind_statfs (const char *path, struct lind_statfs *buf);
 int lind_noop (void);
 int lind_getpid (pid_t * buf);
-int lind_dup (int oldfd);
-int lind_dup2 (int oldfd, int newfd);
-int lind_getdents (int fd, size_t nbytes, char *buf);
+int lind_dup (int oldfd, int cageid);
+int lind_dup2 (int oldfd, int newfd, int cageid);
+int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
 int lind_fcntl_get (int fd, int cmd);
 int lind_fcntl_set (int fd, int cmd, long set_op);
 int lind_socket (int domain, int type, int protocol);
@@ -152,7 +153,8 @@ int lind_geteuid (uid_t * buf);
 int lind_getgid (gid_t * buf);
 int lind_getegid (gid_t * buf);
 int lind_flock (int fd, int operation);
-int lind_pipe(int* pipefds);
-int lind_pipe2(int* pipefds, int flags);
+int lind_pipe(int* pipefds, int cageid);
+int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
+int lind_fork(int newcageid, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

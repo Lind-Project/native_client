@@ -565,7 +565,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (blob_library_file) {
     NaClFileNameForValgrind(blob_library_file);
     blob_file = (struct NaClDesc *) NaClDescIoDescOpen(blob_library_file,
-                                                       NACL_ABI_O_RDONLY, 0);
+                                                       NACL_ABI_O_RDONLY, 0, 0);
     if (!blob_file) {
       perror("sel_main");
       NaClLog(1, "Cannot open \"%s\".\n", blob_library_file);
@@ -837,17 +837,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   nap->argc = argc - optind;
   nap->argv = argv + optind;
   nap->binary = argv[optind + 3];
-
-  NaClLog(1, "%s\n", "Initializing pipe table mutexes/conditional variables.");
-
-  for (size_t i = 0; i < PIPE_NUM_MAX; i++) {
-    if (!NaClFastMutexCtor(&pipe_table[i].mu)) {
-      NaClLog(LOG_ERROR, "%s\n", "pipe mutex ctor failed");
-      goto done;
-    }
-    pipe_table[i].xfer_done = true;
-    pipe_table[i].is_closed = false;
-  }
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);

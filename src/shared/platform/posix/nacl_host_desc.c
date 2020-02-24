@@ -156,7 +156,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     desc = d->d;
   }
   if(-1 != desc) {
-      desc = GetHostFdFromLindFd(desc);
+      desc = GetHostFdFromLindFd(desc, d->cageid);
   }
   /*
    * Translate prot, flags to host_prot, host_flags.
@@ -245,6 +245,12 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
   return 0;
 }
 
+int NaClHostDescPipe(struct NaClHostDesc  *d,
+                            int fd,
+                            int flags) {
+  return NaClHostDescCtor(d, fd, flags);
+}
+
 int NaClHostDescOpen(struct NaClHostDesc  *d,
                      char const           *path,
                      int                  flags,
@@ -285,7 +291,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
 
   NaClLog(3, "NaClHostDescOpen: invoking POSIX open(%s,0x%x,0%o)\n",
           path, posix_flags, mode);
-  host_desc = lind_open(posix_flags, mode, path);
+  host_desc = lind_open(posix_flags, mode, path, d->cageid);
   NaClLog(3, "NaClHostDescOpen: got descriptor %d\n", host_desc);
   if (-1 == host_desc) {
     NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", errno);
@@ -293,14 +299,14 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
   }
   if (-1 ==
 #if NACL_LINUX
-      lind_fxstat(host_desc, 1, &stbuf)
+      lind_fxstat(host_desc, 1, &stbuf, d->cageid)
 #else
-      lind_fxstat(host_desc, 1, &stbuf)
+      lind_fxstat(host_desc, 1, &stbuf, d->cageid)
 #endif
       ) {
     NaClLog(LOG_ERROR,
             "NaClHostDescOpen: fstat failed?!?  errno %d\n", errno);
-    (void) lind_close(host_desc);
+    (void) lind_close(host_desc, d->cageid);
     return -NaClXlateErrno(errno);
   }
 #if 0
@@ -342,7 +348,7 @@ int NaClHostDescPosixDup(struct NaClHostDesc  *d,
       return -NACL_ABI_EINVAL;
   }
 
-  host_desc = lind_dup(posix_d);
+  host_desc = lind_dup(posix_d, d->cageid);
   if (-1 == host_desc) {
     return -NACL_ABI_EINVAL;
   }
@@ -391,7 +397,7 @@ ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
     NaClLog(3, "NaClHostDescRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return ((-1 == (retval = lind_read(d->d, len, buf)))
+  return ((-1 == (retval = lind_read(d->d, len, buf, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 }
 
@@ -405,7 +411,7 @@ ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
     NaClLog(3, "NaClHostDescWrite: RDONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return ((-1 == (retval = lind_write(d->d, len, buf)))
+  return ((-1 == (retval = lind_write(d->d, len, buf, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 }
 
@@ -416,10 +422,10 @@ nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
 
   NaClHostDescCheckValidity("NaClHostDescSeek", d);
 #if NACL_LINUX
-  return ((-1 == (retval = lind_lseek(offset, d->d, whence)))
+  return ((-1 == (retval = lind_lseek(offset, d->d, whence, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 #elif NACL_OSX
-  return ((-1 == (retval = lind_lseek(offset, d->d, whence)))
+  return ((-1 == (retval = lind_lseek(offset, d->d, whence, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 #else
 # error "What Unix-like OS is this?"
@@ -437,7 +443,7 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
     NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return ((-1 == (retval = lind_pread(d->d, buf, len, offset)))
+  return ((-1 == (retval = lind_pread(d->d, buf, len, offset, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 }
 
@@ -463,10 +469,10 @@ ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
    * seek-to-end-before-write semantics apply.
    */
   if (0 != (d->flags & NACL_ABI_O_APPEND)) {
-    return ((-1 == (retval = lind_write(d->d, len, buf)))
+    return ((-1 == (retval = lind_write(d->d, len, buf, d->cageid)))
             ? -NaClXlateErrno(errno) : retval);
   }
-  return ((-1 == (retval = lind_pwrite(d->d, buf, len, offset)))
+  return ((-1 == (retval = lind_pwrite(d->d, buf, len, offset, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
 }
 
@@ -488,11 +494,11 @@ int NaClHostDescFstat(struct NaClHostDesc  *d,
                       nacl_host_stat_t     *nhsp) {
   NaClHostDescCheckValidity("NaClHostDescFstat", d);
 #if NACL_LINUX
-  if (lind_fxstat(d->d, 1, nhsp) == -1) {
+  if (lind_fxstat(d->d, 1, nhsp, d->cageid) == -1) {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_fxstat(d->d, 1, nhsp) == -1) {
+  if (lind_fxstat(d->d, 1, nhsp, d->cageid) == -1) {
     return -errno;
   }
 #else
@@ -506,7 +512,7 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
   int retval;
 
   NaClHostDescCheckValidity("NaClHostDescClose", d);
-  retval = lind_close(d->d);
+  retval = lind_close(d->d, d->cageid);
   if (-1 != retval) {
     d->d = -1;
   }
@@ -518,14 +524,15 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
  * fstat and should behave similarly.
  */
 int NaClHostDescStat(char const       *host_os_pathname,
-                     nacl_host_stat_t *nhsp) {
+                     nacl_host_stat_t *nhsp,
+		     int cageid) {
 
 #if NACL_LINUX
-  if (lind_xstat(1, host_os_pathname, nhsp) == -1) {
+  if (lind_xstat(1, host_os_pathname, nhsp, cageid) == -1) {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_xstat(1, host_os_pathname, nhsp) == -1) {
+  if (lind_xstat(1, host_os_pathname, nhsp, cageid) == -1) {
     return -errno;
   }
 #else
