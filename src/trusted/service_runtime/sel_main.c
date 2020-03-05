@@ -841,10 +841,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
-  if (!NaClCreateMainThread(nap,
-                            argc - optind,
-                            argv + optind,
-                            nap->clean_environ)) {
+  if (!NaClCreateThread(MAIN,
+                        nap,
+                        argc - optind,
+                        argv + optind,
+                        nap->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }

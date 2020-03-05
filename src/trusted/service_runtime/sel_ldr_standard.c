@@ -666,218 +666,25 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap) {
   return ((uintptr_t) 1U << nap->addr_bits) - NACL_MAP_PAGESIZE;
 }
 
-/*
- * preconditions:
- *  * argc is the length of the argv array
- *  * envv may be NULL (this happens on MacOS/Cocoa and in tests)
- *  * if envv is non-NULL it is 'consistent', null terminated etc.
- */
-int NaClCreateMainThread(struct NaClApp     *nap,
-                         int                argc,
-                         char               **argv,
-                         char const *const  *envv) {
-  /*
-   * Compute size of string tables for argv and envv
-   */
-  int                   retval;
-  int                   envc;
-  size_t                size;
-  int                   auxv_entries;
-  size_t                ptr_tbl_size;
-  int                   i;
-  uint32_t              *p;
-  char                  *strp;
-  size_t                *argv_len;
-  size_t                *envv_len;
-  uintptr_t             stack_ptr;
+/**
+  * Create a new thread to add to the scheduler
+  * int thread_type - can be of type MAIN, FORK, or EXEC
+  * natp_parent - NULL if of type MAIN or EXEC? Natp of parent if FORK
+  * nap_child - new nap to spawn, child nap if FORK or EXEC, new nap if MAIN
+  *
+  * preconditions:
+  * argc is the length of the argv array
+  * envv may be NULL (this happens on MacOS/Cocoa and in tests)
+  * if envv is non-NULL it is 'consistent', null terminated etc.
+  */
+NaClCreateThread(enum NaClThreadLaunchType tl_type,
+                struct NaClAppThread     *natp_parent,
+                struct NaClApp           *nap_child,
+                int                      argc,
+                char                     **argv,
+                char const *const        *envv)
+ {
 
-  CHECK(argc >= 0);
-  CHECK(argv || !argc);
-
-  retval = 0;
-  size = 0;
-  envc = 0;
-
-  /* count number of environment strings */
-  for (char const *const *pp = envv; pp && *pp; ++pp) {
-    envc++;
-  }
-  /* allocate space to hold length of vectors */
-  argv_len = !argc ? NULL : malloc(argc * sizeof *argv_len);
-  envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
-  /* `argvv_len = malloc()` failed or `argc == 0` */
-  if (!argv_len) {
-    goto cleanup;
-  }
-  /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
-  if (!envv_len && envc) {
-    goto cleanup;
-  }
-
-  /*
-   * The following two loops cannot overflow.  The reason for this is
-   * that they are counting the number of bytes used to hold the
-   * NUL-terminated strings that comprise the argv and envv tables.
-   * If the entire address space consisted of just those strings, then
-   * the size variable would overflow; however, since there's the code
-   * space required to hold the code below (and we are not targetting
-   * Harvard architecture machines), at least one page holds code, not
-   * data.  We are assuming that the caller is non-adversarial and the
-   * code does not look like string data....
-   */
-  for (i = 0; i < argc && argv && argv[i]; i++) {
-    argv_len[i] = strlen(argv[i]) + 1;
-    size += argv_len[i];
-  }
-  for (i = 0; i < envc && envv && envv[i]; i++) {
-    envv_len[i] = strlen(envv[i]) + 1;
-    size += envv_len[i];
-  }
-
-  /*
-   * NaCl modules are ILP32, so the argv, envv pointers, as well as
-   * the terminating NULL pointers at the end of the argv/envv tables,
-   * are 32-bit values.  We also have the auxv to take into account.
-   *
-   * The argv and envv pointer tables came from trusted code and is
-   * part of memory.  Thus, by the same argument above, adding in
-   * "ptr_tbl_size" cannot possibly overflow the "size" variable since
-   * it is a size_t object.  However, the extra pointers for auxv and
-   * the space for argv could cause an overflow.  The fact that we
-   * used stack to get here etc means that ptr_tbl_size could not have
-   * overflowed.
-   *
-   * NB: the underlying OS would have limited the amount of space used
-   * for argv and envv -- on linux, it is ARG_MAX, or 128KB -- and
-   * hence the overflow check is for obvious audibility rather than
-   * for correctness.
-   */
-  auxv_entries = 1;
-  if (nap->user_entry_pt) {
-    auxv_entries++;
-  }
-  ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0)
-                  + (3 + argc + 1 + envc + 1 + auxv_entries * 2))
-                  * sizeof(uint32_t));
-
-  if (SIZE_MAX - size < ptr_tbl_size) {
-    NaClLog(LOG_WARNING, "NaClCreateMainThread() ptr_tbl_size caused copy to overflow!?!\n");
-    goto cleanup;
-  }
-  size += ptr_tbl_size;
-
-  size = (size + NACL_STACK_ALIGN_MASK) & ~NACL_STACK_ALIGN_MASK;
-
-  if (size > nap->stack_size) {
-    goto cleanup;
-  }
-
-  /*
-   * Write strings and char * arrays to stack.
-   */
-  stack_ptr = NaClUserToSysAddrRange(nap, NaClGetInitialStackTop(nap) - size,
-                                     size);
-  if (stack_ptr == kNaClBadAddress) {
-    goto cleanup;
-  }
-
-  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
-
-  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
-         ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
-
-  p = (uint32_t *)stack_ptr;
-  strp = (char *)stack_ptr + ptr_tbl_size;
-
-  /*
-   * For x86-32, we push an initial argument that is the address of
-   * the main argument block.  For other machines, this is passed
-   * in a register and that's set in NaClStartThreadInApp.
-   */
-  if (NACL_STACK_GETS_ARG) {
-    uint32_t *argloc = p++;
-    *argloc = (uint32_t)NaClSysToUser(nap, (uintptr_t) p);
-  }
-
-  *p++ = 0;  /* Cleanup function pointer, always NULL.  */
-  *p++ = envc;
-  *p++ = argc;
-
-  for (i = 0; i < argc && argv && argv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
-    NaClLog(2, "copying arg %d  %p -> %p\n",
-            i, (void *)argv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", argv[i]);
-    strp += argv_len[i];
-  }
-  *p++ = 0;  /* argv[argc] is NULL.  */
-
-  for (i = 0; i < envc && envv && envv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap, (uintptr_t)strp);
-    NaClLog(1, "copying env %d  %p -> %p\n",
-            i, (void *)envv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", envv[i]);
-    strp += envv_len[i];
-  }
-  *p++ = 0;  /* envp[envc] is NULL.  */
-
-  /* Push an auxv */
-  if (nap->user_entry_pt) {
-    *p++ = AT_ENTRY;
-    *p++ = (uint32_t)nap->user_entry_pt;
-  }
-  *p++ = AT_NULL;
-  *p++ = 0;
-
-  /* TODO: fix failing CHECK() -jp */
-  if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
-    NaClLog(1,
-            "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
-            (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
-  }
-  /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
-
-  /* now actually spawn the thread */
-  NaClXMutexLock(&nap->mu);
-  nap->running = 1;
-  NaClXMutexUnlock(&nap->mu);
-
-  NaClVmHoleWaitToStartThread(nap);
-
-  /*
-   * For x86, we adjust the stack pointer down to push a dummy return
-   * address.  This happens after the stack pointer alignment.
-   * We avoid the otherwise harmless call for the zero case because
-   * _FORTIFY_SOURCE memset can warn about zero-length calls.
-   */
-  if (NACL_STACK_PAD_BELOW_ALIGN) {
-    stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
-    memset((void *) stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
-  }
-
-  NaClLog(2, "system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  NaClLog(2, "  user stack ptr : %016"NACL_PRIxPTR"\n",
-          NaClSysToUserStackAddr(nap, stack_ptr));
-
-  /* e_entry is user addr */
-  retval = NaClAppThreadSpawn(nap,
-                              nap->initial_entry_pt,
-                              NaClSysToUserStackAddr(nap, stack_ptr),
-                              /* user_tls1= */ (uint32_t) nap->break_addr,
-                              /* user_tls2= */ 0);
-
-cleanup:
-  free(argv_len);
-  free(envv_len);
-
-  return retval;
-}
-
-int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
-                             struct NaClApp           *nap_child,
-                             int                      argc,
-                             char                     **argv,
-                             char const *const        *envv) {
   /*
    * Compute size of string tables for argv and envv
    */
@@ -901,15 +708,24 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   retval = 0;
   size = 0;
   envc = 0;
-  nap_parent = natp_parent->nap;
 
-  NaClXMutexLock(&nap_child->mu);
+  /* Set nap's thread launch type */
+  nap_child->tl_type = tl_type;
 
-  /* guard against extra spawned instances */
-  if (nap_child->running || nap_child->in_fork) {
-    goto already_running;
+
+  if (tl_type == FORK){
+
+    nap_parent = natp_parent->nap;
+
+    NaClXMutexLock(&nap_child->mu);
+
+    /* guard against extra spawned instances */
+    if (nap_child->running || nap_child->in_fork) {
+      goto already_running;
+    }
+    nap_child->in_fork = 1;
+
   }
-  nap_child->in_fork = 1;
 
   /* count number of environment strings */
   for (char const *const *pp = envv; pp && *pp; ++pp) {
@@ -920,12 +736,12 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   envv_len = !envc ? NULL : malloc(envc * sizeof *envv_len);
   /* `argvv_len = malloc()` failed or `argc == 0` */
   if (!argv_len) {
-    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has argv length 0!\n", nap_child->cage_id);
+    NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d has argv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
   /* `envv_len = malloc()` failed (`envc == 0` is not an error) */
   if (!envv_len && envc) {
-    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d has envv length 0!\n", nap_child->cage_id);
+    NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d has envv length 0!\n", nap_child->cage_id);
     goto cleanup;
   }
 
@@ -971,13 +787,14 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   if (0 != nap_child->user_entry_pt) {
     auxv_entries++;
   }
+
   ptr_tbl_size = (((NACL_STACK_GETS_ARG ? 1 : 0) +
                    (3 + argc + 1 + envc + 1 + auxv_entries * 2)) *
                   sizeof(uint32_t));
 
   if (SIZE_T_MAX - size < ptr_tbl_size) {
     NaClLog(LOG_WARNING,
-            "NaClCreateMainThread: ptr_tbl_size cause size of"
+            "NaClCreateThread: ptr_tbl_size cause size of"
             " argv / environment copy to overflow!?!\n");
     retval = 0;
     goto cleanup;
@@ -988,7 +805,7 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
 
   if (size > nap_child->stack_size) {
     NaClLog(LOG_WARNING,
-            "NaClCreateMainForkThread failed: cage_id %d stack is too small! [size: %zu > stack_size: %zu]\n",
+            "NaClCreateThread failed: cage_id %d stack is too small! [size: %zu > stack_size: %zu]\n",
             nap_child->cage_id,
             size,
             nap_child->stack_size);
@@ -1002,7 +819,7 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
                                      NaClGetInitialStackTop(nap_child) - size,
                                      size);
   if (stack_ptr == kNaClBadAddress) {
-    NaClLog(LOG_WARNING, "NaClCreateMainForkThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
+    NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
     goto cleanup;
   }
 
@@ -1062,9 +879,16 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   }
   /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
 
-  /* now actually spawn the thread */
+  /* 
+    now actually spawn the thread 
+    we'll need to lock the mutex if we haven't already in the FORK case
+    and send out CV's for FORK/EXEC
+  */
+
+  if (tl_type != FORK)  NaClXMutexLock(&nap->mu);
+  if (tl_type != MAIN)  NaClXCondVarBroadcast(&nap_child->cv);
+
   nap_child->running = 1;
-  NaClXCondVarBroadcast(&nap_child->cv);
   NaClXMutexUnlock(&nap_child->mu);
 
   NaClVmHoleWaitToStartThread(nap_child);
@@ -1085,11 +909,13 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
   NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
   NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
-  /* TODO: figure out a better way to avoid extra instance spawns -jp */
-  NaClThreadYield();
-  NaClXMutexLock(&nap_child->mu);
-  nap_child->in_fork = 0;
-  NaClXMutexUnlock(&nap_child->mu);
+  if (tl_type != MAIN){
+    /* TODO: figure out a better way to avoid extra instance spawns -jp */
+    NaClThreadYield();
+    NaClXMutexLock(&nap_child->mu);
+    nap_child->in_fork = 0;
+    NaClXMutexUnlock(&nap_child->mu);
+  }
 
   /* e_entry is user addr 
  *
@@ -1097,18 +923,13 @@ int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
  *  Unlike the main thread creation where we suggest values.
  *
  * */
-  retval = NaClAppForkThreadSpawn(nap_parent,
-                                  natp_parent,
-                                  nap_child,
-                                  nap_child->initial_entry_pt,
-                                  NaClSysToUserStackAddr(nap_child, stack_ptr),
-                                  (uint32_t)natp_parent->user.tls_value1,
-				  (uint32_t)natp_parent->user.tls_value2);
+  retval = NaClAppThreadSpawn(natp_parent, nap_child, stack_ptr);
+
 
 cleanup:
   free(argv_len);
   free(envv_len);
-  NaClXMutexUnlock(&nap_child->mu);
+  if (tl_type == FORK) NaClXMutexUnlock(&nap_child->mu);
 
   return retval;
 

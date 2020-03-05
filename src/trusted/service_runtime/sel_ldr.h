@@ -114,6 +114,12 @@ struct NaClSpringboardInfo {
   uint32_t end_addr;
 };
 
+enum NaClThreadLaunchType {
+  MAIN,
+  FORK,
+  EXEC
+};
+
 struct NaClApp {
   /*
    * children table lock children_mu is higher in the locking order than
@@ -134,6 +140,7 @@ struct NaClApp {
   volatile sig_atomic_t     cage_id;
   volatile sig_atomic_t     num_lib;
   volatile sig_atomic_t     parent_id;
+  enum NaClThreadLaunchType tl_type;
 
   /* yiwen: store the path of the execuable running inside this cage(as the main thread) */
   int                       argc;
@@ -633,16 +640,14 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * alternative design, NaClWaitForMainThreadToExit will become a
  * no-op.
  */
-int NaClCreateMainThread(struct NaClApp     *nap,
-                         int                argc,
-                         char               **argv,
-                         char const *const  *envv) NACL_WUR;
 
-int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
-                             struct NaClApp           *nap_child,
-                             int                      argc,
-                             char                     **argv,
-                             char const *const        *envv) NACL_WUR;
+
+int NaClCreateThread(enum NaClThreadLaunchType tl_type,
+                     struct NaClAppThread     *natp_parent,
+                     struct NaClApp           *nap_child,
+                     int                      argc,
+                     char                     **argv,
+                     char const *const        *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
