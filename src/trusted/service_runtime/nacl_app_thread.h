@@ -160,7 +160,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp);
 /*
  * Handles fork specific setup in thread spawning, specific to context
  */
-int NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
+void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
                               struct NaClAppThread     *natp_child,
                               void *stack_ptr_parent,
                               void *stack_ptr_child);

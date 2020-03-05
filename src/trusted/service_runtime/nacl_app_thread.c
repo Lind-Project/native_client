@@ -545,9 +545,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
 }
 
-
-
-int NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
+void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
                               struct NaClAppThread     *natp_child,
                               void *stack_ptr_parent,
                               void *stack_ptr_child) {
@@ -665,7 +663,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   }
   else {
     user_tls1 = (uint32_t)natp_parent->user.tls_value1;
-    user_tls2 = (uint32_t)natp_parent->user.tls_value2);
+    user_tls2 = (uint32_t)natp_parent->user.tls_value2;
   }
 
 
@@ -690,7 +688,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     * save master thread context pointer
     */
     if (nap_child->cage_id == 1 || !master_ctx) {
-      master_ctx = &natp->user;
+      master_ctx = &natp_child->user;
     }
     nap_child->parent = NULL;
     nap_child->master = ((struct NaClAppThread *)master_ctx)->nap;
@@ -736,7 +734,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
 
 
-  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
+  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
     /*
     * No other thread saw the NaClAppThread, so it is OK that
     * host_thread was not initialized despite host_thread_is_defined
