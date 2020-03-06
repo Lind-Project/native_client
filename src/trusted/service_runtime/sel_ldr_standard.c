@@ -929,7 +929,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
    */
   uint32_t user_tls1;
   uint32_t user_tls2;
-  if (tl_type == MAIN){
+  if (tl_type != MAIN){
     /* Google suggested starting addresses */
     user_tls1 = (uint32_t) nap_child->break_addr;
     user_tls2 = 0;
