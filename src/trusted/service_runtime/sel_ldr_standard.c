@@ -885,7 +885,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
     and send out CV's for FORK/EXEC
   */
 
-  if (tl_type != FORK)  NaClXMutexLock(&nap->mu);
+  if (tl_type != FORK)  NaClXMutexLock(&nap_child->mu);
   if (tl_type != MAIN)  NaClXCondVarBroadcast(&nap_child->cv);
 
   nap_child->running = 1;
@@ -923,7 +923,24 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
  *  Unlike the main thread creation where we suggest values.
  *
  * */
-  retval = NaClAppThreadSpawn(natp_parent, nap_child, stack_ptr);
+
+  /*
+   * make space to copy the parent stack
+   */
+  uintptr_t usr_entry =  ;
+  uint32_t user_tls1;
+  uint32_t user_tls2;
+  if (tl_type == MAIN){
+    /* Google suggested starting addresses */
+    user_tls1 = (uint32_t) nap_child->break_addr;
+    user_tls2 = 0;
+  }
+  else {
+    user_tls1 = (uint32_t)natp_parent->user.tls_value1;
+    user_tls2 = (uint32_t)natp_parent->user.tls_value2;
+  }
+
+  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2);
 
 
 cleanup:
@@ -968,9 +985,14 @@ int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
                                    uintptr_t      sys_stack_ptr,
                                    uint32_t       user_tls1,
                                    uint32_t       user_tls2) {
-  if (!NaClAppThreadSpawn(nap,
+
+  /* We need to set the thread type for the thread mechanics */
+  nap->tl_type = MAIN;
+
+  if (!NaClAppThreadSpawn(NULL,
+                          nap,
                           prog_ctr,
-                          NaClSysToUserStackAddr(nap, sys_stack_ptr),
+                          sys_stack_ptr,
                           user_tls1,
                           user_tls2)) {
     NaClLog(LOG_WARNING,

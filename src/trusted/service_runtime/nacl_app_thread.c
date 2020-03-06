@@ -617,22 +617,20 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
 }
 
 int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
-                           struct NaClApp       *nap_child, 
-                           uintptr_t            stack_ptr){
+                       struct NaClApp           *nap_child,
+                       uintptr_t                usr_entry,
+                       uintptr_t                sys_stack_ptr,
+                       uint32_t                 user_tls1,
+                       uint32_t                 user_tls2){
 
 
   void *stack_ptr_parent;
   void *stack_ptr_child;
+  uintptr_t usr_stack_ptr;
 
   struct NaClAppThread *natp_child;
   struct NaClApp *nap_parent = natp_parent->nap;
-
-
   static THREAD int ignored_ret;
-
-  uintptr_t usr_stack_ptr;
-  uint32_t user_tls1;
-  uint32_t user_tls2;
   enum NaClThreadLaunchType tl_type = nap_child->tl_type;
 
 
@@ -651,29 +649,13 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nap_child->in_fork = 1;
   }
 
-
-  /*
-   * make space to copy the parent stack
-   */
-  uintptr_t usr_entry =   nap_child->initial_entry_pt;
-  if (tl_type == MAIN){
-    /* Google suggested starting addresses */
-    user_tls1 = (uint32_t) nap_child->break_addr;
-    user_tls2 = 0;
-  }
-  else {
-    user_tls1 = (uint32_t)natp_parent->user.tls_value1;
-    user_tls2 = (uint32_t)natp_parent->user.tls_value2;
-  }
-
-
   nap_child->stack_size = nap_parent->stack_size;
   stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
   stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
   
-  /* Set stack ptr according to thread type */
+  /* Set stack ptr according to child if fork*/
   if (tl_type == FORK) usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
-  else usr_stack_ptr = NaClSysToUserStackAddr(nap_child, stack_ptr);
+  else usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)sys_stack_ptr);
 
   /* Make new/child thread natp */
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);

@@ -184,8 +184,11 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
  * returns true on success, false on failure.
  */
 int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
-                           struct NaClApp       *nap_child, 
-                           uintptr_t            stack_ptr) NACL_WUR;
+                       struct NaClApp           *nap_child,
+                       uintptr_t                usr_entry,
+                       uintptr_t                usr_stack_ptr,
+                       uint32_t                 user_tls1,
+                       uint32_t                 user_tls2) NACL_WUR;
 
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
