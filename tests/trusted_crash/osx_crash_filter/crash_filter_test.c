@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 
   RegisterExceptionHandler();
 
-  CHECK(NaClCreateMainThread(MAIN, NULL, &app, 0, NULL, NULL));
+  CHECK(NaClCreateThread(MAIN, NULL, &app, 0, NULL, NULL));
   NaClWaitForMainThreadToExit(&app);
   NaClLog(LOG_FATAL, "Did not expect the guest code to exit\n");
   return 1;
