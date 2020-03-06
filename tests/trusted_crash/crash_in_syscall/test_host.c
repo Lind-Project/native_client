@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
 
   RegisterHandlers();
 
-  CHECK(NaClCreateMainThread(MAIN, NULL, &app, argc - 1, argv + 1, NULL));
+  CHECK(NaClCreateThread(MAIN, NULL, &app, argc - 1, argv + 1, NULL));
   NaClWaitForMainThreadToExit(&app);
 
   NaClLog(LOG_ERROR, "We did not expect the test program to exit cleanly\n");

@@ -85,7 +85,7 @@ static struct SuspendTestShm *StartGuestWithSharedMemory(
 
   WaitForThreadToExitFully(nap);
 
-  CHECK(NaClCreateMainThread(MAIN, NULL, nap, 3, args, NULL));
+  CHECK(NaClCreateThread(MAIN, NULL, nap, 3, args, NULL));
   return (struct SuspendTestShm *) NaClUserToSys(nap, mmap_addr);
 }
 
