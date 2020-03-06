@@ -842,6 +842,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
   if (!NaClCreateThread(MAIN,
+                        NULL,
                         nap,
                         argc - optind,
                         argv + optind,
