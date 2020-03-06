@@ -927,7 +927,6 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   /*
    * make space to copy the parent stack
    */
-  uintptr_t usr_entry =  ;
   uint32_t user_tls1;
   uint32_t user_tls2;
   if (tl_type == MAIN){
