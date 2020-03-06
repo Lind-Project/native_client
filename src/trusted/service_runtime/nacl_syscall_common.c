@@ -4317,20 +4317,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  
-  /* 
-   * TODO
-   * The following line is a quick-patch to get Bash to work minimally 
-   * The use of CreateMainThread above mistakenly gets rid of the child parent reference,
-   * but using the Fork version of the function makes other changes that inhibits the new 
-   * program from exec'ing. We'll use this fix for now so we can merge the structural changes into master
-   * and the larger issue will be resolved in the upcoming refactor.
-   */
-  
-  nap_child->parent = nap;
-
-  
-  
+    
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
