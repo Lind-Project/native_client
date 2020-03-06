@@ -629,16 +629,16 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   uintptr_t usr_stack_ptr;
 
   struct NaClAppThread *natp_child;
-  struct NaClApp *nap_parent = natp_parent->nap;
+  struct NaClApp *nap_parent;
   static THREAD int ignored_ret;
   enum NaClThreadLaunchType tl_type = nap_child->tl_type;
 
 
-  if (!nap_parent->running) {
-    return 0;
-  }
 
-  if (tl_type != MAIN) {
+  if (tl_type == FORK) {
+    nap_parent = natp_parent->nap;
+    if (!nap_parent->running) return 0;
+
     NaClXMutexLock(&nap_parent->mu);
     NaClXMutexLock(&nap_child->mu);
 
@@ -647,22 +647,20 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     goto already_running;
     }
     nap_child->in_fork = 1;
-  }
-
-  nap_child->stack_size = nap_parent->stack_size;
-  stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
-  stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
   
-  /* Set stack ptr according to child if fork*/
-  if (tl_type == FORK) usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
+
+    nap_child->stack_size = nap_parent->stack_size;
+    stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
+    stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
+    
+    usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
+  }
   else usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)sys_stack_ptr);
 
   /* Make new/child thread natp */
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
 
-  if (!natp_child) {
-    return 0;
-  }
+  if (!natp_child) return 0;
 
   /* Create context for master, or use loaded contexts to setup fork */
   if (tl_type == MAIN){
@@ -702,7 +700,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  if (tl_type != MAIN){
+  if (tl_type == FORK){
     NaClXCondVarBroadcast(&nap_parent->cv);
     NaClXMutexUnlock(&nap_parent->mu);
     NaClXMutexUnlock(&nap_child->mu);
