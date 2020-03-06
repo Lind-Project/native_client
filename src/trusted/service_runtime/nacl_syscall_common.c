@@ -4309,10 +4309,10 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap->mu);
 
-  /* execute new binary */
+  /* execute new binary, we pass NULL as parent natp since we're not basing the new thread off of this one. */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
-  if (!NaClCreateThread(EXEC, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(EXEC, NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "NaClCreateThread() failed");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
