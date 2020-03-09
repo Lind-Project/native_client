@@ -220,7 +220,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClSetCurrentMachThreadForThreadIndex(thread_idx);
   #endif
 
-  if (tl_type != MAIN){
+  if (tl_type == FORK){
       /*
     * We have to hold the threads_mu and children_mu locks until
     * after thread_num field in this thread has been initialized.
@@ -265,7 +265,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-  if (tl_type != MAIN) {
+  if (tl_type == FORK) {
     #if !NACL_WINDOWS
       /*
       * Ensure stack alignment.  Stack pointer must be -8 mod 16 when no
@@ -309,7 +309,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
   /* Not exactly sure what hole exec falls into */
-  if (tl_type != MAIN) {
+  if (tl_type == FORK) {
     #if NACL_WINDOWS
       /* This sets up a stack containing a return address that has unwind info. */
       NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitchToApp);
