@@ -837,6 +837,30 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
+
+
+  /* Set up cage-id's for initial descriptors */
+  for (int fd = 0; fd < 3; fd++) {
+
+    /* Retrieve NaCl Descriptor based on fd */
+    int host_fd = fd_cage_table[nap->cage_id][fd];
+
+    struct NaClDesc *nd;
+    nd = NaClGetDesc(nap, host_fd);
+    if (!nd) {
+      continue;
+    }
+
+    /* Translate from NaCl Desc to Host Desc */
+    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &nd->base;
+    struct NaClHostDesc *hd = self->hd;
+
+    hd->cageid = nap->cage_id;
+
+    /* We've got to put that  NaClDescriptor back in there... */
+    NaClSetDesc(nap, host_fd, nd);
+
+  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
