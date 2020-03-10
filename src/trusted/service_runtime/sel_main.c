@@ -237,6 +237,10 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   nacl_main_begin = clock();
 
+  /* Initialize cage early on to avoid Cage 0 */
+  InitializeCage(nap, 1);
+
+
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
   }
@@ -829,7 +833,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  InitializeCage(nap, 1);
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
