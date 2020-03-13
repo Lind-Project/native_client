@@ -556,15 +556,28 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   struct NaClDescIoDesc *old_self = (struct NaClDescIoDesc *) &old_nd->base;
   struct NaClHostDesc *old_hd = old_self->hd;
 
-  /* Check if newfd exists */
+  /* Check if newfd exists 
+  
+   Returning 0 from the cagetable means either that the the hostfd is stdin, or that the fd doesn't exist!
 
-  if (fd_cage_table[nap->cage_id][newfd]) {
+
+   1. host_fd exists, but nd doesn't - something went wrong here, we should abort
+   2. host_fd and nd both don't exist - we've performed a close on stdin before and are now duping it
+   3. host_fd does not exist, but nd does - this is stdin, and we're going to dup it
+   4. host_fd and nd both exists - this is a regular dup2  
+  
+  */
+
+  new_hostfd = fd_cage_table[nap->cage_id][newfd];
+  new_nd = NaClGetDesc(nap, new_hostfd);
+  if (new_hostfd && !new_nd) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  if (new_nd) {
     /* Retrieve host fd, get nacl descriptor */
-    new_hostfd = fd_cage_table[nap->cage_id][newfd];
-    if (!(new_nd = NaClGetDesc(nap, new_hostfd))) {
-      ret = -NACL_ABI_EBADF;
-      goto out;
-    }
+    
 
     /* Translate from NaCl Desc to Host Desc */
     struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
