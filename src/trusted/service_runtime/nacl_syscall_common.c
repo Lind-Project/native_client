@@ -1591,7 +1591,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   } else {
     fd = fd_cage_table[nap->cage_id][d];
     if (fd < 0) {
-      retval = -NACL_ABI_EBADF;
+      map_result = -NACL_ABI_EBADF;
       goto cleanup;
     }
     ndp = NaClGetDesc(nap, fd);
