@@ -465,18 +465,12 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
-  /* check for closed fds */
-  if (oldfd < 0) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
-  if (nap->fd > FILE_DESC_MAX) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+
+  if (old_hostfd < 0 || nap->fd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
     ret= -NACL_ABI_EBADF;
@@ -529,23 +523,18 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
 
-  /* check for closed fds */
-  if (oldfd < 0) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
   if (oldfd == newfd) {
     ret = oldfd;
-    goto out;
-  }
-  if (nap->fd > FILE_DESC_MAX) {
-    ret = -NACL_ABI_EBADF;
     goto out;
   }
 
   /* Get old host fd from cage table, and use that to get nacl descriptor */
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+
+  if (old_hostfd < 0 || nap->fd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
   
   if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
     ret = -NACL_ABI_EBADF;
@@ -557,28 +546,21 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   struct NaClHostDesc *old_hd = old_self->hd;
 
   /* Check if newfd exists 
-  
-   Returning 0 from the cagetable means either that the the hostfd is stdin, or that the fd doesn't exist!
 
+    Scenarios
+    1. new_hostfd is < 0 - this implies that newfd has been a number specified by the user and we should create
+    a new nacl desc and dup it via regular dup
+    2. new_hostfd is >= 0 - we have this fd already, lets dup it
 
-   1. host_fd exists, but nd doesn't - something went wrong here, we should abort
-   2. host_fd and nd both don't exist - either new descriptor named or closed stdin, lets use normal dup with specified number
-   3. host_fd does not exist, but nd does - this is stdin, and we're going to dup2 it
-   4. host_fd and nd both exists - this is a regular dup2  
   
   */
 
   new_hostfd = fd_cage_table[nap->cage_id][newfd];
-  new_nd = NaClGetDesc(nap, new_hostfd);
-  if (new_hostfd && !new_nd) {
-    /* Scenario 1 */
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
 
-  if (!new_hostfd && !new_nd) {
+
+  if (!new_nd) {
     
-    /* Scenario 2: Create and set vars for new hd */
+    /* Scenario 1: Create and set vars for new hd */
     struct NaClHostDesc *new_hd;
     new_hd = malloc(sizeof(*new_hd));
     if (!new_hd) {
@@ -600,7 +582,14 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
 
   }
   else {
-    /* Scenarios 3 & 4 */
+    /* Scenario 2 */
+
+    new_nd = NaClGetDesc(nap, new_hostfd);
+    if (!new_nd) {
+      ret = -NACL_ABI_EBADF;
+      goto out;
+    }
+
     /* Translate from NaCl Desc to Host Desc */
     struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
     struct NaClHostDesc *new_hd = new_self->hd;
@@ -813,7 +802,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   ndp = NaClGetDescMu(nap, fd);
 
   /* If we have an fd and nacl descriptor, lets close it */
-  if (fd && ndp){
+  if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, fd, NULL);
     NaClDescUnref(ndp);
@@ -821,7 +810,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-  fd_cage_table[nap->cage_id][d] = 0;
+  fd_cage_table[nap->cage_id][d] = -1;
 
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
@@ -845,6 +834,10 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -1003,6 +996,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1592,6 +1590,10 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     ndp = NULL;
   } else {
     fd = fd_cage_table[nap->cage_id][d];
+    if (fd < 0) {
+      retval = -NACL_ABI_EBADF;
+      goto cleanup;
+    }
     ndp = NaClGetDesc(nap, fd);
     if (!ndp) {
       map_result = -NACL_ABI_EBADF;
@@ -2644,7 +2646,13 @@ int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
   int             fd;
 
   NaClLog(1, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
+
+  /* Check if fd is valid and if NaCl Desc exists */
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EINVAL;
+    goto out;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EINVAL;
@@ -2670,6 +2678,10 @@ int32_t NaClSysImcConnect(struct NaClAppThread *natp,
 
   NaClLog(1, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -2765,6 +2777,10 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
   }
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -2951,6 +2967,11 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   }
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    NaClLog(1, "%s\n", "receiving descriptor invalid");
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     NaClLog(1, "%s\n", "receiving descriptor invalid");

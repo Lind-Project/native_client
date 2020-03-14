@@ -150,8 +150,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
     int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];
-    if (parent_host_fd == 0) {
-      fd_cage_table[nap_child->cage_id][nap_child->fd++] = 0;
+    if (parent_host_fd == -1) {
+      fd_cage_table[nap_child->cage_id][nap_child->fd++] = -1;
       continue;
     }
     /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */

@@ -1762,6 +1762,10 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
+
+  /* Initialize unused fd's to -1 */
+  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
+
   /* set to the next unused (available for dup() etc.) file descriptor */
   nap->fd = 3;
   nap->num_lib = 3;
