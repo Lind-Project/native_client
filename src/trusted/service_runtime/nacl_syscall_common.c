@@ -558,7 +558,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   new_hostfd = fd_cage_table[nap->cage_id][newfd];
 
 
-  if (!new_nd) {
+  if (new_hostfd < 0) {
     
     /* Scenario 1: Create and set vars for new hd */
     struct NaClHostDesc *new_hd;
