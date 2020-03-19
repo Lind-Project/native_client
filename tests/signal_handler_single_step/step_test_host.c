@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
 
   CHECK(NaClAppLoadFileFromFilename(&app, argv[1]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateMainThread(&app, 0, NULL, NULL));
+  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);
 
   CHECK(!g_in_untrusted_code);

@@ -355,8 +355,8 @@ void NaClChromeMainStart(struct NaClChromeMainArgs *args) {
   args = NULL;
 
   if (NACL_FI_ERROR_COND(
-          "CreateMainThread",
-          !NaClCreateMainThread(nap, ac, av,
+          "NaClCreateThread",
+          !NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, nap, ac, av,
                                 NaClEnvCleanserEnvironment(&env_cleanser)))) {
     NaClLog(LOG_FATAL, "creating main thread failed\n");
   }
