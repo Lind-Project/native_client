@@ -220,7 +220,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClSetCurrentMachThreadForThreadIndex(thread_idx);
   #endif
 
-  if (tl_type == FORK){
+  if (tl_type == THREAD_LAUNCH_FORK){
       /*
     * We have to hold the threads_mu and children_mu locks until
     * after thread_num field in this thread has been initialized.
@@ -265,7 +265,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-  if (tl_type == FORK) {
+  if (tl_type == THREAD_LAUNCH_FORK) {
     #if !NACL_WINDOWS
       /*
       * Ensure stack alignment.  Stack pointer must be -8 mod 16 when no
@@ -309,7 +309,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
   /* Not exactly sure what hole exec falls into */
-  if (tl_type == FORK) {
+  if (tl_type == THREAD_LAUNCH_FORK) {
     #if NACL_WINDOWS
       /* This sets up a stack containing a return address that has unwind info. */
       NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitchToApp);
@@ -635,7 +635,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
 
 
-  if (tl_type == FORK) {
+  if (tl_type == THREAD_LAUNCH_FORK) {
     nap_parent = natp_parent->nap;
     if (!nap_parent->running) return 0;
 
@@ -663,7 +663,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   if (!natp_child) return 0;
 
   /* Create context for master, or use loaded contexts to setup fork */
-  if (tl_type == MAIN){
+  if (tl_type == THREAD_LAUNCH_MAIN){
     /*
     * save master thread context pointer
     */
@@ -673,7 +673,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nap_child->parent = NULL;
     nap_child->master = ((struct NaClAppThread *)master_ctx)->nap;
   }
-  else if (tl_type == FORK) {
+  else if (tl_type == THREAD_LAUNCH_FORK) {
     NaClForkThreadContextSetup(natp_parent, natp_child, stack_ptr_parent, stack_ptr_child);
   }
  
@@ -681,7 +681,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   /*
    * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  if (tl_type != MAIN) {
+  if (tl_type != THREAD_LAUNCH_MAIN) {
     natp_child->user.tls_idx = nap_child->cage_id;
     if (nacl_user[natp_child->user.tls_idx]) {
       NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
@@ -700,7 +700,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  if (tl_type == FORK){
+  if (tl_type == THREAD_LAUNCH_FORK){
     NaClXCondVarBroadcast(&nap_parent->cv);
     NaClXMutexUnlock(&nap_parent->mu);
     NaClXMutexUnlock(&nap_child->mu);

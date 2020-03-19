@@ -115,9 +115,9 @@ struct NaClSpringboardInfo {
 };
 
 enum NaClThreadLaunchType {
-  MAIN,
-  FORK,
-  EXEC
+  THREAD_LAUNCH_MAIN,
+  THREAD_LAUNCH_FORK,
+  THREAD_LAUNCH_EXEC
 };
 
 struct NaClApp {
