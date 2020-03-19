@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
   app.enable_exception_handling = 1;
   CHECK(NaClAppLoadFileFromFilename(&app, argv[2]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateThread(MAIN, NULL, &app, 0, NULL, NULL));
+  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);
 
   if (g_expect_crash) {

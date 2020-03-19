@@ -713,7 +713,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   nap_child->tl_type = tl_type;
 
 
-  if (tl_type == FORK){
+  if (tl_type == THREAD_LAUNCH_FORK){
 
     nap_parent = natp_parent->nap;
 
@@ -885,8 +885,8 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
     and send out CV's for FORK/EXEC
   */
 
-  if (tl_type != FORK)  NaClXMutexLock(&nap_child->mu);
-  if (tl_type != MAIN)  NaClXCondVarBroadcast(&nap_child->cv);
+  if (tl_type != THREAD_LAUNCH_FORK)  NaClXMutexLock(&nap_child->mu);
+  if (tl_type != THREAD_LAUNCH_MAIN)  NaClXCondVarBroadcast(&nap_child->cv);
 
   nap_child->running = 1;
   NaClXMutexUnlock(&nap_child->mu);
@@ -909,7 +909,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
   NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
 
-  if (tl_type != MAIN){
+  if (tl_type != THREAD_LAUNCH_MAIN){
     /* TODO: figure out a better way to avoid extra instance spawns -jp */
     NaClThreadYield();
     NaClXMutexLock(&nap_child->mu);
@@ -929,7 +929,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
    */
   uint32_t user_tls1;
   uint32_t user_tls2;
-  if (tl_type != FORK){
+  if (tl_type != THREAD_LAUNCH_FORK){
     /* Google suggested starting addresses */
     user_tls1 = (uint32_t) nap_child->break_addr;
     user_tls2 = 0;
@@ -945,7 +945,7 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
 cleanup:
   free(argv_len);
   free(envv_len);
-  if (tl_type == FORK) NaClXMutexUnlock(&nap_child->mu);
+  if (tl_type == THREAD_LAUNCH_FORK) NaClXMutexUnlock(&nap_child->mu);
 
   return retval;
 
@@ -986,7 +986,7 @@ int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
                                    uint32_t       user_tls2) {
 
   /* We need to set the thread type for the thread mechanics */
-  nap->tl_type = MAIN;
+  nap->tl_type = THREAD_LAUNCH_MAIN;
 
   if (!NaClAppThreadSpawn(NULL,
                           nap,

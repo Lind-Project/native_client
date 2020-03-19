@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
   NaClSetDesc(&app, 10, g_expected_desc);
 
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateThread(MAIN, NULL, &app, 0, NULL, NULL));
+  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);
 
   /* Check for leaks. */

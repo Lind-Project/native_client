@@ -4070,7 +4070,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&nap->mu);
 
   /* start fork thread */
-  if (!NaClCreateThread(FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
     goto fail;
@@ -4348,7 +4348,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   /* execute new binary, we pass NULL as parent natp since we're not basing the new thread off of this one. */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
-  if (!NaClCreateThread(EXEC, NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(THREAD_LAUNCH_EXEC, NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "NaClCreateThread() failed");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
