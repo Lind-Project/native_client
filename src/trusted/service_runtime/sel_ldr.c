@@ -1778,7 +1778,7 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 int NextFd(int cage_id){
 
   for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd == -1) return fd;
+    if (fd_cage_table[cage_id][fd] == -1) return fd;
   }
 
   return -1;
