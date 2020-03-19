@@ -927,6 +927,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
 
+/* Find the next usuable fd */
+int NextFd(int cage_id);
+
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);
   NaClLog(1, "[Memory] Memory addr:                   %p\n", (void *)addr);

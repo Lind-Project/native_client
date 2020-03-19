@@ -1772,3 +1772,14 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   nap->num_children = 0;
   nap->cage_id = cage_id;
 }
+
+/* Find next available fd in cagetable */
+
+int NextFd(int cage_id){
+
+  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
+    if (fd == -1) return fd;
+  }
+
+  return -1;
+}

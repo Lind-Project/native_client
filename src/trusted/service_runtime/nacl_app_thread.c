@@ -117,7 +117,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
-  NaClAppInitialDescriptorHookup(nap_child);
+  //NaClAppInitialDescriptorHookup(nap_child);
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -146,7 +146,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
   NaClXMutexLock(&nap_parent->mu);
-  for (int parent_fd = nap_child->fd; parent_fd <= nap_parent->fd; parent_fd++) {
+  for (int parent_fd = 0; parent_fd <= FILE_DESC_MAX; parent_fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
     int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];

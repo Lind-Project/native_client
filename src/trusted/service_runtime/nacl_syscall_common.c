@@ -498,10 +498,12 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   /* We've got to put that old NaClDescriptor back in there... */
   NaClSetDesc(nap, old_hostfd, old_nd);
 
-  fd_cage_table[nap->cage_id][nap->fd] = new_hostfd;
+  ret = nap->fd;
+
+  fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
   /* update current maximum file descriptor number */
-  ret = nap->fd++;
+  nap->fd = NextFd(nap->cage_id);
 
 out:
   return ret;
@@ -606,9 +608,8 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClSetDesc(nap, old_hostfd, old_nd);
   
   /* update current maximum file descriptor number */
-  if (newfd > nap->fd) {
-    nap->fd = newfd;
-  }
+  nap->fd = NextFd(nap->cage_id);
+  
 
   ret = newfd;
 
@@ -771,10 +772,14 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
 cleanup:
-  /* now translate the real fds to virtual fds and return them to the cage */
+  /*
+    Now translate the real fds to virtual fds and return them to the cage 
+    Set cagetable to NaCl Value, return current fd, and then set nap's fd to next available
+  */
   fd_cage_table[nap->cage_id][nap->fd] = retval;
   fd_retval = nap->fd;
-  nap->fd++;
+  nap->fd = NextFd(nap->cage_id);
+
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
@@ -4027,7 +4032,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     /* Update cage table with our lind fds */
     fd_cage_table[nap->cage_id][nap->fd] = retval;
     nacl_fds[i] = nap->fd;
-    nap->fd++;
+    nap->fd = NextFd(nap->cage_id);
+
   }
 
   /* copy out NaCl fds */
