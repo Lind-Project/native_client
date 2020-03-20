@@ -149,8 +149,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
-  /* set to the next unused (available for dup() etc.) file descriptor */
-  int                       fd;
+
 
   /*
    * public, user settable prior to app start.

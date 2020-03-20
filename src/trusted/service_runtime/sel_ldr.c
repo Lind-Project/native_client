@@ -59,6 +59,8 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_rservice.h"
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
+#include "native_client/src/trusted/service_runtime/include/sys/errno.h"
+
 
 double time_counter = 0.0;
 double time_start = 0.0;
@@ -1781,5 +1783,5 @@ int NextFd(int cage_id){
     if (fd_cage_table[cage_id][fd] == -1) return fd;
   }
 
-  return -1;
+  return -NACL_ABI_EBADF;
 }

@@ -467,7 +467,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
 
-  if (old_hostfd < 0 || nap->fd > FILE_DESC_MAX) {
+  if (old_hostfd < 0) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
@@ -498,12 +498,10 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   /* We've got to put that old NaClDescriptor back in there... */
   NaClSetDesc(nap, old_hostfd, old_nd);
 
-  ret = nap->fd;
+  ret = NextFd(nap->cage_id);
 
   fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
-  /* update current maximum file descriptor number */
-  nap->fd = NextFd(nap->cage_id);
 
 out:
   return ret;
@@ -533,7 +531,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   /* Get old host fd from cage table, and use that to get nacl descriptor */
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
 
-  if (old_hostfd < 0 || nap->fd > FILE_DESC_MAX) {
+  if (old_hostfd < 0) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
@@ -607,10 +605,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   /* We've got to put that old NaClDescriptor back in there... */
   NaClSetDesc(nap, old_hostfd, old_nd);
   
-  /* update current maximum file descriptor number */
-  nap->fd = NextFd(nap->cage_id);
-  
-
   ret = newfd;
 
 out:
@@ -774,11 +768,12 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 cleanup:
   /*
     Now translate the real fds to virtual fds and return them to the cage 
-    Set cagetable to NaCl Value, return current fd, and then set nap's fd to next available
+    Get next available, and set cagetable there to nacl retval
   */
-  fd_cage_table[nap->cage_id][nap->fd] = retval;
-  fd_retval = nap->fd;
-  nap->fd = NextFd(nap->cage_id);
+  
+  fd_retval = NextFd(nap->cage_id);
+
+  fd_cage_table[nap->cage_id][fd_retval] = retval;
 
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
@@ -3989,10 +3984,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
    /* Sync NaCl fds with Lind ufds*/
   for (int i = 0; i < 2; i++) {
-    if (nap->fd > FILE_DESC_MAX) {
-      ret = -NACL_ABI_EFAULT;
-      goto out;
-    }
+    
     /* set flags for the read and write ends of the pipe */
     switch (i) {
     case 0:
@@ -4030,9 +4022,13 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     
 
     /* Update cage table with our lind fds */
-    fd_cage_table[nap->cage_id][nap->fd] = retval;
-    nacl_fds[i] = nap->fd;
-    nap->fd = NextFd(nap->cage_id);
+    int pipe_fd = NextFd(nap->cage_id);
+    if (pipe_fd < 0) {
+      ret = -NACL_ABI_EBADF;
+      goto out;
+    }
+    fd_cage_table[nap->cage_id][pipe_fd] = retval;
+    nacl_fds[i] = pipe_fd;
 
   }
 
