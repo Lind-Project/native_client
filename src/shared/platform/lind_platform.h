@@ -82,9 +82,12 @@
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
 
-#define LIND_safe_fs_pipe              66
-#define LIND_safe_fs_pipe2             67
+#define LIND_safe_fs_pipe               66
+#define LIND_safe_fs_pipe2              67
 #define LIND_safe_fs_fork               68
+#define LIND_safe_fs_exec               69
+
+
 
 #define LIND_comp_cia                   105
 #define LIND_comp_call                  106
