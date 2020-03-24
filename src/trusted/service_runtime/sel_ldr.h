@@ -70,6 +70,8 @@ EXTERN_C_BEGIN
 
 #define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
 
+#define NACL_BAD_FD                     -1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;

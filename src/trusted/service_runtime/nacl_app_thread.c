@@ -117,7 +117,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
-  //NaClAppInitialDescriptorHookup(nap_child);
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -151,8 +150,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
     int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
-    if (parent_host_fd == -1) {
-      fd_cage_table[nap_child->cage_id][fd] = -1;
+    if (parent_host_fd == NACL_BAD_FD) {
+      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
       continue;
     }
     /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */

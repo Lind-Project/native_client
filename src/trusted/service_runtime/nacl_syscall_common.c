@@ -810,7 +810,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-  fd_cage_table[nap->cage_id][d] = -1;
+  fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
