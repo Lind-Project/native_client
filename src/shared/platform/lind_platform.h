@@ -61,7 +61,7 @@
 #define LIND_safe_net_bind              33
 #define LIND_safe_net_send              34
 #define LIND_safe_net_sendto            35
-#define LIND_safe_net_recv              362
+#define LIND_safe_net_recv              36
 #define LIND_safe_net_recvfrom          37
 #define LIND_safe_net_connect           38
 #define LIND_safe_net_listen            39
