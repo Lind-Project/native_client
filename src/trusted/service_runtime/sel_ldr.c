@@ -1782,5 +1782,5 @@ int NextFd(int cage_id){
     if (fd_cage_table[cage_id][fd] == -1) return fd;
   }
 
-  return NACL_BAD_FD;
+  return -NACL_ABI_EBADF;
 }
