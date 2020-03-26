@@ -70,6 +70,8 @@ EXTERN_C_BEGIN
 
 #define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
 
+#define NACL_BAD_FD                     -1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;
@@ -149,8 +151,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
-  /* set to the next unused (available for dup() etc.) file descriptor */
-  int                       fd;
+
 
   /*
    * public, user settable prior to app start.
@@ -926,6 +927,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
+
+/* Find the next usuable fd */
+int NextFd(int cage_id);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);

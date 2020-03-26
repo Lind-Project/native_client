@@ -61,7 +61,7 @@
 #define LIND_safe_net_bind              33
 #define LIND_safe_net_send              34
 #define LIND_safe_net_sendto            35
-#define LIND_safe_net_recv              362
+#define LIND_safe_net_recv              36
 #define LIND_safe_net_recvfrom          37
 #define LIND_safe_net_connect           38
 #define LIND_safe_net_listen            39
@@ -82,9 +82,12 @@
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
 
-#define LIND_safe_fs_pipe              66
-#define LIND_safe_fs_pipe2             67
+#define LIND_safe_fs_pipe               66
+#define LIND_safe_fs_pipe2              67
 #define LIND_safe_fs_fork               68
+#define LIND_safe_fs_exec               69
+
+
 
 #define LIND_comp_cia                   105
 #define LIND_comp_call                  106
@@ -156,5 +159,7 @@ int lind_flock (int fd, int operation);
 int lind_pipe(int* pipefds, int cageid);
 int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
 int lind_fork(int newcageid, int cageid);
+int lind_exec(int newcageid, int cageid);
+
 
 #endif /* LIND_PLATFORM_H_ */

@@ -117,7 +117,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
-  NaClAppInitialDescriptorHookup(nap_child);
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -146,12 +145,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
   NaClXMutexLock(&nap_parent->mu);
-  for (int parent_fd = nap_child->fd; parent_fd <= nap_parent->fd; parent_fd++) {
+
+  for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
-    int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];
-    if (parent_host_fd == 0) {
-      fd_cage_table[nap_child->cage_id][nap_child->fd++] = 0;
+    int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
+    if (parent_host_fd == NACL_BAD_FD) {
+      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
       continue;
     }
     /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */
@@ -183,10 +183,10 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     NaClSetDesc(nap_parent, parent_host_fd, parent_nd);
 
     /* Set childs cage table with the current fd to the old parent host fd */
-    fd_cage_table[nap_child->cage_id][nap_child->fd++] = child_host_fd;
+    fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
 
 
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", parent_fd, nap_child->fd - 1);
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
   }
   NaClXMutexUnlock(&nap_parent->mu);
 
