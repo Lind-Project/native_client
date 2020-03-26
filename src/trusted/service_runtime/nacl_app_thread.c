@@ -102,7 +102,14 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
       continue;
     }
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
+    
+    printf("%d number of children \n", nap_arr[i]->num_children);
+
     nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
+
+
+    printf("%d number of children \n", nap_arr[i]->num_children);
+
     if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
       NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
     }
