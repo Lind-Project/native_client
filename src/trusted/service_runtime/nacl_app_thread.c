@@ -362,15 +362,15 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
         continue;
       }
    
-        nap_arr[i]->num_children--;
-        NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
-        if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
-          NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-        }
-        else {
-          NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-        }
+      nap_arr[i]->num_children--;
+      NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
+      if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
+        NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
       }
+      else {
+        NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
+      }
+      
       NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
     }
     /* don't unlock master twice */
