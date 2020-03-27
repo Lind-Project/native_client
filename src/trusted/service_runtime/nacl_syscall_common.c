@@ -4444,7 +4444,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   if (pid <= 0) {
     while(1){
 
-      /* Starting at 1 here, we shouldn't be waiting for the master cage, 0 */
+      /* Cycle through possible cages up to the fork number (max amount of created cages) */
       for (int cage_id = 0; cage_id < fork_num; cage_id++) {
 
         NaClXMutexLock(&nap->children_mu);
