@@ -4433,6 +4433,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     }
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
+    ret = pid;
     goto out;
   }
 
@@ -4483,7 +4484,7 @@ out:
   if (nap_child && stat_loc_ptr) {
     *stat_loc_ptr = nap_child->exit_status;
   }
-  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", cage_id);
+  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
   NaClLog(1, "[NaClSysWaitpid] ret = %d \n", ret);
