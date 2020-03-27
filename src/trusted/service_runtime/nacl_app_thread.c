@@ -103,7 +103,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     }
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
     
-    nap_arr[i]->num_children++];
+    nap_arr[i]->num_children++;
 
     if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
       NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
@@ -334,7 +334,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap_master = NULL;
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
-  int             list_idx;
 
   if (master_ctx) {
     nap_master = ((struct NaClAppThread *)master_ctx)->nap;
@@ -368,8 +367,9 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
         if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
           NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
         }
-        else NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-
+        else {
+          NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
+        }
       }
       NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
     }
