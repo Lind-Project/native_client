@@ -4413,7 +4413,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
   /*
-   * explicit child pid given
+   * WAITPID: explicit child pid given
    */
   if (pid > 0 && pid <= pid_max) {
     int cage_id = pid;
@@ -4438,15 +4438,14 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
   /*
-   * TODO: implement pid == WAIT_ANY_PG (0) and pid == WAIT_ANY (-1) behavior
-   *
-   * -jp
+   * WAIT or WAITPID(-1)
+   * TODO: implement pid == WAIT_ANY_PG (0), we currently don't deal with process groups
    */
   if (pid <= 0) {
     while(1){
 
       /* Starting at 1 here, we shouldn't be waiting for the master cage, 0 */
-      for (int cage_id = 1; cage_id < fork_num; cage_id++) {
+      for (int cage_id = 0; cage_id < fork_num; cage_id++) {
 
         NaClXMutexLock(&nap->children_mu);
 
