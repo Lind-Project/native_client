@@ -135,8 +135,7 @@ struct NaClApp {
   struct DynArray           children;
   struct NaClApp            *parent;
   struct NaClApp            *master;
-  /* mappings of `int fd` numbers to `NaClDesc *` */
-  volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
+
   volatile sig_atomic_t     num_children;
   volatile sig_atomic_t     cage_id;
   volatile sig_atomic_t     parent_id;

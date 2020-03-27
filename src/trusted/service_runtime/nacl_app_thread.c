@@ -103,12 +103,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     }
     NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
     
-    printf("%d number of children \n", nap_arr[i]->num_children);
-
-    nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
-
-
-    printf("%d number of children \n", nap_arr[i]->num_children);
+    nap_arr[i]->num_children++];
 
     if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
       NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
@@ -330,18 +325,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   }
 }
 
-static INLINE int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, int cage_id) {
-  int ret;
-  /* return the index if match found */
-  for (ret = 0; ret < nmemb; ret++) {
-    if (cage_id == id_list[ret]) {
-      return ret;
-    }
-  }
-  /* otherwise return an error value */
-  return -1;
-}
-
 /*
  * preconditions:
  * * natp must be thread_self(), called while holding no locks.
@@ -379,18 +362,14 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
       if (!nap_arr[i]) {
         continue;
       }
-      list_idx = GetChildIdx(nap_arr[i]->children_ids, nap_arr[i]->num_children, nap->cage_id);
-      switch (list_idx) {
-      case -1:
-        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-        break;
-      default:
+   
         nap_arr[i]->num_children--;
-        nap_arr[i]->children_ids[list_idx] = 0;
         NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
         if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
-          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
+          NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
         }
+        else NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
+
       }
       NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
     }

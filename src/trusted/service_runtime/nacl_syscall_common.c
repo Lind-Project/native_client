@@ -4390,14 +4390,14 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
                        int pid,
                        uint32_t *stat_loc,
                        int options) {
-  volatile int cage_id = pid;
+
   /* seconds between thread switching */
   NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = sysaddr == kNaClBadAddress ? NULL : (int *)sysaddr;
-  int pid_max = 0;
+  int pid_max = fork_num;
   int ret = 0;
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
@@ -4406,9 +4406,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   if (stat_loc_ptr) {
     *stat_loc_ptr = 0;
   }
-  for (int i = 0; i < nap->num_children; i++)
-    pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
-  if (!nap->num_children || cage_id > pid_max) {
+
+  if (!nap->num_children || pid > pid_max) {
     ret = -NACL_ABI_ECHILD;
     goto out;
   }
@@ -4416,7 +4415,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   /*
    * explicit child pid given
    */
-  if (cage_id > 0 && cage_id <= pid_max) {
+  if (pid > 0 && pid <= pid_max) {
+    int cage_id = pid;
     /* make sure children exists */
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
@@ -4441,36 +4441,42 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
    *
    * -jp
    */
-  if (cage_id <= 0) {
-    volatile int cur_idx = 0;
-    for (;;) {
-      /* make sure children exist */
-      NaClXMutexLock(&nap->children_mu);
-      if (!nap->num_children) {
-        ret = -NACL_ABI_ECHILD;
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
-        goto out;
-      }
-      /* wait for next child to exit */
-      cage_id = nap->children_ids[cur_idx];
-      if (cage_id && (nap_child = DynArrayGet(&nap->children, cage_id))) {
-        NaClLog(1, "Thread children count: %d\n", nap->num_children);
-        NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
-        /* exit if selected child has finished */
-        if (!(nap_child = DynArrayGet(&nap->children, cage_id)) || !nap_child->running) {
-          ret = cage_id;
+  if (pid <= 0) {
+    while(1){
+
+      /* Starting at 1 here, we shouldn't be waiting for the master cage, 0 */
+      for (int cage_id = 1; cage_id < fork_num; cage_id++) {
+
+        NaClXMutexLock(&nap->children_mu);
+
+        /* make sure children exist, if not send ABI_ECHILD */
+        if (!nap->num_children) {
+          ret = -NACL_ABI_ECHILD;
           NaClXCondVarBroadcast(&nap->children_cv);
           NaClXMutexUnlock(&nap->children_mu);
           goto out;
         }
+        /* wait for next child to exit */
+        nap_child = DynArrayGet(&nap->children, cage_id);
+        if (nap_child) {
+          NaClLog(1, "Thread children count: %d\n", nap->num_children);
+          NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+          /* exit if selected child has finished */
+          if (!(nap_child = DynArrayGet(&nap->children, cage_id)) || !nap_child->running) {
+            ret = cage_id;
+            NaClXCondVarBroadcast(&nap->children_cv);
+            NaClXMutexUnlock(&nap->children_mu);
+            goto out;
+          }
+        }
+    
+        NaClXCondVarBroadcast(&nap->children_cv);
+
+        NaClXMutexUnlock(&nap->children_mu);
       }
-      if (++cur_idx > CHILD_NUM_MAX) {
-        cur_idx = 0;
-      }
-      NaClXCondVarBroadcast(&nap->children_cv);
-      NaClXMutexUnlock(&nap->children_mu);
+      
     }
+    
   }
 
 out:
