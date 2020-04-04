@@ -724,10 +724,9 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   }
   NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
   if (host_os_desc >= FILE_DESC_MAX) {
-    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large for fd_maps\n", host_os_desc);
+    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large\n", host_os_desc);
     return;
   }
-  nap->fd_maps[host_os_desc] = (struct NaClDesc *)dp;
 }
 
 void NaClAddImcHandle(struct NaClApp  *nap,
@@ -1769,7 +1768,6 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
 
   /* set to the next unused (available for dup() etc.) file descriptor */
-  nap->num_lib = 3;
   nap->num_children = 0;
   nap->cage_id = cage_id;
 }
