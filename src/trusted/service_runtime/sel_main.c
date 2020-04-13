@@ -237,6 +237,10 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   nacl_main_begin = clock();
 
+  /* Initialize cage early on to avoid Cage 0 */
+  InitializeCage(nap, 1);
+
+
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
   }
@@ -829,7 +833,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  InitializeCage(nap, 1);
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
@@ -841,10 +844,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
-  if (!NaClCreateMainThread(nap,
-                            argc - optind,
-                            argv + optind,
-                            nap->clean_environ)) {
+  if (!NaClCreateThread(THREAD_LAUNCH_MAIN,
+                        NULL,
+                        nap,
+                        argc - optind,
+                        argv + optind,
+                        nap->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }

@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   /* These are examples of two different ways to run untrusted code. */
   if (use_separate_thread) {
     /* Create a new host thread that is managed by NaCl. */
-    CHECK(NaClCreateMainThread(&app, 0, NULL, NULL));
+    CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
     NaClWaitForMainThreadToExit(&app);
 
     NaClLog(LOG_FATAL, "The exit syscall is not supposed to be callable\n");

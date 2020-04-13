@@ -465,18 +465,12 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
-  /* check for closed fds */
-  if (oldfd < 0) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
-  if (nap->fd > FILE_DESC_MAX) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+
+  if (old_hostfd < 0) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
     ret= -NACL_ABI_EBADF;
@@ -504,10 +498,10 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   /* We've got to put that old NaClDescriptor back in there... */
   NaClSetDesc(nap, old_hostfd, old_nd);
 
-  fd_cage_table[nap->cage_id][nap->fd] = new_hostfd;
+  ret = NextFd(nap->cage_id);
 
-  /* update current maximum file descriptor number */
-  ret = nap->fd++;
+  fd_cage_table[nap->cage_id][ret] = new_hostfd;
+
 
 out:
   return ret;
@@ -529,23 +523,18 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
 
-  /* check for closed fds */
-  if (oldfd < 0) {
-    ret = -NACL_ABI_EBADF;
-    goto out;
-  }
-
   if (oldfd == newfd) {
     ret = oldfd;
-    goto out;
-  }
-  if (nap->fd > FILE_DESC_MAX) {
-    ret = -NACL_ABI_EBADF;
     goto out;
   }
 
   /* Get old host fd from cage table, and use that to get nacl descriptor */
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
+
+  if (old_hostfd < 0) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
   
   if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
     ret = -NACL_ABI_EBADF;
@@ -556,30 +545,22 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   struct NaClDescIoDesc *old_self = (struct NaClDescIoDesc *) &old_nd->base;
   struct NaClHostDesc *old_hd = old_self->hd;
 
-  /* Check if newfd exists */
+  /* Check if newfd exists 
 
-  if (fd_cage_table[nap->cage_id][newfd]) {
-    /* Retrieve host fd, get nacl descriptor */
-    new_hostfd = fd_cage_table[nap->cage_id][newfd];
-    if (!(new_nd = NaClGetDesc(nap, new_hostfd))) {
-      ret = -NACL_ABI_EBADF;
-      goto out;
-    }
+    Scenarios
+    1. new_hostfd is < 0 - this implies that newfd has been a number specified by the user and we should create
+    a new nacl desc and dup it via regular dup
+    2. new_hostfd is >= 0 - we have this fd already, lets dup it
 
-    /* Translate from NaCl Desc to Host Desc */
-    struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
-    struct NaClHostDesc *new_hd = new_self->hd;
+  
+  */
 
-    new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
-    new_hd->cageid = nap->cage_id;
+  new_hostfd = fd_cage_table[nap->cage_id][newfd];
 
-    /* Re-add the nacl desc to the nap */
-    NaClSetDesc(nap, new_hostfd, new_nd);
-  }
-  else {
+
+  if (new_hostfd < 0) {
     
-    /* Create and set vars for new hd */
+    /* Scenario 1: Create and set vars for new hd */
     struct NaClHostDesc *new_hd;
     new_hd = malloc(sizeof(*new_hd));
     if (!new_hd) {
@@ -596,16 +577,34 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
     /* and add the new hostfd to the cage table */
     fd_cage_table[nap->cage_id][newfd] = new_hostfd;
+
+
+
+  }
+  else {
+    /* Scenario 2 */
+
+    new_nd = NaClGetDesc(nap, new_hostfd);
+    if (!new_nd) {
+      ret = -NACL_ABI_EBADF;
+      goto out;
+    }
+
+    /* Translate from NaCl Desc to Host Desc */
+    struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
+    struct NaClHostDesc *new_hd = new_self->hd;
+
+    new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
+    new_hd->flags = old_hd->flags;
+    new_hd->cageid = nap->cage_id;
+
+    /* Re-add the nacl desc to the nap */
+    NaClSetDesc(nap, new_hostfd, new_nd);
   }
   
   /* We've got to put that old NaClDescriptor back in there... */
   NaClSetDesc(nap, old_hostfd, old_nd);
   
-  /* update current maximum file descriptor number */
-  if (newfd > nap->fd) {
-    nap->fd = newfd;
-  }
-
   ret = newfd;
 
 out:
@@ -767,10 +766,15 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
 cleanup:
-  /* now translate the real fds to virtual fds and return them to the cage */
-  fd_cage_table[nap->cage_id][nap->fd] = retval;
-  fd_retval = nap->fd;
-  nap->fd++;
+  /*
+    Now translate the real fds to virtual fds and return them to the cage 
+    Get next available, and set cagetable there to nacl retval
+  */
+  
+  fd_retval = NextFd(nap->cage_id);
+
+  fd_cage_table[nap->cage_id][fd_retval] = retval;
+
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
@@ -798,7 +802,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   ndp = NaClGetDescMu(nap, fd);
 
   /* If we have an fd and nacl descriptor, lets close it */
-  if (fd && ndp){
+  if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, fd, NULL);
     NaClDescUnref(ndp);
@@ -806,7 +810,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-  fd_cage_table[nap->cage_id][d] = 0;
+  fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
@@ -830,6 +834,10 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
@@ -988,6 +996,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   ndp = NaClGetDesc(nap, fd);
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1577,6 +1590,10 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     ndp = NULL;
   } else {
     fd = fd_cage_table[nap->cage_id][d];
+    if (fd < 0) {
+      map_result = -NACL_ABI_EBADF;
+      goto cleanup;
+    }
     ndp = NaClGetDesc(nap, fd);
     if (!ndp) {
       map_result = -NACL_ABI_EBADF;
@@ -2629,7 +2646,13 @@ int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
   int             fd;
 
   NaClLog(1, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
+
+  /* Check if fd is valid and if NaCl Desc exists */
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EINVAL;
+    goto out;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EINVAL;
@@ -2655,6 +2678,10 @@ int32_t NaClSysImcConnect(struct NaClAppThread *natp,
 
   NaClLog(1, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -2750,6 +2777,10 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
   }
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -2936,6 +2967,11 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   }
 
   fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    NaClLog(1, "%s\n", "receiving descriptor invalid");
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
+  }
   ndp = NaClGetDesc(nap, fd);
   if (!ndp) {
     NaClLog(1, "%s\n", "receiving descriptor invalid");
@@ -3948,10 +3984,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
    /* Sync NaCl fds with Lind ufds*/
   for (int i = 0; i < 2; i++) {
-    if (nap->fd > FILE_DESC_MAX) {
-      ret = -NACL_ABI_EFAULT;
-      goto out;
-    }
+    
     /* set flags for the read and write ends of the pipe */
     switch (i) {
     case 0:
@@ -3989,9 +4022,14 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     
 
     /* Update cage table with our lind fds */
-    fd_cage_table[nap->cage_id][nap->fd] = retval;
-    nacl_fds[i] = nap->fd;
-    nap->fd++;
+    int pipe_fd = NextFd(nap->cage_id);
+    if (pipe_fd < 0) {
+      ret = -NACL_ABI_EBADF;
+      goto out;
+    }
+    fd_cage_table[nap->cage_id][pipe_fd] = retval;
+    nacl_fds[i] = pipe_fd;
+
   }
 
   /* copy out NaCl fds */
@@ -4034,7 +4072,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&nap->mu);
 
   /* start fork thread */
-  if (!NaClCreateMainForkThread(natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
     goto fail;
@@ -4305,32 +4343,19 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClXMutexLock(&nap->mu); 
   NaClXMutexLock(&nap_child->mu); 
   NaClLog(2, "Copying fd table in SafePOSIX\n");
-  lind_fork(nap_child->cage_id, nap->cage_id);
+  lind_exec(nap_child->cage_id, nap->cage_id);
   NaClXMutexUnlock(&nap_child->mu);
   NaClXMutexUnlock(&nap->mu);
 
-  /* execute new binary */
+  /* execute new binary, we pass NULL as parent natp since we're not basing the new thread off of this one. */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
-  if (!NaClCreateMainThread(nap_child, child_argc, child_argv, nap_child->clean_environ)) {
-    NaClLog(LOG_ERROR, "%s\n", "NaClCreateMainForkThread() failed");
+  if (!NaClCreateThread(THREAD_LAUNCH_EXEC, NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+    NaClLog(LOG_ERROR, "%s\n", "NaClCreateThread() failed");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
-  
-  /* 
-   * TODO
-   * The following line is a quick-patch to get Bash to work minimally 
-   * The use of CreateMainThread above mistakenly gets rid of the child parent reference,
-   * but using the Fork version of the function makes other changes that inhibits the new 
-   * program from exec'ing. We'll use this fix for now so we can merge the structural changes into master
-   * and the larger issue will be resolved in the upcoming refactor.
-   */
-  
-  nap_child->parent = nap;
-
-  
-  
+    
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
@@ -4365,14 +4390,14 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
                        int pid,
                        uint32_t *stat_loc,
                        int options) {
-  volatile int cage_id = pid;
+
   /* seconds between thread switching */
   NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
   int *stat_loc_ptr = sysaddr == kNaClBadAddress ? NULL : (int *)sysaddr;
-  int pid_max = 0;
+  int pid_max = fork_num;
   int ret = 0;
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
@@ -4381,17 +4406,17 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   if (stat_loc_ptr) {
     *stat_loc_ptr = 0;
   }
-  for (int i = 0; i < nap->num_children; i++)
-    pid_max = pid_max < nap->children_ids[i] ? nap->children_ids[i] : pid_max;
-  if (!nap->num_children || cage_id > pid_max) {
+
+  if (!nap->num_children || pid > pid_max) {
     ret = -NACL_ABI_ECHILD;
     goto out;
   }
 
   /*
-   * explicit child pid given
+   * WAITPID: explicit child pid given
    */
-  if (cage_id > 0 && cage_id <= pid_max) {
+  if (pid > 0 && pid <= pid_max) {
+    int cage_id = pid;
     /* make sure children exists */
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
@@ -4408,51 +4433,57 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     }
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
+    ret = pid;
     goto out;
   }
 
   /*
-   * TODO: implement pid == WAIT_ANY_PG (0) and pid == WAIT_ANY (-1) behavior
-   *
-   * -jp
+   * WAIT or WAITPID(-1)
+   * TODO: implement pid == WAIT_ANY_PG (0), we currently don't deal with process groups
    */
-  if (cage_id <= 0) {
-    volatile int cur_idx = 0;
-    for (;;) {
-      /* make sure children exist */
-      NaClXMutexLock(&nap->children_mu);
-      if (!nap->num_children) {
-        ret = -NACL_ABI_ECHILD;
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
-        goto out;
-      }
-      /* wait for next child to exit */
-      cage_id = nap->children_ids[cur_idx];
-      if (cage_id && (nap_child = DynArrayGet(&nap->children, cage_id))) {
-        NaClLog(1, "Thread children count: %d\n", nap->num_children);
-        NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
-        /* exit if selected child has finished */
-        if (!(nap_child = DynArrayGet(&nap->children, cage_id)) || !nap_child->running) {
-          ret = cage_id;
+  if (pid <= 0) {
+    while(1){
+
+      /* Cycle through possible cages up to the fork number (max amount of created cages) */
+      for (int cage_id = 0; cage_id < fork_num; cage_id++) {
+
+        NaClXMutexLock(&nap->children_mu);
+
+        /* make sure children exist, if not send ABI_ECHILD */
+        if (!nap->num_children) {
+          ret = -NACL_ABI_ECHILD;
           NaClXCondVarBroadcast(&nap->children_cv);
           NaClXMutexUnlock(&nap->children_mu);
           goto out;
         }
+        /* wait for next child to exit */
+        nap_child = DynArrayGet(&nap->children, cage_id);
+        if (nap_child) {
+          NaClLog(1, "Thread children count: %d\n", nap->num_children);
+          NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+          /* exit if selected child has finished */
+          if (!(nap_child = DynArrayGet(&nap->children, cage_id)) || !nap_child->running) {
+            ret = cage_id;
+            NaClXCondVarBroadcast(&nap->children_cv);
+            NaClXMutexUnlock(&nap->children_mu);
+            goto out;
+          }
+        }
+    
+        NaClXCondVarBroadcast(&nap->children_cv);
+
+        NaClXMutexUnlock(&nap->children_mu);
       }
-      if (++cur_idx > CHILD_NUM_MAX) {
-        cur_idx = 0;
-      }
-      NaClXCondVarBroadcast(&nap->children_cv);
-      NaClXMutexUnlock(&nap->children_mu);
+      
     }
+    
   }
 
 out:
   if (nap_child && stat_loc_ptr) {
     *stat_loc_ptr = nap_child->exit_status;
   }
-  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", cage_id);
+  NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
   NaClLog(1, "[NaClSysWaitpid] ret = %d \n", ret);

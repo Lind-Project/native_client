@@ -70,6 +70,8 @@ EXTERN_C_BEGIN
 
 #define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
 
+#define NACL_BAD_FD                     -1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;
@@ -114,6 +116,12 @@ struct NaClSpringboardInfo {
   uint32_t end_addr;
 };
 
+enum NaClThreadLaunchType {
+  THREAD_LAUNCH_MAIN,
+  THREAD_LAUNCH_FORK,
+  THREAD_LAUNCH_EXEC
+};
+
 struct NaClApp {
   /*
    * children table lock children_mu is higher in the locking order than
@@ -127,13 +135,11 @@ struct NaClApp {
   struct DynArray           children;
   struct NaClApp            *parent;
   struct NaClApp            *master;
-  /* mappings of `int fd` numbers to `NaClDesc *` */
-  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
-  volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
+
   volatile sig_atomic_t     num_children;
   volatile sig_atomic_t     cage_id;
-  volatile sig_atomic_t     num_lib;
   volatile sig_atomic_t     parent_id;
+  enum NaClThreadLaunchType tl_type;
 
   /* yiwen: store the path of the execuable running inside this cage(as the main thread) */
   int                       argc;
@@ -142,8 +148,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
-  /* set to the next unused (available for dup() etc.) file descriptor */
-  int                       fd;
+
 
   /*
    * public, user settable prior to app start.
@@ -633,16 +638,14 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * alternative design, NaClWaitForMainThreadToExit will become a
  * no-op.
  */
-int NaClCreateMainThread(struct NaClApp     *nap,
-                         int                argc,
-                         char               **argv,
-                         char const *const  *envv) NACL_WUR;
 
-int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
-                             struct NaClApp           *nap_child,
-                             int                      argc,
-                             char                     **argv,
-                             char const *const        *envv) NACL_WUR;
+
+int NaClCreateThread(enum NaClThreadLaunchType tl_type,
+                     struct NaClAppThread     *natp_parent,
+                     struct NaClApp           *nap_child,
+                     int                      argc,
+                     char                     **argv,
+                     char const *const        *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
@@ -921,6 +924,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
+
+/* Find the next usuable fd */
+int NextFd(int cage_id);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);
