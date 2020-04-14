@@ -135,7 +135,8 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   NaClLog(3, "Entered NaClSysBrk(new_break 0x%08"NACL_PRIxPTR")\n",
           new_break);
 
-  sys_new_break = NaClUserToSysAddr(nap, new_break);
+  sys_new_break = NaClUserToSysAddrProt(nap, new_break, NACL_ABI_PROT_READ |
+                                                        NACL_ABI_PROT_WRITE);
   NaClLog(3, "sys_new_break 0x%08"NACL_PRIxPTR"\n", sys_new_break);
 
   if (kNaClBadAddress == sys_new_break) {
@@ -165,7 +166,8 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
      * break to the page containing new_break.
      */
 
-    sys_break = NaClUserToSys(nap, nap->break_addr);
+    sys_break = NaClUserToSysProt(nap, nap->break_addr, NACL_ABI_PROT_READ |
+                                                        NACL_ABI_PROT_WRITE);
 
     usr_last_data_page = (nap->break_addr - 1) >> NACL_PAGESHIFT;
 
@@ -221,7 +223,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
       ent->npages = (last_internal_page - ent->page_num + 1);
       region_size = (((last_internal_page + 1) << NACL_PAGESHIFT)
                      - start_new_region);
-      if (NaClMprotect((void *) NaClUserToSys(nap, start_new_region),
+      if (NaClMprotect((void *) NaClUserToSysProt(nap, start_new_region),
                             region_size,
                             PROT_READ | PROT_WRITE)) {
         NaClLog(LOG_FATAL,
@@ -842,7 +844,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * |count| is arbitrary and we wouldn't want to have to allocate
    * memory in trusted address space to match.
    */
-  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) dirp, count);
+  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) dirp, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, " illegal address for directory data\n");
     retval = -NACL_ABI_EFAULT;
@@ -921,7 +923,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
@@ -996,7 +998,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
     NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
@@ -1120,6 +1122,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    * Furthermore, some requests take no arguments, so sysaddr might
    * end up being kNaClBadAddress and that is perfectly okay.
    */
+  // TODO: check every IOCTL request type to figure out needed prot
   sysaddr = NaClUserToSysAddr(nap, (uintptr_t) arg);
   /*
    ****************************************
@@ -1908,6 +1911,8 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     goto cleanup;
   }
 
+
+  //We don't check prot in mmap
   sysaddr = NaClUserToSys(nap, usraddr);
 
   /* [0, length) */
@@ -2023,6 +2028,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
          * code simpler (releasing a created region is more code).
          */
         NaClXMutexLock(&nap->dynamic_load_mutex);
+        //We don't check prot in mmap
         ret = NaClDynamicRegionCreate(nap, NaClUserToSys(nap, usraddr), length,
                                       1);
         NaClXMutexUnlock(&nap->dynamic_load_mutex);
@@ -2251,6 +2257,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
     return -NACL_ABI_EINVAL;
   }
 
+  //We don't check prot in mmap
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)offp, sizeof(offset));
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "%s\n", "NaClSysMmap: offset in a bad untrusted memory location");
@@ -2302,6 +2309,7 @@ int32_t NaClSysMunmap(struct NaClAppThread  *natp,
     length = alloc_rounded_length;
     NaClLog(2, "munmap: rounded length to 0x%"NACL_PRIxS"\n", length);
   }
+  //Prot is explicit in munmap
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) start, length);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, "munmap: region not user addresses\n");
@@ -2456,6 +2464,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
     size_t entry_len = entry->npages << NACL_PAGESHIFT;
 
     usraddr = entry->page_num << NACL_PAGESHIFT;
+    //This conversion has explicit prot handling
     addr = NaClUserToSys(nap, usraddr);
 
     NaClLog(2, "MprotectInternal: "
@@ -2503,6 +2512,7 @@ int32_t NaClSysMprotectInternal(struct NaClApp  *nap,
     goto cleanup;
   }
   length = NaClRoundAllocPage(length);
+  //This function has explicit prot checking
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) start, length);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "%s\n", "mprotect: region not user addresses");
@@ -2737,9 +2747,10 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
     }
 
     for (i = 0; i < kern_nanimh.iov_length; ++i) {
-      sysaddr = NaClUserToSysAddrRange(nap,
-                                       (uintptr_t)kern_naiov[i].base,
-                                       kern_naiov[i].length);
+      sysaddr = NaClUserToSysAddrRangeProt(nap,
+                                           (uintptr_t)kern_naiov[i].base,
+                                           kern_naiov[i].length,
+                                           NACL_SYS_PROT_WRITE);
       if (kNaClBadAddress == sysaddr) {
         retval = -NACL_ABI_EFAULT;
         goto cleanup_leave;
@@ -2913,9 +2924,10 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
      */
 
     for (i = 0; i < kern_nanimh.iov_length; ++i) {
-      sysaddr = NaClUserToSysAddrRange(nap,
-                                       (uintptr_t) kern_naiov[i].base,
-                                       kern_naiov[i].length);
+      sysaddr = NaClUserToSysAddrRangeProt(nap,
+                                           (uintptr_t) kern_naiov[i].base,
+                                           kern_naiov[i].length,
+                                           NACL_ABI_PROT_WRITE);
       if (kNaClBadAddress == sysaddr) {
         NaClLog(4, "iov number %"NACL_PRIdS" not entirely in user space\n", i);
         retval = -NACL_ABI_EFAULT;
@@ -2927,8 +2939,9 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   }
 
   if (kern_nanimh.desc_length > 0) {
-    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)kern_nanimh.descv,
-                                     kern_nanimh.desc_length * sizeof(int32_t));
+    sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t)kern_nanimh.descv,
+                                         kern_nanimh.desc_length * sizeof(int32_t)
+                                         NACL_ABI_PROT_WRITE);
     if (kNaClBadAddress == sysaddr) {
       retval = -NACL_ABI_EFAULT;
       goto cleanup_leave;
@@ -3139,7 +3152,8 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   /* Verify that the address in the app's range and translated from
    * nacl module address to service runtime address - a nop on ARM
    */
-  sys_tls = NaClUserToSysAddrRange(natp->nap, thread_ptr, 4);
+  sys_tls = NaClUserToSysAddrRangeProt(natp->nap, thread_ptr, 4, NACL_ABI_PROT_WRITE
+                                                               | NACL_ABI_PROT_READ);
   NaClLog(4,
           "NaClSysTlsInit: thread_ptr 0x%"NACL_PRIx32
           ", sys_tls 0x%"NACL_PRIxPTR"\n",
@@ -3182,13 +3196,15 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
                & ~NACL_STACK_ALIGN_MASK) - NACL_STACK_PAD_BELOW_ALIGN
               - NACL_STACK_ARGS_SIZE;
 
-  sys_stack = NaClUserToSysAddr(nap, stack_ptr);
+  sys_stack = NaClUserToSysAddrProt(nap, stack_ptr, NACL_ABI_PROT_READ 
+                                                 | NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sys_stack) {
     NaClLog(LOG_ERROR, "bad stack\n");
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
-  sys_tls = NaClUserToSysAddrRange(nap, thread_ptr, 4);
+  sys_tls = NaClUserToSysAddrRangeProt(nap, thread_ptr, 4, NACL_ABI_PROT_READ |
+                                                           NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sys_tls) {
     NaClLog(LOG_ERROR, "bad TLS pointer\n");
     retval = -NACL_ABI_EFAULT;
@@ -3593,7 +3609,7 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
 
   /* do the check before we sleep */
   if (rem && kNaClBadAddress ==
-      NaClUserToSysAddrRange(nap, (uintptr_t) rem, sizeof(*rem))) {
+      NaClUserToSysAddrRangeProt(nap, (uintptr_t) rem, sizeof(*rem), NACL_ABI_PROT_READ)) {
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
@@ -3680,8 +3696,10 @@ int32_t NaClSysExceptionStack(struct NaClAppThread *natp,
   if (!natp->nap->enable_exception_handling) {
     return -NACL_ABI_ENOSYS;
   }
-  if (kNaClBadAddress == NaClUserToSysAddrNullOkay(natp->nap,
-                                                   stack_addr + stack_size)) {
+  if (kNaClBadAddress == NaClUserToSysAddrNullOkayProt(natp->nap,
+                                                       stack_addr + stack_size,
+                                                       NACL_ABI_PROT_READ | 
+                                                       NACL_ABI_PROT_WRITE)) {
     return -NACL_ABI_EINVAL;
   }
   natp->exception_stack = stack_addr + stack_size;
@@ -4074,7 +4092,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   uintptr_t tramp_pnum;
 
   /* Convert pathname from user path, set binary */
-  sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
+  sys_pathname = NaClUserToSysAddrProt(nap, (uintptr_t)path, NACL_ABI_PROT_READ);
   binary = sys_pathname ? strdup(sys_pathname) : 0;
 
   /* 
@@ -4082,10 +4100,10 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     We need to turn these to uint32_t pointers for now because these are still NaCl pointers
     We'll convert to a char** later.
   */
-  sys_argv_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)argv);
+  sys_argv_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)argv, NACL_ABI_PROT_READ);
 
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
-  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
+  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)envp, NACL_ABI_PROT_READ);
 
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
@@ -4107,7 +4125,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
       goto fail;
     }
     for (int i = 0; i < new_envc; i++) {
-      char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
+      char *env = (void *)NaClUserToSysAddrProt(nap, (uintptr_t)sys_envp_ptr[i], NACL_ABI_PROT_READ);
       env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
       new_envp[i] = env ? strdup(env) : 0;
       if (!env) {
@@ -4143,7 +4161,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     goto fail;
   }
   for (int i = 0; i < new_argc; i++) {
-    char *arg = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_argv_ptr[i]);
+    char *arg = (void *)NaClUserToSysAddrProt(nap, (uintptr_t)sys_argv_ptr[i], NACL_ABI_PROT_READ);
     arg = (uintptr_t)arg == kNaClBadAddress ? 0 : arg;
     new_argv[i] = arg ? strdup(arg) : 0;
     if (!arg) {
@@ -4186,7 +4204,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   nap_child->main_exe_prevalidated = 1;
   
   /* calculate page addresses and sizes */
-  dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
+  //I'm not 100% sure of the necessary prot here, TODO: ensure this
+  dyncode_child = (void *)NaClUserToSysProt(nap_child, nap_child->dynamic_text_start, NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE);
   dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
   dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
   tramp_size = NaClRoundPage(nap->static_text_end - NACL_SYSCALL_START_ADDR);
@@ -4370,7 +4389,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   NACL_TIMESPEC_T const timeout = {1, 0};
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
-  uintptr_t sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)stat_loc, 4);
+  uintptr_t sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t)stat_loc, 4, NACL_ABI_PROT_WRITE);
   int *stat_loc_ptr = sysaddr == kNaClBadAddress ? NULL : (int *)sysaddr;
   int pid_max = 0;
   int ret = 0;

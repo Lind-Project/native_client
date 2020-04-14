@@ -561,6 +561,13 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
     int                     flags = NaClVmmapEntryMaxProt(ent);
 
+    //If the page does not not have PROT_NONE, force the PROT_READ flag
+    //This behavior is unspeicified by POSIX, but Linux acts in this way
+    if(flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
+                NACL_ABI_PROT_WRITE) != PROT_NONE){
+        flags |= PROT_READ;
+    }
+
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
       return 0 == (prot & (~flags));
