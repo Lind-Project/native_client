@@ -223,7 +223,8 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
       ent->npages = (last_internal_page - ent->page_num + 1);
       region_size = (((last_internal_page + 1) << NACL_PAGESHIFT)
                      - start_new_region);
-      if (NaClMprotect((void *) NaClUserToSysProt(nap, start_new_region),
+      //Not sure whether this prot is quite right
+      if (NaClMprotect((void *) NaClUserToSys(nap, start_new_region),
                             region_size,
                             PROT_READ | PROT_WRITE)) {
         NaClLog(LOG_FATAL,
@@ -2750,7 +2751,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
       sysaddr = NaClUserToSysAddrRangeProt(nap,
                                            (uintptr_t)kern_naiov[i].base,
                                            kern_naiov[i].length,
-                                           NACL_SYS_PROT_WRITE);
+                                           NACL_ABI_PROT_WRITE);
       if (kNaClBadAddress == sysaddr) {
         retval = -NACL_ABI_EFAULT;
         goto cleanup_leave;
@@ -2940,7 +2941,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
 
   if (kern_nanimh.desc_length > 0) {
     sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t)kern_nanimh.descv,
-                                         kern_nanimh.desc_length * sizeof(int32_t)
+                                         kern_nanimh.desc_length * sizeof(int32_t),
                                          NACL_ABI_PROT_WRITE);
     if (kNaClBadAddress == sysaddr) {
       retval = -NACL_ABI_EFAULT;

@@ -563,8 +563,8 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
 
     //If the page does not not have PROT_NONE, force the PROT_READ flag
     //This behavior is unspeicified by POSIX, but Linux acts in this way
-    if(flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
-                NACL_ABI_PROT_WRITE) != PROT_NONE){
+    if((flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
+                NACL_ABI_PROT_WRITE)) != PROT_NONE){
         flags |= PROT_READ;
     }
 
