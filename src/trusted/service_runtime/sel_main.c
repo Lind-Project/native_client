@@ -891,11 +891,11 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (toggle_time_info)
   {
     nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-    fprintf(stderr, "[TimeINfo] NaCl main program time spent = %f \n", nacl_main_spent);
+    fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
     nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-    fprintf(stderr, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+    fprintf(stderr, "[TimeInfo] NaCl initialization time spent = %f \n", nacl_initialization_spent);
     nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
-    fprintf(stderr, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
+    fprintf(stderr, "[TimeInfo] NaCl user program time spent = %f \n", nacl_user_program_spent);
   }
 
 
