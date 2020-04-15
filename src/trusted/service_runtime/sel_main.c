@@ -176,7 +176,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
 int NaClSelLdrMain(int argc, char **argv) {
