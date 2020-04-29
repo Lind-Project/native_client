@@ -1532,8 +1532,8 @@ static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t len
                               PROT_NONE,  
                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 
                               -1, 
-                              (off_t) 0)) {
-  if (MAP_FAILED == lind_munmap((void *) sysaddr, length, nap->cage_id)) {
+                              (off_t) 0,
+                              nap->cage_id)) {
     NaClLog(2, "mmap to put in anonymous memory failed, errno = %d\n", errno);
     return -NaClXlateErrno(errno);
   }
