@@ -152,11 +152,18 @@ struct NaClAppThread {
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap);
 
-void WINAPI NaClAppForkThreadLauncher(void *state);
 void WINAPI NaClAppThreadLauncher(void *state);
 
 void NaClAppThreadTeardown(struct NaClAppThread *natp);
 
+
+/*
+ * Handles fork specific setup in thread spawning, specific to context
+ */
+void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
+                              struct NaClAppThread     *natp_child,
+                              void *stack_ptr_parent,
+                              void *stack_ptr_child);
 /*
  * NaClAppThreadMake() creates a NaClAppThread object without invoking
  * untrusted code or creating a host thread.
@@ -176,19 +183,13 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
  * thread that invokes the given entry point in untrusted code.  This
  * returns true on success, false on failure.
  */
-int NaClAppThreadSpawn(struct NaClApp *nap,
-                       uintptr_t      usr_entry,
-                       uintptr_t      usr_stack_ptr,
-                       uint32_t       user_tls1,
-                       uint32_t       user_tls2) NACL_WUR;
+int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
+                       struct NaClApp           *nap_child,
+                       uintptr_t                usr_entry,
+                       uintptr_t                usr_stack_ptr,
+                       uint32_t                 user_tls1,
+                       uint32_t                 user_tls2) NACL_WUR;
 
-int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
-                           struct NaClAppThread     *natp_parent,
-                           struct NaClApp           *nap_child,
-                           uintptr_t                usr_entry,
-                           uintptr_t                usr_stack_ptr,
-                           uint32_t                 user_tls1,
-                           uint32_t                 user_tls2) NACL_WUR;
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
 
