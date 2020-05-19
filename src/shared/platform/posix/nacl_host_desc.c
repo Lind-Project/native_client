@@ -125,7 +125,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   int   need_exec;
   int   whichcage;
   unsigned long topbits;
-  unsigned int mapbottom;
+  int mapbottom;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
@@ -203,7 +203,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    */
   mapbottom = lind_mmap(start_addr, len, tmp_prot, host_flags, desc, offset, whichcage);
   //MAP_FAILED is -1, so bitwise or will have no effect
-  map_addr = (void*) (topbits | (long) mapbottom);
+  map_addr = (void*) (mapbottom == -1 ? (unsigned) -1L : topbits | (long) mapbottom);
   if (need_exec && MAP_FAILED != map_addr) {
     if (0 != mprotect(map_addr, len, host_prot)) {
       /*
