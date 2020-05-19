@@ -194,7 +194,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   }
   //if no hostDesc is specified, let the cageid to be 0, the init cage
   whichcage = d ? d->cageid : 0;
-  topbits = ((unsigned long) start_addr) & 0xffffffff00000000L;  
+  topbits = (0L | start_addr) & 0xffffffff00000000L;
   /* The RPC interface can only return ints, not longs. This means  
    * we can't get the top 32 bits of the address. Thankfully, the 
    * top 32 bits of the address, a cage invariant, are already
