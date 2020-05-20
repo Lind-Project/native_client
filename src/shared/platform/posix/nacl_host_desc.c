@@ -194,7 +194,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   }
   //if no hostDesc is specified, let the cageid to be 0, the init cage
   whichcage = d ? d->cageid : 0;
-  topbits = ((unsigned long) start_addr) & 0xffffffff00000000L;  
+  topbits = (long) start_addr & 0xffffffff00000000L;
   /* The RPC interface can only return ints, not longs. This means  
    * we can't get the top 32 bits of the address. Thankfully, the 
    * top 32 bits of the address, a cage invariant, are already
@@ -202,8 +202,11 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    * start address.
    */
   mapbottom = lind_mmap(start_addr, len, tmp_prot, host_flags, desc, offset, whichcage);
-  //MAP_FAILED is -1, so bitwise or will have no effect
-  map_addr = (void*) (topbits | (long) mapbottom);
+  /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
+   * return a long -1 as our return value. Otherwise, combine the 
+   * top bits and bottom bits into our full return value.
+   */
+  map_addr = (void*) (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
   if (need_exec && MAP_FAILED != map_addr) {
     if (0 != mprotect(map_addr, len, host_prot)) {
       /*
