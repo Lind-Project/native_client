@@ -93,7 +93,8 @@
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
 
-int pipe_write_end = -100;
+#define MAGIC_WRITE_PIPE  1000
+
 
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
@@ -816,9 +817,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
-
-  if (d == pipe_write_end) pipe_write_end = -100;
-
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
 }
@@ -1047,7 +1045,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
   
-  if (d == pipe_write_end) {
+  if (fd == MAGIC_WRITE_PIPE) {
       write_result = count;
       printf("skipping write for pipe");
 
@@ -4041,12 +4039,12 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_EBADF;
       goto out;
     }
+
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
+    if (i = 1) fd_cage_table[nap->cage_id][pipe_fd] = MAGIC_WRITE_PIPE;
     nacl_fds[i] = pipe_fd;
 
   }
-
-  pipe_write_end = nacl_fds[1];
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
