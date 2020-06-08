@@ -93,6 +93,8 @@
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
 
+int pipe_write_end = -100;
+
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
@@ -801,6 +803,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   fd = fd_cage_table[nap->cage_id][d];
   ndp = NaClGetDescMu(nap, fd);
 
+
+
   /* If we have an fd and nacl descriptor, lets close it */
   if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -811,6 +815,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
+
+
+  if (fd == pipe_write_end) pipe_write_end = -100;
 
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
@@ -1039,7 +1046,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
-  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+  
+  if (fd == pipe_write_end) write_result = count;
+  else write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
@@ -4032,6 +4041,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     nacl_fds[i] = pipe_fd;
 
   }
+
+  pipe_write_end = nacl_fds[1];
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
