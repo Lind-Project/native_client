@@ -817,7 +817,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
 
-  if (fd == pipe_write_end) pipe_write_end = -100;
+  if (d == pipe_write_end) pipe_write_end = -100;
 
   NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
@@ -1047,7 +1047,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
   
-  if (fd == pipe_write_end) {
+  if (d == pipe_write_end) {
       write_result = count;
       printf("skipping write for pipe");
 
