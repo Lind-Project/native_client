@@ -1043,8 +1043,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
 
   printf("about to write \n");
-  printf("fd value \n", fd);
-  if (fd == pipe_write_end) printf("matched fd\n");
+  printf("fd value %d\n", fd);
+  if (fd == pipe_write_end) printf("\n\n!!!!!matched fd!!!!!\n\n");
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
   NaClVmIoHasEnded(nap,
