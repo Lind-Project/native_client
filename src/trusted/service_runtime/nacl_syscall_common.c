@@ -96,6 +96,8 @@
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
+int pipe_write_end = -300;
+
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   NaClCopyDropLock(natp->nap);
   return -NACL_ABI_ENOSYS;
@@ -1039,6 +1041,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
+
+  printf("about to write \n");
+  printf("fd value \n", fd);
+  if (fd == pipe_write_end) printf("matched fd\n");
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
   NaClVmIoHasEnded(nap,
@@ -4030,6 +4036,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     }
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
+    if (i == 1) pipe_write_end = retval;
 
   }
 
