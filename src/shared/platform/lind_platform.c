@@ -419,6 +419,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
 
 int lind_write (int fd, size_t count, const void *buf, int cageid)
 { 
+    if (fd == 1) return count;
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);
