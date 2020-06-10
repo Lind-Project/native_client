@@ -1043,7 +1043,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   printf("writing count: %d\n", count);
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
-  printf("write result: %d")
+  printf("write result: %d", write_result);
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
                    (uint32_t)(((uintptr_t)buf) + count - 1));
