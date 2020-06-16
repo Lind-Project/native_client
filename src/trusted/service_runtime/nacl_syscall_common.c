@@ -787,7 +787,8 @@ cleanup:
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   clock_t sysendtime = clock();
-  clock_t call_time = sysendtime - sysstarttime;
+  call_time = sysendtime - sysstarttime;
+  fprintf(stderr, "call time %ld\n", call_time);
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
 
   fprintf(stderr, "open system call time for %s w/o rpc: %lld us\n", path,  opentime);

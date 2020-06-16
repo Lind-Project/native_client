@@ -403,6 +403,7 @@ int lind_open (int flags, int mode, const char *path, int cageid)
     LIND_API_PART2;
     clock_t rpcendtime = clock();
     rpc_time = rpcstarttime - rpcendtime;
+    fprintf(stderr, "rpc time %ld\n", rpc_time);
     LIND_API_PART3;
 }
 
