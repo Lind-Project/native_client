@@ -398,8 +398,11 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid
 int lind_open (int flags, int mode, const char *path, int cageid)
 {
     LIND_API_PART1;
+    clock_t rpcstarttime = clock();
     callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
     LIND_API_PART2;
+    clock_t rpcendtime = clock();
+    rpc_time = rpcstarttime - rpcendtime;
     LIND_API_PART3;
 }
 
