@@ -662,6 +662,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     char                  *pathname,
                     int                   flags,
                     int                   mode) {
+
+
+  clock_t sysstarttime = clock();
+
   struct NaClApp       *nap = natp->nap;
   uint32_t             retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
@@ -781,6 +785,12 @@ cleanup:
 
 
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+
+  clock_t sysendtime = clock();
+  clock_t call_time = sysendtime - sysstarttime;
+  long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
+
+  fprintf(stderr, "open system call time w/o rpc: %lld", opentime);
 
   return fd_retval;
 }
