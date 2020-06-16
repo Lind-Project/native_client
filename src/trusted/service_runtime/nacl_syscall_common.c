@@ -790,7 +790,7 @@ cleanup:
   clock_t call_time = sysendtime - sysstarttime;
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
 
-  fprintf(stderr, "open system call time w/o rpc: %lld", opentime);
+  fprintf(stderr, "open system call time for %s w/o rpc: %lld us\n", path,  opentime);
 
   return fd_retval;
 }
