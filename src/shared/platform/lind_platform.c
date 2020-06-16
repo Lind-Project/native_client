@@ -402,7 +402,7 @@ int lind_open (int flags, int mode, const char *path, int cageid)
     callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
     LIND_API_PART2;
     clock_t rpcendtime = clock();
-    rpc_time = rpcendtime - spcstarttime;
+    rpc_time = rpcendtime - rpcstarttime;
     fprintf(stderr, "rpc time %ld\n", rpc_time);
     LIND_API_PART3;
 }
