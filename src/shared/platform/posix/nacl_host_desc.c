@@ -33,9 +33,9 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
-extern clock_t before;
-extern clock_t after;
-extern long long difference;
+long long rpc_time;
+long long call_time;
+
 
 #if NACL_LINUX
 # define PREAD pread64

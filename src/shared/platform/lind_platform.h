@@ -29,9 +29,8 @@
 
 #include <time.h>
 
-clock_t before;
-clock_t after;
-long long difference;
+extern long long rpc_time;
+extern long long call_time;
 
 
 #if NACL_OSX

@@ -88,9 +88,9 @@
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
 
-extern clock_t before;
-extern clock_t after;
-extern long long difference;
+long long rpc_time;
+long long call_time;
+
 
 #define kKnownInvalidDescNumber (-1)
 #define kdefault_io_buffer_bytes_to_log 64ull
