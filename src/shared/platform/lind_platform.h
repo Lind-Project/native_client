@@ -27,6 +27,13 @@
 
 #include "native_client/src/shared/platform/lind_stat.h"
 
+#include <time.h>
+
+clock_t before;
+clock_t after;
+long long difference;
+
+
 #if NACL_OSX
 # define sockaddr_in sockaddr
 # define __SOCKADDR_ARG struct sockaddr

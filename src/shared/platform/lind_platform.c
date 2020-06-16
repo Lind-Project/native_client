@@ -27,6 +27,10 @@ PyObject *py_context;
 
 static int initialized;
 
+extern clock_t before;
+extern clock_t after;
+extern long long difference;
+
 /* wrap goto statement to guard against early if/else termination */
 #define GOTO_ERROR_IF_NULL(x) do { if (!(x)) goto error; } while (0)
 
