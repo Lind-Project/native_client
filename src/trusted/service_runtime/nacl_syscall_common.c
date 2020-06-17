@@ -862,10 +862,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   long long mutextime = ((premutex) * 1000000)/CLOCKS_PER_SEC;
   fprintf(stderr, "close system call mutex: %lld us\n", mutextime);
 
-  clock_t premutex = closepostmutexttime - closemutextime;
-  long long mutextime = ((premutex) * 1000000)/CLOCKS_PER_SEC;
-  fprintf(stderr, "close system call mutex: %lld us\n", mutextime);
-
   clock_t inmutextime = closeinmutexend - closeinmutex;
   long long inmutex = ((inmutextime) * 1000000)/CLOCKS_PER_SEC;
   fprintf(stderr, "close system call time inside mutex: %lld us\n", inmutex);
