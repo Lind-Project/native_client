@@ -825,8 +825,15 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* If we have an fd and nacl descriptor, lets close it */
   if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+    clock_t closesetdescstart = clock();
     NaClSetDescMu(nap, fd, NULL);
+    clock_t closesetdescend = clock();
+
+    clock_t closedesfunrefstart = clock();
+
     NaClDescUnref(ndp);
+    clock_t closedescunrefend = clock();
+
     ret = 0;
   }
 
@@ -837,6 +844,17 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
 
   NaClFastMutexUnlock(&nap->desc_mu);
   clock_t closepostmutexttime = clock();
+
+  
+  long long descset = ((closesetdescend - closesetdescstart) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "close system call descset: %lld us\n", descset);
+
+  long long descunref = ((closedescunrefend - closedesfunrefstart) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "close system call descunref: %lld us\n", descunref);
+
+  clock_t premutex = closepostmutexttime - closemutextime;
+  long long mutextime = ((premutex) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "close system call mutex: %lld us\n", mutextime);
 
   clock_t premutex = closepostmutexttime - closemutextime;
   long long mutextime = ((premutex) * 1000000)/CLOCKS_PER_SEC;
@@ -1194,7 +1212,6 @@ out:
   call_time = sysendtime - sysstarttime;
   fprintf(stderr, "call time %ld\n", call_time);
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
-
   fprintf(stderr, "lseek system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
 
 
