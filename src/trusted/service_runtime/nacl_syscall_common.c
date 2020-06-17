@@ -930,6 +930,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
 
   clock_t sysstarttime = clock();
+  clock_t sysendtime;
+
 
 
   struct NaClApp  *nap = natp->nap;
@@ -1007,7 +1009,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   retval = (int32_t) read_result;
 out:
 
-  clock_t sysendtime = clock();
+  sysendtime = clock();
   call_time = sysendtime - sysstarttime;
   fprintf(stderr, "call time %ld\n", call_time);
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
@@ -1022,6 +1024,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      size_t               count) {
 
   clock_t sysstarttime = clock();
+  clock_t sysendtime;
 
   struct NaClApp  *nap = natp->nap;
   int             fd = fd_cage_table[nap->cage_id][d];
@@ -1093,7 +1096,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
 out:
 
-  clock_t sysendtime = clock();
+  sysendtime = clock();
   call_time = sysendtime - sysstarttime;
   fprintf(stderr, "call time %ld\n", call_time);
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
@@ -1119,6 +1122,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   int             fd;
 
   clock_t sysstarttime = clock();
+  clock_t sysendtime;
 
 
   NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
@@ -1160,7 +1164,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 out_unref:
   NaClDescUnref(ndp);
 out:
-  clock_t sysendtime = clock();
+  sysendtime = clock();
   call_time = sysendtime - sysstarttime;
   fprintf(stderr, "call time %ld\n", call_time);
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
