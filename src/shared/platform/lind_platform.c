@@ -385,6 +385,8 @@ int lind_rmdir (const char *path)
 
 int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid)
 {
+    if (!strncmp(path, "file", 4)) return 1;
+
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[isi])", LIND_safe_fs_xstat, version, path, cageid);
     LIND_API_PART2;
