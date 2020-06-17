@@ -410,35 +410,54 @@ int lind_open (int flags, int mode, const char *path, int cageid)
 int lind_close (int fd, int cageid)
 {
     LIND_API_PART1;
+    clock_t rpcstarttime = clock();
+
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_close, fd, cageid);
     LIND_API_PART2;
+    clock_t rpcendtime = clock();
+    rpc_time = rpcendtime - rpcstarttime;
+    fprintf(stderr, "rpc time %ld\n", rpc_time);
     LIND_API_PART3;
 }
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
     LIND_API_PART1;
+    clock_t rpcstarttime = clock();
+
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
     LIND_API_PART2;
+    clock_t rpcendtime = clock();
+    rpc_time = rpcendtime - rpcstarttime;
+    fprintf(stderr, "rpc time %ld\n", rpc_time);
     COPY_DATA(buf, size)
     LIND_API_PART3;
 }
 
 int lind_write (int fd, size_t count, const void *buf, int cageid)
 { 
-    if (fd == 1) return count;
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
+    clock_t rpcstarttime = clock();
+
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);
     LIND_API_PART2;
+    clock_t rpcendtime = clock();
+    rpc_time = rpcendtime - rpcstarttime;
+    fprintf(stderr, "rpc time %ld\n", rpc_time);
     LIND_API_PART3;
 }
 
 int _lind_lseek (off_t offset, int fd, int whence, off_t * ret, int cageid)
 {
     LIND_API_PART1;
+    clock_t rpcstarttime = clock();
+
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
     LIND_API_PART2;
+    clock_t rpcendtime = clock();
+    rpc_time = rpcendtime - rpcstarttime;
+    fprintf(stderr, "rpc time %ld\n", rpc_time);
     COPY_DATA(ret, sizeof(*ret))
     LIND_API_PART3;
 }

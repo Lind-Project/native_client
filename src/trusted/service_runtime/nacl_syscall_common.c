@@ -802,6 +802,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   int             ret = -NACL_ABI_EBADF;
   int             fd = 0;
 
+  clock_t sysstarttime = clock();
+
+
   NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, d);
 
@@ -828,6 +831,13 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
   NaClFastMutexUnlock(&nap->desc_mu);
+
+  clock_t sysendtime = clock();
+  call_time = sysendtime - sysstarttime;
+  fprintf(stderr, "call time %ld\n", call_time);
+  long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
+
+  fprintf(stderr, "close system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
   return ret;
 }
 
@@ -917,6 +927,11 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     int                   d,
                     void                  *buf,
                     size_t                count) {
+
+
+  clock_t sysstarttime = clock();
+
+
   struct NaClApp  *nap = natp->nap;
   int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
@@ -991,6 +1006,13 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
+
+  clock_t sysendtime = clock();
+  call_time = sysendtime - sysstarttime;
+  fprintf(stderr, "call time %ld\n", call_time);
+  long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
+
+  fprintf(stderr, "read system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
   return retval;
 }
 
@@ -998,6 +1020,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
                      size_t               count) {
+
+  clock_t sysstarttime = clock();
+
   struct NaClApp  *nap = natp->nap;
   int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
@@ -1067,6 +1092,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t)write_result;
 
 out:
+
+  clock_t sysendtime = clock();
+  call_time = sysendtime - sysstarttime;
+  fprintf(stderr, "call time %ld\n", call_time);
+  long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
+
+  fprintf(stderr, "write system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
+  
   return retval;
 }
 
@@ -1084,6 +1117,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
   int             fd;
+
+  clock_t sysstarttime = clock();
+
 
   NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n",
@@ -1124,6 +1160,13 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 out_unref:
   NaClDescUnref(ndp);
 out:
+  clock_t sysendtime = clock();
+  call_time = sysendtime - sysstarttime;
+  fprintf(stderr, "call time %ld\n", call_time);
+  long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
+
+  fprintf(stderr, "lseek system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
+  
   return retval;
 }
 
