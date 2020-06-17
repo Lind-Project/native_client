@@ -1143,6 +1143,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
            " 0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
+  clock_t lseekdescstart = clock();
+
   fd = fd_cage_table[nap->cage_id][d];
 
   /* check for closed fds */
@@ -1157,11 +1159,19 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     goto out;
   }
 
+  clock_t lseekdescend = clock();
+
+  clock_t lseekcopystart = clock();
+
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) {
     retval = -NACL_ABI_EFAULT;
     goto out_unref;
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
+
+  clock_t lseekcopyend = clock();
+
+  clock_t lseekcallstart = clock();
 
   retval64 = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
               Seek)(ndp, (nacl_off64_t) offset, whence);
@@ -1175,6 +1185,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
+
+  clock_t lseekcallend = clock();
 out_unref:
   NaClDescUnref(ndp);
 out:
@@ -1184,6 +1196,16 @@ out:
   long long opentime = ((call_time - rpc_time) * 1000000)/CLOCKS_PER_SEC;
 
   fprintf(stderr, "lseek system call time for fd %d w/o rpc: %lld us\n", fd,  opentime);
+
+
+  long long desctime = ((lseekdescend - lseekdescstart) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "lseek desc: %lld us\n", desctime);
+
+  long long copytime = ((lseekcopyend - lseekcopystart) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "lseek copy: %lld us\n", copytime);
+
+  long long seekcalltime = ((lseekcallend - lseekcallstart) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "lseek call: %lld us\n", seekcalltime);
   
   return retval;
 }
