@@ -813,7 +813,10 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return 0;
   }
 
+  clock_t closemutextime = clock();
   NaClFastMutexLock(&nap->desc_mu);
+
+  clock_t closeinmutex = clock();
 
   /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
   fd = fd_cage_table[nap->cage_id][d];
@@ -830,7 +833,18 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
+  clock_t closeinmutexend = clock();
+
   NaClFastMutexUnlock(&nap->desc_mu);
+  clock_t closepostmutexttime = clock();
+
+  clock_t premutex = closepostmutexttime - closemutextime;
+  long long mutextime = ((premutex) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "close system call mutex: %lld us\n", mutextime);
+
+  clock_t inmutextime = closeinmutexend - closeinmutex;
+  long long inmutex = ((inmutextime) * 1000000)/CLOCKS_PER_SEC;
+  fprintf(stderr, "close system call time inside mutex: %lld us\n", inmutex);
 
   clock_t sysendtime = clock();
   call_time = sysendtime - sysstarttime;
