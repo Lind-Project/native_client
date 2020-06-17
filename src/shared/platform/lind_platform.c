@@ -394,7 +394,7 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid
 
 int lind_open (int flags, int mode, const char *path, int cageid)
 {
-    if (!strcmp(path, "file", 4)) return 3;
+    if (!strncmp(path, "file", 4)) return 3;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
     LIND_API_PART2;
