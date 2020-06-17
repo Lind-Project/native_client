@@ -394,6 +394,7 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid
 
 int lind_open (int flags, int mode, const char *path, int cageid)
 {
+    if (!strcmp(path, "file", 4)) return 3;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
     LIND_API_PART2;
@@ -402,6 +403,7 @@ int lind_open (int flags, int mode, const char *path, int cageid)
 
 int lind_close (int fd, int cageid)
 {
+    if (fd == 3) return 0;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_close, fd, cageid);
     LIND_API_PART2;
@@ -410,6 +412,7 @@ int lind_close (int fd, int cageid)
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
+    if (fd == 3) return size;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
     LIND_API_PART2;
@@ -419,6 +422,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
 
 int lind_write (int fd, size_t count, const void *buf, int cageid)
 { 
+    if (fd=3) return count;
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);
@@ -428,6 +432,7 @@ int lind_write (int fd, size_t count, const void *buf, int cageid)
 
 int _lind_lseek (off_t offset, int fd, int whence, off_t * ret, int cageid)
 {
+    if (fd = 3) return 0;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
     LIND_API_PART2;
