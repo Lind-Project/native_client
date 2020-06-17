@@ -802,6 +802,12 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   int             ret = -NACL_ABI_EBADF;
   int             fd = 0;
 
+  clock_t closesetdescstart;
+  clock_t closesetdescend;
+  clock_t closedesfunrefstart;
+
+  clock_t closedescunrefend;
+
   clock_t sysstarttime = clock();
 
 
@@ -825,14 +831,14 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   /* If we have an fd and nacl descriptor, lets close it */
   if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-    clock_t closesetdescstart = clock();
+    closesetdescstart = clock();
     NaClSetDescMu(nap, fd, NULL);
-    clock_t closesetdescend = clock();
+    closesetdescend = clock();
 
-    clock_t closedesfunrefstart = clock();
+    closedesfunrefstart = clock();
 
     NaClDescUnref(ndp);
-    clock_t closedescunrefend = clock();
+    closedescunrefend = clock();
 
     ret = 0;
   }
