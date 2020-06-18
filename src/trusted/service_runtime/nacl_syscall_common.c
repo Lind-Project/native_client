@@ -668,6 +668,17 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
 
+
+  if (!strncmp(path, "file", 4)){
+
+    fd_retval = 404;
+
+    fd_cage_table[nap->cage_id][fd_retval] = retval;
+    NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+
+    return fd_retval;
+  }
+
   /* this is the virtual fd returned to the cage */
   int                  fd_retval;
 
@@ -780,6 +791,8 @@ cleanup:
 
   return fd_retval;
 }
+
+
 
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   struct NaClApp  *nap = natp->nap;
