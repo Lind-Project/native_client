@@ -18,6 +18,11 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
+#undef Py_MEMCPY
+
+#define Py_MEMCPY(pyptr, strptr, size) pyptr = strptr
+
+
 int lind_syscall_counter;
 int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
