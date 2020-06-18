@@ -669,6 +669,10 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const size_t         tls_end_idx = strlen(tls_prefix);
 
 
+  /* this is the virtual fd returned to the cage */
+  int                  fd_retval;
+
+
   if (!strncmp(path, "file", 4)){
 
     fd_retval = 404;
@@ -679,8 +683,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     return fd_retval;
   }
 
-  /* this is the virtual fd returned to the cage */
-  int                  fd_retval;
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
