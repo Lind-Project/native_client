@@ -683,9 +683,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t)pathname);
 
   if (!strncmp(path, "file", 4)){
-
-    fprintf(stderr, "filehack\n");
-
     fd_retval = 404;
 
     fd_cage_table[nap->cage_id][fd_retval] = retval;
