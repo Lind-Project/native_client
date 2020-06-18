@@ -455,6 +455,7 @@ int lind_lseek (off_t offset, int fd, int whence, int cageid)
 
 int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid)
 {
+    if (fd == 404) return 1;
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fxstat, fd, version, cageid);
     LIND_API_PART2;
