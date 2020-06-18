@@ -18,9 +18,6 @@
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
-#undef Py_MEMCPY
-
-#define Py_MEMCPY(pyptr, strptr, size) pyptr = strptr
 
 
 int lind_syscall_counter;
@@ -396,7 +393,7 @@ int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid
     callArgs = Py_BuildValue("(i[isi])", LIND_safe_fs_xstat, version, path, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "stat build time %lld us\n", buildtime);
+    fprintf(stderr, "stat build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
@@ -409,7 +406,7 @@ int lind_open (int flags, int mode, const char *path, int cageid)
     callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "open build time %lld us\n", buildtime);
+    fprintf(stderr, "open build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -421,7 +418,7 @@ int lind_close (int fd, int cageid)
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_close, fd, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "close build time %lld us\n", buildtime);
+    fprintf(stderr, "close build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -433,7 +430,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "read build time %lld us\n", buildtime);
+    fprintf(stderr, "read build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     COPY_DATA(buf, size)
     LIND_API_PART3;
@@ -447,7 +444,7 @@ int lind_write (int fd, size_t count, const void *buf, int cageid)
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "write build time %lld us\n", buildtime);
+    fprintf(stderr, "write build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -459,7 +456,7 @@ int _lind_lseek (off_t offset, int fd, int whence, off_t * ret, int cageid)
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "seek build time %lld us\n", buildtime);
+    fprintf(stderr, "seek build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     COPY_DATA(ret, sizeof(*ret))
     LIND_API_PART3;
@@ -483,7 +480,7 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid)
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fxstat, fd, version, cageid);
     clock_t end = clock();
     long long buildtime = ((end - start) * 10000000)/CLOCKS_PER_SEC;
-    fprintf(stderr, "fstat build time %lld us\n", buildtime);
+    fprintf(stderr, "fstat build time - start %ld, end %;d, total %lld us\n", start, end, buildtime);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
