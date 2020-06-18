@@ -673,6 +673,15 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   int                  fd_retval;
 
 
+
+
+
+  NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
+          (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
+
+  retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t)pathname);
+
   if (!strncmp(path, "file", 4)){
 
     fprintf(stderr, "filehack\n");
@@ -684,13 +693,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
     return fd_retval;
   }
-
-
-  NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
-          "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
-          (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
-
-  retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t)pathname);
 
   /*
    * TODO:
