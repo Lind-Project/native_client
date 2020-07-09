@@ -367,14 +367,14 @@ out:
 int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
-
+  int result = lind_exit(status, nap->cage_id);
   NaClLog(1, "Exit syscall handler: %d\n", status);
 
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
 
   NaClAppThreadTeardown(natp);
   /* NOTREACHED */
-  return -NACL_ABI_EINVAL;
+  return result;
 }
 
 int32_t NaClSysThreadExit(struct NaClAppThread  *natp,

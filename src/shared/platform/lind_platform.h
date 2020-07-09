@@ -56,7 +56,7 @@
 #define LIND_safe_fs_dup2               25
 #define LIND_safe_fs_statfs             26
 #define LIND_safe_fs_fcntl              28
-
+#define LIND_safe_sys_exit              30
 #define LIND_sys_getpid                 31
 
 #define LIND_safe_net_socket            32
@@ -164,5 +164,6 @@ int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
 int lind_exec(int newcageid, int cageid);
+int lind_exit(int status, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
