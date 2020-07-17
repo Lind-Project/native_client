@@ -88,6 +88,7 @@ int LindPythonInit(void)
 {
     PyObject *path = NULL;
     PyObject *repylib_name = NULL;
+    PyObject *flame_name = NULL;
     PyObject *result = NULL;
     PyObject *repy_main_func = NULL;
     PyObject *repy_main_args = NULL;
@@ -106,7 +107,11 @@ int LindPythonInit(void)
     PyList_Append(path, PyString_FromString("../repy/"));
 
     repylib_name = PyString_FromString("repylib");
-    py_repylib = PyImport_Import(repylib_name);
+    py_repylib = PyImport_Import(repylib_name); 
+    flame_name = PyString_FromString("flamegraph");
+    py_repylib = PyImport_Import(flame_name);
+
+
     GOTO_ERROR_IF_NULL(py_repylib);
     repy_main_func = PyObject_GetAttrString(py_repylib, "repy_main");
     GOTO_ERROR_IF_NULL(repy_main_func);
