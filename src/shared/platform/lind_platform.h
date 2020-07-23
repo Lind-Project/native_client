@@ -164,6 +164,6 @@ int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
 int lind_exec(int newcageid, int cageid);
-int lind_exit(int status, int cageid);
+void lind_exit(int status, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

@@ -810,7 +810,7 @@ int lind_exec(int newcageid, int cageid){
     LIND_API_PART3;
 }
 
-int lind_exit(int status, int cageid)
+void lind_exit(int status, int cageid)
 {
     puts("lind_platform printing cageid... ");
     printf("%d\n", cageid);
