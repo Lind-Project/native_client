@@ -809,3 +809,11 @@ int lind_exec(int newcageid, int cageid){
     LIND_API_PART2;
     LIND_API_PART3;
 }
+
+void lind_exit(int status, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_sys_exit, status, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
