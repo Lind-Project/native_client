@@ -4,6 +4,7 @@
  * found in the LICENSE file.
  */
 
+
 #include <string.h>
 
 /*
@@ -847,14 +848,16 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
     int host_fd = fd_cage_table[nap->cage_id][fd];
 
     struct NaClDesc *nd;
+    struct NaClDescIoDesc *self;
+    struct NaClHostDesc *hd;
     nd = NaClGetDesc(nap, host_fd);
     if (!nd) {
       continue;
     }
 
     /* Translate from NaCl Desc to Host Desc */
-    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &nd->base;
-    struct NaClHostDesc *hd = self->hd;
+    self = (struct NaClDescIoDesc *) &nd->base;
+    hd = self->hd;
 
     hd->cageid = nap->cage_id;
 
@@ -1583,6 +1586,12 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
   uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
+  size_t i;
+  size_t nentries;
+  struct NaClVmmap *parentmap;
+  struct NaClApp *target, *parent;
+  uintptr_t offset, parent_offset;
+  unsigned int pageback_fd, pageswritten;
 
   UNREFERENCED_PARAMETER(dyncode_npages);
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
@@ -1601,8 +1610,104 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   NaClXMutexUnlock(&nap_child->dynamic_load_mutex);
 
   /* copy page mappings */
-  NaClVmmapVisit(&nap_parent->mem_map, NaClVmCopyEntry, nap_child);
 
+  parentmap = &nap_parent->mem_map;
+  /* don't copy pages if nap has no parent */
+  target = nap_child;
+  parent = target->parent ? target->parent : target;
+  offset = target->mem_start;
+  parent_offset = parent ? parent->mem_start : 0;
+  if (!parent_offset) {
+    return;
+  }
+
+  pageback_fd = memfd_create("pagebacking", 0);
+  pageswritten = 0;
+  NaClVmmapMakeSorted(parentmap);
+  ftruncate(pageback_fd, parentmap->nvalid << NACL_PAGESHIFT);
+  target->memfd = pageback_fd;
+  for (i = 0, nentries = parentmap->nvalid; i < nentries;) {
+    int oldwritten = pageswritten;
+    short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
+    //memfd_creat
+    struct iovec splicevector[IOV_MAX];
+    int splice_pipe[2];
+    pipe(splice_pipe);
+
+    for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
+      struct NaClVmmapEntry *entry = parentmap->vmentry[i];
+      uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
+      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
+      size_t copy_size = entry->npages << NACL_PAGESHIFT;
+
+      //nap_child is state
+      //unroll loop, do other logic here
+      NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
+              entry->npages,
+              entry->page_num,
+              copy_size,
+              (void *)page_addr_parent,
+              (void *)page_addr_child);
+      NaClVmmapAddWithOverwrite(&target->mem_map,
+                                entry->page_num,
+                                entry->npages,
+                                entry->prot,
+                                (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                entry->desc,
+                                entry->offset,
+                                entry->file_size);
+      if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, 0, pageback_fd, i << NACL_PAGESHIFT)) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+      }
+  
+      /* temporarily set RW page permissions for copy */
+      NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
+      NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
+      if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+      }
+      if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+      }
+      splicevector[iters1].iov_base = (void*) page_addr_child;
+      splicevector[iters1].iov_len = entry->npages;
+      pageswritten += entry->npages;
+    }
+    if(pageswritten > nentries) {
+      ftruncate(pageback_fd, pageswritten << NACL_PAGESHIFT);
+    }
+    i -= iters;
+
+    //vmsplice
+    vmsplice(splice_pipe[1], splicevector, (unsigned long) iters, 0);
+    close(splice_pipe[1]);
+  
+    /* copy data pages point to */
+    //memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
+    //splice
+    splice(splice_pipe[0], NULL, pageback_fd, NULL, (pageswritten - oldwritten) << NACL_PAGESHIFT, 0);
+    close(splice_pipe[0]);
+
+    for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
+      struct NaClVmmapEntry *entry = parentmap->vmentry[i];
+      uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
+      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
+      size_t copy_size = entry->npages << NACL_PAGESHIFT;
+      //Maybe there's some way we can avoid calculating the above twice? hopefully without a huge array
+      NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
+  
+      /* reset to original page permissions */
+      NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
+      NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot);
+      if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+      }
+      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+      }
+    }
+  }
+  
   NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");
   NaClPrintAddressSpaceLayout(nap_parent);

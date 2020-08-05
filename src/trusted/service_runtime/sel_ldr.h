@@ -349,6 +349,8 @@ struct NaClApp {
 
   struct NaClIntervalMultiset *mem_io_regions;
 
+  int                       memfd;
+
   /*
    * This is the effector interface object that is used to manipulate
    * NaCl apps by the objects in the NaClDesc class hierarchy.  This

@@ -80,6 +80,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->parent = nap_parent;
   nap_child->master = nap_master;
   nap_child->in_fork = 0;
+  nap_child->memfd = 0;
 
   /* avoid incrementing child count twice */
   if (nap_master == nap_parent) {
