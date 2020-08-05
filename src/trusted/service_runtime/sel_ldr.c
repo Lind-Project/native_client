@@ -1591,7 +1591,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   struct NaClVmmap *parentmap;
   struct NaClApp *target, *parent;
   uintptr_t offset, parent_offset;
-  unsigned int pageback_fd, pageswritten;
+  unsigned int pageback_fd, pageswritten, oldwritten;
   struct iovec splicevector[IOV_MAX];
   int splice_pipe[2];
 
@@ -1625,11 +1625,11 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
 
   pageback_fd = memfd_create("pagebacking", 0);
   pageswritten = 0;
+  oldwritten = 0;
   NaClVmmapMakeSorted(parentmap);
   ftruncate(pageback_fd, parentmap->nvalid << NACL_PAGESHIFT);
-  pipe(splice_pipe);
+  pipe2(splice_pipe, O_NONBLOCK);
   for (i = 0, nentries = parentmap->nvalid; i < nentries;) {
-    int oldwritten = pageswritten;
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
 
     for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
@@ -1654,52 +1654,36 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
                                 entry->desc,
                                 entry->offset,
                                 entry->file_size);
-      pageswritten += entry->npages;
-      if(pageswritten > nentries) {
-        ftruncate(pageback_fd, pageswritten << NACL_PAGESHIFT);
-      }
-      if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, 0, pageback_fd, (pageswritten << NACL_PAGESHIFT) - copy_size)) {
-        NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
-      }
-  
-      /* temporarily set RW page permissions for copy */
-      NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
-      NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
-      if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-      }
-      if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-      }
       splicevector[iters1].iov_base = (void*) page_addr_parent;
       splicevector[iters1].iov_len = copy_size;
+      pageswritten += copy_size;
+    }
+    if(pageswritten > (nentries << NACL_PAGESHIFT)) {
+      ftruncate(pageback_fd, pageswritten);
     }
     i -= iters;
 
     //vmsplice
     vmsplice(splice_pipe[1], splicevector, (unsigned long) iters, 0);
   
-    /* copy data pages point to */
     //memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
-    splice(splice_pipe[0], NULL, pageback_fd, NULL, (pageswritten - oldwritten) << NACL_PAGESHIFT, 0);
+    splice(splice_pipe[0], NULL, pageback_fd, NULL, pageswritten - oldwritten, SPLICE_F_NONBLOCK);
 
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
-      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
+      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;//unused--for debug purposes
       size_t copy_size = entry->npages << NACL_PAGESHIFT;
       //Maybe there's some way we can avoid calculating the above twice? hopefully without a huge array
+
+      if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, 0, pageback_fd, oldwritten)) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+      }
+  
       NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
   
-      /* reset to original page permissions */
-      NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
-      NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot);
-      if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-      }
-      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-      }
+      /* We don't need to mess with prot because we copy using backing file, before mapping */
+      oldwritten += copy_size;
     }
   }
   close(pageback_fd);//each mapping holds a reference to the file, so it won't be closed until all mappings are
