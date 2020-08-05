@@ -1592,6 +1592,8 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   struct NaClApp *target, *parent;
   uintptr_t offset, parent_offset;
   unsigned int pageback_fd, pageswritten;
+  struct iovec splicevector[IOV_MAX];
+  int splice_pipe[2];
 
   UNREFERENCED_PARAMETER(dyncode_npages);
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
@@ -1625,12 +1627,10 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   pageswritten = 0;
   NaClVmmapMakeSorted(parentmap);
   ftruncate(pageback_fd, parentmap->nvalid << NACL_PAGESHIFT);
+  pipe(splice_pipe);
   for (i = 0, nentries = parentmap->nvalid; i < nentries;) {
     int oldwritten = pageswritten;
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
-    struct iovec splicevector[IOV_MAX];
-    int splice_pipe[2];
-    pipe(splice_pipe);
 
     for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
@@ -1678,13 +1678,10 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
 
     //vmsplice
     vmsplice(splice_pipe[1], splicevector, (unsigned long) iters, 0);
-    close(splice_pipe[1]);
   
     /* copy data pages point to */
     //memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
-    //splice
     splice(splice_pipe[0], NULL, pageback_fd, NULL, (pageswritten - oldwritten) << NACL_PAGESHIFT, 0);
-    close(splice_pipe[0]);
 
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
@@ -1706,6 +1703,8 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
     }
   }
   close(pageback_fd);//each mapping holds a reference to the file, so it won't be closed until all mappings are
+  close(splice_pipe[0]);
+  close(splice_pipe[1]);
   
   NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");
