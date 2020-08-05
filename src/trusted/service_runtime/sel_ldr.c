@@ -1566,6 +1566,7 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
   memcpy(dyncode_addr, (void *)region->start, region->size);
+  //TODO: splice here?
   NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
@@ -1664,9 +1665,8 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
     i -= iters;
 
     //vmsplice
-    vmsplice(splice_pipe[1], splicevector, (unsigned long) iters, 0);
+    vmsplice(splice_pipe[1], splicevector, (unsigned long) iters, SPLICE_F_NONBLOCK);
   
-    //memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
     splice(splice_pipe[0], NULL, pageback_fd, NULL, pageswritten - oldwritten, SPLICE_F_NONBLOCK);
 
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
@@ -1752,6 +1752,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
           stackaddr_parent,
           stackaddr_child);
   memcpy(stackaddr_child, stackaddr_parent, stack_size);
+  //TODO: splice this maybe?
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
 
   /* and dynamic text mappings */
@@ -1820,6 +1821,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memcpy((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
+  //TODO: splice here maybe?
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
