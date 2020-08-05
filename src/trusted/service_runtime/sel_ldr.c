@@ -1625,11 +1625,9 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   pageswritten = 0;
   NaClVmmapMakeSorted(parentmap);
   ftruncate(pageback_fd, parentmap->nvalid << NACL_PAGESHIFT);
-  target->memfd = pageback_fd;
   for (i = 0, nentries = parentmap->nvalid; i < nentries;) {
     int oldwritten = pageswritten;
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
-    //memfd_creat
     struct iovec splicevector[IOV_MAX];
     int splice_pipe[2];
     pipe(splice_pipe);
@@ -1656,7 +1654,11 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
                                 entry->desc,
                                 entry->offset,
                                 entry->file_size);
-      if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, 0, pageback_fd, i << NACL_PAGESHIFT)) {
+      pageswritten += entry->npages;
+      if(pageswritten > nentries) {
+        ftruncate(pageback_fd, pageswritten << NACL_PAGESHIFT);
+      }
+      if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, 0, pageback_fd, (pageswritten << NACL_PAGESHIFT) - copy_size)) {
         NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
       }
   
@@ -1669,12 +1671,8 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1) {
         NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
       }
-      splicevector[iters1].iov_base = (void*) page_addr_child;
-      splicevector[iters1].iov_len = entry->npages;
-      pageswritten += entry->npages;
-    }
-    if(pageswritten > nentries) {
-      ftruncate(pageback_fd, pageswritten << NACL_PAGESHIFT);
+      splicevector[iters1].iov_base = (void*) page_addr_parent;
+      splicevector[iters1].iov_len = copy_size;
     }
     i -= iters;
 
@@ -1707,6 +1705,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       }
     }
   }
+  close(pageback_fd);//each mapping holds a reference to the file, so it won't be closed until all mappings are
   
   NaClLog(1, "copied page tables from (%p) to (%p)\n", (void *)nap_parent, (void *)nap_child);
   NaClLog(1, "%s\n", "nap_parent_parent address space after copy:");

@@ -72,7 +72,7 @@ static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int map_
   map_flags |= MAP_SHARED;
 
   NaClLog(4,
-          "NaClPageAllocInternalFlags:"
+          "NaClPageAllocInternalFlagsWithBacking:"
           " mmap(%p, %"NACL_PRIxS", %#x, %#x, %d, %"NACL_PRIdNACL_OFF64")\n",
           *p, size, PROT_NONE, map_flags, filedes,
           (nacl_abi_off64_t) offset);
