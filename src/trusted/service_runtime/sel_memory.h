@@ -23,7 +23,7 @@ extern "C" {
 
 void *NaClPageAllocFlags(void **p, size_t size, int map_flags) NACL_WUR;
 
-void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int map_flags, int filedes, off_t offset) NACL_WUR;
+void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) NACL_WUR;
 
 int NaClPageAlloc(void **p, size_t num_bytes) NACL_WUR;
 

@@ -66,7 +66,7 @@ void *NaClPageAllocFlags(void **p, size_t size, int map_flags) {
   return *p;
 }
 
-static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int map_flags, int filedes, off_t offset) {
+static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) {
   void *addr;
 
   map_flags |= MAP_SHARED;
@@ -74,9 +74,9 @@ static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int map_
   NaClLog(4,
           "NaClPageAllocInternalFlagsWithBacking:"
           " mmap(%p, %"NACL_PRIxS", %#x, %#x, %d, %"NACL_PRIdNACL_OFF64")\n",
-          *p, size, PROT_NONE, map_flags, filedes,
+          *p, size, prot, map_flags, filedes,
           (nacl_abi_off64_t) offset);
-  addr = mmap(*p, size, PROT_NONE, map_flags, filedes, offset);
+  addr = mmap(*p, size, prot, map_flags, filedes, offset);
   if (MAP_FAILED == addr) {
     addr = NULL;
   }
@@ -86,11 +86,11 @@ static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int map_
   return (NULL == addr) ? -ENOMEM : 0;
 }
 
-void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int map_flags, int filedes, off_t offset) {
+void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) {
   if (*p) {
       map_flags |= MAP_FIXED;
   }
-  if (NaClPageAllocInternalFlagsWithBacking(p, size, map_flags, filedes, offset) < 0) {
+  if (NaClPageAllocInternalFlagsWithBacking(p, size, prot, map_flags, filedes, offset) < 0) {
     return NULL;
   }
   return *p;
