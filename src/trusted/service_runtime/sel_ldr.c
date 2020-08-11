@@ -1576,14 +1576,30 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
 
 struct vmsplice_info {
   int fd;
-  const struct iovec* iov;
+  struct iovec* iov;
   unsigned long nr_segs;
+  int num_to_splice;
 };
 void* vmsplice_worker(void* info) {
   struct vmsplice_info* vminfo = info;
   //vmsplice
-  if(-1 == vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, 0)) {
-    NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
+  int totalspliced = 0;
+  while(vminfo->num_to_splice > totalspliced) {
+    int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, 0);
+    if(-1 == numspliced) {
+      if(errno != 14)
+          NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
+    }
+    totalspliced += numspliced;
+    vminfo->iov->iov_len -= numspliced;
+    vminfo->iov->iov_base = (char*) vminfo->iov->iov_base + numspliced;
+    while((signed) vminfo->iov->iov_len <= 0) {
+        int removal_left = (signed) vminfo->iov->iov_len;
+        ++vminfo->iov;
+        --vminfo->nr_segs;
+        vminfo->iov->iov_len += removal_left;
+        vminfo->iov->iov_base = (char*) vminfo->iov->iov_base - removal_left;
+    }
   }
   return 0;
 }
@@ -1601,9 +1617,9 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
   uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
-  struct NaClVmmap *parentmap;
-  struct NaClApp *target, *parent;
-  uintptr_t offset, parent_offset;
+  struct NaClApp *target = nap_child, *parent = nap_parent;
+  struct NaClVmmap *parentmap = &nap_parent->mem_map;
+  uintptr_t offset = target->mem_start, parent_offset = parent->mem_start;
   unsigned int pageback_fd, pageswritten, oldwritten;
   struct iovec splicevector[IOV_MAX];
   struct NaClVmmapEntry *entries[IOV_MAX];
@@ -1634,16 +1650,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   NaClXMutexUnlock(&nap_child->dynamic_load_mutex);
 
   /* copy page mappings */
-
-  parentmap = &nap_parent->mem_map;
-  /* don't copy pages if nap has no parent */
-  target = nap_child;
-  parent = target->parent ? target->parent : target;
-  offset = target->mem_start;
-  parent_offset = parent ? parent->mem_start : 0;
-  if (!parent_offset) {
-    return;
-  }
 
   pageback_fd = memfd_create("pagebacking", 0);
   pageswritten = 0;
@@ -1676,6 +1682,9 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
                                 entry->desc,
                                 entry->offset,
                                 entry->file_size);
+      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+      }
       splicevector[iters1].iov_base = (void*) page_addr_parent;
       if(entry->prot) {
         splicevector[iters1].iov_len = copy_size;
@@ -1689,14 +1698,20 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
     }
     i -= iters;
 
-    {
-      struct vmsplice_info vmi = {splice_pipe[1], splicevector, iters};
+   {
+      int need_to_splice = pageswritten - oldwritten;
+      int totalspliced = 0;
+      struct vmsplice_info vmi = {splice_pipe[1], splicevector, iters, need_to_splice};
       pthread_t pt;
       if(pthread_create(&pt, NULL, vmsplice_worker, &vmi)) {
         NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
       }
-      if(-1 == splice(splice_pipe[0], NULL, pageback_fd, NULL, pageswritten - oldwritten, 0)) {
-        NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
+      while(need_to_splice > totalspliced) {
+        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - totalspliced, 0);
+        if(-1 == numspliced) {
+          NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
+        }
+        totalspliced += numspliced;
       }
       if(pthread_join(pt, NULL)) {
         NaClLog(LOG_FATAL, "%s\n", "joining vmsplice worker failed within fork!");
@@ -1768,31 +1783,31 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
-  /* add stack mapping */
-  if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
-  }
-  if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
-  }
-  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                            stack_pnum_child,
-                            stack_npages,
-                            PROT_RW,
-                            MAP_ANON_PRIV,
-                            NULL,
-                            0,
-                            0);
+  ///* add stack mapping */
+  //if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
+  //    NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
+  //}
+  //if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
+  //    NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
+  //}
+  //NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+  //                          stack_pnum_child,
+  //                          stack_npages,
+  //                          PROT_RW,
+  //                          MAP_ANON_PRIV,
+  //                          NULL,
+  //                          0,
+  //                          0);
 
-  /* copy stack */
-  NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
-          stack_size,
-          stack_size,
-          stackaddr_parent,
-          stackaddr_child);
-  memcpy(stackaddr_child, stackaddr_parent, stack_size);
-  //TODO: splice this maybe?
-  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
+  ///* copy stack */
+  //NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
+  //        stack_size,
+  //        stack_size,
+  //        stackaddr_parent,
+  //        stackaddr_child);
+  //memcpy(stackaddr_child, stackaddr_parent, stack_size);
+  ////TODO: splice this maybe?
+  //NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
 
   /* and dynamic text mappings */
   NaClCopyDynamicText(nap_parent, nap_child);
