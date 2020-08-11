@@ -413,7 +413,7 @@ int lind_close (int fd, int cageid)
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
-    if (fd == 0)
+    if ((fd == 0) && (cageid == 5))
     {
         if (counter < PIPECHARS)
         {
@@ -436,7 +436,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
 int lind_write (int fd, size_t count, const void *buf, int cageid)
 { 
 
-    if (fd == 1) return count;
+    if ((fd == 1) && (cageid == 4)) return count;
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
     callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_fs_write, fd, count, buf, count, cageid);
