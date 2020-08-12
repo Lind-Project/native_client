@@ -1583,14 +1583,14 @@ struct vmsplice_info {
 void* vmsplice_worker(void* info) {
   struct vmsplice_info* vminfo = info;
   //vmsplice
-  int totalspliced = 0;
-  while(vminfo->num_to_splice > totalspliced) {
+  int total_spliced = 0;
+  while(vminfo->num_to_splice > total_spliced) {
     int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, 0);
     if(-1 == numspliced) {
       if(errno != 14)
           NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
     }
-    totalspliced += numspliced;
+    total_spliced += numspliced;
     vminfo->iov->iov_len -= numspliced;
     vminfo->iov->iov_base = (char*) vminfo->iov->iov_base + numspliced;
     while((signed) vminfo->iov->iov_len <= 0) {
@@ -1655,8 +1655,12 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   pageswritten = 0;
   oldwritten = 0;
   NaClVmmapMakeSorted(parentmap);
-  ftruncate(pageback_fd, parentmap->nvalid << NACL_PAGESHIFT);
-  pipe(splice_pipe);
+  if(-1 == pipe(splice_pipe)) {
+    NaClLog(LOG_FATAL, "%s\n", "creating splice pipe buffer failed!");
+  }
+  if(-1 == fcntl(splice_pipe[0], F_SETPIPE_SZ, 0x100000)) {
+    NaClLog(LOG_FATAL, "%s\n", "setting the size of splice pipe buffer failed!");
+  }
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
 
@@ -1693,25 +1697,23 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
         splicevector[iters1].iov_len = 0;
       }
     }
-    if(pageswritten > (nentries << NACL_PAGESHIFT)) {
-      ftruncate(pageback_fd, pageswritten);
-    }
+    ftruncate(pageback_fd, pageswritten);
     i -= iters;
 
    {
       int need_to_splice = pageswritten - oldwritten;
-      int totalspliced = 0;
+      int total_spliced = 0;
       struct vmsplice_info vmi = {splice_pipe[1], splicevector, iters, need_to_splice};
       pthread_t pt;
       if(pthread_create(&pt, NULL, vmsplice_worker, &vmi)) {
         NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
       }
-      while(need_to_splice > totalspliced) {
-        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - totalspliced, 0);
+      while(need_to_splice > total_spliced) {
+        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - total_spliced, 0);
         if(-1 == numspliced) {
           NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
         }
-        totalspliced += numspliced;
+        total_spliced += numspliced;
       }
       if(pthread_join(pt, NULL)) {
         NaClLog(LOG_FATAL, "%s\n", "joining vmsplice worker failed within fork!");
@@ -1875,7 +1877,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memcpy((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  //TODO: splice here maybe?
   NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
