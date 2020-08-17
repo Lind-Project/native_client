@@ -1576,29 +1576,28 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
 
 struct vmsplice_info {
   int fd;
-  struct iovec* iov;
+  struct iovec *iov;
   unsigned long nr_segs;
   int num_to_splice;
 };
-void* vmsplice_worker(void* info) {
-  struct vmsplice_info* vminfo = info;
-  //vmsplice
+void *vmsplice_worker(void *info) {
+  struct vmsplice_info *vminfo = info;
   int total_spliced = 0;
   while(vminfo->num_to_splice > total_spliced) {
-    int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, 0);
+    int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, SPLICE_F_GIFT | SPLICE_F_MORE);
     if(-1 == numspliced) {
       if(errno != 14)
           NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
     }
     total_spliced += numspliced;
     vminfo->iov->iov_len -= numspliced;
-    vminfo->iov->iov_base = (char*) vminfo->iov->iov_base + numspliced;
+    vminfo->iov->iov_base = (char *) vminfo->iov->iov_base + numspliced;
     while((signed) vminfo->iov->iov_len <= 0) {
         int removal_left = (signed) vminfo->iov->iov_len;
         ++vminfo->iov;
         --vminfo->nr_segs;
         vminfo->iov->iov_len += removal_left;
-        vminfo->iov->iov_base = (char*) vminfo->iov->iov_base - removal_left;
+        vminfo->iov->iov_base = (char *) vminfo->iov->iov_base - removal_left;
     }
   }
   return 0;
@@ -1620,13 +1619,15 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   struct NaClApp *target = nap_child, *parent = nap_parent;
   struct NaClVmmap *parentmap = &nap_parent->mem_map;
   uintptr_t offset = target->mem_start, parent_offset = parent->mem_start;
-  unsigned int pageback_fd, pageswritten, oldwritten;
+  unsigned int pageswritten, oldwritten;
   struct iovec splicevector[IOV_MAX];
   struct NaClVmmapEntry *entries[IOV_MAX];
   uintptr_t child_addrs[IOV_MAX];
   uintptr_t parent_addrs[IOV_MAX];
   size_t copy_sizes[IOV_MAX];
   int splice_pipe[2];
+  int backing_index;
+  int* fdarr;
 
   UNREFERENCED_PARAMETER(dyncode_npages);
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
@@ -1651,7 +1652,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
 
   /* copy page mappings */
 
-  pageback_fd = memfd_create("pagebacking", 0);
   pageswritten = 0;
   oldwritten = 0;
   NaClVmmapMakeSorted(parentmap);
@@ -1689,7 +1689,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
         NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
       }
-      splicevector[iters1].iov_base = (void*) page_addr_parent;
+      splicevector[iters1].iov_base = (void *) page_addr_parent;
       if(entry->prot) {
         splicevector[iters1].iov_len = copy_size;
         pageswritten += copy_size;
@@ -1697,19 +1697,34 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
         splicevector[iters1].iov_len = 0;
       }
     }
-    ftruncate(pageback_fd, pageswritten);
     i -= iters;
 
-   {
+    {
       int need_to_splice = pageswritten - oldwritten;
       int total_spliced = 0;
       struct vmsplice_info vmi = {splice_pipe[1], splicevector, iters, need_to_splice};
+      int index_into_copy_sizes = 0;
+      int current_copy_size = copy_sizes[0];
       pthread_t pt;
+      while(!entries[index_into_copy_sizes]->prot)
+        current_copy_size = copy_sizes[++index_into_copy_sizes];
+      fdarr = malloc((pageswritten / 0x100000 + iters) * sizeof(int));
+      backing_index = 0;
       if(pthread_create(&pt, NULL, vmsplice_worker, &vmi)) {
         NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
       }
       while(need_to_splice > total_spliced) {
-        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - total_spliced, 0);
+        int cursplicefd = fdarr[backing_index++] = memfd_create("pagebacking", 0);
+        int tocopy  = current_copy_size > 0x100000 ? 0x100000 : current_copy_size;
+        int numspliced = splice(splice_pipe[0], NULL, cursplicefd, NULL, tocopy, SPLICE_F_MOVE | SPLICE_F_MORE);
+        current_copy_size -= numspliced;
+        if(current_copy_size <= 0) {
+          if(index_into_copy_sizes < iters) {
+            do {
+              current_copy_size = copy_sizes[++index_into_copy_sizes];
+            } while(index_into_copy_sizes < iters && !entries[index_into_copy_sizes]->prot);
+          }
+        }
         if(-1 == numspliced) {
           NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
         }
@@ -1720,17 +1735,27 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       }
     }
 
+    backing_index = 0;
+
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
       struct NaClVmmapEntry *entry = entries[i];
       uintptr_t page_addr_child = child_addrs[i];
-      uintptr_t page_addr_parent = parent_addrs[i]; //unused--for debug purposes
       size_t copy_size = copy_sizes[i];
 
+
       if(entry->prot) {
-        if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, entry->prot, 0, pageback_fd, oldwritten)) {
-          NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+        for(size_t mapped_count = 0; mapped_count < copy_size;) {
+          int curfd = fdarr[backing_index++];
+          int populated = copy_size - mapped_count > 0x100000 ? 0x100000 : copy_size - mapped_count;
+          void* child_paddr_offset = (char *)page_addr_child + mapped_count;
+          if (!NaClPageAllocFlagsWithBacking((void **)&child_paddr_offset, populated, entry->prot, 0, curfd, 0)) {
+            NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+          }
+          oldwritten += populated;
+          close(curfd);
+          //each mapping holds a reference to the backing file, so it won't be closed until all mappings to it are
+          mapped_count += populated;
         }
-        oldwritten += copy_size;
       } else {
         if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) { 
           NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed for prot none!");
@@ -1741,8 +1766,8 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   
       /* We don't need to mess with prot because we copy using backing file, before mapping */
     }
+    free(fdarr);
   }
-  close(pageback_fd);//each mapping holds a reference to the file, so it won't be closed until all mappings are
   close(splice_pipe[0]);
   close(splice_pipe[1]);
   
@@ -1786,27 +1811,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_child);
 
   ///* add stack mapping */
-  //if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
-  //    NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
-  //}
-  //if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
-  //    NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
-  //}
-  //NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-  //                          stack_pnum_child,
-  //                          stack_npages,
-  //                          PROT_RW,
-  //                          MAP_ANON_PRIV,
-  //                          NULL,
-  //                          0,
-  //                          0);
-
-  ///* copy stack */
-  //NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
-  //        stack_size,
-  //        stack_size,
-  //        stackaddr_parent,
-  //        stackaddr_child);
+  //consider only copying up to stack pointer?
   //memcpy(stackaddr_child, stackaddr_parent, stack_size);
   ////TODO: splice this maybe?
   //NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
