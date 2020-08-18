@@ -1585,7 +1585,7 @@ void* vmsplice_worker(void* info) {
   //vmsplice
   int total_spliced = 0;
   while(vminfo->num_to_splice > total_spliced) {
-    int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, 0);
+    int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, SPLICE_F_GIFT | SPLICE_F_MORE);
     if(-1 == numspliced) {
       if(errno != 14)
           NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
@@ -1709,7 +1709,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
         NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
       }
       while(need_to_splice > total_spliced) {
-        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - total_spliced, 0);
+        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, need_to_splice - total_spliced, SPLICE_F_MOVE | SPLICE_F_MORE);
         if(-1 == numspliced) {
           NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
         }
