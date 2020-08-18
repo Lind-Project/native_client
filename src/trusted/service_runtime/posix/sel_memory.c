@@ -66,36 +66,6 @@ void *NaClPageAllocFlags(void **p, size_t size, int map_flags) {
   return *p;
 }
 
-static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) {
-  void *addr;
-
-  map_flags |= MAP_SHARED;
-
-  NaClLog(4,
-          "NaClPageAllocInternalFlagsWithBacking:"
-          " mmap(%p, %"NACL_PRIxS", %#x, %#x, %d, %"NACL_PRIdNACL_OFF64")\n",
-          *p, size, prot, map_flags, filedes,
-          (nacl_abi_off64_t) offset);
-  addr = mmap(*p, size, prot, map_flags, filedes, offset);
-  if (MAP_FAILED == addr) {
-    addr = NULL;
-  }
-  if (NULL != addr) {
-    *p = addr;
-  }
-  return (NULL == addr) ? -ENOMEM : 0;
-}
-
-void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) {
-  if (*p) {
-      map_flags |= MAP_FIXED;
-  }
-  if (NaClPageAllocInternalFlagsWithBacking(p, size, prot, map_flags, filedes, offset) < 0) {
-    return NULL;
-  }
-  return *p;
-}
-
 /*
  * Note that NaClPageAlloc does not allocate pages that satisify
  * NaClIsAllocPageMultiple.  On linux/osx, the system does not impose

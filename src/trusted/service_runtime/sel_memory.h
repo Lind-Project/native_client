@@ -14,7 +14,7 @@
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include <stdlib.h>
 #ifdef __linux__
-#include <sys/mman.h>
+#include <sys/uio.h>
 #endif
 
 #ifdef __cplusplus
@@ -22,8 +22,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 void *NaClPageAllocFlags(void **p, size_t size, int map_flags) NACL_WUR;
-
-void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) NACL_WUR;
 
 int NaClPageAlloc(void **p, size_t num_bytes) NACL_WUR;
 
