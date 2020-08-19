@@ -1663,6 +1663,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   }
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
+    short veclen = 0;
 
     for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
       struct NaClVmmapEntry *entry = entries[i] = parentmap->vmentry[i];
@@ -1678,23 +1679,24 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
               copy_size,
               (void *)page_addr_parent,
               (void *)page_addr_child);
-      NaClVmmapAddWithOverwrite(&target->mem_map,
-                                entry->page_num,
-                                entry->npages,
-                                entry->prot,
-                                (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
-                                entry->desc,
-                                entry->offset,
-                                entry->file_size);
-      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-      }
-      splicevector[iters1].iov_base = (void*) page_addr_parent;
-      if(entry->prot) {
-        splicevector[iters1].iov_len = copy_size;
-        pageswritten += copy_size;
-      } else {
-        splicevector[iters1].iov_len = 0;
+      if(entry->desc != nap_parent->text_shm) {
+        NaClVmmapAddWithOverwrite(&target->mem_map,
+                                  entry->page_num,
+                                  entry->npages,
+                                  entry->prot,
+                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                  entry->desc,
+                                  entry->offset,
+                                  entry->file_size);
+        if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        }
+        if(entry->prot) {
+          splicevector[veclen].iov_base = (void*) page_addr_parent;
+          splicevector[veclen].iov_len = copy_size;
+          pageswritten += copy_size;
+          ++veclen;
+        }
       }
     }
     ftruncate(pageback_fd, pageswritten);
@@ -1703,7 +1705,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
    {
       int need_to_splice = pageswritten - oldwritten;
       int total_spliced = 0;
-      struct vmsplice_info vmi = {splice_pipe[1], splicevector, iters, need_to_splice};
+      struct vmsplice_info vmi = {splice_pipe[1], splicevector, veclen, need_to_splice};
       pthread_t pt;
       if(pthread_create(&pt, NULL, vmsplice_worker, &vmi)) {
         NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
@@ -1726,18 +1728,20 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       uintptr_t page_addr_parent = parent_addrs[i]; //unused--for debug purposes
       size_t copy_size = copy_sizes[i];
 
-      if(entry->prot) {
-        if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, entry->prot, 0, pageback_fd, oldwritten)) {
-          NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+      if(entry->desc != nap_parent->text_shm) {
+        if(entry->prot) {
+          if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, entry->prot, 0, pageback_fd, oldwritten)) {
+            NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+          }
+          oldwritten += copy_size;
+        } else {
+          if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) { 
+            NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed for prot none!");
+          }
         }
-        oldwritten += copy_size;
-      } else {
-        if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) { 
-          NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed for prot none!");
-        }
+        NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
       }
   
-      NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
   
       /* We don't need to mess with prot because we copy using backing file, before mapping */
     }
