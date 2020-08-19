@@ -1641,13 +1641,13 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
               copy_size,
               (void *)page_addr_parent,
               (void *)page_addr_child);
-      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-      }
-      if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-      }
       if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+        if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        }
+        if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+        }
         inputvector[veccount].iov_base = (void*) page_addr_parent;
         outputvector[veccount].iov_base = (void*) page_addr_child;
         inputvector[veccount].iov_len = copy_size;
@@ -1691,12 +1691,12 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
                                 entry->file_size);
 
   
-      if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
-        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+      if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+        if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        }
+        NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
       }
-      NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
-  
-      /* We don't need to mess with prot because we copy using backing file, before mapping */
     }
   }
  
