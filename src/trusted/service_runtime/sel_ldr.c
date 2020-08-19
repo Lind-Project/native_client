@@ -1647,7 +1647,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
         NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
       }
-      if(entry->prot) {
+      if(entry->prot && (entry->desc != nap_parent->text_shm)) {
         inputvector[veccount].iov_base = (void*) page_addr_parent;
         outputvector[veccount].iov_base = (void*) page_addr_child;
         inputvector[veccount].iov_len = copy_size;
