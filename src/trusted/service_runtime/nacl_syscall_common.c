@@ -4072,8 +4072,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   lind_fork(ret, nap->cage_id);
   
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap->mu);
+ 
 
   /* start fork thread */
   if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
@@ -4081,6 +4080,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     ret = -NACL_ABI_ENOMEM;
     goto fail;
   }
+
+  NaClXMutexUnlock(&nap_child->mu);
+  NaClXMutexUnlock(&nap->mu);
 
   /* success */
   
