@@ -86,7 +86,8 @@ static void NaClDescIoDescDtor(struct NaClRefCount *vself) {
   NaClLog(4, "NaClDescIoDescDtor(0x%08"NACL_PRIxPTR").\n",
           (uintptr_t) vself);
   if (0 != NaClHostDescClose(self->hd)) {
-    NaClLog(LOG_FATAL, "NaClDescIoDescDtor: NaClHostDescClose failed\n");
+    NaClLog(LOG_FATAL, "NaClDescIoDescDtor: NaClHostDescClose failed (0x%08"NACL_PRIxPTR").\n",
+          (uintptr_t) vself); 
   }
   free(self->hd);
   self->hd = NULL;

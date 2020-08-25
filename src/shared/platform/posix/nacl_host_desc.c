@@ -539,6 +539,9 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
   if (-1 != retval) {
     d->d = -1;
   }
+  if (-1 == retval){
+    printf("Failed closing lind fd %d in cage %d", d->d, d->cageid);
+  }
   return (-1 == retval) ? -NaClXlateErrno(errno) : retval;
 }
 
