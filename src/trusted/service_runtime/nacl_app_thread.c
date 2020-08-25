@@ -335,6 +335,9 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
+  if (master_ctx == natp) {
+    master_ctx = NULL;
+  }
   if (master_ctx) {
     nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   }
