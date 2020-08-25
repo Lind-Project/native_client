@@ -4055,24 +4055,22 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   int ret = -NACL_ABI_ENOMEM;
 
   NaClLog(1, "%s\n", "[NaClSysFork] NaCl fork starts!");
-  
-  NaClXMutexLock(&nap->mu); 
 
   /* set up new "child" NaClApp */
   NaClLogThreadContext(natp);
   nap_child = NaClChildNapCtor(natp->nap);
-  NaClXMutexLock(&nap_child->mu); 
-
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
   ret = nap_child->cage_id;
 
-
+  NaClXMutexLock(&nap->mu); 
+  NaClXMutexLock(&nap_child->mu); 
 
   lind_fork(ret, nap->cage_id);
   
- 
+  NaClXMutexUnlock(&nap_child->mu);
+  NaClXMutexUnlock(&nap->mu);
 
   /* start fork thread */
   if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
@@ -4080,9 +4078,6 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
     ret = -NACL_ABI_ENOMEM;
     goto fail;
   }
-
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap->mu);
 
   /* success */
   
