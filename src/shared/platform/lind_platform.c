@@ -741,6 +741,7 @@ int lind_geteuid (uid_t * buf)
 
 int lind_getgid (gid_t * buf)
 {
+    printf("lind_platform getgid()\n");
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[])", LIND_safe_sys_getgid);
     LIND_API_PART2;
@@ -750,6 +751,7 @@ int lind_getgid (gid_t * buf)
 
 int lind_getegid (gid_t * buf)
 {
+    printf("lind_platform getegid()\n");
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[])", LIND_safe_sys_getegid);
     LIND_API_PART2;
