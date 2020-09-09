@@ -110,7 +110,7 @@ int LindPythonInit(void)
     GOTO_ERROR_IF_NULL(py_repylib);
     repy_main_func = PyObject_GetAttrString(py_repylib, "repy_main");
     GOTO_ERROR_IF_NULL(repy_main_func);
-    repy_main_args = Py_BuildValue("([sssss])", "lind", "--safebinary",
+    repy_main_args = Py_BuildValue("([sssssss])", "-m flamegraph", "-o perf.log", "lind", "--safebinary",
                                    "../repy/restrictions.lind",
                                    "../repy/lind_server.py",
                                    "./dummy.nexe");
