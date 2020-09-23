@@ -858,23 +858,20 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }
-  nacl_user_program_begin = clock();
-
-  // ***********************************************************************
-  // yiwen: cleanup and exit
-  // ***********************************************************************
-  NaClEnvCleanserDtor(&env_cleanser);
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
-  DynArrayDtor(&env_vars);
 
-  /* yiwen: waiting for running cages to exit */
+  nacl_user_program_begin = clock();
+  /* waiting for running cages to exit */
   ret_code = NaClWaitForMainThreadToExit(nap);
   nacl_user_program_finish = clock();
+
+
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   NaClPerfCounterMark(&time_all_main, "SelMainEnd");
   NaClPerfCounterIntervalTotal(&time_all_main);
+  
   NaClEnvCleanserDtor(&env_cleanser);
   DynArrayDtor(&env_vars);
 
