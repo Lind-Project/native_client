@@ -65,6 +65,25 @@ error:
     return 0;
 }
 
+static PyObject *CallPythonFunc1(PyObject *context, const char *func, PyObject *arg)
+{
+    PyObject *func_obj = NULL;
+    PyObject *args = NULL;
+    PyObject *result = NULL;
+    func_obj = PyDict_GetItemString(context, func);
+    GOTO_ERROR_IF_NULL(func_obj);
+    args = Py_BuildValue("(O)", arg);
+    GOTO_ERROR_IF_NULL(args);
+    result = PyObject_CallObject(func_obj, args);
+    GOTO_ERROR_IF_NULL(result);
+    return result;
+error:
+    PyErr_Print();
+    Py_XDECREF(func_obj);
+    Py_XDECREF(args);
+    return 0;
+}
+
 int LindPythonInit(void)
 {
     PyObject *path = NULL;
