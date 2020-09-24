@@ -2636,6 +2636,7 @@ def MakeLinuxEnv():
           '-Wno-unused-const-variable',
           '-Wno-write-strings',
           '-O2',
+          '-fsanitize=address',
       ],
       CXXFLAGS=[
           '-fno-strict-aliasing',
@@ -2648,15 +2649,17 @@ def MakeLinuxEnv():
           '-Wno-unused-function',
           '-Wno-write-strings',
           '-O2',
+          '-fsanitize=address',
       ],
       CPPDEFINES=[
-          ['-D_FORTIFY_SOURCE','2'],
+          # ['-D_FORTIFY_SOURCE','2'],
           ['-D_GNU_SOURCE','1'],
       ],
       LINKFLAGS=[
           '-fno-strict-aliasing',
           '-pie',
           '-Wl,-O2,-z,relro,-z,now,-z,noexecstack',
+          '-lasan',
       ],
   )
   # The ARM toolchain has a linker that doesn't handle the code its

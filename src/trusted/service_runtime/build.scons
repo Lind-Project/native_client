@@ -434,7 +434,7 @@ if (env.Bit('linux') and not env.Bit('android')
     ld_emul = 'elf32ltsmip'
     reserve_top = '0x40002000'
 
-  bootstrap_obj = bootstrap_env.ComponentObject('linux/nacl_bootstrap.c')
+  bootstrap_obj = bootstrap_env.ComponentObject('linux/nacl_bootstrap.c', CFLAGS=['-fno-sanitize=all'])
   bootstrap_raw = bootstrap_env.Command(
       'nacl_bootstrap_raw',
       [bootstrap_obj],
@@ -454,7 +454,7 @@ if (env.Bit('linux') and not env.Bit('android')
                         NACL_BUILD_FAMILY='TRUSTED_BUILD',
                         CC='cc',
                         LINK='${CC}',
-                        CCFLAGS=['-O2'],
+                        CCFLAGS=['-O2', '-fno-sanitize=all'],
                         LINKFLAGS=[],
                         LIBPATH=[])
   bootstrap_munge = munge_env.Program(
