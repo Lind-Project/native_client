@@ -59,6 +59,8 @@
 #include "native_client/src/trusted/simple_service/nacl_simple_rservice.h"
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
+#include "native_client/src/trusted/service_runtime/include/sys/errno.h"
+
 
 double time_counter = 0.0;
 double time_start = 0.0;
@@ -72,11 +74,7 @@ double time_end = 0.0;
  * -jp
  */
 volatile sig_atomic_t fork_num;
-int fd_cage_table[CAGING_FD_NUM][CAGING_FD_NUM];
-int cached_lib_num;
-
-// yiwen: lookup table for <file_path, mem_addr>
-struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
+int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);
@@ -726,10 +724,9 @@ void NaClAddHostDescriptor(struct NaClApp *nap,
   }
   NaClSetDesc(nap, nacl_desc, (struct NaClDesc *)dp);
   if (host_os_desc >= FILE_DESC_MAX) {
-    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large for fd_maps\n", host_os_desc);
+    NaClLog(LOG_FATAL, "NaClAddHostDescriptor: fd %d is too large\n", host_os_desc);
     return;
   }
-  nap->fd_maps[host_os_desc] = (struct NaClDesc *)dp;
 }
 
 void NaClAddImcHandle(struct NaClApp  *nap,
@@ -841,6 +838,30 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   nap->resource_phase = NACL_RESOURCE_PHASE_START;
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
+
+
+  /* Set up cage-id's for initial descriptors */
+  for (int fd = 0; fd < 3; fd++) {
+
+    /* Retrieve NaCl Descriptor based on fd */
+    int host_fd = fd_cage_table[nap->cage_id][fd];
+
+    struct NaClDesc *nd;
+    nd = NaClGetDesc(nap, host_fd);
+    if (!nd) {
+      continue;
+    }
+
+    /* Translate from NaCl Desc to Host Desc */
+    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &nd->base;
+    struct NaClHostDesc *hd = self->hd;
+
+    hd->cageid = nap->cage_id;
+
+    /* We've got to put that  NaClDescriptor back in there... */
+    NaClSetDesc(nap, host_fd, nd);
+
+  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
@@ -1742,21 +1763,22 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
   fd_cage_table[cage_id][0] = 0;
   fd_cage_table[cage_id][1] = 1;
   fd_cage_table[cage_id][2] = 2;
+
+  /* Initialize unused fd's to -1 */
+  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
+
   /* set to the next unused (available for dup() etc.) file descriptor */
-  nap->fd = 3;
-  nap->num_lib = 3;
   nap->num_children = 0;
   nap->cage_id = cage_id;
 }
 
-void print_desctbl(struct NaClApp *nap)
-{
-  printf("--------------------------");
-  printf("printing desc table for nap w cageid: %d\n", nap->cage_id);
-  printf("ptr array at length %d\n", nap->desc_tbl.num_entries);
-  for (int i = 0; i < nap->desc_tbl.num_entries; i++)
-  {
-    printf("Pointer for %d 0x%" PRIXPTR "\n", i, (uintptr_t)nap->desc_tbl.ptr_array[i]);
+/* Find next available fd in cagetable */
+
+int NextFd(int cage_id){
+
+  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
+    if (fd_cage_table[cage_id][fd] == -1) return fd;
   }
-  printf("---------------------------");
+
+  return -NACL_ABI_EBADF;
 }

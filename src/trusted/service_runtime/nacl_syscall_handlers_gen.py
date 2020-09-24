@@ -134,6 +134,11 @@ ARG_REGISTERS = {
 # refer to syscall arguments from this snapshot, rather than from the
 # untrusted memory locations.
 
+# This list generates syscall function stubs
+# It includes its defined value, its reference in nacl_syscall_common.c
+# and its parameters to be generated.
+# Note: We cannot give double pointers as paramaters so instead
+# we define them as void here and give them as the actual parameter in nacl_syscall_common
 
 SYSCALL_LIST = [
     ('NACL_sys_null', 'NaClSysNull', []),
@@ -246,7 +251,7 @@ SYSCALL_LIST = [
     ('NACL_sys_lind_syscall', 'NaClSysLindSyscall', ['uint32_t callNum', 'uint32_t inNum', 'void *inArgs', 'uint32_t outNum', 'void *outArgs']),
     ('NACL_sys_fork', 'NaClSysFork', []),
     ('NACL_sys_execv', 'NaClSysExecv', ['void *path', 'void *argv']),
-    ('NACL_sys_execve', 'NaClSysExecve', ['const char *path', 'void *argv', 'void *envp']),
+    ('NACL_sys_execve', 'NaClSysExecve', ['void *path', 'void *argv', 'void *envp']),
     ('NACL_sys_pipe', 'NaClSysPipe', ['uint32_t *pipedes']),
     ('NACL_sys_pipe2', 'NaClSysPipe2', ['uint32_t *pipedes', 'int flags']),
     ('NACL_sys_getppid', 'NaClSysGetppid', []),

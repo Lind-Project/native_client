@@ -156,6 +156,7 @@ static void PrintUsage(void) {
           " -S enable signal handling.  Not supported on Windows.\n"
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
+          " -t toggle runtime statistics\n"
           );  /* easier to add new flags/lines */
 }
 
@@ -171,11 +172,11 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
 int NaClSelLdrMain(int argc, char **argv) {
@@ -213,6 +214,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   clock_t                       nacl_user_program_begin;
   clock_t                       nacl_user_program_finish;
   double                        nacl_user_program_spent;
+  int                           toggle_time_info = 0;
   #ifdef SYSCALL_TIMING
   double                        nacl_syscall_total_time;
   double                        lind_syscall_total_time;
@@ -236,6 +238,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_qend = &redir_queue;
 
   nacl_main_begin = clock();
+
+  /* Initialize cage early on to avoid Cage 0 */
+  InitializeCage(nap, 1);
+
 
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
@@ -372,6 +378,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       case 'S':
         handle_signals = 1;
+        break;
+      case 't':
+        toggle_time_info = 1;
         break;
       case 'v':
         ++verbosity;
@@ -829,7 +838,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  InitializeCage(nap, 1);
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
@@ -841,10 +849,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = clock();
-  if (!NaClCreateMainThread(nap,
-                            argc - optind,
-                            argv + optind,
-                            nap->clean_environ)) {
+  if (!NaClCreateThread(THREAD_LAUNCH_MAIN,
+                        NULL,
+                        nap,
+                        argc - optind,
+                        argv + optind,
+                        nap->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }
@@ -875,14 +885,19 @@ int NaClSelLdrMain(int argc, char **argv) {
    */
 
   nacl_main_finish = clock();
-
   NaClLog(1, "%s\n", "[NaClMain] End of the program! \n");
-  nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
-  nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
-  nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
+
+
+  if (toggle_time_info)
+  {
+    nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+    fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
+    nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+    fprintf(stderr, "[TimeInfo] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+    nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
+    fprintf(stderr, "[TimeInfo] NaCl user program time spent = %f \n", nacl_user_program_spent);
+  }
+
 
 #ifdef SYSCALL_TIMING
   NaClLog(1, "%s\n", "[NaClMain] NaCl system call timing enabled! ");

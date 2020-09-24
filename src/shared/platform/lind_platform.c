@@ -746,10 +746,10 @@ int lind_pipe(int* pipefds, int cageid)
     LIND_API_PART3;
 }
 
-int lind_pipe2(int* pipefds, int flags)
-{
+/* pipe2 currently unimplemented */
+int lind_pipe2(int* pipefds, int flags, int cageid){
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_pipe2, flags);
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_pipe2, flags, cageid);
     LIND_API_PART2;
     COPY_DATA(pipefds, 2*sizeof(int))
     LIND_API_PART3;
@@ -793,4 +793,19 @@ int lind_getppid(int cageid)
   callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getppid, cageid);
   LIND_API_PART2;
   LIND_API_PART3;
+}
+
+int lind_exec(int newcageid, int cageid){
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_exec, newcageid, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
+
+void lind_exit(int status, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_sys_exit, status, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
 }

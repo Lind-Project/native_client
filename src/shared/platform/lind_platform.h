@@ -57,8 +57,9 @@
 #define LIND_safe_fs_statfs             26
 #define LIND_safe_fs_fcntl              28
 
-#define LIND_safe_sys_getppid                30
-#define LIND_safe_sys_getpid                 31
+#define LIND_safe_sys_getppid           29
+#define LIND_safe_sys_exit              30
+#define LIND_sys_getpid                 31
 
 #define LIND_safe_net_socket            32
 #define LIND_safe_net_bind              33
@@ -85,9 +86,12 @@
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
 
-#define LIND_safe_fs_pipe              66
-#define LIND_safe_fs_pipe2             67
+#define LIND_safe_fs_pipe               66
+#define LIND_safe_fs_pipe2              67
 #define LIND_safe_fs_fork               68
+#define LIND_safe_fs_exec               69
+
+
 
 #define LIND_comp_cia                   105
 #define LIND_comp_call                  106
@@ -156,11 +160,13 @@ int lind_getgid (gid_t * buf);
 int lind_getegid (gid_t * buf);
 int lind_flock (int fd, int operation);
 int lind_pipe(int* pipefds, int cageid);
-int lind_pipe2(int* pipefds, int flags);
+int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
 int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
 int lind_getpid(int cageid);
 int lind_getppid(int cageid);
+int lind_exec(int newcageid, int cageid);
+void lind_exit(int status, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

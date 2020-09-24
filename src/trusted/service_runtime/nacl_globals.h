@@ -42,26 +42,12 @@ EXTERN_C_BEGIN
                      | ((uint64_t)(X)[6] << (6 * CHAR_BIT))	\
                      | ((uint64_t)(X)[7] << (7 * CHAR_BIT)))
 
-enum {
-  PIPE_NUM_MAX = 16,
-  CACHED_LIB_NUM_MAX = 32,
-  CAGING_LIB_PATH_MAX = 64,
-  FILE_DESC_MAX = 1024,
-  CHILD_NUM_MAX = 256,
-  CAGING_FD_NUM  = 256,
-  ARG_LIMIT = 4096,
-  PIPE_BUF_MAX = 4906
-};
+#define  CAGING_LIB_PATH_MAX  64
+#define  FILE_DESC_MAX        1024
+#define  CAGE_MAX             1024
+#define  CHILD_NUM_MAX        256
+#define  ARG_LIMIT            4096
 
-/*
- * struct for storing the <file_path, mem_addr>
- * relation which is being used by our "shared
- * libs caching" mechanism
- */
-struct CachedLibTable {
-  char path[CAGING_LIB_PATH_MAX];
-  void *mem_addr;
-};
 
 struct NaClThreadContext;
 struct NaClAppThread;
@@ -85,16 +71,6 @@ extern double time_start;
 extern double time_end;
 extern int cage;
 
-/*
- * this is the lookup table used, when checking if a lib has
- * already been loaded previously, and will contain the shared
- * memory address for the lib if it has been loaded before.
- */
-extern struct CachedLibTable cached_lib_table[CACHED_LIB_NUM_MAX];
-extern int cached_lib_num;
-extern int pipe_mutex[PIPE_NUM_MAX];
-extern int pipe_transfer_over[PIPE_NUM_MAX];
-extern char pipe_buffer[PIPE_NUM_MAX][PIPE_BUF_MAX];
 
 #if NACL_WINDOWS
 __declspec(dllexport)
