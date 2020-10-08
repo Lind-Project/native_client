@@ -143,7 +143,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_children;
   }
 
-  nap->mem_io_regions = malloc(sizeof *nap->mem_io_regions);
+  nap->mem_io_regions = malloc(sizeof(*nap->mem_io_regions) + 8);
   if (!nap->mem_io_regions) {
     goto cleanup_mem_map;
   }
@@ -1596,10 +1596,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   unsigned int veccount = 0;
   struct iovec inputvector[IOV_MAX];
   struct iovec outputvector[IOV_MAX];
-  struct NaClVmmapEntry *entries[IOV_MAX];
-  uintptr_t child_addrs[IOV_MAX];
-  uintptr_t parent_addrs[IOV_MAX];
-  size_t copy_sizes[IOV_MAX];
 
   UNREFERENCED_PARAMETER(dyncode_npages);
   UNREFERENCED_PARAMETER(dyncode_pnum_parent);
@@ -1628,10 +1624,10 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
 
     for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
-      struct NaClVmmapEntry *entry = entries[i] = parentmap->vmentry[i];
-      uintptr_t page_addr_child = child_addrs[i] = (entry->page_num << NACL_PAGESHIFT) | offset;
-      uintptr_t page_addr_parent = parent_addrs[i] = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
-      size_t copy_size = copy_sizes[i] = entry->npages << NACL_PAGESHIFT;
+      struct NaClVmmapEntry *entry = parentmap->vmentry[i];
+      uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
+      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
+      size_t copy_size = entry->npages << NACL_PAGESHIFT;
 
       //nap_child is state
       //unroll loop, do other logic here
@@ -1677,10 +1673,9 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
     }
 
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
-      struct NaClVmmapEntry *entry = entries[i];
-      uintptr_t page_addr_child = child_addrs[i];
-      uintptr_t page_addr_parent = parent_addrs[i]; //unused--for debug purposes
-      size_t copy_size = copy_sizes[i];
+      struct NaClVmmapEntry *entry = parentmap->vmentry[i];
+      uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
+      size_t copy_size = entry->npages << NACL_PAGESHIFT;
       NaClVmmapAddWithOverwrite(&target->mem_map,
                                 entry->page_num,
                                 entry->npages,

@@ -65,11 +65,12 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   if (!NaClAppCtor(nap_child)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   }
+
   mod_status = &nap_child->module_load_status;
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
-  nap_child->clean_environ = nap->clean_environ;
+  nap_child->clean_environ = nap_parent->clean_environ;
   nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
