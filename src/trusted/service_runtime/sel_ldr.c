@@ -1469,82 +1469,13 @@ void NaClGdbHook(struct NaClApp const *nap) {
 }
 
 /*
- * Passed to NaClVmmapVisit in order to copy a memory region from
- * an NaClApp to a child process (used when forking).
- *
- * -jp
+ * Used in NaClCopyDynamicTextAndVmmap to copy dynamic regions in a NaClApp on fork.
  *
  * preconditions:
  * * target_state must be a pointer to a valid, initialized NaClApp.
  *
  */
-static void NaClVmCopyEntry(void *target_state, struct NaClVmmapEntry *entry) {
-  struct NaClApp *target = target_state;
-  struct NaClApp *parent = target->parent ? target->parent : target;
-  uintptr_t offset = target->mem_start;
-  uintptr_t parent_offset = parent ? parent->mem_start : 0;
-  uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
-  uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
-  size_t copy_size = entry->npages << NACL_PAGESHIFT;
-
-  /* don't copy pages if nap has no parent */
-  if (!parent_offset) {
-    return;
-  }
-  NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
-          entry->npages,
-          entry->page_num,
-          copy_size,
-          (void *)page_addr_parent,
-          (void *)page_addr_child);
-  NaClVmmapAddWithOverwrite(&target->mem_map,
-                            entry->page_num,
-                            entry->npages,
-                            entry->prot,
-                            (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
-                            entry->desc,
-                            entry->offset,
-                            entry->file_size);
-  if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) {
-    NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
-  }
-
-  /* temporarily set RW page permissions for copy */
-  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
-  NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot | PROT_RW);
-  if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-  }
-  if (NaClMprotect((void *)page_addr_parent, copy_size, PROT_RW) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-  }
-
-  /* copy data pages point to */
-  memcpy((void *)page_addr_child, (void *)page_addr_parent, copy_size);
-  NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
-
-  /* reset to original page permissions */
-  NaClVmmapChangeProt(&target->mem_map, entry->page_num, entry->npages, entry->prot);
-  NaClVmmapChangeProt(&parent->mem_map, entry->page_num, entry->npages, entry->prot);
-  if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-  }
-  if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-  }
-}
-
-/*
- * Passed to NaClDyncodeVisit in order to copy a dynamic region from
- * an NaClApp to a child process (used when forking).
- *
- * -jp
- *
- * preconditions:
- * * target_state must be a pointer to a valid, initialized NaClApp.
- *
- */
-static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *region) {
+static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynamicRegion *region) {
   struct NaClApp *target = target_state;
   uintptr_t start = region->start & UNTRUSTED_ADDR_MASK;
   uintptr_t offset = target->mem_start;
@@ -1714,6 +1645,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   uintptr_t tramp_pnum = NaClSysToUser(nap_parent, parent_start_addr) >> NACL_PAGESHIFT;
 
   UNREFERENCED_PARAMETER(stack_pnum_parent);
+  UNREFERENCED_PARAMETER(stack_pnum_child); //unreferenced for now, may be changed
+  UNREFERENCED_PARAMETER(stack_npages); //unreferenced for now, may be changed
 
   NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
   NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
