@@ -4,7 +4,6 @@
  * found in the LICENSE file.
  */
 
-
 #include <string.h>
 
 /*
@@ -1540,9 +1539,13 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
   /* copy page mappings */
 
   NaClVmmapMakeSorted(parentmap);
+  /* process_vm_writev can handle at most IOV_MAX iovec entries, so if there 
+   * are more (highly unlikely) iterate over them */
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
 
+    /* iterate over the vmmap entries, changing their prot if necessary, and copy 
+     * them into the iovec. We ignore the text_shm entry in this whole function. */
     for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
@@ -1569,16 +1572,20 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         ++veccount;
       }
     }
+    // Reset iteration counter for copying into child later (in the loop with iters2)
     i -= iters;
 
     {
       struct iovec* invec = inputvector;
       struct iovec* outvec = outputvector;
+      /* process_vm_writev may not do a full copy each time and thus may need
+       * to be run multiple times, so iterate until it's done. */
       while(veccount) {
         ssize_t st = process_vm_writev(getpid(), invec, veccount, outvec, veccount, 0);
         if(-1 == st) {
           NaClLog(LOG_FATAL, "%s\n", "process_vm_writev to child's memory failed!");
         }
+        // Update what's left to be processed by checking what's already written
         do {
             st -= invec->iov_len;
             --veccount;
@@ -1589,6 +1596,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       }
     }
 
+    /* iterate over the vmmap entries, reverting their prot if necessary, and insert 
+     * them into the child vmmap. The memory is already populated from the vm_writev.*/
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
