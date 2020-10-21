@@ -109,15 +109,14 @@ void NaClInitGlobals(void);
 static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t size) {
   size_t cnt = size / sizeof(uintptr_t);
   for (size_t i = 0; i < cnt; i++) {
-    if ((start[i] & ~UNTRUSTED_ADDR_MASK) != parent_bits) {
-      continue;
+    if ((start[i] & ~UNTRUSTED_ADDR_MASK) == parent_bits) {
+      NaClLog(1, "patching %p\n", (void *)start[i]);
+      /* clear upper bits */
+      start[i] &= UNTRUSTED_ADDR_MASK;
+      /* add child prefix */
+      start[i] |= child_bits;
+      NaClLog(1, "new addr %p\n", (void *)start[i]);
     }
-    NaClLog(1, "patching %p\n", (void *)start[i]);
-    /* clear upper bits */
-    start[i] &= UNTRUSTED_ADDR_MASK;
-    /* add child prefix */
-    start[i] |= child_bits;
-    NaClLog(1, "new addr %p\n", (void *)start[i]);
   }
 }
 

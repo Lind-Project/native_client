@@ -13,6 +13,9 @@
 
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include <stdlib.h>
+#ifdef __linux__
+#include <sys/uio.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
