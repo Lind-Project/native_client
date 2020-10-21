@@ -864,7 +864,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   // yiwen: cleanup and exit
   // ***********************************************************************
   //NaClEnvCleanserDtor(&env_cleanser);
-  //Fix!!! do reference counter or something?
+  //JS: Fix!!! do reference counter or something?
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);

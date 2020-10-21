@@ -1559,14 +1559,14 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
                             (region->start & UNTRUSTED_ADDR_MASK) - target->dynamic_text_start,
                             region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
+    NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
   }
   NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
   if (!NaClDynamicRegionCreate(target, (uintptr_t)dyncode_addr, region->size, 1)) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
   memcpy(dyncode_addr, (void *)region->start, region->size);
-  //TODO: splice here?
+  //JS: we may want to vm_write here instead of memcpying, or unroll and vm_write in containing scope
   NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
@@ -1612,7 +1612,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
   nap_child->text_shm = nap_parent->text_shm;
   for (ssize_t i = 0; i < nap_parent->num_dynamic_regions; ++i) {
     NaClCopyDynamicRegion(nap_child, &nap_parent->dynamic_regions[i]);
-    //TODO: unroll
   }
   NaClXMutexUnlock(&nap_parent->dynamic_load_mutex);
   NaClXMutexUnlock(&nap_child->dynamic_load_mutex);
@@ -1629,8 +1628,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
       size_t copy_size = entry->npages << NACL_PAGESHIFT;
 
-      //nap_child is state
-      //unroll loop, do other logic here
       NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
               entry->npages,
               entry->page_num,
@@ -1734,6 +1731,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
+  //JS: Code commented out because we may want to use and modify this if we only want to copy up to the stack pointer
   ///* add stack mapping */
   //if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
   //    NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
@@ -1757,7 +1755,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   //        stackaddr_parent,
   //        stackaddr_child);
   //memcpy(stackaddr_child, stackaddr_parent, stack_size);
-  ////TODO: splice this maybe?
   //NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
 
   /* and dynamic text mappings */
