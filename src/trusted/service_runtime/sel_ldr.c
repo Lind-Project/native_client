@@ -1575,31 +1575,21 @@ static void NaClCopyDynamicRegion(void *target_state, struct NaClDynamicRegion *
 
 /*
  * Copy the entire dynamic text section in an NaClApp to a child process.
+ * Also copy all the virtual memory in a NaClApp to a child process and populate its vmmap.
  *
  * preconditions:
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
-  size_t dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap_parent->dynamic_text_start);
-  size_t dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
+void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
   void *dyncode_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
-  uintptr_t dyncode_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)dyncode_parent) >> NACL_PAGESHIFT;
-  uintptr_t dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
-  struct NaClApp *target = nap_child;
-  struct NaClApp *parent = nap_parent;
   struct NaClVmmap *parentmap = &nap_parent->mem_map;
-  uintptr_t offset = target->mem_start;
-  uintptr_t parent_offset = parent->mem_start;
-  unsigned int pageswritten = 0;
+  uintptr_t offset = nap_child->mem_start;
+  uintptr_t parent_offset = nap_parent->mem_start;
   unsigned int veccount = 0;
   struct iovec inputvector[IOV_MAX];
   struct iovec outputvector[IOV_MAX];
-
-  UNREFERENCED_PARAMETER(dyncode_npages);
-  UNREFERENCED_PARAMETER(dyncode_pnum_parent);
-  UNREFERENCED_PARAMETER(dyncode_pnum_child);
 
   NaClLog(1, "dyncode [parent: %p] [child: %p]\n", dyncode_parent, dyncode_child);
   NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
@@ -1646,7 +1636,6 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
         inputvector[veccount].iov_len = copy_size;
         outputvector[veccount].iov_len = copy_size;
         ++veccount;
-        pageswritten += copy_size;
       }
     }
     i -= iters;
@@ -1673,7 +1662,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child) 
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
       size_t copy_size = entry->npages << NACL_PAGESHIFT;
-      NaClVmmapAddWithOverwrite(&target->mem_map,
+      NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                 entry->page_num,
                                 entry->npages,
                                 entry->prot,
@@ -1758,7 +1747,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   //NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
 
   /* and dynamic text mappings */
-  NaClCopyDynamicText(nap_parent, nap_child);
+  NaClCopyDynamicTextAndVmmap(nap_parent, nap_child);
 
   /* add guard page mapping */
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
