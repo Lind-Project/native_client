@@ -177,15 +177,15 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
      * prevented by a separate range check, which is done by
      * NaClSysCommonAddrRangeContainsExecutablePages_mu().
      */
-    NaClVmmapAdd(&nap->mem_map,
-                 NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
-                 region_size >> NACL_PAGESHIFT,
-                 NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
-                 NACL_ABI_MAP_PRIVATE,
-                 nap->text_shm,
-                 0,
-                 region_size);
-  }
+  //   NaClVmmapAdd(&nap->mem_map,
+  //                NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
+  //                region_size >> NACL_PAGESHIFT,
+  //                NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
+  //                NACL_ABI_MAP_PRIVATE,
+  //                nap->text_shm,
+  //                0,
+  //                region_size);
+  // }
 
   if (0 != nap->rodata_start) {
     uintptr_t rodata_end;

@@ -4230,18 +4230,18 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   child_start_addr = nap_child->mem_start + NACL_SYSCALL_START_ADDR;
   tramp_pnum = NaClSysToUser(nap, parent_start_addr) >> NACL_PAGESHIFT;
 
-  /* map dynamic text into child */
-  if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClSysExecve()\n", nap_child->cage_id);
-  }
-  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                            dyncode_pnum_child,
-                            dyncode_npages,
-                            PROT_RX,
-                            NACL_ABI_MAP_PRIVATE,
-                            nap_child->text_shm,
-                            0,
-                            dyncode_size);
+  // /* map dynamic text into child */
+  // if (NaClMakeDynamicTextShared(nap_child) != LOAD_OK) {
+  //   NaClLog(LOG_FATAL, "[cage id %d] failed to map dynamic text in NaClSysExecve()\n", nap_child->cage_id);
+  // }
+  // NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+  //                           dyncode_pnum_child,
+  //                           dyncode_npages,
+  //                           PROT_RX,
+  //                           NACL_ABI_MAP_PRIVATE,
+  //                           nap_child->text_shm,
+  //                           0,
+  //                           dyncode_size);
 
   /* add guard page mapping */
   NaClVmmapAdd(&nap_child->mem_map,
