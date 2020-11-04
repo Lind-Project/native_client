@@ -160,13 +160,13 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                0,
                0);
 
-  start_addr = NaClUserToSys(nap, nap->dynamic_text_start);
-  region_size = nap->dynamic_text_end - nap->dynamic_text_start;
-  NaClLog(3,
-          ("shm txt region start 0x%08"NACL_PRIxPTR", size 0x%08"NACL_PRIxS","
-           " end 0x%08"NACL_PRIxPTR"\n"),
-          start_addr, region_size,
-          start_addr + region_size);
+  // start_addr = NaClUserToSys(nap, nap->dynamic_text_start);
+  // region_size = nap->dynamic_text_end - nap->dynamic_text_start;
+  // NaClLog(3,
+  //         ("shm txt region start 0x%08"NACL_PRIxPTR", size 0x%08"NACL_PRIxS","
+  //          " end 0x%08"NACL_PRIxPTR"\n"),
+  //         start_addr, region_size,
+  //         start_addr + region_size);
   // if (0 != region_size) {
     /*
      * Page protections for this region have already been set up by

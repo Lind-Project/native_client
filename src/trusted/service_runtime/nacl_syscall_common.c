@@ -4220,12 +4220,12 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   nap_child->main_exe_prevalidated = 1;
   
   /* calculate page addresses and sizes */
-  dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
-  dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
-  dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
+  // dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
+  // dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
+  // dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
   tramp_size = NaClRoundPage(nap->static_text_end - NACL_SYSCALL_START_ADDR);
   tramp_npages = tramp_size >> NACL_PAGESHIFT;
-  dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
+  // dyncode_pnum_child = NaClSysToUser(nap_child, (uintptr_t)dyncode_child) >> NACL_PAGESHIFT;
   parent_start_addr = nap->mem_start + NACL_SYSCALL_START_ADDR;
   child_start_addr = nap_child->mem_start + NACL_SYSCALL_START_ADDR;
   tramp_pnum = NaClSysToUser(nap, parent_start_addr) >> NACL_PAGESHIFT;
