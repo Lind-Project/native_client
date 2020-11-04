@@ -167,7 +167,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
            " end 0x%08"NACL_PRIxPTR"\n"),
           start_addr, region_size,
           start_addr + region_size);
-  if (0 != region_size) {
+  // if (0 != region_size) {
     /*
      * Page protections for this region have already been set up by
      * nacl_text.c.
