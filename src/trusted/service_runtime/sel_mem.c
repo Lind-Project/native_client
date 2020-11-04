@@ -527,7 +527,7 @@ int NaClVmmapEntryMaxProt(struct NaClVmmapEntry *entry) {
 
   if (entry->fd >= 0 && 0 == (entry->flags & NACL_ABI_MAP_PRIVATE)) {
 
-    int o_flags = lind_fcntl_get (entry->fd, F_GETFD, entry->cageid);
+    int o_flags = lind_fcntl_get(entry->fd, F_GETFD, entry->cageid);
 
     switch (o_flags & NACL_ABI_O_ACCMODE) {
       case NACL_ABI_O_RDONLY:
