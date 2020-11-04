@@ -326,7 +326,7 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
   NaClLog(2,
           ("Replacing gap between static text and"
            " (ro)data with shareable memory\n"));
-  subret = NaClMakeDynamicTextShared(nap);
+  // subret = NaClMakeDynamicTextShared(nap);
   NaClPerfCounterMark(&time_load_file,
                       NACL_PERF_IMPORTANT_PREFIX "MakeDynText");
   NaClPerfCounterIntervalLast(&time_load_file);
