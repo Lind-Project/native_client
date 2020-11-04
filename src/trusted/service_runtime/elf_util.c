@@ -986,7 +986,8 @@ NaClErrorCode NaClElfImageLoadDynamically(
                                   mapping_size >> NACL_PAGESHIFT,
                                   NACL_ABI_PROT_READ,
                                   NACL_ABI_MAP_PRIVATE,
-                                  NULL,
+                                  -1,
+                                  -1,
                                   0,
                                   0);
       }

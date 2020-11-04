@@ -44,7 +44,8 @@ struct NaClVmmapEntry {
   int               prot;       /* mprotect attribute */
   int               flags;      /* mapping flags */
   int               removed;    /* flag set in NaClVmmapUpdate */
-  struct NaClDesc   *desc;      /* the backing store, if any */
+  int               fd;      /* the backing fd, if any */
+  int               cageid; /* cage info */
   nacl_off64_t      offset;     /* offset into desc */
   nacl_off64_t      file_size;  /* backing store size */
 };
@@ -85,7 +86,8 @@ void  NaClVmmapAdd(struct NaClVmmap   *self,
                    size_t             npages,
                    int                prot,
                    int                flags,
-                   struct NaClDesc    *desc,
+                   int                fd,
+                   int                cageid,
                    nacl_off64_t       offset,
                    nacl_off64_t       file_size);
 
@@ -98,7 +100,8 @@ void  NaClVmmapAddWithOverwrite(struct NaClVmmap  *self,
                                 size_t            npages,
                                 int               prot,
                                 int               flags,
-                                struct NaClDesc   *desc,
+                                int               fd,
+                                int               cageid,
                                 nacl_off64_t      offset,
                                 nacl_off64_t      file_size);
 

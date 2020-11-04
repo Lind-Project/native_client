@@ -506,18 +506,18 @@ int lind_getdents (int fd, size_t nbytes, char *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_fcntl_get (int fd, int cmd)
+int lind_fcntl_get (int fd, int cmd, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fcntl, fd, cmd);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fcntl, fd, cmd, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_fcntl_set (int fd, int cmd, long set_op)
+int lind_fcntl_set (int fd, int cmd, long set_op, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iil])", LIND_safe_fs_fcntl, fd, cmd, set_op);
+    callArgs = Py_BuildValue("(i[iili])", LIND_safe_fs_fcntl, fd, cmd, set_op, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
