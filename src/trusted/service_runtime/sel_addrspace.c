@@ -125,7 +125,8 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                PROT_NONE,
                NACL_ABI_MAP_PRIVATE,
-               NULL,
+               NO_FD_ANON,
+               nap->cage_id,
                0,
                0);
   start_addr = nap->mem_start + NACL_SYSCALL_START_ADDR;
@@ -156,7 +157,8 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                region_size >> NACL_PAGESHIFT,
                NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
                NACL_ABI_MAP_PRIVATE,
-               NULL,
+               NO_FD_ANON,
+               nap->cage_id,
                0,
                0);
 
@@ -183,6 +185,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                  NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
                  NACL_ABI_MAP_PRIVATE,
                  nap->text_shm,
+                 nap->cage_id,
                  0,
                  region_size);
   }
@@ -225,7 +228,8 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_READ,
                  NACL_ABI_MAP_PRIVATE,
-                 NULL,
+                 NO_FD_ANON,
+                 nap->cage_id,
                  0,
                  0);
   }
@@ -260,7 +264,8 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
                  NACL_ABI_MAP_PRIVATE,
-                 NULL,
+                 NO_FD_ANON,
+                 nap->cage_id,
                  0,
                  0);
   }
@@ -293,7 +298,8 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
                nap->stack_size >> NACL_PAGESHIFT,
                NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
                NACL_ABI_MAP_PRIVATE,
-               NULL,
+               NO_FD_ANON,
+               nap->cage_id,
                0,
                0);
   return LOAD_OK;

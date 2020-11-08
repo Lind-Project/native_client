@@ -51,10 +51,11 @@ static void BitmapSetBit(uint8_t *bitmap, uint32_t index) {
   bitmap[index / kBitsPerByte] |= 1 << (index % kBitsPerByte);
 }
 
+
 NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
   enum NaClErrorCode          retval = LOAD_INTERNAL;
   uintptr_t                   dynamic_text_size;
-  struct NaClDescImcShm       *shm = NULL;
+  int                         shm_fd;
   uintptr_t                   shm_vaddr_base;
   int                         mmap_protections;
   uintptr_t                   mmap_ret;
@@ -110,17 +111,11 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
     return LOAD_OK;
   }
 
-  shm = (struct NaClDescImcShm *) malloc(sizeof *shm);
-  if (NULL == shm) {
-    NaClLog(4, "NaClMakeDynamicTextShared: shm object allocation failed\n");
-    retval = LOAD_NO_MEMORY;
-    goto cleanup;
-  }
-  if (!NaClDescImcShmAllocCtor(shm, dynamic_text_size, /* executable= */ 1)) {
+
+  shm_fd = LindShmCreate(dynamic_text_size);
+  if (shm_fd < 0) {
     /* cleanup invariant is if ptr is non-NULL, it's fully ctor'd */
-    free(shm);
-    shm = NULL;
-    NaClLog(4, "NaClMakeDynamicTextShared: shm alloc ctor for text failed\n");
+    NaClLog(4, "NaClMakeDynamicTextShared: shm create for text failed\n");
     retval = LOAD_NO_MEMORY_FOR_DYNAMIC_TEXT;
     goto cleanup;
   }
@@ -157,14 +152,16 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
           (int) dynamic_text_size,
           mmap_protections,
           NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED);
-  mmap_ret = (*((struct NaClDescVtbl const *) shm->base.base.vtbl)->
-              Map)((struct NaClDesc *) shm,
-                   NaClDescEffectorTrustedMem(),
+
+
+  mmap_ret = ShmMapHelper(shm_fd,
                    (void *) text_sysaddr,
                    dynamic_text_size,
                    mmap_protections,
                    NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
                    0);
+
+
   if (text_sysaddr != mmap_ret) {
     NaClLog(LOG_FATAL, "Could not map in shm for dynamic text region\n");
   }
@@ -177,14 +174,10 @@ NaClErrorCode NaClMakeDynamicTextShared(struct NaClApp *nap) {
 
   nap->dynamic_text_start = shm_vaddr_base;
   nap->dynamic_text_end = shm_upper_bound;
-  nap->text_shm = &shm->base;
+  nap->text_shm = shm_fd;
   retval = LOAD_OK;
 
  cleanup:
-  if (LOAD_OK != retval) {
-    NaClDescSafeUnref((struct NaClDesc *) shm);
-    free(shm);
-  }
 
   return retval;
 }
@@ -496,7 +489,7 @@ static uintptr_t CachedMapWritableText(struct NaClApp *nap,
    *
    * We have a cached mmap result stored, that must be unmapped.
    */
-  struct NaClDesc            *shm = nap->text_shm;
+  int shm = nap->text_shm;
 
   if (offset != nap->dynamic_mapcache_offset
           || size != nap->dynamic_mapcache_size) {
@@ -518,10 +511,7 @@ static uintptr_t CachedMapWritableText(struct NaClApp *nap,
       uint32_t current_page_index;
       uint32_t end_page_index;
 
-      uintptr_t mapping = (*((struct NaClDescVtbl const *)
-            shm->base.vtbl)->
-              Map)(shm,
-                   NaClDescEffectorTrustedMem(),
+      uintptr_t mapping = ShmMapHelper(shm,
                    NULL,
                    size,
                    NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
@@ -633,7 +623,7 @@ int32_t NaClTextDyncodeCreate(struct NaClApp *nap,
   struct NaClPerfCounter      time_dyncode_create;
   NaClPerfCounterCtor(&time_dyncode_create, "NaClTextDyncodeCreate");
 
-  if (NULL == nap->text_shm) {
+  if (nap->text_shm < 0) {
     NaClLog(1, "NaClTextDyncodeCreate: Dynamic loading not enabled\n");
     return -NACL_ABI_EINVAL;
   }
@@ -795,7 +785,7 @@ int32_t NaClSysDyncodeModify(struct NaClAppThread *natp,
     return -NACL_ABI_ENOSYS;
   }
 
-  if (NULL == nap->text_shm) {
+  if (nap->text_shm < 0) {
     NaClLog(1, "NaClSysDyncodeModify: Dynamic loading not enabled\n");
     return -NACL_ABI_EINVAL;
   }
@@ -918,7 +908,7 @@ int32_t NaClSysDyncodeDelete(struct NaClAppThread *natp,
     return -NACL_ABI_ENOSYS;
   }
 
-  if (NULL == nap->text_shm) {
+  if (nap->text_shm < 0) {
     NaClLog(1, "NaClSysDyncodeDelete: Dynamic loading not enabled\n");
     return -NACL_ABI_EINVAL;
   }

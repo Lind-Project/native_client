@@ -99,7 +99,7 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
 }
 
 struct FcntlExchangeData {
-        struct NaClHostDesc *nhd;
+        int lindfd;
         int minFd;
 };
 
@@ -108,7 +108,7 @@ int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, vo
         int lindFd;
         NaClLog(1, "Entered LindFcntlPreprocess inNum=%8u\n", inNum);
         *xchangedata = 0;
-        lindFd = NaClFdToRepyFD(nap, (int)(*(int64_t*)&inArgs[0].ptr));
+        lindFd = (int)(*(int64_t*)&inArgs[0].ptr);
         if(lindFd<0) {
                 retval = -NACL_ABI_EINVAL;
                 goto cleanup;
@@ -120,12 +120,7 @@ int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, vo
                         retval = -NACL_ABI_ENOMEM;
                         goto cleanup;
                 }
-                ((struct FcntlExchangeData*)(*xchangedata))->nhd = (struct NaClHostDesc*)malloc(sizeof(struct NaClHostDesc));
-                if(!((struct FcntlExchangeData*)(*xchangedata))->nhd) {
-                        retval = -NACL_ABI_ENOMEM;
-                        free(*xchangedata);
-                        goto cleanup;
-                }
+                ((struct FcntlExchangeData*)(*xchangedata))->lindfd = lindFd;
                 ((struct FcntlExchangeData*)(*xchangedata))->minFd = (int)(*(int64_t *)&inArgs[2].ptr);
                 NaClLog(1, "MinFD: %d\n", ((struct FcntlExchangeData*)(*xchangedata))->minFd);
         }
@@ -859,12 +854,12 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
         }
     }
 
-    if (stubs[callNum].pre) {
-        retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
-        if (retval) {
-            goto cleanup;
-        }
-    }
+    // if (stubs[callNum].pre) {
+    //     retval = stubs[callNum].pre(nap, inNum, inArgSys, &xchangeData);
+    //     if (retval) {
+    //         goto cleanup;
+    //     }
+    // }
 
     callArgs = PyList_New(0);
     apiArg = PyTuple_New(2);
@@ -985,9 +980,9 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
             }
         }
     }
-    if(stubs[callNum].clean) {
-        stubs[callNum].clean(nap, inNum, inArgSys, xchangeData);
-    }
+    // // if(stubs[callNum].clean) {
+    //     stubs[callNum].clean(nap, inNum, inArgSys, xchangeData);
+    // }
     retval = _isError?-_code:_code;
     goto cleanup;
 error:

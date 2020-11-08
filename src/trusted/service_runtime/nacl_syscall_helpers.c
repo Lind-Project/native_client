@@ -33,6 +33,11 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
+#include <algorithm>
+
+#include "native_client/src/include/atomic_ops.h"
+#include "native_client/src/shared/platform/nacl_check.h"
+
 #if NACL_LINUX
 # define PREAD pread64
 # define PWRITE pwrite64
@@ -148,6 +153,29 @@ uintptr_t NaClMapHelper(int                 fd,
             " and NACL_ABI_MAP_PRIVATE must be set.\n");
   }
 
+  if (fd < 0){
+    uintptr_t             addr;
+    if (0 != (~(NACL_ABI_PROT_MASK) & prot)) {
+      NaClLog(LOG_INFO,
+              ("NaClDescIoDescMap: prot has other bits"
+              " than NACL_ABI_PROT_{READ|WRITE|EXEC}\n"));
+      return -NACL_ABI_EINVAL;
+    }
+
+    if (0 == (NACL_ABI_MAP_FIXED & flags)) {
+      if (!NaClFindAddressSpace(&addr, len)) {
+        NaClLog(1, "NaClDescIoDescMap: no address space?\n");
+        return -NACL_ABI_ENOMEM;
+      }
+      NaClLog(4,
+              "NaClDescIoDescMap: NaClFindAddressSpace"
+              " returned 0x%"NACL_PRIxPTR"\n",
+              addr);
+      start_addr = (void *) addr;
+    }
+    flags |= NACL_ABI_MAP_FIXED;
+  }
+
   prot &= NACL_ABI_PROT_MASK;
 
 
@@ -254,7 +282,6 @@ int NaClOpenHelper( int                   cageid,
                     char const           *path,
                     int                  flags,
                     int                  mode) {
-  nacl_host_stat_t stbuf;
   int posix_flags;
   int fd;
 
@@ -340,11 +367,11 @@ nacl_off64_t NaClSeekHelper(int                  fd,
 
 }
 
-ssize_t NaClHostDescPRead(int                  fd,
-                          int                  cageid,
-                          void                *buf,
-                          size_t               len,
-                          nacl_off64_t         offset) {
+ssize_t NaClPReadHelper(int                  fd,
+                        int                  cageid,
+                        void                *buf,
+                        size_t               len,
+                        nacl_off64_t         offset) {
   ssize_t retval;
 
   if (fd < 0) {
@@ -411,4 +438,188 @@ int NaClStatHelper(char const       *host_os_pathname,
   }
 
   return 0;
+}
+
+ssize_t NaClGetdentsHelper(int                fd,
+                          int                 cageid,
+                          void                *buf,
+                          size_t              len,) {
+
+  int                     retval;
+
+  if (fd < 0) {
+    NaClLog(LOG_FATAL, "NaClGetdentsHelper: invalid fd\n");
+  }
+  NaClLog(3, "NaClGetdentsHelper(0x%08"NACL_PRIxPTR", %"NACL_PRIuS"):\n",
+          (uintptr_t) buf, len);
+
+  if (0 != ((__alignof__(struct nacl_abi_dirent) - 1) & (uintptr_t) buf)) {
+    retval = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+
+  retval = lind_getdents(fd, len, buf, cageid);
+
+cleanup:
+  NaClLog(3, "NaClGetdentsHelper: returned %d\n", retval);
+  return retval;
+}
+
+
+static uintptr_t ShmMapHelper(int                     shm_fd,
+                              void                    *start_addr,
+                              size_t                  len,
+                              int                     prot,
+                              int                     flags,
+                              nacl_off64_t            offset) {
+
+  int           nacl_imc_prot;
+  int           nacl_imc_flags;
+  uintptr_t     addr;
+  void          *result;
+  nacl_off64_t  tmp_off64;
+
+  NaClLog(4,
+          "NaClDescImcShmMmap(,,0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
+          "0x%x,0x%x,0x%08"NACL_PRIxNACL_OFF64")\n",
+          (uintptr_t) start_addr, len, prot, flags, offset);
+  /*
+   * shm must have NACL_ABI_MAP_SHARED in flags, and all calls through
+   * this API must supply a start_addr, so NACL_ABI_MAP_FIXED is
+   * assumed.
+   */
+  if (NACL_ABI_MAP_SHARED != (flags & NACL_ABI_MAP_SHARING_MASK)) {
+    NaClLog(LOG_INFO,
+            ("NaClDescImcShmMap: Mapping not NACL_ABI_MAP_SHARED,"
+             " flags 0x%x\n"),
+            flags);
+    return -NACL_ABI_EINVAL;
+  }
+  if (0 != (NACL_ABI_MAP_FIXED & flags) && NULL == start_addr) {
+    NaClLog(LOG_INFO,
+            ("NaClDescImcShmMap: Mapping NACL_ABI_MAP_FIXED"
+             " but start_addr is NULL\n"));
+  }
+  /* post-condition: if NULL == start_addr, then NACL_ABI_MAP_FIXED not set */
+
+  /*
+   * prot must not contain bits other than PROT_{READ|WRITE|EXEC}.
+   */
+  if (0 != (~(NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE | NACL_ABI_PROT_EXEC)
+            & prot)) {
+    NaClLog(LOG_INFO,
+            "NaClDescImcShmMap: prot has other bits than"
+            " PROT_{READ|WRITE|EXEC}\n");
+    return -NACL_ABI_EINVAL;
+  }
+  /*
+   * Map from NACL_ABI_ prot and flags bits to IMC library flags,
+   * which will later map back into posix-style prot/flags on *x
+   * boxen, and to MapViewOfFileEx arguments on Windows.
+   */
+  nacl_imc_prot = 0;
+  if (NACL_ABI_PROT_READ & prot) {
+    nacl_imc_prot |= NACL_PROT_READ;
+  }
+  if (NACL_ABI_PROT_WRITE & prot) {
+    nacl_imc_prot |= NACL_PROT_WRITE;
+  }
+  if (NACL_ABI_PROT_EXEC & prot) {
+    nacl_imc_prot |= NACL_PROT_EXEC;
+  }
+  nacl_imc_flags = NACL_MAP_SHARED;
+  if (0 == (NACL_ABI_MAP_FIXED & flags)) {
+    /* start_addr is a hint, and we just ignore the hint... */
+    if (!NaClFindAddressSpace(&addr, len)) {
+      NaClLog(1, "NaClDescImcShmMap: no address space?!?\n");
+      return -NACL_ABI_ENOMEM;
+    }
+    start_addr = (void *) addr;
+  }
+  nacl_imc_flags |= NACL_MAP_FIXED;
+
+  tmp_off64 = offset + len;
+  /* just NaClRoundAllocPage, but in 64 bits */
+  tmp_off64 = ((tmp_off64 + NACL_MAP_PAGESIZE - 1)
+             & ~(uint64_t) (NACL_MAP_PAGESIZE - 1));
+  if (tmp_off64 > INT32_MAX) {
+    NaClLog(LOG_INFO,
+            "NaClDescImcShmMap: total offset exceeds 32-bits\n");
+    return -NACL_ABI_EOVERFLOW;
+  }
+
+  static const int kPosixProt[] = {
+  PROT_NONE,
+  PROT_READ,
+  PROT_WRITE,
+  PROT_READ | PROT_WRITE,
+  PROT_EXEC,
+  PROT_READ | PROT_EXEC,
+  PROT_WRITE | PROT_EXEC,
+  PROT_READ | PROT_WRITE | PROT_EXEC
+  };
+  int adjusted = 0;
+
+  if (flags & NACL_MAP_SHARED) {
+    adjusted |= MAP_SHARED;
+  }
+  if (flags & NACL_MAP_PRIVATE) {
+    adjusted |= MAP_PRIVATE;
+  }
+  if (flags & NACL_MAP_FIXED) {
+    adjusted |= MAP_FIXED;
+  }
+  result = mmap(start, length, kPosixProt[prot & 7], adjusted, shm_fd, offset);
+
+  if (NACL_MAP_FAILED == result) {
+    return -NACL_ABI_E_MOVE_ADDRESS_SPACE;
+  }
+  if (0 != (NACL_ABI_MAP_FIXED & flags) && result != (void *) start_addr) {
+    NaClLog(LOG_FATAL,
+            ("NaClDescImcShmMap: NACL_MAP_FIXED but got %p instead of %p\n"),
+            result, start_addr);
+  }
+  return (uintptr_t) start_addr;
+}
+
+
+static Atomic32 memory_object_count = 0;
+
+static int LindShmCreate(size_t length) {
+  char name[PATH_MAX];
+  const char prefix[] = "/google-nacl-shm-";
+
+
+  if (0 == length) {
+    return -1;
+  }
+
+  for (;;) {
+    int m;
+    snprintf(name, sizeof name, "%s-%u.%u", prefix,
+             getpid(),
+             static_cast<uint32_t>(AtomicIncrement(&memory_object_count, 1)));
+    /*
+      * Using 0 for the mode causes shm_unlink to fail with EACCES on Mac
+      * OS X 10.8. As of 10.8, the kernel requires the user to have write
+      * permission to successfully shm_unlink.
+      */
+    m = shm_open(name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR);
+    
+    if (0 <= m) {
+  
+      int rc = shm_unlink(name);
+      DCHECK(rc == 0);
+      
+      if (ftruncate(m, length) == -1) {
+        close(m);
+        m = -1;
+      }
+      return m;
+    }
+    if (errno != EEXIST) {
+      return -1;
+    }
+    /* Retry only if we got EEXIST. */
+  }
 }

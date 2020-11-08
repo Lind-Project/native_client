@@ -32,8 +32,6 @@
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_clock.h"
 #include "native_client/src/shared/platform/nacl_exit.h"
-#include "native_client/src/shared/platform/nacl_host_desc.h"
-#include "native_client/src/shared/platform/nacl_host_dir.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_time.h"
@@ -326,13 +324,13 @@ int32_t NaClStatAclCheck(struct NaClApp *nap,
 }
 
 int32_t NaClIoctlAclCheck(struct NaClApp  *nap,
-                          struct NaClDesc *ndp,
+                          int              fd,
                           int             request,
                           void            *arg) {
   NaClLog(2,
-          ("NaClIoctlAclCheck(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
+          ("NaClIoctlAclCheck(0x%08"NACL_PRIxPTR", %d,"
            " %d, 0x%08"NACL_PRIxPTR"\n"),
-          (uintptr_t) nap, (uintptr_t) ndp, request, (uintptr_t) arg);
+          (uintptr_t) nap, (uintptr_t) fd, request, (uintptr_t) arg);
   if (NaClAclBypassChecks) {
     return 0;
   }
@@ -406,46 +404,46 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   int32_t   desc;
 
   NaClLog(3,
-          ("NaClSysNameService(0x%08"NACL_PRIxPTR","
+          ("NaClSysNameService - Unused (0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp,
           (uintptr_t) desc_addr);
 
-  if (!NaClCopyInFromUser(nap, &desc, (uintptr_t) desc_addr, sizeof(desc))) {
-    NaClLog(LOG_ERROR,
-            "Invalid address argument to NaClSysNameService\n");
-    retval = -NACL_ABI_EFAULT;
-    goto done;
-  }
+  // if (!NaClCopyInFromUser(nap, &desc, (uintptr_t) desc_addr, sizeof(desc))) {
+  //   NaClLog(LOG_ERROR,
+  //           "Invalid address argument to NaClSysNameService\n");
+  //   retval = -NACL_ABI_EFAULT;
+  //   goto done;
+  // }
 
-  if (-1 == desc) {
-    /* read */
-    desc = NaClSetAvail(nap, NaClDescRef(nap->name_service_conn_cap));
-    if (NaClCopyOutToUser(nap, (uintptr_t) desc_addr,
-                          &desc, sizeof(desc))) {
-      retval = 0;
-    } else {
-      retval = -NACL_ABI_EFAULT;
-    }
-  } else {
-    struct NaClDesc *desc_obj_ptr = NaClGetDesc(nap, desc);
+  // if (-1 == desc) {
+  //   /* read */
+  //   desc = NaClSetAvail(nap, NaClDescRef(nap->name_service_conn_cap));
+  //   if (NaClCopyOutToUser(nap, (uintptr_t) desc_addr,
+  //                         &desc, sizeof(desc))) {
+  //     retval = 0;
+  //   } else {
+  //     retval = -NACL_ABI_EFAULT;
+  //   }
+  // } else {
+  //   struct NaClDesc *desc_obj_ptr = NaClGetDesc(nap, desc);
 
-    if (!desc_obj_ptr) {
-      retval = -NACL_ABI_EBADF;
-      goto done;
-    }
-    if (NACL_DESC_CONN_CAP != NACL_VTBL(NaClDesc, desc_obj_ptr)->typeTag &&
-        NACL_DESC_CONN_CAP_FD != NACL_VTBL(NaClDesc, desc_obj_ptr)->typeTag) {
-      retval = -NACL_ABI_EINVAL;
-      goto done;
-    }
-    /* write */
-    NaClXMutexLock(&nap->mu);
-    NaClDescUnref(nap->name_service_conn_cap);
-    nap->name_service_conn_cap = desc_obj_ptr;
-    NaClXMutexUnlock(&nap->mu);
-    retval = 0;
-  }
+  //   if (!desc_obj_ptr) {
+  //     retval = -NACL_ABI_EBADF;
+  //     goto done;
+  //   }
+  //   if (NACL_DESC_CONN_CAP != NACL_VTBL(NaClDesc, desc_obj_ptr)->typeTag &&
+  //       NACL_DESC_CONN_CAP_FD != NACL_VTBL(NaClDesc, desc_obj_ptr)->typeTag) {
+  //     retval = -NACL_ABI_EINVAL;
+  //     goto done;
+  //   }
+  //   /* write */
+  //   NaClXMutexLock(&nap->mu);
+  //   NaClDescUnref(nap->name_service_conn_cap);
+  //   nap->name_service_conn_cap = desc_obj_ptr;
+  //   NaClXMutexUnlock(&nap->mu);
+  //   retval = 0;
+  // }
 
  done:
   return retval;
@@ -453,50 +451,18 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
 
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *old_nd;
-  int old_hostfd;
-  int new_desc;
+
   int ret;
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
-  old_hostfd = fd_cage_table[nap->cage_id][oldfd];
-
-  if (old_hostfd < 0) {
+  if (oldfd < 0) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
 
-  if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
-    ret= -NACL_ABI_EBADF;
-    goto out;
-  }
-
-  /* Translate from NaCl Desc to Host Desc */
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &old_nd->base;
-  struct NaClHostDesc *old_hd = self->hd;
-
-  /* Create and set vars for child hd */
-  struct NaClHostDesc *new_hd;
-  new_hd = malloc(sizeof(*new_hd));
-  if (!new_hd) {
-      NaClLog(LOG_FATAL, "NaClSysDup: Error initializing new descriptor\n");
-  }
-
-  new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-  new_hd->flags = old_hd->flags;
-  new_hd->cageid = nap->cage_id;
-
-  /* Set new nacl desc as available */
-  int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
-
-  /* We've got to put that old NaClDescriptor back in there... */
-  NaClSetDesc(nap, old_hostfd, old_nd);
-
-  ret = NextFd(nap->cage_id);
-
-  fd_cage_table[nap->cage_id][ret] = new_hostfd;
-
+  ret = lind_dup(oldfd, nap->cage_id);
+ 
 
 out:
   return ret;
@@ -506,11 +472,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
                     int                   oldfd,
                     int                   newfd) {
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *old_nd;
-  struct NaClDesc *new_nd;
-
-  int old_hostfd;
-  int new_hostfd;
   int ret;
 
   NaClLog(1, "%s\n", "[dup2] Entered dup2!");
@@ -523,82 +484,19 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     goto out;
   }
 
-  /* Get old host fd from cage table, and use that to get nacl descriptor */
-  old_hostfd = fd_cage_table[nap->cage_id][oldfd];
-
-  if (old_hostfd < 0) {
+  if (oldfd < 0) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
   
-  if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
+  newfd = lind_dup2(oldfd, newfd, nap->cage_id);
+
+
+  if (newfd < 0) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
 
-  /* Translate from NaCl Desc to Host Desc */
-  struct NaClDescIoDesc *old_self = (struct NaClDescIoDesc *) &old_nd->base;
-  struct NaClHostDesc *old_hd = old_self->hd;
-
-  /* Check if newfd exists 
-
-    Scenarios
-    1. new_hostfd is < 0 - this implies that newfd has been a number specified by the user and we should create
-    a new nacl desc and dup it via regular dup
-    2. new_hostfd is >= 0 - we have this fd already, lets dup it
-
-  
-  */
-
-  new_hostfd = fd_cage_table[nap->cage_id][newfd];
-
-
-  if (new_hostfd < 0) {
-    
-    /* Scenario 1: Create and set vars for new hd */
-    struct NaClHostDesc *new_hd;
-    new_hd = malloc(sizeof(*new_hd));
-    if (!new_hd) {
-        NaClLog(LOG_FATAL, "NaClSysDup2: Error initializing new descriptor\n");
-    }
-
-    /* We have to use regular dup at this point because were creating a lind FD from scratch */
-
-    new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
-    new_hd->cageid = nap->cage_id;
-
-    /* Set new nacl desc as available */
-    int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
-    /* and add the new hostfd to the cage table */
-    fd_cage_table[nap->cage_id][newfd] = new_hostfd;
-
-
-
-  }
-  else {
-    /* Scenario 2 */
-
-    new_nd = NaClGetDesc(nap, new_hostfd);
-    if (!new_nd) {
-      ret = -NACL_ABI_EBADF;
-      goto out;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    struct NaClDescIoDesc *new_self = (struct NaClDescIoDesc *) &new_nd->base;
-    struct NaClHostDesc *new_hd = new_self->hd;
-
-    new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
-    new_hd->cageid = nap->cage_id;
-
-    /* Re-add the nacl desc to the nap */
-    NaClSetDesc(nap, new_hostfd, new_nd);
-  }
-  
-  /* We've got to put that old NaClDescriptor back in there... */
-  NaClSetDesc(nap, old_hostfd, old_nd);
   
   ret = newfd;
 
@@ -658,6 +556,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+
   const char           *glibc_prefix = "/lib/glibc/";
   const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
@@ -709,71 +608,16 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  /*
-   * Perform a stat to determine whether the file is a directory.
-   *
-   * NB: it is okay for the stat to fail, since the request may be to
-   * create a new file.
-   *
-   * There is a race conditions here: between the stat and the
-   * open-as-a-file and open-as-a-dir, the type of the object that the
-   * path refers to can change.
-   */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
 
-  /* Windows does not have S_ISDIR(m) macro */
-  if (!retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
-    struct NaClHostDir  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* We need to assign a CageID to NaCl HostDirectories and HostDescriptors so that we can access cageid from Lind RPC calls*/
-    hd->cageid = nap->cage_id;
-    
-    retval = NaClHostDirOpen(hd, path);
-    NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
-            (uintptr_t) hd, path, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      NaClLog(1, "added directory to open file table at %d\n", retval);
-    }
-  } else {
-    struct NaClHostDesc  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* Assign CageID to Host Descriptor */
-    hd->cageid = nap->cage_id;
-
-    retval = NaClHostDescOpen(hd, path, flags, mode);
-    NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
-            nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      NaClLog(1, "Entered into open file table at %d\n", retval);
-    }
-  }
+  retval = NaClOpenHelper(d, path, flags, mode);
+  NaClLog(1, "Cage %d NaClHostDescOpen(%s, 0%o, 0%o) returned %d\n",
+          nap->cage_id, path, flags, mode, retval);
 
 cleanup:
-  /*
-    Now translate the real fds to virtual fds and return them to the cage 
-    Get next available, and set cagetable there to nacl retval
-  */
-  
-  fd_retval = NextFd(nap->cage_id);
 
-  fd_cage_table[nap->cage_id][fd_retval] = retval;
+  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
 
-
-  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
-
-  return fd_retval;
+  return retval;
 }
 
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
@@ -790,24 +634,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return 0;
   }
 
-  NaClFastMutexLock(&nap->desc_mu);
+  ret = NaClCloseHelper(d, nap->cage_id)
 
-  /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
-  fd = fd_cage_table[nap->cage_id][d];
-  ndp = NaClGetDescMu(nap, fd);
 
-  /* If we have an fd and nacl descriptor, lets close it */
-  if (fd >= 0 && ndp){
-    NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-    NaClSetDescMu(nap, fd, NULL);
-    NaClDescUnref(ndp);
-    ret = 0;
-  }
-
-  /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-  fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
-
-  NaClFastMutexUnlock(&nap->desc_mu);
   return ret;
 }
 
@@ -819,23 +648,14 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         getdents_ret;
   uintptr_t       sysaddr;
-  struct NaClDesc *ndp;
 
-  int fd;
 
   NaClLog(1, "Entered NaClSysGetdents(0x%08"NACL_PRIxPTR","
           " %d, 0x%08"NACL_PRIxPTR","
           " %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
   }
@@ -849,7 +669,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, " illegal address for directory data\n");
     retval = -NACL_ABI_EFAULT;
-    goto cleanup_unref;
+    goto cleanup;
   }
 
   /*
@@ -865,11 +685,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * cause mmap to be slower on Windows.
    */
   NaClXMutexLock(&nap->mu);
-  getdents_ret = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Getdents)(ndp,
-                            (void *) sysaddr,
-                            count);
+  getdents_ret = NaClGetdentsHelper(d, nap->cage_id, (void *) sysaddr, count);
   NaClXMutexUnlock(&nap->mu);
+
   /* drop addr space lock */
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
       || INT32_MAX < getdents_ret) {
@@ -886,9 +704,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     NaClLog(4, "getdents returned %d\n", retval);
   }
 
-cleanup_unref:
-  NaClDescUnref(ndp);
-
 cleanup:
   return retval;
 }
@@ -898,11 +713,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  struct NaClDesc *ndp;
   size_t          log_bytes;
   char const      *ellipsis = "";
 
@@ -912,21 +725,15 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   /* check for closed fds */
-  if (fd < 0) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
+  
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -943,7 +750,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
-  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
+
+  read_result = NaClReadHelper(d, nap->cage_id, (void *)sysaddr, count);
 
   NaClVmIoHasEnded(nap,
                     (uint32_t) (uintptr_t) buf,
@@ -966,7 +774,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   } else {
     NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
   }
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -979,7 +786,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      void                 *buf,
                      size_t               count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -992,21 +798,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
-
-  ndp = NaClGetDesc(nap, fd);
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-  if (!ndp) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1034,13 +832,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClVmIoWillStart(nap,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
-  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+
+  write_result = NaClWriteHelper(d, nap->cage_id, (void *)sysaddr, count);
 
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
                    (uint32_t)(((uintptr_t)buf) + count - 1));
 
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -1062,25 +860,18 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   nacl_off64_t    retval64;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *ndp;
-  int             fd;
 
   NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
-  fd = fd_cage_table[nap->cage_id][d];
 
   /* check for closed fds */
-  if (fd < 0) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
 
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) {
     retval = -NACL_ABI_EFAULT;
@@ -1088,8 +879,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
-  retval64 = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-              Seek)(ndp, (nacl_off64_t) offset, whence);
+  retval64 = NaClSeekHelper(d, nap->cage_id, (nacl_off64_t) offset, whence);
   if (NaClOff64IsNegErrno(&retval64)) {
     retval = (int32_t) retval64;
   } else {
@@ -1100,8 +890,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
-out_unref:
-  NaClDescUnref(ndp);
+
 out:
   return retval;
 }
@@ -1114,7 +903,6 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   int             retval = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
-  int             fd;
 
   NaClLog(2, "Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n",
@@ -1135,25 +923,17 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    ****************************************
    */
 
-  fd = fd_cage_table[nap->cage_id][d];
 
   /* check for closed fds */
-  if (fd < 0) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
   }
 
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    NaClLog(2, "%s\n", "bad desc");
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = NaClIoctlAclCheck(nap, ndp, request, arg);
+  retval = NaClIoctlAclCheck(nap, d, request, arg);
   if (retval) {
     NaClLog(2, "Ioctl ACL check rejected descriptor %d\n", d);
-    goto cleanup_unref;
+    goto cleanup;
   }
 
   /*
@@ -1166,11 +946,9 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    * staying within the untrusted address space.
    */
   NaClXMutexLock(&nap->mu);
-  retval = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-            Ioctl)(ndp, request, (void *) sysaddr);
+  // IoCtl Not Defined
   NaClXMutexUnlock(&nap->mu);
-cleanup_unref:
-  NaClDescUnref(ndp);
+
 cleanup:
   return retval;
 }
@@ -1181,9 +959,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
                      struct nacl_abi_stat *nasp) {
   struct NaClApp        *nap = natp->nap;
   int32_t               retval = -NACL_ABI_EINVAL;
-  struct NaClDesc       *ndp;
   struct nacl_abi_stat  result;
-  int                   fd;
 
   NaClLog(2, "Entered NaClSysFstat(0x%08"NACL_PRIxPTR
            ", %d, 0x%08"NACL_PRIxPTR")\n",
@@ -1193,23 +969,16 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   NaClLog(2, "sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
           sizeof(*nasp), sizeof(*nasp));
 
-  fd = fd_cage_table[nap->cage_id][d];
 
   /* check for closed fds */
-  if (fd < 0) {
+  if (d < 0) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
   }
 
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    NaClLog(2, "%s\n", "bad desc");
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+  retval = NaClFstatHelper(d, nap->cage_id, &result);
 
-  retval = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-            Fstat)(ndp, &result);
+
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) nasp,
                            &result, sizeof(result))) {
@@ -1217,7 +986,6 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
     }
   }
 
-  NaClDescUnref(ndp);
 cleanup:
   return retval;
 }
@@ -1247,7 +1015,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
+  retval = NaClStatHelper(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -1287,7 +1055,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
+  retval = NaClStatHelper(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -1557,7 +1325,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   int                         holding_app_lock;
   struct nacl_abi_stat        stbuf;
   size_t                      alloc_rounded_length;
-  int fd;
 
   bool anon = false;
   holding_app_lock = 0;
@@ -1783,12 +1550,13 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       NaClLog(2, "NaClSysMmap: NaClDescIoDescMap(,,0x%08"NACL_PRIxPTR","
                "0x%08"NACL_PRIxS",0x%x,0x%x,0x%08"NACL_PRIxPTR")\n",
                sysaddr, length, prot, flags, (uintptr_t)offset);
-      map_result = NaClDescIoDescMapAnon(nap->effp,
-                                         (void *) sysaddr,
-                                         length,
-                                         prot,
-                                         flags,
-                                         (off_t) offset);
+      map_result = NaClMapHelper(NO_FD_ANON,
+                                nap->cage_id,
+                                (void *) sysaddr,
+                                length,
+                                prot,
+                                flags,
+                                (off_t) offset);
     } else {
  
       NaClLog(4,
@@ -1796,9 +1564,8 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                "0x%08"NACL_PRIxS",0x%x,0x%x,0x%08"NACL_PRIxPTR")\n"),
               sysaddr, length, prot, flags, (uintptr_t) offset);
 
-      map_result = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                    Map)(ndp,
-                         nap->effp,
+      map_result = NaClMapHelper(d,
+                         nap->cage_id,
                          (void *) sysaddr,
                          length,
                          prot,
@@ -1867,7 +1634,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                               alloc_rounded_length >> NACL_PAGESHIFT,
                               prot,
                               flags,
-                              fd,
+                              d,
                               nap->cage_id,
                               offset,
                               length);
@@ -2139,9 +1906,9 @@ static int32_t MprotectInternal(struct NaClApp *nap,
 
     NaClLog(2, "MprotectInternal: "
             "addr 0x%08"NACL_PRIxPTR", desc 0x%08"NACL_PRIxPTR"\n",
-            addr, (uintptr_t) entry->desc);
+            addr, (uintptr_t) entry->fd);
 
-    if (!entry->desc) {
+    if (!entry->fd) {
       if (mprotect((void *) addr, entry_len, host_prot)) {
         NaClLog(1, "MprotectInternal: "
                 "mprotect on anonymous memory failed, errno = %d\n", errno);
@@ -2260,38 +2027,37 @@ int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
    */
   struct NaClApp              *nap = natp->nap;
   int32_t                     retval = -NACL_ABI_EINVAL;
-  struct NaClDesc             *pair[2];
   int32_t                     usr_pair[2];
 
-  NaClLog(2, "Entered NaClSysImcMakeBoundSock(0x%08"NACL_PRIxPTR","
+  NaClLog(2, "Entered NaClSysImcMakeBoundSock - unused function (0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, (uintptr_t)sap);
 
-  retval = NaClCommonDescMakeBoundSock(pair);
-  if (retval) {
-    goto cleanup;
-  }
+  // retval = NaClCommonDescMakeBoundSock(pair);
+  // if (retval) {
+  //   goto cleanup;
+  // }
 
-  usr_pair[0] = NaClSetAvail(nap, pair[0]);
-  usr_pair[1] = NaClSetAvail(nap, pair[1]);
-  if (!NaClCopyOutToUser(nap, (uintptr_t) sap,
-                         usr_pair, sizeof(usr_pair))) {
-    /*
-     * NB: The descriptors were briefly observable to untrusted code
-     * in this window, even though the syscall had not returned yet,
-     * and another thread which guesses their numbers could actually
-     * use them, so the NaClDescSafeUnref inside NaClSetDesc below
-     * might not actually deallocate right away.  To avoid this, we
-     * could grab the descriptor lock and hold it until after the
-     * copyout is done, but that imposes an ordering between the
-     * descriptor lock and the VM lock which can cause problems
-     * elsewhere.
-     */
-    NaClSetDesc(nap, usr_pair[0], NULL);
-    NaClSetDesc(nap, usr_pair[1], NULL);
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup;
-  }
+  // usr_pair[0] = NaClSetAvail(nap, pair[0]);
+  // usr_pair[1] = NaClSetAvail(nap, pair[1]);
+  // if (!NaClCopyOutToUser(nap, (uintptr_t) sap,
+  //                        usr_pair, sizeof(usr_pair))) {
+  //   /*
+  //    * NB: The descriptors were briefly observable to untrusted code
+  //    * in this window, even though the syscall had not returned yet,
+  //    * and another thread which guesses their numbers could actually
+  //    * use them, so the NaClDescSafeUnref inside NaClSetDesc below
+  //    * might not actually deallocate right away.  To avoid this, we
+  //    * could grab the descriptor lock and hold it until after the
+  //    * copyout is done, but that imposes an ordering between the
+  //    * descriptor lock and the VM lock which can cause problems
+  //    * elsewhere.
+  //    */
+  //   NaClSetDesc(nap, usr_pair[0], NULL);
+  //   NaClSetDesc(nap, usr_pair[1], NULL);
+  //   retval = -NACL_ABI_EFAULT;
+  //   goto cleanup;
+  // }
 
   retval = 0;
 
@@ -2302,29 +2068,27 @@ cleanup:
 int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
                          int                   d) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClDesc *ndp;
-  struct NaClDesc *result_desc;
+
   int32_t         retval;
-  int             fd;
 
-  NaClLog(1, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
+  NaClLog(1, "Entered NaClSysImcAccept - unused function (0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
 
-  /* Check if fd is valid and if NaCl Desc exists */
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EINVAL;
-    goto out;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EINVAL;
-    goto out;
-  }
-  retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->AcceptConn(ndp, &result_desc);
-  if (!retval) {
-    retval = NaClSetAvail(nap, result_desc);
-  }
-  NaClDescUnref(ndp);
+  // /* Check if fd is valid and if NaCl Desc exists */
+  // fd = fd_cage_table[nap->cage_id][d];
+  // if (fd < 0) {
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto out;
+  // }
+  // ndp = NaClGetDesc(nap, fd);
+  // if (!ndp) {
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto out;
+  // }
+  // retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->AcceptConn(ndp, &result_desc);
+  // if (!retval) {
+  //   retval = NaClSetAvail(nap, result_desc);
+  // }
+  // NaClDescUnref(ndp);
 
 out:
   return retval;
@@ -2333,27 +2097,25 @@ out:
 int32_t NaClSysImcConnect(struct NaClAppThread *natp,
                           int                  d) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClDesc *ndp;
-  struct NaClDesc *result;
-  int32_t         retval;
-  int             fd;
 
-  NaClLog(1, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
-  retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->ConnectAddr(ndp, &result);
-  if (!retval) {
-    retval = NaClSetAvail(nap, result);
-  }
-  NaClDescUnref(ndp);
+  int32_t         retval;
+
+  NaClLog(1, "Entered NaClSysImcConnectAddr - Unused function (0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
+  // fd = fd_cage_table[nap->cage_id][d];
+  // if (fd < 0) {
+  //   retval = -NACL_ABI_EBADF;
+  //   goto out;
+  // }
+  // ndp = NaClGetDesc(nap, fd);
+  // if (!ndp) {
+  //   retval = -NACL_ABI_EBADF;
+  //   goto out;
+  // }
+  // retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->ConnectAddr(ndp, &result);
+  // if (!retval) {
+  //   retval = NaClSetAvail(nap, result);
+  // }
+  // NaClDescUnref(ndp);
 
 out:
   return retval;
@@ -2384,148 +2146,148 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
   size_t                        i;
   int                           fd;
 
-  NaClLog(2, "Entered NaClSysImcSendmsg(0x%08"NACL_PRIxPTR", %d,"
+  NaClLog(2, "Entered NaClSysImcSendms - Unused (0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", 0x%x)\n",
            (uintptr_t)natp, d, (uintptr_t)nanimhp, flags);
 
-  if (!NaClCopyInFromUser(nap, &kern_nanimh, (uintptr_t) nanimhp,
-                          sizeof(kern_nanimh))) {
-    NaClLog(2, "%s\n", "NaClImcMsgHdr not in user address space");
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup_leave;
-  }
-  /* copy before validating contents */
+  // if (!NaClCopyInFromUser(nap, &kern_nanimh, (uintptr_t) nanimhp,
+  //                         sizeof(kern_nanimh))) {
+  //   NaClLog(2, "%s\n", "NaClImcMsgHdr not in user address space");
+  //   retval = -NACL_ABI_EFAULT;
+  //   goto cleanup_leave;
+  // }
+  // /* copy before validating contents */
 
-  /*
-   * Some of these checks duplicate checks that will be done in the
-   * nrd xfer library, but it is better to check before doing the
-   * address translation of memory/descriptor vectors if those vectors
-   * might be too long.  Plus, we need to copy and validate vectors
-   * for TOCvTOU race protection, and we must prevent overflows.  The
-   * nrd xfer library's checks should never fire when called from the
-   * service runtime, but the nrd xfer library might be called from
-   * other code.
-   */
-  if (kern_nanimh.iov_length > NACL_ABI_IMC_IOVEC_MAX) {
-    NaClLog(2, "%s\n", "gather/scatter array too large");
-    retval = -NACL_ABI_EINVAL;
-    goto cleanup_leave;
-  }
-  if (kern_nanimh.desc_length > NACL_ABI_IMC_USER_DESC_MAX) {
-    NaClLog(2, "%s\n", "handle vector too long");
-    retval = -NACL_ABI_EINVAL;
-    goto cleanup_leave;
-  }
+  // /*
+  //  * Some of these checks duplicate checks that will be done in the
+  //  * nrd xfer library, but it is better to check before doing the
+  //  * address translation of memory/descriptor vectors if those vectors
+  //  * might be too long.  Plus, we need to copy and validate vectors
+  //  * for TOCvTOU race protection, and we must prevent overflows.  The
+  //  * nrd xfer library's checks should never fire when called from the
+  //  * service runtime, but the nrd xfer library might be called from
+  //  * other code.
+  //  */
+  // if (kern_nanimh.iov_length > NACL_ABI_IMC_IOVEC_MAX) {
+  //   NaClLog(2, "%s\n", "gather/scatter array too large");
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto cleanup_leave;
+  // }
+  // if (kern_nanimh.desc_length > NACL_ABI_IMC_USER_DESC_MAX) {
+  //   NaClLog(2, "%s\n", "handle vector too long");
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto cleanup_leave;
+  // }
 
-  if (kern_nanimh.iov_length > 0) {
-    if (!NaClCopyInFromUser(nap, kern_naiov, (uintptr_t)kern_nanimh.iov,
-                            (kern_nanimh.iov_length * sizeof(kern_naiov[0])))) {
-      NaClLog(2, "%s\n", "gather/scatter array not in user address space");
-      retval = -NACL_ABI_EFAULT;
-      goto cleanup_leave;
-    }
+  // if (kern_nanimh.iov_length > 0) {
+  //   if (!NaClCopyInFromUser(nap, kern_naiov, (uintptr_t)kern_nanimh.iov,
+  //                           (kern_nanimh.iov_length * sizeof(kern_naiov[0])))) {
+  //     NaClLog(2, "%s\n", "gather/scatter array not in user address space");
+  //     retval = -NACL_ABI_EFAULT;
+  //     goto cleanup_leave;
+  //   }
 
-    for (i = 0; i < kern_nanimh.iov_length; ++i) {
-      sysaddr = NaClUserToSysAddrRange(nap,
-                                       (uintptr_t)kern_naiov[i].base,
-                                       kern_naiov[i].length);
-      if (kNaClBadAddress == sysaddr) {
-        retval = -NACL_ABI_EFAULT;
-        goto cleanup_leave;
-      }
-      kern_iov[i].base = (void *)sysaddr;
-      kern_iov[i].length = kern_naiov[i].length;
-    }
-  }
+  //   for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //     sysaddr = NaClUserToSysAddrRange(nap,
+  //                                      (uintptr_t)kern_naiov[i].base,
+  //                                      kern_naiov[i].length);
+  //     if (kNaClBadAddress == sysaddr) {
+  //       retval = -NACL_ABI_EFAULT;
+  //       goto cleanup_leave;
+  //     }
+  //     kern_iov[i].base = (void *)sysaddr;
+  //     kern_iov[i].length = kern_naiov[i].length;
+  //   }
+  // }
 
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup_leave;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup_leave;
-  }
+  // fd = fd_cage_table[nap->cage_id][d];
+  // if (fd < 0) {
+  //   retval = -NACL_ABI_EBADF;
+  //   goto cleanup_leave;
+  // }
+  // ndp = NaClGetDesc(nap, fd);
+  // if (!ndp) {
+  //   retval = -NACL_ABI_EBADF;
+  //   goto cleanup_leave;
+  // }
 
-  /*
-   * make things easier for cleaup exit processing
-   */
-  memset(kern_desc, 0, sizeof(kern_desc));
+  // /*
+  //  * make things easier for cleaup exit processing
+  //  */
+  // memset(kern_desc, 0, sizeof(kern_desc));
 
-  kern_msg_hdr.iov = kern_iov;
-  kern_msg_hdr.iov_length = kern_nanimh.iov_length;
+  // kern_msg_hdr.iov = kern_iov;
+  // kern_msg_hdr.iov_length = kern_nanimh.iov_length;
 
-  if (!kern_nanimh.desc_length) {
-    kern_msg_hdr.ndescv = 0;
-    kern_msg_hdr.ndesc_length = 0;
-  } else {
-    if (!NaClCopyInFromUser(nap, usr_desc, kern_nanimh.descv,
-                            kern_nanimh.desc_length * sizeof(usr_desc[0]))) {
-      retval = -NACL_ABI_EFAULT;
-      goto cleanup;
-    }
+  // if (!kern_nanimh.desc_length) {
+  //   kern_msg_hdr.ndescv = 0;
+  //   kern_msg_hdr.ndesc_length = 0;
+  // } else {
+  //   if (!NaClCopyInFromUser(nap, usr_desc, kern_nanimh.descv,
+  //                           kern_nanimh.desc_length * sizeof(usr_desc[0]))) {
+  //     retval = -NACL_ABI_EFAULT;
+  //     goto cleanup;
+  //   }
 
-    for (i = 0; i < kern_nanimh.desc_length; ++i) {
-      if (kKnownInvalidDescNumber == usr_desc[i]) {
-        kern_desc[i] = (struct NaClDesc *) NaClDescInvalidMake();
-      } else {
-        /* NaCl modules are ILP32, so this works on ILP32 and LP64 systems */
-        kern_desc[i] = NaClGetDesc(nap, usr_desc[i]);
-      }
-      if (!kern_desc[i]) {
-        retval = -NACL_ABI_EBADF;
-        goto cleanup;
-      }
-    }
-    kern_msg_hdr.ndescv = kern_desc;
-    kern_msg_hdr.ndesc_length = kern_nanimh.desc_length;
-  }
-  kern_msg_hdr.flags = kern_nanimh.flags;
+  //   for (i = 0; i < kern_nanimh.desc_length; ++i) {
+  //     if (kKnownInvalidDescNumber == usr_desc[i]) {
+  //       kern_desc[i] = (struct NaClDesc *) NaClDescInvalidMake();
+  //     } else {
+  //       /* NaCl modules are ILP32, so this works on ILP32 and LP64 systems */
+  //       kern_desc[i] = NaClGetDesc(nap, usr_desc[i]);
+  //     }
+  //     if (!kern_desc[i]) {
+  //       retval = -NACL_ABI_EBADF;
+  //       goto cleanup;
+  //     }
+  //   }
+  //   kern_msg_hdr.ndescv = kern_desc;
+  //   kern_msg_hdr.ndesc_length = kern_nanimh.desc_length;
+  // }
+  // kern_msg_hdr.flags = kern_nanimh.flags;
 
-  /* lock user memory ranges in kern_naiov */
-  for (i = 0; i < kern_nanimh.iov_length; ++i) {
-    NaClVmIoWillStart(nap,
-                      kern_naiov[i].base,
-                      kern_naiov[i].base + kern_naiov[i].length - 1);
-  }
-  ssize_retval = NACL_VTBL(NaClDesc, ndp)->SendMsg(ndp, &kern_msg_hdr, flags);
-  /* unlock user memory ranges in kern_naiov */
-  for (i = 0; i < kern_nanimh.iov_length; ++i) {
-    NaClVmIoHasEnded(nap,
-                     kern_naiov[i].base,
-                     kern_naiov[i].base + kern_naiov[i].length - 1);
-  }
+  // /* lock user memory ranges in kern_naiov */
+  // for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //   NaClVmIoWillStart(nap,
+  //                     kern_naiov[i].base,
+  //                     kern_naiov[i].base + kern_naiov[i].length - 1);
+  // }
+  // ssize_retval = NACL_VTBL(NaClDesc, ndp)->SendMsg(ndp, &kern_msg_hdr, flags);
+  // /* unlock user memory ranges in kern_naiov */
+  // for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //   NaClVmIoHasEnded(nap,
+  //                    kern_naiov[i].base,
+  //                    kern_naiov[i].base + kern_naiov[i].length - 1);
+  // }
 
-  if (NaClSSizeIsNegErrno(&ssize_retval)) {
-    /*
-     * NaClWouldBlock uses TSD (for both the errno-based and
-     * GetLastError()-based implementations), so this is threadsafe.
-     */
-    if ((flags & NACL_DONT_WAIT) && NaClWouldBlock()) {
-      retval = -NACL_ABI_EAGAIN;
-    } else if (-NACL_ABI_EMSGSIZE == ssize_retval) {
-      /*
-       * Allow the caller to handle the case when imc_sendmsg fails because
-       * the message is too large for the system to send in one piece.
-       */
-      retval = -NACL_ABI_EMSGSIZE;
-    } else {
-      /*
-       * TODO(bsy): the else case is some mysterious internal error.
-       * Should we destroy the ndp or otherwise mark it as bad?  Was
-       * the failure atomic?  Did it send some partial data?  Linux
-       * implementation appears okay.
-       */
-      retval = -NACL_ABI_EIO;
-    }
-  } else if (ssize_retval > INT32_MAX || ssize_retval < INT32_MIN) {
-    retval = -NACL_ABI_EOVERFLOW;
-  } else {
-    /* cast is safe due to range checks above */
-    retval = (int32_t)ssize_retval;
-  }
+  // if (NaClSSizeIsNegErrno(&ssize_retval)) {
+  //   /*
+  //    * NaClWouldBlock uses TSD (for both the errno-based and
+  //    * GetLastError()-based implementations), so this is threadsafe.
+  //    */
+  //   if ((flags & NACL_DONT_WAIT) && NaClWouldBlock()) {
+  //     retval = -NACL_ABI_EAGAIN;
+  //   } else if (-NACL_ABI_EMSGSIZE == ssize_retval) {
+  //     /*
+  //      * Allow the caller to handle the case when imc_sendmsg fails because
+  //      * the message is too large for the system to send in one piece.
+  //      */
+  //     retval = -NACL_ABI_EMSGSIZE;
+  //   } else {
+  //     /*
+  //      * TODO(bsy): the else case is some mysterious internal error.
+  //      * Should we destroy the ndp or otherwise mark it as bad?  Was
+  //      * the failure atomic?  Did it send some partial data?  Linux
+  //      * implementation appears okay.
+  //      */
+  //     retval = -NACL_ABI_EIO;
+  //   }
+  // } else if (ssize_retval > INT32_MAX || ssize_retval < INT32_MIN) {
+  //   retval = -NACL_ABI_EOVERFLOW;
+  // } else {
+  //   /* cast is safe due to range checks above */
+  //   retval = (int32_t)ssize_retval;
+  // }
 
 cleanup:
   for (i = 0; i < kern_nanimh.desc_length; ++i) {
@@ -2549,201 +2311,199 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   ssize_t                               ssize_retval;
   uintptr_t                             sysaddr;
   size_t                                i;
-  struct NaClDesc                       *ndp;
   struct NaClAbiNaClImcMsgHdr           kern_nanimh;
   struct NaClAbiNaClImcMsgIoVec         kern_naiov[NACL_ABI_IMC_IOVEC_MAX];
   struct NaClImcMsgIoVec                kern_iov[NACL_ABI_IMC_IOVEC_MAX];
   int32_t                               usr_desc[NACL_ABI_IMC_USER_DESC_MAX];
   struct NaClImcTypedMsgHdr             recv_hdr;
-  struct NaClDesc                       *new_desc[NACL_ABI_IMC_DESC_MAX];
   nacl_abi_size_t                       num_user_desc;
   struct NaClDesc                       *invalid_desc = NULL;
   int                                   fd;
 
-  NaClLog(2, "Entered NaClSysImcRecvMsg(0x%08"NACL_PRIxPTR", %d,"
+  NaClLog(2, "Entered NaClSysImcRecvMsg - Unused (0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, d, (uintptr_t)nanimhp);
 
-  /*
-   * First, we validate user-supplied message headers before
-   * allocating a receive buffer.
-   */
-  if (!NaClCopyInFromUser(nap, &kern_nanimh, (uintptr_t) nanimhp,
-                          sizeof(kern_nanimh))) {
-    NaClLog(4, "NaClImcMsgHdr not in user address space\n");
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup_leave;
-  }
-  /* copy before validating */
+  // /*
+  //  * First, we validate user-supplied message headers before
+  //  * allocating a receive buffer.
+  //  */
+  // if (!NaClCopyInFromUser(nap, &kern_nanimh, (uintptr_t) nanimhp,
+  //                         sizeof(kern_nanimh))) {
+  //   NaClLog(4, "NaClImcMsgHdr not in user address space\n");
+  //   retval = -NACL_ABI_EFAULT;
+  //   goto cleanup_leave;
+  // }
+  // /* copy before validating */
 
-  if (kern_nanimh.iov_length > NACL_ABI_IMC_IOVEC_MAX) {
-    NaClLog(4, "gather/scatter array too large: %"NACL_PRIdNACL_SIZE"\n",
-            kern_nanimh.iov_length);
-    retval = -NACL_ABI_EINVAL;
-    goto cleanup_leave;
-  }
-  if (kern_nanimh.desc_length > NACL_ABI_IMC_USER_DESC_MAX) {
-    NaClLog(4, "handle vector too long: %"NACL_PRIdNACL_SIZE"\n",
-            kern_nanimh.desc_length);
-    retval = -NACL_ABI_EINVAL;
-    goto cleanup_leave;
-  }
+  // if (kern_nanimh.iov_length > NACL_ABI_IMC_IOVEC_MAX) {
+  //   NaClLog(4, "gather/scatter array too large: %"NACL_PRIdNACL_SIZE"\n",
+  //           kern_nanimh.iov_length);
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto cleanup_leave;
+  // }
+  // if (kern_nanimh.desc_length > NACL_ABI_IMC_USER_DESC_MAX) {
+  //   NaClLog(4, "handle vector too long: %"NACL_PRIdNACL_SIZE"\n",
+  //           kern_nanimh.desc_length);
+  //   retval = -NACL_ABI_EINVAL;
+  //   goto cleanup_leave;
+  // }
 
-  if (kern_nanimh.iov_length > 0) {
-    /*
-     * Copy IOV array into kernel space.  Validate this snapshot and do
-     * user->kernel address conversions on this snapshot.
-     */
-    if (!NaClCopyInFromUser(nap, kern_naiov, (uintptr_t) kern_nanimh.iov,
-                            (kern_nanimh.iov_length * sizeof(kern_naiov[0])))) {
-      NaClLog(4, "gather/scatter array not in user address space\n");
-      retval = -NACL_ABI_EFAULT;
-      goto cleanup_leave;
-    }
-    /*
-     * Convert every IOV base from user to system address, validate
-     * range of bytes are really in user address space.
-     */
+  // if (kern_nanimh.iov_length > 0) {
+  //   /*
+  //    * Copy IOV array into kernel space.  Validate this snapshot and do
+  //    * user->kernel address conversions on this snapshot.
+  //    */
+  //   if (!NaClCopyInFromUser(nap, kern_naiov, (uintptr_t) kern_nanimh.iov,
+  //                           (kern_nanimh.iov_length * sizeof(kern_naiov[0])))) {
+  //     NaClLog(4, "gather/scatter array not in user address space\n");
+  //     retval = -NACL_ABI_EFAULT;
+  //     goto cleanup_leave;
+  //   }
+  //   /*
+  //    * Convert every IOV base from user to system address, validate
+  //    * range of bytes are really in user address space.
+  //    */
 
-    for (i = 0; i < kern_nanimh.iov_length; ++i) {
-      sysaddr = NaClUserToSysAddrRange(nap,
-                                       (uintptr_t) kern_naiov[i].base,
-                                       kern_naiov[i].length);
-      if (kNaClBadAddress == sysaddr) {
-        NaClLog(4, "iov number %"NACL_PRIdS" not entirely in user space\n", i);
-        retval = -NACL_ABI_EFAULT;
-        goto cleanup_leave;
-      }
-      kern_iov[i].base = (void *) sysaddr;
-      kern_iov[i].length = kern_naiov[i].length;
-    }
-  }
+  //   for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //     sysaddr = NaClUserToSysAddrRange(nap,
+  //                                      (uintptr_t) kern_naiov[i].base,
+  //                                      kern_naiov[i].length);
+  //     if (kNaClBadAddress == sysaddr) {
+  //       NaClLog(4, "iov number %"NACL_PRIdS" not entirely in user space\n", i);
+  //       retval = -NACL_ABI_EFAULT;
+  //       goto cleanup_leave;
+  //     }
+  //     kern_iov[i].base = (void *) sysaddr;
+  //     kern_iov[i].length = kern_naiov[i].length;
+  //   }
+  // }
 
-  if (kern_nanimh.desc_length > 0) {
-    sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)kern_nanimh.descv,
-                                     kern_nanimh.desc_length * sizeof(int32_t));
-    if (kNaClBadAddress == sysaddr) {
-      retval = -NACL_ABI_EFAULT;
-      goto cleanup_leave;
-    }
-  }
+  // if (kern_nanimh.desc_length > 0) {
+  //   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t)kern_nanimh.descv,
+  //                                    kern_nanimh.desc_length * sizeof(int32_t));
+  //   if (kNaClBadAddress == sysaddr) {
+  //     retval = -NACL_ABI_EFAULT;
+  //     goto cleanup_leave;
+  //   }
+  // }
 
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    NaClLog(1, "%s\n", "receiving descriptor invalid");
-    retval = -NACL_ABI_EBADF;
-    goto cleanup_leave;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    NaClLog(1, "%s\n", "receiving descriptor invalid");
-    retval = -NACL_ABI_EBADF;
-    goto cleanup_leave;
-  }
+  // fd = fd_cage_table[nap->cage_id][d];
+  // if (fd < 0) {
+  //   NaClLog(1, "%s\n", "receiving descriptor invalid");
+  //   retval = -NACL_ABI_EBADF;
+  //   goto cleanup_leave;
+  // }
+  // ndp = NaClGetDesc(nap, fd);
+  // if (!ndp) {
+  //   NaClLog(1, "%s\n", "receiving descriptor invalid");
+  //   retval = -NACL_ABI_EBADF;
+  //   goto cleanup_leave;
+  // }
 
-  recv_hdr.iov = kern_iov;
-  recv_hdr.iov_length = kern_nanimh.iov_length;
+  // recv_hdr.iov = kern_iov;
+  // recv_hdr.iov_length = kern_nanimh.iov_length;
 
-  recv_hdr.ndescv = new_desc;
-  recv_hdr.ndesc_length = sizeof(new_desc);
-  memset(new_desc, 0, sizeof(new_desc));
+  // recv_hdr.ndescv = new_desc;
+  // recv_hdr.ndesc_length = sizeof(new_desc);
+  // memset(new_desc, 0, sizeof(new_desc));
 
-  recv_hdr.flags = 0;  /* just to make it obvious; IMC will clear it for us */
+  // recv_hdr.flags = 0;  /* just to make it obvious; IMC will clear it for us */
 
-  /* lock user memory ranges in kern_naiov */
-  for (i = 0; i < kern_nanimh.iov_length; ++i) {
-    NaClVmIoWillStart(nap,
-                      kern_naiov[i].base,
-                      kern_naiov[i].base + kern_naiov[i].length - 1);
-  }
-  ssize_retval = NACL_VTBL(NaClDesc, ndp)->RecvMsg(ndp, &recv_hdr, flags,
-      (struct NaClDescQuotaInterface *) nap->reverse_quota_interface);
-  /* unlock user memory ranges in kern_naiov */
-  for (i = 0; i < kern_nanimh.iov_length; ++i) {
-    NaClVmIoHasEnded(nap,
-                     kern_naiov[i].base,
-                     kern_naiov[i].base + kern_naiov[i].length - 1);
-  }
-  /*
-   * retval is number of user payload bytes received and excludes the
-   * header bytes.
-   */
-  NaClLog(3, "NaClSysImcRecvMsg: RecvMsg() returned %"NACL_PRIdS"\n",
-          ssize_retval);
-  if (NaClSSizeIsNegErrno(&ssize_retval)) {
-    /* negative error numbers all have valid 32-bit representations,
-     * so this cast is safe. */
-    retval = (int32_t) ssize_retval;
-    goto cleanup;
-  } else if (ssize_retval > INT32_MAX || ssize_retval < INT32_MIN) {
-    retval = -NACL_ABI_EOVERFLOW;
-    goto cleanup;
-  } else {
-    /* cast is safe due to range check above */
-    retval = (int32_t) ssize_retval;
-  }
+  // /* lock user memory ranges in kern_naiov */
+  // for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //   NaClVmIoWillStart(nap,
+  //                     kern_naiov[i].base,
+  //                     kern_naiov[i].base + kern_naiov[i].length - 1);
+  // }
+  // ssize_retval = NACL_VTBL(NaClDesc, ndp)->RecvMsg(ndp, &recv_hdr, flags,
+  //     (struct NaClDescQuotaInterface *) nap->reverse_quota_interface);
+  // /* unlock user memory ranges in kern_naiov */
+  // for (i = 0; i < kern_nanimh.iov_length; ++i) {
+  //   NaClVmIoHasEnded(nap,
+  //                    kern_naiov[i].base,
+  //                    kern_naiov[i].base + kern_naiov[i].length - 1);
+  // }
+  // /*
+  //  * retval is number of user payload bytes received and excludes the
+  //  * header bytes.
+  //  */
+  // NaClLog(3, "NaClSysImcRecvMsg: RecvMsg() returned %"NACL_PRIdS"\n",
+  //         ssize_retval);
+  // if (NaClSSizeIsNegErrno(&ssize_retval)) {
+  //   /* negative error numbers all have valid 32-bit representations,
+  //    * so this cast is safe. */
+  //   retval = (int32_t) ssize_retval;
+  //   goto cleanup;
+  // } else if (ssize_retval > INT32_MAX || ssize_retval < INT32_MIN) {
+  //   retval = -NACL_ABI_EOVERFLOW;
+  //   goto cleanup;
+  // } else {
+  //   /* cast is safe due to range check above */
+  //   retval = (int32_t) ssize_retval;
+  // }
 
-  /*
-   * NB: recv_hdr.flags may contain NACL_ABI_MESSAGE_TRUNCATED and/or
-   * NACL_ABI_HANDLES_TRUNCATED.
-   */
+  // /*
+  //  * NB: recv_hdr.flags may contain NACL_ABI_MESSAGE_TRUNCATED and/or
+  //  * NACL_ABI_HANDLES_TRUNCATED.
+  //  */
 
-  kern_nanimh.flags = recv_hdr.flags;
+  // kern_nanimh.flags = recv_hdr.flags;
 
-  /*
-   * Now internalize the NaClHandles as NaClDesc objects.
-   */
-  num_user_desc = recv_hdr.ndesc_length;
+  // /*
+  //  * Now internalize the NaClHandles as NaClDesc objects.
+  //  */
+  // num_user_desc = recv_hdr.ndesc_length;
 
-  if (kern_nanimh.desc_length < num_user_desc) {
-    kern_nanimh.flags |= NACL_ABI_RECVMSG_DESC_TRUNCATED;
-    for (i = kern_nanimh.desc_length; i < num_user_desc; ++i) {
-      NaClDescUnref(new_desc[i]);
-      new_desc[i] = NULL;
-    }
-    num_user_desc = kern_nanimh.desc_length;
-  }
+  // if (kern_nanimh.desc_length < num_user_desc) {
+  //   kern_nanimh.flags |= NACL_ABI_RECVMSG_DESC_TRUNCATED;
+  //   for (i = kern_nanimh.desc_length; i < num_user_desc; ++i) {
+  //     NaClDescUnref(new_desc[i]);
+  //     new_desc[i] = NULL;
+  //   }
+  //   num_user_desc = kern_nanimh.desc_length;
+  // }
 
-  invalid_desc = (struct NaClDesc *) NaClDescInvalidMake();
-  /* prepare to write out to user space the descriptor numbers */
-  for (i = 0; i < num_user_desc; ++i) {
-    if (invalid_desc == new_desc[i]) {
-      usr_desc[i] = kKnownInvalidDescNumber;
-      NaClDescUnref(new_desc[i]);
-    } else {
-      usr_desc[i] = NaClSetAvail(nap, new_desc[i]);
-    }
-    new_desc[i] = NULL;
-  }
-  if (num_user_desc &&
-      !NaClCopyOutToUser(nap, (uintptr_t)kern_nanimh.descv, usr_desc,
-                         num_user_desc * sizeof(usr_desc[0]))) {
-    NaClLog(1, "NaClSysImcRecvMsg: in/out ptr (descv %"NACL_PRIxPTR
-            ") became invalid at copyout?\n",
-            (uintptr_t) kern_nanimh.descv);
-  }
+  // invalid_desc = (struct NaClDesc *) NaClDescInvalidMake();
+  // /* prepare to write out to user space the descriptor numbers */
+  // for (i = 0; i < num_user_desc; ++i) {
+  //   if (invalid_desc == new_desc[i]) {
+  //     usr_desc[i] = kKnownInvalidDescNumber;
+  //     NaClDescUnref(new_desc[i]);
+  //   } else {
+  //     usr_desc[i] = NaClSetAvail(nap, new_desc[i]);
+  //   }
+  //   new_desc[i] = NULL;
+  // }
+  // if (num_user_desc &&
+  //     !NaClCopyOutToUser(nap, (uintptr_t)kern_nanimh.descv, usr_desc,
+  //                        num_user_desc * sizeof(usr_desc[0]))) {
+  //   NaClLog(1, "NaClSysImcRecvMsg: in/out ptr (descv %"NACL_PRIxPTR
+  //           ") became invalid at copyout?\n",
+  //           (uintptr_t) kern_nanimh.descv);
+  // }
 
-  kern_nanimh.desc_length = num_user_desc;
-  if (!NaClCopyOutToUser(nap, (uintptr_t)nanimhp, &kern_nanimh,
-                         sizeof(kern_nanimh))) {
-    NaClLog(1, "%s\n",
-            "NaClSysImcRecvMsg: in/out ptr (iov) became"
-            " invalid at copyout?");
-  }
+  // kern_nanimh.desc_length = num_user_desc;
+  // if (!NaClCopyOutToUser(nap, (uintptr_t)nanimhp, &kern_nanimh,
+  //                        sizeof(kern_nanimh))) {
+  //   NaClLog(1, "%s\n",
+  //           "NaClSysImcRecvMsg: in/out ptr (iov) became"
+  //           " invalid at copyout?");
+  // }
 
 cleanup:
   /* copy out updated desc count, flags */
-  if (retval < 0) {
-    for (i = 0; i < sizeof(new_desc) / sizeof(*new_desc); ++i) {
-      if (new_desc[i]) {
-        NaClDescUnref(new_desc[i]);
-        new_desc[i] = NULL;
-      }
-    }
-  }
-  NaClDescUnref(ndp);
-  NaClDescSafeUnref(invalid_desc);
-  NaClLog(3, "NaClSysImcRecvMsg: returning %d\n", retval);
+  // if (retval < 0) {
+  //   for (i = 0; i < sizeof(new_desc) / sizeof(*new_desc); ++i) {
+  //     if (new_desc[i]) {
+  //       NaClDescUnref(new_desc[i]);
+  //       new_desc[i] = NULL;
+  //     }
+  //   }
+  // }
+  // NaClDescUnref(ndp);
+  // NaClDescSafeUnref(invalid_desc);
+  // NaClLog(3, "NaClSysImcRecvMsg: returning %d\n", retval);
 cleanup_leave:
   return retval;
 }
@@ -2755,39 +2515,39 @@ int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
   struct NaClDescImcShm *shmp;
   off_t                 size_as_off;
 
-  NaClLog(2, "Entered NaClSysImcMemObjCreate(0x%08"NACL_PRIxPTR
+  NaClLog(2, "Entered NaClSysImcMemObjCreate - Unused(0x%08"NACL_PRIxPTR
            " 0x%08"NACL_PRIxS")\n",
            (uintptr_t)natp, size);
 
-  if (size & (NACL_MAP_PAGESIZE - 1)) {
-    return -NACL_ABI_EINVAL;
-  }
-  /*
-   * TODO(bsy): policy about maximum shm object size should be
-   * enforced here.
-   */
-  size_as_off = (off_t)size;
-  if (size_as_off < 0) {
-    return -NACL_ABI_EINVAL;
-  }
+//   if (size & (NACL_MAP_PAGESIZE - 1)) {
+//     return -NACL_ABI_EINVAL;
+//   }
+//   /*
+//    * TODO(bsy): policy about maximum shm object size should be
+//    * enforced here.
+//    */
+//   size_as_off = (off_t)size;
+//   if (size_as_off < 0) {
+//     return -NACL_ABI_EINVAL;
+//   }
 
-  shmp = malloc(sizeof(*shmp));
-  if (!shmp) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
+//   shmp = malloc(sizeof(*shmp));
+//   if (!shmp) {
+//     retval = -NACL_ABI_ENOMEM;
+//     goto cleanup;
+//   }
 
-  if (!NaClDescImcShmAllocCtor(shmp, size_as_off, /* executable= */0)) {
-    /* is this reasonable? */
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
+//   if (!NaClDescImcShmAllocCtor(shmp, size_as_off, /* executable= */0)) {
+//     /* is this reasonable? */
+//     retval = -NACL_ABI_ENOMEM;
+//     goto cleanup;
+//   }
 
-  retval = NaClSetAvail(nap, (struct NaClDesc *)shmp);
-  shmp = NULL;
+//   retval = NaClSetAvail(nap, (struct NaClDesc *)shmp);
+//   shmp = NULL;
 
-cleanup:
-  free(shmp);
+// cleanup:
+//   free(shmp);
 
   return retval;
 }
@@ -2799,26 +2559,26 @@ int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
   struct NaClDesc         *pair[2];
   int32_t                 retval;
 
-  NaClLog(2, "Entered NaClSysImcSocketPair(0x%08"NACL_PRIxPTR
+  NaClLog(2, "Entered NaClSysImcSocketPair - Unused(0x%08"NACL_PRIxPTR
            " 0x%08"NACL_PRIx32")\n",
            (uintptr_t)natp, descs_out);
 
-  retval = NaClCommonDescSocketPair(pair);
-  if (retval) {
-    goto cleanup;
-  }
+  // retval = NaClCommonDescSocketPair(pair);
+  // if (retval) {
+  //   goto cleanup;
+  // }
 
-  usr_pair[0] = NaClSetAvail(nap, pair[0]);
-  usr_pair[1] = NaClSetAvail(nap, pair[1]);
+  // usr_pair[0] = NaClSetAvail(nap, pair[0]);
+  // usr_pair[1] = NaClSetAvail(nap, pair[1]);
 
-  if (!NaClCopyOutToUser(nap, (uintptr_t) descs_out, usr_pair,
-                         sizeof(usr_pair))) {
-    NaClSetDesc(nap, usr_pair[0], NULL);
-    NaClSetDesc(nap, usr_pair[1], NULL);
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup;
-  }
-  retval = 0;
+  // if (!NaClCopyOutToUser(nap, (uintptr_t) descs_out, usr_pair,
+  //                        sizeof(usr_pair))) {
+  //   NaClSetDesc(nap, usr_pair[0], NULL);
+  //   NaClSetDesc(nap, usr_pair[1], NULL);
+  //   retval = -NACL_ABI_EFAULT;
+  //   goto cleanup;
+  // }
+  // retval = 0;
 
 cleanup:
   return retval;
@@ -3636,7 +3396,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
   int nacl_fds[2];
   int flags;
 
-  /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
+  /* Attempt lind pipe RPC. Return lind pipe fds */
   
   ret = lind_pipe(lind_fds, nap->cage_id);
   if (-1 == ret) {
@@ -3644,58 +3404,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     return -NaClXlateErrno(errno);
   }
 
-   /* Sync NaCl fds with Lind ufds*/
-  for (int i = 0; i < 2; i++) {
-    
-    /* set flags for the read and write ends of the pipe */
-    switch (i) {
-    case 0:
-      flags = NACL_ABI_O_RDONLY;
-      break;
-    case 1:
-      flags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
-      break;
-    default:
-      /* something went terribly wrong */
-      ret = -NACL_ABI_EFAULT;
-      goto out;
-    }
-
-    /* Attempt to make NaCl fds */
-    struct NaClHostDesc  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      ret = -NACL_ABI_ENOMEM;
-      goto out;
-    }
-    hd->cageid = nap->cage_id;
-
-    /* Set up Host Descriptor via Pipe wrapper */
-
-    int retval = NaClHostDescPipe(hd, lind_fds[i], flags);
-    NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
-            (uintptr_t) hd, flags, retval);
-    /* Then let's make a NaCl descriptor and insert it into NaCls descriptor system */
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      NaClLog(1, "Entered into open file descriptor table at %d\n", retval);
-    }
-    
-
-    /* Update cage table with our lind fds */
-    int pipe_fd = NextFd(nap->cage_id);
-    if (pipe_fd < 0) {
-      ret = -NACL_ABI_EBADF;
-      goto out;
-    }
-    fd_cage_table[nap->cage_id][pipe_fd] = retval;
-    nacl_fds[i] = pipe_fd;
-
-  }
-
-  /* copy out NaCl fds */
-  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
+  /* copy out to user  */
+  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, lind_fds, sizeof(nacl_fds))) {
       ret = -NACL_ABI_EFAULT;
   }
 
@@ -3906,6 +3616,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
                             PROT_RX,
                             NACL_ABI_MAP_PRIVATE,
                             nap_child->text_shm,
+                            nap_child->cage_id,
                             0,
                             dyncode_size);
 
@@ -3915,7 +3626,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
                NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                NACL_ABI_PROT_NONE,
                NACL_ABI_MAP_PRIVATE,
-               NULL,
+               NO_FD_ANON,
+               nap_child->cage_id,
                0,
                0);
 
@@ -3944,7 +3656,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
                             tramp_npages,
                             PROT_RW,
                             MAP_ANON_PRIV,
-                            NULL,
+                            NO_FD_ANON,
+                            nap_child->cage_id,
                             0,
                             0);
   if (!NaClPageAllocFlags((void **)&child_start_addr, tramp_size, NACL_ABI_MAP_ANON)) {

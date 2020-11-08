@@ -163,7 +163,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->effp = (struct NaClDescEffector *) effp;
   nap->enable_dyncode_syscalls = ShouldEnableDyncodeSyscalls();
   nap->use_shm_for_dynamic_text = ShouldEnableDynamicLoading();
-  nap->text_shm = NULL;
+  nap->text_shm = -1;
 
   if (!NaClMutexCtor(&nap->dynamic_load_mutex)) {
     goto cleanup_effp_free;
@@ -839,31 +839,6 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
 
-
-  /* Set up cage-id's for initial descriptors */
-  for (int fd = 0; fd < 3; fd++) {
-
-    /* Retrieve NaCl Descriptor based on fd */
-    int host_fd = fd_cage_table[nap->cage_id][fd];
-
-    struct NaClDesc *nd;
-    struct NaClDescIoDesc *self;
-    struct NaClHostDesc *hd;
-    nd = NaClGetDesc(nap, host_fd);
-    if (!nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    self = (struct NaClDescIoDesc *) &nd->base;
-    hd = self->hd;
-
-    hd->cageid = nap->cage_id;
-
-    /* We've got to put that  NaClDescriptor back in there... */
-    NaClSetDesc(nap, host_fd, nd);
-
-  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
@@ -1486,6 +1461,7 @@ static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynam
                             PROT_RX,
                             NACL_ABI_MAP_PRIVATE,
                             target->text_shm,
+                            target->cage_id,
                             (region->start & UNTRUSTED_ADDR_MASK) - target->dynamic_text_start,
                             region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
@@ -1558,7 +1534,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
               copy_size,
               (void *)page_addr_parent,
               (void *)page_addr_child);
-      if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+      if(entry->prot && (entry->fd != nap_parent->text_shm)) {
         if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
         }
@@ -1607,12 +1583,13 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                 entry->npages,
                                 entry->prot,
                                 (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
-                                entry->desc,
+                                entry->fd,
+                                entry->cageid,
                                 entry->offset,
                                 entry->file_size);
 
   
-      if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+      if(entry->prot && (entry->fd != nap_parent->text_shm)) {
         if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
         }
@@ -1675,7 +1652,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   //                          stack_npages,
   //                          PROT_RW,
   //                          MAP_ANON_PRIV,
-  //                          NULL,
+  //                          NO_FD_ANON,
+  //                          nap_child->cage_id,
   //                          0,
   //                          0);
 
@@ -1697,7 +1675,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                             NACL_ABI_PROT_NONE,
                             NACL_ABI_MAP_PRIVATE,
-                            NULL,
+                            NO_FD_ANON,
+                            nap_child->cage_id,
                             0,
                             0);
 
@@ -1727,7 +1706,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             tramp_npages,
                             PROT_RW,
                             MAP_ANON_PRIV,
-                            NULL,
+                            NO_FD_ANON,
+                            nap_child->cage_id,
                             0,
                             0);
   if (!NaClPageAllocFlags((void **)&child_start_addr, tramp_size, 0)) {
@@ -1781,12 +1761,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 
 /* set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id) {
-  fd_cage_table[cage_id][0] = 0;
-  fd_cage_table[cage_id][1] = 1;
-  fd_cage_table[cage_id][2] = 2;
-
-  /* Initialize unused fd's to -1 */
-  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
 
   /* set to the next unused (available for dup() etc.) file descriptor */
   nap->num_children = 0;
@@ -1794,12 +1768,3 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 }
 
 /* Find next available fd in cagetable */
-
-int NextFd(int cage_id){
-
-  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[cage_id][fd] == -1) return fd;
-  }
-
-  return -NACL_ABI_EBADF;
-}

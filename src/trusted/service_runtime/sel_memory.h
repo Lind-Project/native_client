@@ -21,6 +21,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define NO_FD_ANON -1
+
 void *NaClPageAllocFlags(void **p, size_t size, int map_flags) NACL_WUR;
 
 int NaClPageAlloc(void **p, size_t num_bytes) NACL_WUR;

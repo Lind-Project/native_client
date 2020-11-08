@@ -146,53 +146,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   }
 
   
-  /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  NaClXMutexLock(&nap_parent->mu);
-
-  for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
-
-    /* Retrive the host fd we had stored in the Cage Table for the parent */
-    int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
-    if (parent_host_fd == NACL_BAD_FD) {
-      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
-      continue;
-    }
-    /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */
-    struct NaClDesc *parent_nd;
-    parent_nd = NaClGetDesc(nap_parent, parent_host_fd);
-    if (!parent_nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
-    struct NaClHostDesc *parent_hd = self->hd;
-
-    /* Create and set vars for child hd */
-    struct NaClHostDesc *child_hd;
-    child_hd = malloc(sizeof(*child_hd));
-    if (!child_hd) {
-        NaClLog(LOG_FATAL, "NaClChildNapCtor: Error initializing child descriptor\n");
-    }
-
-    child_hd->d = parent_hd->d;
-    child_hd->flags = parent_hd->flags;
-    child_hd->cageid = nap_child->cage_id;
-
-    /* Create and set new NaClDesc from Child HD in Child nap */
-    int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
-
-    /* We've got to put that parent NaClDescriptor back in there... */
-    NaClSetDesc(nap_parent, parent_host_fd, parent_nd);
-
-    /* Set childs cage table with the current fd to the old parent host fd */
-    fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
-
-
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
-  }
-  NaClXMutexUnlock(&nap_parent->mu);
-
   return nap_child;
 }
 

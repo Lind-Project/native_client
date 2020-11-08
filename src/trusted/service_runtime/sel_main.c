@@ -584,7 +584,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClPerfCounterIntervalLast(&time_all_main);
   }
 
-  NaClAppInitialDescriptorHookup(nap);
 
   if (!rpc_supplies_nexe) {
     if (LOAD_OK == errcode) {

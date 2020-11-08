@@ -83,7 +83,6 @@ struct NaClValidationCache;
 struct NaClValidationMetadata;
 
 extern volatile sig_atomic_t fork_num;
-extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -366,7 +365,7 @@ struct NaClApp {
    */
   int                       enable_dyncode_syscalls;
   int                       use_shm_for_dynamic_text;
-  struct NaClDesc           *text_shm;
+  int                       text_shm;
   struct NaClMutex          dynamic_load_mutex;
   /*
    * This records which pages in text_shm have been allocated.  When a

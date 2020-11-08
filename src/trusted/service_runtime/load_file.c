@@ -15,19 +15,18 @@
 
 NaClErrorCode NaClAppLoadFileFromFilename(struct NaClApp *nap,
                                           const char *filename) {
-  struct NaClDesc *nd;
+  int fd  
   NaClErrorCode err;
 
   NaClFileNameForValgrind(filename);
 
-  nd = (struct NaClDesc *) NaClDescIoDescOpen(filename, NACL_ABI_O_RDONLY,
+  fd = NaClOpenHelper(filename, NACL_ABI_O_RDONLY,
                                               0666, nap->cage_id);
-  if (NULL == nd) {
+  if (fd < 0) {
     return LOAD_OPEN_ERROR;
   }
 
-  err = NaClAppLoadFile(nd, nap);
-  NaClDescUnref(nd);
+  err = NaClAppLoadFile(fd, nap);
 
   if (err != LOAD_OK) {
     return err;

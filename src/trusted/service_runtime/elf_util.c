@@ -351,7 +351,8 @@ NaClErrorCode NaClElfImageValidateProgramHeaders(
 
 
 
-struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
+struct NaClElfImage *NaClElfImageNew(int fd,
+                                     int cageid,
                                      NaClErrorCode *err_code) {
   ssize_t read_ret;
   struct NaClElfImage *result;
@@ -371,7 +372,7 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
    * we're reading an ELFCLASS32 file.  No usable ELFCLASS32 binary could
    * be so small that it's not larger than Elf64_Ehdr anyway.
    */
-  read_ret = (*NACL_VTBL(NaClDesc, ndp)->PRead)(ndp, &ehdr, sizeof ehdr, 0);
+  read_ret = NaClPReadHelper(fd, cageid, &ehdr, sizeof ehdr, 0);
   if (NaClSSizeIsNegErrno(&read_ret) || (size_t) read_ret != sizeof ehdr) {
     *err_code = LOAD_READ_ERROR;
     NaClLog(2, "could not load elf headers\n");
@@ -452,11 +453,11 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
      * We know the multiplication won't overflow since we rejected
      * e_phnum values larger than the small constant NACL_MAX_PROGRAM_HEADERS.
      */
-    read_ret = (*NACL_VTBL(NaClDesc, ndp)->
-                PRead)(ndp,
-                       &phdr64[0],
-                       image.ehdr.e_phnum * sizeof phdr64[0],
-                       (nacl_off64_t) image.ehdr.e_phoff);
+    read_ret = NaClPReadHelper(fd,
+                                cageid
+                                &phdr64[0],
+                                image.ehdr.e_phnum * sizeof phdr64[0],
+                                (nacl_off64_t) image.ehdr.e_phoff);
     if (NaClSSizeIsNegErrno(&read_ret) ||
         (size_t) read_ret != image.ehdr.e_phnum * sizeof phdr64[0]) {
       *err_code = LOAD_READ_ERROR;
@@ -497,11 +498,11 @@ struct NaClElfImage *NaClElfImageNew(struct NaClDesc *ndp,
       return 0;
     }
 
-    read_ret = (*NACL_VTBL(NaClDesc, ndp)->
-                PRead)(ndp,
-                       &image.phdrs[0],
-                       image.ehdr.e_phnum * sizeof image.phdrs[0],
-                       (nacl_off64_t) image.ehdr.e_phoff);
+    read_ret = NaClPReadHelper(fd,
+                                cageid,
+                                &image.phdrs[0],
+                                image.ehdr.e_phnum * sizeof image.phdrs[0],
+                                (nacl_off64_t) image.ehdr.e_phoff);
     if (NaClSSizeIsNegErrno(&read_ret) ||
         (size_t) read_ret != image.ehdr.e_phnum * sizeof image.phdrs[0]) {
       *err_code = LOAD_READ_ERROR;
@@ -765,7 +766,7 @@ static NaClErrorCode NaClElfFileMapSegment(struct NaClApp *nap,
 }
 
 NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
-                               struct NaClDesc *ndp,
+                               int fd,
                                struct NaClApp *nap) {
   int segnum;
   uintptr_t vaddr;
@@ -809,41 +810,7 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
     paddr = NaClUserToSysAddr(nap, vaddr);
     CHECK(kNaClBadAddress != paddr);
 
-    /*
-     * Check NaClDescIsSafeForMmap(ndp) to see if it might be okay to
-     * mmap.
-     */
-    NaClLog(4, "NaClElfImageLoad: checking descriptor mmap safety\n");
-    safe_for_mmap = NaClDescIsSafeForMmap(ndp);
-    if (safe_for_mmap) {
-      NaClLog(4, "NaClElfImageLoad: safe-for-mmap\n");
-    }
-
-    if (!safe_for_mmap &&
-        NACL_FI("ELF_LOAD_BYPASS_DESCRIPTOR_SAFETY_CHECK", 0, 1)) {
-      NaClLog(LOG_WARNING, "WARNING: BYPASSING DESCRIPTOR SAFETY CHECK\n");
-      safe_for_mmap = 1;
-    }
-    if (safe_for_mmap) {
-      NaClErrorCode map_status;
-      NaClLog(4, "NaClElfImageLoad: safe-for-mmap\n");
-      map_status = NaClElfFileMapSegment(nap, ndp, php->p_flags,
-                                         offset, filesz, vaddr, paddr);
-      /*
-       * NB: -Werror=switch-enum forces us to not use a switch.
-       */
-      if (LOAD_OK == map_status) {
-        /* Segment has been handled -- proceed to next segment */
-        continue;
-      } else if (LOAD_STATUS_UNKNOWN != map_status) {
-        /*
-         * A real error!  Return it so that this can be reported to
-         * the embedding code (via start_module status).
-         */
-        return map_status;
-      }
-      /* Fall through: pread-based fallback requested */
-    }
+  
     NaClLog(4,
             "PReading %"NACL_PRIdElf_Xword" (0x%"NACL_PRIxElf_Xword") bytes to"
             " address 0x%"NACL_PRIxPTR", position %"
@@ -859,8 +826,7 @@ NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
      */
     NACL_MAKE_MEM_UNDEFINED((void *) paddr, filesz);
 
-    read_ret = (*NACL_VTBL(NaClDesc, ndp)->
-                PRead)(ndp, (void *) paddr, filesz, (nacl_off64_t) offset);
+    read_ret = NaClPReadHelper(fd, nap->cage_id, (void *) paddr, filesz, (nacl_off64_t) offset);
     if (NaClSSizeIsNegErrno(&read_ret) || (size_t) read_ret != filesz) {
       NaClLog(LOG_ERROR, "load failure segment %d", segnum);
       return LOAD_SEGMENT_BAD_PARAM;
@@ -986,8 +952,8 @@ NaClErrorCode NaClElfImageLoadDynamically(
                                   mapping_size >> NACL_PAGESHIFT,
                                   NACL_ABI_PROT_READ,
                                   NACL_ABI_MAP_PRIVATE,
-                                  -1,
-                                  -1,
+                                  NO_FD_ANON,
+                                  nap->cage_id,
                                   0,
                                   0);
       }

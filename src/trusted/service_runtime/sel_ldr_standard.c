@@ -162,7 +162,7 @@ NaClErrorCode NaClCheckAddressSpaceLayoutSanity(struct NaClApp *nap,
   return LOAD_OK;
 }
 
-NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
+NaClErrorCode NaClAppLoadFileAslr(int fd,
                                   struct NaClApp *nap,
                                   enum NaClAslrMode aslr_mode) {
   NaClErrorCode       ret = LOAD_INTERNAL;
@@ -185,7 +185,7 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
   nap->stack_size = NaClRoundAllocPage(nap->stack_size);
 
   /* temporay object will be deleted at end of function */
-  image = NaClElfImageNew(ndp, &subret);
+  image = NaClElfImageNew(fd, nap->cage_id, &subret);
   if (NULL == image || LOAD_OK != subret) {
     ret = subret;
     goto done;
@@ -305,7 +305,7 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
             "Error code 0x%x\n",
             ret);
   }
-  subret = NaClElfImageLoad(image, ndp, nap);
+  subret = NaClElfImageLoad(image, fd, nap);
   if (LOAD_OK != subret) {
     ret = subret;
     goto done;
@@ -393,22 +393,22 @@ done:
   return ret;
 }
 
-NaClErrorCode NaClAppLoadFile(struct NaClDesc *ndp,
+NaClErrorCode NaClAppLoadFile(int fd,
                               struct NaClApp *nap) {
-  return NaClAppLoadFileAslr(ndp, nap, NACL_ENABLE_ASLR);
+  return NaClAppLoadFileAslr(fd, nap, NACL_ENABLE_ASLR);
 }
 
 NaClErrorCode NaClAppLoadFileDynamically(struct NaClApp *nap,
-                                         struct NaClDesc *ndp,
+                                         int fd,
                                          struct NaClValidationMetadata *metadata) {
   struct NaClElfImage *image = NULL;
   NaClErrorCode ret = LOAD_INTERNAL;
 
-  image = NaClElfImageNew(ndp, &ret);
+  image = NaClElfImageNew(fd, nap->cage_id, &ret);
   if (NULL == image || LOAD_OK != ret) {
     goto done;
   }
-  ret = NaClElfImageLoadDynamically(image, nap, ndp, metadata);
+  ret = NaClElfImageLoadDynamically(image, nap, fd, metadata);
   if (LOAD_OK != ret) {
     goto done;
   }
