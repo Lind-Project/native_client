@@ -17,12 +17,6 @@
 #include "native_client/src/shared/platform/nacl_sync.h"
 #include "native_client/src/shared/platform/lind_stat.h"
 
-#if NACL_LINUX || NACL_OSX
-# include "native_client/src/shared/platform/posix/nacl_host_desc_types.h"
-#elif NACL_WINDOWS
-# include "native_client/src/shared/platform/win/nacl_host_desc_types.h"
-#endif
-
 
 
 /*
@@ -215,7 +209,7 @@ extern ssize_t NaClWriteHelper(int                  fd,
  *
  * Underlying host-OS functions: pread{,64} / FileRead
  */
-extern ssize_t NaClHostDescPRead(int                  fd,
+extern ssize_t NaClPReadHelper(int                  fd,
                                 int                  cageid,
                                 void                *buf,
                                 size_t               len,
@@ -257,10 +251,21 @@ extern int NaClFstatHelper(int                  fd,
 extern int NaClCloseHelper(int                  fd,
                           int                  cageid) NACL_WUR;
 
-extern iint NaClStatHelper(char const       *host_os_pathname,
+extern int NaClStatHelper(char const       *host_os_pathname,
                           nacl_host_stat_t *nhsp,
                           int cageid) NACL_WUR;
 
+extern ssize_t NaClGetdentsHelper(int                fd,
+                          int                 cageid,
+                          void                *buf,
+                          size_t              len) NACL_WUR;
+
+extern uintptr_t ShmMapHelper(int                     shm_fd,
+                              void                    *start_addr,
+                              size_t                  len,
+                              int                     prot,
+                              int                     flags,
+                              nacl_off64_t            offset) NACL_WUR;
 
 
 EXTERN_C_END

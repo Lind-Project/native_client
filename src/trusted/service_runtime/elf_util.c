@@ -37,6 +37,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_valgrind_hooks.h"
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_helpers.h"
+
 
 /* private */
 struct NaClElfImage {

@@ -443,7 +443,7 @@ int NaClStatHelper(char const       *host_os_pathname,
 ssize_t NaClGetdentsHelper(int                fd,
                           int                 cageid,
                           void                *buf,
-                          size_t              len,) {
+                          size_t              len) {
 
   int                     retval;
 
