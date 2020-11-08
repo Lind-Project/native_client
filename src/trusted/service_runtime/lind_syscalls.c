@@ -99,7 +99,7 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
 }
 
 struct FcntlExchangeData {
-        int lindfd;
+        struct NaClHostDesc *nhd;
         int minFd;
 };
 
@@ -108,7 +108,7 @@ int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, vo
         int lindFd;
         NaClLog(1, "Entered LindFcntlPreprocess inNum=%8u\n", inNum);
         *xchangedata = 0;
-        lindFd = (int)(*(int64_t*)&inArgs[0].ptr);
+        lindFd = NaClFdToRepyFD(nap, (int)(*(int64_t*)&inArgs[0].ptr));
         if(lindFd<0) {
                 retval = -NACL_ABI_EINVAL;
                 goto cleanup;
@@ -120,7 +120,12 @@ int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, vo
                         retval = -NACL_ABI_ENOMEM;
                         goto cleanup;
                 }
-                ((struct FcntlExchangeData*)(*xchangedata))->lindfd = lindFd;
+                ((struct FcntlExchangeData*)(*xchangedata))->nhd = (struct NaClHostDesc*)malloc(sizeof(struct NaClHostDesc));
+                if(!((struct FcntlExchangeData*)(*xchangedata))->nhd) {
+                        retval = -NACL_ABI_ENOMEM;
+                        free(*xchangedata);
+                        goto cleanup;
+                }
                 ((struct FcntlExchangeData*)(*xchangedata))->minFd = (int)(*(int64_t *)&inArgs[2].ptr);
                 NaClLog(1, "MinFD: %d\n", ((struct FcntlExchangeData*)(*xchangedata))->minFd);
         }
@@ -980,7 +985,7 @@ int32_t NaClSysLindSyscall(struct NaClAppThread *natp,
             }
         }
     }
-    // // if(stubs[callNum].clean) {
+    // if(stubs[callNum].clean) {
     //     stubs[callNum].clean(nap, inNum, inArgSys, xchangeData);
     // }
     retval = _isError?-_code:_code;

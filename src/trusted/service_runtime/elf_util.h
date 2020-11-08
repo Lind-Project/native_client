@@ -17,8 +17,9 @@ struct Gio;
 
 uintptr_t NaClElfImageGetEntryPoint(struct NaClElfImage *image);
 
-struct NaClElfImage *NaClElfImageNew(struct NaClDesc *gp,
-                                     NaClErrorCode *err_code);
+struct NaClElfImage *NaClElfImageNew(int fd,
+                                    int cageid,
+                                    NaClErrorCode *err_code);
 
 NaClErrorCode NaClElfImageValidateElfHeader(struct NaClElfImage *image);
 
@@ -41,7 +42,7 @@ NaClErrorCode NaClElfImageValidateProgramHeaders(
  * protections have been set up by NaClMemoryProtection().
  */
 NaClErrorCode NaClElfImageLoad(struct NaClElfImage *image,
-                               struct NaClDesc *ndp,
+                               int fd,
                                struct NaClApp *nap);
 
 /*
