@@ -85,6 +85,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_helpers.h"
+
 
 #define kKnownInvalidDescNumber (-1)
 #define kdefault_io_buffer_bytes_to_log 64ull

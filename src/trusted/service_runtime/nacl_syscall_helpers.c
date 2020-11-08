@@ -466,12 +466,12 @@ cleanup:
 }
 
 
-static uintptr_t ShmMapHelper(int                     shm_fd,
-                              void                    *start_addr,
-                              size_t                  len,
-                              int                     prot,
-                              int                     flags,
-                              nacl_off64_t            offset) {
+uintptr_t ShmMapHelper(int                     shm_fd,
+                        void                    *start_addr,
+                        size_t                  len,
+                        int                     prot,
+                        int                     flags,
+                        nacl_off64_t            offset) {
 
   int           nacl_imc_prot;
   int           nacl_imc_flags;
