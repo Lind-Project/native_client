@@ -13,7 +13,7 @@
 #include "native_client/src/include/portability.h"
 #include "native_client/src/include/portability_io.h"
 #include "native_client/src/shared/platform/nacl_check.h"
-#include "native_client/src/shared/platform/nacl_host_desc.h"
+// #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/platform/platform_init.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"

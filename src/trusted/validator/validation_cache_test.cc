@@ -9,7 +9,7 @@
 #include <fcntl.h>
 
 #include "native_client/src/include/nacl_compiler_annotations.h"
-#include "native_client/src/shared/platform/nacl_host_desc.h"
+// #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/shared/utils/types.h"
 #include "native_client/src/trusted/desc/nacl_desc_io.h"

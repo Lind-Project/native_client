@@ -11,7 +11,7 @@
 #include <fcntl.h>
 
 #include "native_client/src/shared/platform/nacl_check.h"
-#include "native_client/src/shared/platform/nacl_host_desc.h"
+// #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 
 #include "native_client/src/trusted/desc/nacl_desc_io.h"

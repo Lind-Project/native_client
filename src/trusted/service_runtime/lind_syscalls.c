@@ -21,7 +21,7 @@
 
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/shared/platform/nacl_log.h"
-#include "native_client/src/shared/platform/nacl_host_desc.h"
+// #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/lind_platform.h"
 
 #include "native_client/src/include/portability.h"
