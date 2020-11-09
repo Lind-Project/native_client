@@ -20,6 +20,8 @@ EXTERN_C_BEGIN
 
 struct NaClDesc;
 
+#define NO_FD_ANON -1
+
 #define NACL_MAP_COPY   0x100
 
 /*
