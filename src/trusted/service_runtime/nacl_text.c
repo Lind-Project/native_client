@@ -27,6 +27,8 @@
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_helpers.h"
+
 
 
 /* initial size of the malloced buffer for dynamic regions */

@@ -399,7 +399,7 @@ NaClErrorCode NaClAppLoadFile(int fd,
 }
 
 NaClErrorCode NaClAppLoadFileDynamically(struct NaClApp *nap,
-                                         int fd,
+                                         struct NaClDesc *ndp,
                                          struct NaClValidationMetadata *metadata) {
   struct NaClElfImage *image = NULL;
   NaClErrorCode ret = LOAD_INTERNAL;
