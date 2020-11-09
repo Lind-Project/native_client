@@ -9,8 +9,8 @@
  * mapping using descriptors.
  */
 
-#ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_HOST_DESC_H__
-#define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_HOST_DESC_H__
+#ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_SYSCALL_HELPERS
+#define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_SYSCALL_HELPERS
 
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/include/portability.h"
@@ -272,4 +272,4 @@ EXTERN_C_END
 
 #endif  /* defined __native_client__ */
 
-#endif  /* NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_HOST_DESC_H__ */
+#endif  /* NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_SYSCALL_HELPERS_H__ */
