@@ -839,11 +839,10 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    */
   NaClXMutexLock(&nap->mu);
 
-  
   getdents_ret = lind_getdents(lind_fd,
-                            (void *) sysaddr,
-                            count,
-                            nap->cage_id);
+                              count,
+                              (void *) sysaddr,
+                              nap->cage_id);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
