@@ -404,19 +404,19 @@ NaClErrorCode NaClAppLoadFileDynamically(struct NaClApp *nap,
   struct NaClElfImage *image = NULL;
   NaClErrorCode ret = LOAD_INTERNAL;
 
-  image = NaClElfImageNew(fd, nap->cage_id, &ret);
-  if (NULL == image || LOAD_OK != ret) {
-    goto done;
-  }
-  ret = NaClElfImageLoadDynamically(image, nap, fd, metadata);
-  if (LOAD_OK != ret) {
-    goto done;
-  }
-  nap->user_entry_pt = nap->initial_entry_pt;
-  nap->initial_entry_pt = NaClElfImageGetEntryPoint(image);
+//   image = NaClElfImageNew(fd, nap->cage_id, &ret);
+//   if (NULL == image || LOAD_OK != ret) {
+//     goto done;
+//   }
+//   ret = NaClElfImageLoadDynamically(image, nap, fd, metadata);
+//   if (LOAD_OK != ret) {
+//     goto done;
+//   }
+//   nap->user_entry_pt = nap->initial_entry_pt;
+//   nap->initial_entry_pt = NaClElfImageGetEntryPoint(image);
 
- done:
-  NaClElfImageDelete(image);
+//  done:
+//   NaClElfImageDelete(image);
   return ret;
 }
 
