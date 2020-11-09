@@ -829,7 +829,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   }
 
 
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) ndp;
   int lind_fd = self->hd->d;
 
   /*
@@ -2070,7 +2070,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                               flags,
                               ndp,
                               offset,
-                              file_size);
+                              length);
   }
 
   map_result = usraddr;
