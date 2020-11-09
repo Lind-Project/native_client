@@ -74,7 +74,6 @@ double time_end = 0.0;
  * -jp
  */
 volatile sig_atomic_t fork_num;
-int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);
@@ -542,7 +541,7 @@ void  NaClMemRegionPrinter(void                   *state,
           (entry->page_num + entry->npages) << NACL_PAGESHIFT);
   gprintf(gp,   "prot   0x%08x\n", entry->prot);
   gprintf(gp,   "%sshared/backed by a file\n",
-          (!entry->desc) ? "not " : "");
+          (entry->fd < 0) ? "not " : "");
 }
 
 void  NaClAppPrintDetails(struct NaClApp  *nap,

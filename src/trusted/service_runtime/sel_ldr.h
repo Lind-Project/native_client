@@ -530,13 +530,13 @@ int NaClAppCtor(struct NaClApp  *nap) NACL_WUR;
  * self-modifying code / data writes and automatically invalidate the
  * cache lines.
  */
-NaClErrorCode NaClAppLoadFile(struct NaClDesc *ndp,
+NaClErrorCode NaClAppLoadFile(int fd,
                               struct NaClApp *nap) NACL_WUR;
 
 /*
  * Just like NaClAppLoadFile, but allow control over ASLR.
  */
-NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
+NaClErrorCode NaClAppLoadFileAslr(int fd,
                                   struct NaClApp *nap,
                                   enum NaClAslrMode aslr_mode) NACL_WUR;
 

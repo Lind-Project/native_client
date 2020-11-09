@@ -17,13 +17,12 @@
 
 NaClErrorCode NaClAppLoadFileFromFilename(struct NaClApp *nap,
                                           const char *filename) {
-  int fd  
+  int fd  ;
   NaClErrorCode err;
 
   NaClFileNameForValgrind(filename);
 
-  fd = NaClOpenHelper(filename, NACL_ABI_O_RDONLY,
-                                              0666, nap->cage_id);
+  fd = NaClOpenHelper(nap->cage_id, filename, NACL_ABI_O_RDONLY, 0666);
   if (fd < 0) {
     return LOAD_OPEN_ERROR;
   }

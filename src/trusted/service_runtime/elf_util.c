@@ -456,7 +456,7 @@ struct NaClElfImage *NaClElfImageNew(int fd,
      * e_phnum values larger than the small constant NACL_MAX_PROGRAM_HEADERS.
      */
     read_ret = NaClPReadHelper(fd,
-                                cageid
+                                cageid,
                                 &phdr64[0],
                                 image.ehdr.e_phnum * sizeof phdr64[0],
                                 (nacl_off64_t) image.ehdr.e_phoff);

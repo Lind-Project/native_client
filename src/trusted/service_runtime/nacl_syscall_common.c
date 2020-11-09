@@ -611,7 +611,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
 
-  retval = NaClOpenHelper(d, path, flags, mode);
+  retval = NaClOpenHelper(nap->cage_id, path, flags, mode);
   NaClLog(1, "Cage %d NaClHostDescOpen(%s, 0%o, 0%o) returned %d\n",
           nap->cage_id, path, flags, mode, retval);
 
@@ -636,7 +636,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return 0;
   }
 
-  ret = NaClCloseHelper(d, nap->cage_id)
+  ret = NaClCloseHelper(d, nap->cage_id);
 
 
   return ret;
@@ -877,7 +877,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) {
     retval = -NACL_ABI_EFAULT;
-    goto out_unref;
+    goto out;
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
