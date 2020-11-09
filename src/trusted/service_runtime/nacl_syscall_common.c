@@ -709,56 +709,24 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  /*
-   * Perform a stat to determine whether the file is a directory.
-   *
-   * NB: it is okay for the stat to fail, since the request may be to
-   * create a new file.
-   *
-   * There is a race conditions here: between the stat and the
-   * open-as-a-file and open-as-a-dir, the type of the object that the
-   * path refers to can change.
-   */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
+  struct NaClHostDesc  *hd;
 
-  /* Windows does not have S_ISDIR(m) macro */
-  if (!retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
-    struct NaClHostDir  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* We need to assign a CageID to NaCl HostDirectories and HostDescriptors so that we can access cageid from Lind RPC calls*/
-    hd->cageid = nap->cage_id;
-    
-    retval = NaClHostDirOpen(hd, path);
-    NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
-            (uintptr_t) hd, path, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      NaClLog(1, "added directory to open file table at %d\n", retval);
-    }
-  } else {
-    struct NaClHostDesc  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* Assign CageID to Host Descriptor */
-    hd->cageid = nap->cage_id;
-
-    retval = NaClHostDescOpen(hd, path, flags, mode);
-    NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
-            nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      NaClLog(1, "Entered into open file table at %d\n", retval);
-    }
+  hd = malloc(sizeof(*hd));
+  if (!hd) {
+    retval = -NACL_ABI_ENOMEM;
+    goto cleanup;
   }
+  /* Assign CageID to Host Descriptor */
+  hd->cageid = nap->cage_id;
+
+  retval = NaClHostDescOpen(hd, path, flags, mode);
+  NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
+          nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
+  if (!retval) {
+    retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+    NaClLog(1, "Entered into open file table at %d\n", retval);
+  }
+
 
 cleanup:
   /*
@@ -859,16 +827,23 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   if (count > INT32_MAX) {
     count = INT32_MAX;
   }
+
+
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
+  int lind_fd = self->hd->d;
+
   /*
    * Grab addr space lock; getdents should not normally block, though
    * if the directory is on a networked filesystem this could, and
    * cause mmap to be slower on Windows.
    */
   NaClXMutexLock(&nap->mu);
-  getdents_ret = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Getdents)(ndp,
+
+  
+  getdents_ret = lind_getdents(lind_fd,
                             (void *) sysaddr,
-                            count);
+                            count,
+                            nap->cage_id);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
@@ -1558,8 +1533,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   int                         holding_app_lock;
   struct nacl_abi_stat        stbuf;
   size_t                      alloc_rounded_length;
-  nacl_off64_t                file_size;
-  nacl_off64_t                file_bytes;
   nacl_off64_t                host_rounded_file_bytes;
   size_t                      alloc_rounded_file_bytes;
   int fd;
@@ -1672,108 +1645,8 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
             alloc_rounded_length);
   }
 
-  if (!ndp) {
-    /*
-     * Note: sentinel values are bigger than the NaCl module addr space.
-     */
-    file_size                = kMaxUsableFileSize;
-    file_bytes               = kMaxUsableFileSize;
-    host_rounded_file_bytes  = kMaxUsableFileSize;
-    /* alloc_rounded_file_bytes = kMaxUsableFileSize; */
-  } else {
-    /*
-     * We stat the file to figure out its actual size.
-     *
-     * This is necessary because the POSIXy interface we provide
-     * allows mapping beyond the extent of a file but Windows'
-     * interface does not.  We simulate the POSIX behaviour on
-     * Windows.
-     */
-    map_result = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Fstat)(ndp, &stbuf);
-    if (map_result) {
-      goto cleanup;
-    }
-
-    /*
-     * Preemptively refuse to map anything that's not a regular file or
-     * shared memory segment.  Other types usually report st_size of zero,
-     * which the code below will handle by just doing a dummy PROT_NONE
-     * mapping for the requested size and never attempting the underlying
-     * NaClDesc Map operation.  So without this check, the host OS never
-     * gets the chance to refuse the mapping operation on an object that
-     * can't do it.
-     */
-    if (!NACL_ABI_S_ISREG(stbuf.nacl_abi_st_mode) &&
-        !NACL_ABI_S_ISSHM(stbuf.nacl_abi_st_mode) &&
-        !NACL_ABI_S_ISSHM_SYSV(stbuf.nacl_abi_st_mode)) {
-      map_result = -NACL_ABI_ENODEV;
-      goto cleanup;
-    }
-
-    /*
-     * BUG(bsy): there's a race between this fstat and the actual mmap
-     * below.  It's probably insoluble.  Even if we fstat again after
-     * mmap and compared, the mmap could have "seen" the file with a
-     * different size, after which the racing thread restored back to
-     * the same value before the 2nd fstat takes place.
-     */
-    file_size = stbuf.nacl_abi_st_size;
-
-    if (file_size < offset) {
-      map_result = -NACL_ABI_EINVAL;
-      goto cleanup;
-    }
-
-    file_bytes = file_size - offset;
-    NaClLog(4,
-            "NaClSysMmapIntern: file_bytes 0x%016"NACL_PRIxNACL_OFF"\n",
-            file_bytes);
-    if ((nacl_off64_t) kMaxUsableFileSize < file_bytes) {
-      host_rounded_file_bytes = kMaxUsableFileSize;
-    } else {
-      host_rounded_file_bytes = NaClRoundHostAllocPage((size_t) file_bytes);
-    }
-
-    ASSERT(host_rounded_file_bytes <= (nacl_off64_t) kMaxUsableFileSize);
-    /*
-     * We need to deal with NaClRoundHostAllocPage rounding up to zero
-     * from ~0u - n, where n < 4096 or 65536 (== 1 alloc page).
-     *
-     * Luckily, file_bytes is at most kMaxUsableFileSize which is
-     * smaller than SIZE_T_MAX, so it should never happen, but we
-     * leave the explicit check below as defensive programming.
-     */
-    alloc_rounded_file_bytes =
-      NaClRoundAllocPage((size_t) host_rounded_file_bytes);
-
-    if (!alloc_rounded_file_bytes && host_rounded_file_bytes) {
-      map_result = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-
-    /*
-     * NB: host_rounded_file_bytes and alloc_rounded_file_bytes can be
-     * zero.  Such an mmap just makes memory (offset relative to
-     * usraddr) in the range [0, alloc_rounded_length) inaccessible.
-     */
-  }
-
-  /*
-   * host_rounded_file_bytes is how many bytes we can map from the
-   * file, given the user-supplied starting offset.  It is at least
-   * one page.  If it came from a real file, it is a multiple of
-   * host-OS allocation size.  it cannot be larger than
-   * kMaxUsableFileSize.
-   */
-  if (mapping_code && (size_t) file_bytes < alloc_rounded_length) {
-    NaClLog(3,
-            "NaClSysMmap: disallowing partial allocation page extension for"
-            " short files\n");
-    map_result = -NACL_ABI_EINVAL;
-    goto cleanup;
-  }
-  length = MIN(alloc_rounded_length, (size_t) host_rounded_file_bytes);
+ 
+  length = alloc_rounded_length;
 
   /*
    * Lock the addr space.
@@ -2117,11 +1990,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       }
       goto cleanup_no_locks;
     } else {
-      /*
-       * This is a fix for Windows, where we cannot pass a size that
-       * goes beyond the non-page-rounded end of the file.
-       */
-      size_t length_to_map = MIN(length, (size_t) file_bytes);
+
 
       NaClLog(4,
               ("NaClSysMmap: (*ndp->Map)(,,0x%08"NACL_PRIxPTR","
@@ -2132,7 +2001,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                     Map)(ndp,
                          nap->effp,
                          (void *) sysaddr,
-                         length_to_map,
+                         length,
                          prot,
                          flags,
                          (off_t) offset);
