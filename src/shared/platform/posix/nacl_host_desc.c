@@ -320,27 +320,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
     NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
   }
-  if (-1 ==
-#if NACL_LINUX
-      lind_fxstat(host_desc, 1, &stbuf, d->cageid)
-#else
-      lind_fxstat(host_desc, 1, &stbuf, d->cageid)
-#endif
-      ) {
-    NaClLog(LOG_ERROR,
-            "NaClHostDescOpen: fstat failed?!?  errno %d\n", errno);
-    (void) lind_close(host_desc, d->cageid);
-    return -NaClXlateErrno(errno);
-  }
-#if 0
-  if (!S_ISREG(stbuf.st_mode)) {
-    NaClLog(LOG_INFO,
-            "NaClHostDescOpen: file type 0x%x, not regular\n", stbuf.st_mode);
-    (void) close(host_desc);
-    /* cannot access anything other than a real file */
-    return -NACL_ABI_EPERM;
-  }
-#endif
+ 
   return NaClHostDescCtor(d, host_desc, flags);
 }
 
