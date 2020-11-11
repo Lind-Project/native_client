@@ -1545,6 +1545,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
    * are more (highly unlikely) iterate over them */
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
+    uintptr_t child_stack_addr;
 
     /* iterate over the vmmap entries, changing their prot if necessary, and copy 
      * them into the iovec. We ignore the text_shm entry in this whole function. */
@@ -1572,8 +1573,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
           copy_size = endaddr - parent_stack_addr;
           inputvector[veccount].iov_base = (void*) parent_stack_addr;
-          outputvector[veccount].iov_base = (void*) (page_addr_child +
-              (entry->npages << NACL_PAGESHIFT) - copy_size);
+          child_stack_addr = (uintptr_t) (outputvector[veccount].iov_base =
+              (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
         } else {
           inputvector[veccount].iov_base = (void*) page_addr_parent;
           outputvector[veccount].iov_base = (void*) page_addr_child;
@@ -1624,10 +1625,15 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
 
   
       if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+        size_t endaddr = page_addr_child + copy_size;
         if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
         }
-        NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
+        if(endaddr > child_stack_addr && child_stack_addr > page_addr_child) {
+          NaClPatchAddr(offset, parent_offset, (uintptr_t *)child_stack_addr, endaddr - child_stack_addr);
+        } else {
+          NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
+        }
       }
     }
   }
