@@ -1480,6 +1480,8 @@ static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynam
   uintptr_t offset = target->mem_start;
   uintptr_t parent_offset = region->start - start;
   void *dyncode_addr = (void *)(start | target->mem_start);
+  struct iovec inaddr[1];
+  struct iovec outaddr[1];
   NaClVmmapAddWithOverwrite(&target->mem_map,
                             start >> NACL_PAGESHIFT,
                             region->size >> NACL_PAGESHIFT,
@@ -1495,8 +1497,12 @@ static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynam
   if (!NaClDynamicRegionCreate(target, (uintptr_t)dyncode_addr, region->size, 1)) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
-  memcpy(dyncode_addr, (void *)region->start, region->size);
-  //JS: we may want to vm_write here instead of memcpying, or unroll and vm_write in containing scope
+  inaddr[0].iov_base = (void *) region->start;
+  outaddr[0].iov_base = dyncode_addr;
+  inaddr[0].iov_len = outaddr[0].iov_len = region->size;
+  if(-1 == process_vm_writev(getpid(), inaddr, 1, outaddr, 1, 0)) {
+    NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
+  } //no unrolling done here yet
   NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
