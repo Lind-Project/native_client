@@ -722,9 +722,13 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   retval = NaClHostDescOpen(hd, path, flags, mode);
   NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
           nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
-  if (!retval) {
+  if (retval >= 0) {
     retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
     NaClLog(1, "Entered into open file table at %d\n", retval);
+  }
+  else {
+    NaClLog(1, "Open returned error %d\n", retval);
+    return retval;
   }
 
 
