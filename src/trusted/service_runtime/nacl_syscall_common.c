@@ -654,7 +654,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     int                   flags,
                     int                   mode) {
   struct NaClApp       *nap = natp->nap;
-  int32_t              retval = -NACL_ABI_EINVAL;
+  int                  retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
@@ -722,14 +722,14 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   retval = NaClHostDescOpen(hd, path, flags, mode);
   NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
           nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
-  if (retval >= 0) {
-    retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-    NaClLog(1, "Entered into open file table at %d\n", retval);
-  }
-  else {
+  
+  if (retval < 0) {
     NaClLog(1, "Open returned error %d\n", retval);
     return -NACL_ABI_EPERM;
   }
+  
+  retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  NaClLog(1, "Entered into open file table at %d\n", retval);
 
 
 cleanup:
@@ -739,10 +739,7 @@ cleanup:
   */
   
   fd_retval = NextFd(nap->cage_id);
-
   fd_cage_table[nap->cage_id][fd_retval] = retval;
-
-
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
