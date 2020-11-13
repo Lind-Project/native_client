@@ -33,6 +33,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_copy.h"
 #include "native_client/src/trusted/service_runtime/lind_syscalls.h"
+#include "native_client/src/trusted/service_runtime/sel_ldr.h"
+
 
 extern PyObject *py_context;
 
@@ -73,10 +75,11 @@ typedef int(*CleanupType)(struct NaClApp*, uint32_t, LindArg*, void*);
 typedef struct _StubType {PreprocessType pre; PostprocessType post; CleanupType clean;} StubType;
 
 static int NaClFdToRepyFD(struct NaClApp *nap, int NaClFd) {
+        int fd = fd_cage_table[nap->cage_id][NaClFd];
         struct NaClDesc *ndp;
         int retval;
         NaClFastMutexLock(&nap->desc_mu);
-        ndp = NaClGetDescMu(nap, NaClFd);
+        ndp = NaClGetDescMu(nap, fd);
         NaClFastMutexUnlock(&nap->desc_mu);
         if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
                 retval = -1;
