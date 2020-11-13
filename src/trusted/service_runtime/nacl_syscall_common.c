@@ -654,7 +654,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     int                   flags,
                     int                   mode) {
   struct NaClApp       *nap = natp->nap;
-  uint32_t             retval = -NACL_ABI_EINVAL;
+  int32_t              retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
