@@ -728,7 +728,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
   else {
     NaClLog(1, "Open returned error %d\n", retval);
-    return retval;
+    return -NACL_ABI_EPERM;
   }
 
 
