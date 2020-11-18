@@ -121,6 +121,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   }
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  nap_child->main_exe_prevalidated = 1;
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
     NaClLog(LOG_FATAL, "%s\n%s\n",
