@@ -1468,47 +1468,6 @@ void NaClGdbHook(struct NaClApp const *nap) {
   StopForDebuggerInit(nap->mem_start);
 }
 
-/*
- * Used in NaClCopyDynamicTextAndVmmap to copy dynamic regions in a NaClApp on fork.
- *
- * preconditions:
- * * target_state must be a pointer to a valid, initialized NaClApp.
- *
- */
-static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicRegion *region) {
-  uintptr_t start = region->start & UNTRUSTED_ADDR_MASK;
-  uintptr_t offset = nap_child->mem_start;
-  uintptr_t parent_offset = region->start - start;
-  void *dyncode_addr = (void *)(start | nap_child->mem_start);
-  struct iovec inaddr;
-  struct iovec outaddr;
-  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                            start >> NACL_PAGESHIFT,
-                            region->size >> NACL_PAGESHIFT,
-                            PROT_RX,
-                            NACL_ABI_MAP_PRIVATE,
-                            nap_child->text_shm,
-                            (region->start & UNTRUSTED_ADDR_MASK) - nap_child->dynamic_text_start,
-                            region->size);
-  if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
-  }
-  NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
-  if (!NaClDynamicRegionCreate(nap_child, (uintptr_t)dyncode_addr, region->size, 1)) {
-    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
-  }
-  inaddr.iov_base = (void *) region->start;
-  outaddr.iov_base = dyncode_addr;
-  inaddr.iov_len = outaddr.iov_len = region->size;
-  //Copy each mapping by copy-on-write. Unrolling could grant more performance in the future
-  if(-1 == process_vm_writev(getpid(), &inaddr, 1, &outaddr, 1, 0)) {
-    NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
-  }
-  NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
-  if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
-    NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
-  }
-}
 
 struct vmsplice_info {
   int fd;
@@ -1519,13 +1478,14 @@ struct vmsplice_info {
 void* vmsplice_worker(void* info) {
   struct vmsplice_info* vminfo = info;
   int total_spliced = 0;
-  while(vminfo->num_to_splice > total_spliced) {
+  while(1) {
     int numspliced = vmsplice(vminfo->fd, vminfo->iov, vminfo->nr_segs, SPLICE_F_GIFT | SPLICE_F_MORE);
     if(-1 == numspliced) {
       if(errno != 14)
         NaClLog(LOG_FATAL, "%s\n", "vmsplice within fork failed!");
     }
     total_spliced += numspliced;
+    if(total_spliced == vminfo->num_to_splice) return NULL;
     vminfo->iov->iov_len -= numspliced;
     vminfo->iov->iov_base = (char*) vminfo->iov->iov_base + numspliced;
     while((signed) vminfo->iov->iov_len <= 0) {
@@ -1536,7 +1496,7 @@ void* vmsplice_worker(void* info) {
        vminfo->iov->iov_base = (char*) vminfo->iov->iov_base - removal_left;
     }
   }
-  return 0;
+  return (void*) -1;
 }
 
 
@@ -1563,19 +1523,9 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
-  /* copy dynamic text regions */
-  NaClXMutexLock(&nap_child->dynamic_load_mutex);
-  NaClXMutexLock(&nap_parent->dynamic_load_mutex);
-  for (ssize_t i = 0; i < nap_parent->num_dynamic_regions; ++i) {
-    NaClCopyDynamicRegion(nap_child, &nap_parent->dynamic_regions[i]);
-  }
-  NaClXMutexUnlock(&nap_parent->dynamic_load_mutex);
-  NaClXMutexUnlock(&nap_child->dynamic_load_mutex);
-
   /* copy page mappings */
 
   pageback_fd = memfd_create("pagebacking", 0);
-  pageswritten = 0;
   oldwritten = 0;
   NaClVmmapMakeSorted(parentmap);
   if(-1 == pipe(splice_pipe)) {
@@ -1585,8 +1535,59 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
     NaClLog(LOG_FATAL, "%s\n", "setting the size of splice pipe buffer failed!");
   }
 
-  /* process_vm_writev can handle at most IOV_MAX iovec entries, so if there 
-   * are more (highly unlikely) iterate over them */
+  /* copy dynamic text regions */
+  NaClXMutexLock(&nap_child->dynamic_load_mutex);
+  NaClXMutexLock(&nap_parent->dynamic_load_mutex);
+  for (ssize_t i = 0; i < nap_parent->num_dynamic_regions; ++i) {
+    struct NaClDynamicRegion *region = &nap_parent->dynamic_regions[i];
+    uintptr_t start = region->start & UNTRUSTED_ADDR_MASK;
+    uintptr_t offset = nap_child->mem_start;
+    uintptr_t parent_offset = region->start - start;
+    void *dyncode_addr = (void *)(start | nap_child->mem_start);
+    struct iovec inaddr;
+    NaClVmmapAddWithOverwrite(&nap_child->mem_map,
+                              start >> NACL_PAGESHIFT,
+                              region->size >> NACL_PAGESHIFT,
+                              PROT_RW,
+                              NACL_ABI_MAP_PRIVATE,
+                              nap_child->text_shm,
+                              (region->start & UNTRUSTED_ADDR_MASK) - nap_child->dynamic_text_start,
+                              region->size);
+    NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
+    if (!NaClDynamicRegionCreate(nap_child, (uintptr_t)dyncode_addr, region->size, 1)) {
+      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClTextDyncodeCreate failed!");
+    }
+    inaddr.iov_base = (void *) region->start;
+    inaddr.iov_len = region->size;
+    //Copy each mapping by copy-on-write. Unrolling could grant more performance in the future
+    {
+      int needspliced = region->size;
+      struct vmsplice_info vmi = {splice_pipe[1], &inaddr, 1, needspliced};
+      pthread_t pt;
+      if(pthread_create(&pt, NULL, vmsplice_worker, &vmi)) {
+        NaClLog(LOG_FATAL, "%s\n", "creating vmsplice worker failed within fork!");
+      }
+      while(needspliced > 0) {
+        int numspliced = splice(splice_pipe[0], NULL, pageback_fd, NULL, needspliced, SPLICE_F_MOVE | SPLICE_F_MORE);
+        if(-1 == numspliced) {
+          NaClLog(LOG_FATAL, "%s\n", "splice within fork failed!");
+        }
+        needspliced -= numspliced;
+      }
+      if (!NaClPageAllocFlagsWithBacking((void **)&dyncode_addr, region->size, PROT_RW, 0, pageback_fd, oldwritten)) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+      }
+    }
+    oldwritten += region->size;
+    NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
+    if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
+      NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
+    }
+  }
+  NaClXMutexUnlock(&nap_parent->dynamic_load_mutex);
+  NaClXMutexUnlock(&nap_child->dynamic_load_mutex);
+  pageswritten = oldwritten;
+
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
     short veclen = 0;
@@ -1643,7 +1644,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
     }
 
     /* iterate over the vmmap entries, reverting their prot if necessary, and insert 
-     * them into the child vmmap. The memory is already populated from the vm_writev.*/
+     * them into the child vmmap.*/
     for(int iters2 = 0; iters2 < iters; ++iters2, ++i) {
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
@@ -1662,8 +1663,12 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         size_t endaddr = page_addr_child + copy_size;
         if(entry->prot) {
           if(endaddr > child_stack_addr && child_stack_addr > page_addr_child) {
-            //likwise, if the mapping is the stack, only map, patch
+            int oldcs = copy_size;
+            //likewise, if the mapping is the stack, only map, patch
             copy_size = (endaddr - child_stack_addr + 4095) & ~4095;
+            if (!NaClPageAllocFlags((void **)&page_addr_child, oldcs - copy_size, 0)) {
+              NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
+            }
             page_addr_child = child_stack_addr & ~4095;
           }
           if (!NaClPageAllocFlagsWithBacking((void **)&page_addr_child, copy_size, entry->prot, 0, pageback_fd, oldwritten)) {
@@ -1673,10 +1678,13 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
           
           oldwritten += copy_size;
         } else {
-          if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, entry->prot)) {
+          if (!NaClPageAllocFlags((void **)&page_addr_child, copy_size, 0)) {
             NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
           }
         }
+      }
+      if (NaClMprotect((void*) page_addr_child, entry->npages << NACL_PAGESHIFT, entry->prot) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
       }
     }
   }
