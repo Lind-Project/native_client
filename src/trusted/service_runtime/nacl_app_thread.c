@@ -121,6 +121,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   }
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
   nap_child->main_exe_prevalidated = 1;
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
     NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -579,7 +580,7 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
   # define OUTPUT_FMT "0x%016lx"
   # define TYPE_TO_EXAMINE uintptr_t
   # define EXAMINE_ADDR(TYPE, FMT, ADDR)                                                             \
-         do {                                                                                       \
+          do {                                                                                       \
             unsigned char *addr = (unsigned char *)(ADDR);                                           \
             UNREFERENCED_PARAMETER(addr);                                                            \
             NaClLog(2, "[Memory] Memory addr:                   %p\n", (void *)addr);                \
