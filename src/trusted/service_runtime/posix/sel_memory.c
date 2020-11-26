@@ -65,7 +65,7 @@ void *NaClPageAllocFlags(void **p, size_t size, int map_flags) {
   }
   return *p;
 }
-
+ 
 static int NaClPageAllocInternalFlagsWithBacking(void **p, size_t size, int prot, int map_flags, int filedes, off_t offset) {
   void *addr;
 
@@ -95,6 +95,8 @@ void *NaClPageAllocFlagsWithBacking(void **p, size_t size, int prot, int map_fla
   }
   return *p;
 }
+
+
 
 /*
  * Note that NaClPageAlloc does not allocate pages that satisify
