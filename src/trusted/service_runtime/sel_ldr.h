@@ -911,7 +911,7 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /*
  * Copy the entire address execution context of an NaClApp to a child
@@ -921,7 +921,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
  * * `child` must be a pointer to a valid, initialized NaClApp
  * * Caller must hold both the nap->mu and the child->mu mutexes
  */
-void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);

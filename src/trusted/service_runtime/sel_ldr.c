@@ -1474,29 +1474,35 @@ void NaClGdbHook(struct NaClApp const *nap) {
  * * target_state must be a pointer to a valid, initialized NaClApp.
  *
  */
-static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynamicRegion *region) {
-  struct NaClApp *target = target_state;
+static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicRegion *region) {
   uintptr_t start = region->start & UNTRUSTED_ADDR_MASK;
-  uintptr_t offset = target->mem_start;
+  uintptr_t offset = nap_child->mem_start;
   uintptr_t parent_offset = region->start - start;
-  void *dyncode_addr = (void *)(start | target->mem_start);
-  NaClVmmapAddWithOverwrite(&target->mem_map,
+  void *dyncode_addr = (void *)(start | nap_child->mem_start);
+  struct iovec inaddr;
+  struct iovec outaddr;
+  NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                             start >> NACL_PAGESHIFT,
                             region->size >> NACL_PAGESHIFT,
                             PROT_RX,
                             NACL_ABI_MAP_PRIVATE,
-                            target->text_shm,
-                            (region->start & UNTRUSTED_ADDR_MASK) - target->dynamic_text_start,
+                            nap_child->text_shm,
+                            (region->start & UNTRUSTED_ADDR_MASK) - nap_child->dynamic_text_start,
                             region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
   }
   NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
-  if (!NaClDynamicRegionCreate(target, (uintptr_t)dyncode_addr, region->size, 1)) {
+  if (!NaClDynamicRegionCreate(nap_child, (uintptr_t)dyncode_addr, region->size, 1)) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
-  memcpy(dyncode_addr, (void *)region->start, region->size);
-  //JS: we may want to vm_write here instead of memcpying, or unroll and vm_write in containing scope
+  inaddr.iov_base = (void *) region->start;
+  outaddr.iov_base = dyncode_addr;
+  inaddr.iov_len = outaddr.iov_len = region->size;
+  //Copy each mapping by copy-on-write. Unrolling could grant more performance in the future
+  if(-1 == process_vm_writev(getpid(), &inaddr, 1, &outaddr, 1, 0)) {
+    NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
+  }
   NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
@@ -1511,12 +1517,13 @@ static void NaClCopyDynamicRegion(struct NaClApp *target_state, struct NaClDynam
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
+void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr) {
   void *dyncode_parent = (void *)NaClUserToSys(nap_parent, nap_parent->dynamic_text_start);
   void *dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   struct NaClVmmap *parentmap = &nap_parent->mem_map;
   uintptr_t offset = nap_child->mem_start;
   uintptr_t parent_offset = nap_parent->mem_start;
+
   unsigned int veccount = 0;
   struct iovec inputvector[IOV_MAX];
   struct iovec outputvector[IOV_MAX];
@@ -1529,7 +1536,6 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
   /* copy dynamic text regions */
   NaClXMutexLock(&nap_child->dynamic_load_mutex);
   NaClXMutexLock(&nap_parent->dynamic_load_mutex);
-  nap_child->text_shm = nap_parent->text_shm;
   for (ssize_t i = 0; i < nap_parent->num_dynamic_regions; ++i) {
     NaClCopyDynamicRegion(nap_child, &nap_parent->dynamic_regions[i]);
   }
@@ -1543,6 +1549,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
    * are more (highly unlikely) iterate over them */
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
+    uintptr_t child_stack_addr;
 
     /* iterate over the vmmap entries, changing their prot if necessary, and copy 
      * them into the iovec. We ignore the text_shm entry in this whole function. */
@@ -1558,15 +1565,25 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
               copy_size,
               (void *)page_addr_parent,
               (void *)page_addr_child);
+
       if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+        size_t endaddr = page_addr_parent + copy_size;
         if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
         }
         if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
         }
-        inputvector[veccount].iov_base = (void*) page_addr_parent;
-        outputvector[veccount].iov_base = (void*) page_addr_child;
+        if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
+          //if the mapping corresponds to the stack, only copy up to the stack pointer
+          copy_size = endaddr - parent_stack_addr;
+          inputvector[veccount].iov_base = (void*) parent_stack_addr;
+          child_stack_addr = (uintptr_t) (outputvector[veccount].iov_base =
+              (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
+        } else {
+          inputvector[veccount].iov_base = (void*) page_addr_parent;
+          outputvector[veccount].iov_base = (void*) page_addr_child;
+        }
         inputvector[veccount].iov_len = copy_size;
         outputvector[veccount].iov_len = copy_size;
         ++veccount;
@@ -1613,10 +1630,16 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
 
   
       if(entry->prot && (entry->desc != nap_parent->text_shm)) {
+        size_t endaddr = page_addr_child + copy_size;
         if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
         }
-        NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
+        if(endaddr > child_stack_addr && child_stack_addr > page_addr_child) {
+          //likwise, if the mapping is the stack, only patch up to the stack pointer
+          NaClPatchAddr(offset, parent_offset, (uintptr_t *)child_stack_addr, endaddr - child_stack_addr);
+        } else {
+          NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
+        }
       }
     }
   }
@@ -1636,60 +1659,19 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
-  size_t stack_size = nap_parent->stack_size;
-  size_t stack_npages = stack_size >> NACL_PAGESHIFT;
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr) {
   size_t tramp_size = NaClRoundPage(nap_parent->static_text_end - NACL_SYSCALL_START_ADDR);
   size_t tramp_npages = tramp_size >> NACL_PAGESHIFT;
-  void *stackaddr_parent = (void *)NaClUserToSysAddrRange(nap_parent,
-                                                          NaClGetInitialStackTop(nap_parent) - stack_size,
-                                                          stack_size);
-  void *stackaddr_child = (void *)NaClUserToSysAddrRange(nap_child,
-                                                         NaClGetInitialStackTop(nap_child) - stack_size,
-                                                         stack_size);
-  uintptr_t stack_pnum_parent = NaClSysToUser(nap_parent, (uintptr_t)stackaddr_parent) >> NACL_PAGESHIFT;
-  uintptr_t stack_pnum_child = NaClSysToUser(nap_child, (uintptr_t)stackaddr_child) >> NACL_PAGESHIFT;
   uintptr_t parent_start_addr = nap_parent->mem_start + NACL_SYSCALL_START_ADDR;
   uintptr_t child_start_addr = nap_child->mem_start + NACL_SYSCALL_START_ADDR;
   uintptr_t tramp_pnum = NaClSysToUser(nap_parent, parent_start_addr) >> NACL_PAGESHIFT;
 
-  UNREFERENCED_PARAMETER(stack_pnum_parent);
-  UNREFERENCED_PARAMETER(stack_pnum_child); //unreferenced for now, may be changed
-  UNREFERENCED_PARAMETER(stack_npages); //unreferenced for now, may be changed
-
-  NaClLog(1, "stack [parent: %p] [child: %p]\n", stackaddr_parent, stackaddr_child);
   NaClLog(1, "cage_id [nap_parent: %d] [nap_child: %d]\n", nap_parent->cage_id, nap_child->cage_id);
   NaClPrintAddressSpaceLayout(nap_parent);
   NaClPrintAddressSpaceLayout(nap_child);
 
-  //JS: Code commented out because we may want to use and modify this if we only want to copy up to the stack pointer
-  ///* add stack mapping */
-  //if (NaClMprotect(stackaddr_parent, stack_size, PROT_RW) == -1) {
-  //    NaClLog(LOG_FATAL, "%s\n", "parent stack address NaClMprotect failed!");
-  //}
-  //if (NaClMprotect(stackaddr_child, stack_size, PROT_RW) == -1) {
-  //    NaClLog(LOG_FATAL, "%s\n", "child stack address NaClMprotect failed!");
-  //}
-  //NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-  //                          stack_pnum_child,
-  //                          stack_npages,
-  //                          PROT_RW,
-  //                          MAP_ANON_PRIV,
-  //                          NULL,
-  //                          0,
-  //                          0);
-
-  ///* copy stack */
-  //NaClLog(1, "Copying parent stack (%zu [%#lx] bytes) from (%p) to (%p)\n",
-  //        stack_size,
-  //        stack_size,
-  //        stackaddr_parent,
-  //        stackaddr_child);
-  //memcpy(stackaddr_child, stackaddr_parent, stack_size);
-  //NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, stackaddr_child, stack_size);
-
   /* and dynamic text mappings */
-  NaClCopyDynamicTextAndVmmap(nap_parent, nap_child);
+  NaClCopyDynamicTextAndVmmap(nap_parent, nap_child, parent_stack_addr);
 
   /* add guard page mapping */
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
