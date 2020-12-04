@@ -88,10 +88,23 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count);
 
+
+int32_t NaClSysPread(struct NaClAppThread  *natp,
+                    int                   d,
+                    void                  *buf,
+                    size_t                count,
+                    off_t                 offset);
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
                      size_t               count);
+
+int32_t NaClSysPwrite(struct NaClAppThread *natp,
+                     int                  d,
+                     void                 *buf,
+                     size_t               count,
+                     off_t                offset);
 
 int32_t NaClSysLseek(struct NaClAppThread *natp,
                      int                  d,
