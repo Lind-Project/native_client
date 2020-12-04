@@ -88,7 +88,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count);
 
-
 int32_t NaClSysPread(struct NaClAppThread  *natp,
                     int                   d,
                     void                  *buf,
