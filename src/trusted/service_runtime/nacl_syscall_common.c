@@ -949,6 +949,16 @@ out:
   return retval;
 }
 
+int32_t NaClSysPread(struct NaClAppThread  *natp,
+                     int                   d,
+                     void                  *buf,
+                     size_t                count,
+                     off_t                 offset) {
+  struct NaClApp *nap = natp->nap;
+  fd = fd_cage_table[nap->cage_id][d];
+  return lind_pread(fd, buf, count, offset, nap->cage_id); 
+}
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
@@ -1022,6 +1032,16 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
 out:
   return retval;
+}
+
+int32_t NaClSysPwrite(struct NaClAppThread *natp,
+                      int                   d,
+                      void                  *buf,
+                      size_t                count,
+                      off_t                 offset) {
+  struct NaClApp *nap = natp->nap;
+  fd = fd_cage_table[nap->cage_id][d];
+  return lind_pwrite(fd, buf, count, offset, nap->cage_id); 
 }
 
 /*
