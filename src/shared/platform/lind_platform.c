@@ -423,6 +423,8 @@ int lind_write (int fd, size_t count, const void *buf, int cageid)
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
     char* garbage = (char*)malloc(sizeof(char) * count);
+    garbage[0] = 'a';
+    garbage[1] = 'b';
     writestring = Py_BuildValue("s#", garbage, count);
     *(((PyStringObject*) writestring)->ob_sval) = *(char*)buf;
     free(garbage);
