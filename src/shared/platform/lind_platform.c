@@ -421,7 +421,7 @@ int lind_write (int fd, size_t count, const void *buf, int cageid)
 { 
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
-    char* garbage;
+    char garbage[count];
     PyObject *write_buf = Py_BuildValue("s#", garbage, count);
     *(((PyStringObject*) write_buf)->ob_sval) = *(char*)buf;
     callArgs = Py_BuildValue("(i[iiSi])", LIND_safe_fs_write, fd, count, write_buf, cageid);
