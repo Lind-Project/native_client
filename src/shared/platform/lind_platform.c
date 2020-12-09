@@ -411,9 +411,8 @@ int lind_close (int fd, int cageid)
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
+    callArgs = Py_BuildValue("(i[iili])", LIND_safe_fs_read, fd, size, long(buf), cageid);
     LIND_API_PART2;
-    COPY_DATA(buf, size)
     LIND_API_PART3;
 }
 
