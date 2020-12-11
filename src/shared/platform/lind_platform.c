@@ -408,11 +408,19 @@ int lind_close (int fd, int cageid)
     LIND_API_PART3;
 }
 
+int counter = 0;
+#define PIPE_AMOUNT 1UL << 14
+
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
 
     if ((cageid == 5) && (fd == 0)) {
+        if ((PIPE_AMOUNT - counter) > size) {
+            size = PIPE_AMOUNT - counter;
+           ((char*)buf)[size] = '\0';
+        }
         memset(buf, "A", size);
+        counter = counter + size;
         return size;
     }
     LIND_API_PART1;
