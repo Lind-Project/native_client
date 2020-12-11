@@ -417,7 +417,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
 
     if ((cageid == 5) && (fd == 0)) {
         if (end) return 0;
-        if ((PIPE_AMOUNT - counter) > size) {
+        if ((PIPE_AMOUNT - counter) <= size) {
             size = PIPE_AMOUNT - counter;
            ((char*)buf)[size] = '\0';
            end = 1;
