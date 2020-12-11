@@ -410,14 +410,17 @@ int lind_close (int fd, int cageid)
 
 int counter = 0;
 int PIPE_AMOUNT = 1UL << 14;
+int end = 0;
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
 
     if ((cageid == 5) && (fd == 0)) {
+        if (end) return 0;
         if ((PIPE_AMOUNT - counter) > size) {
             size = PIPE_AMOUNT - counter;
            ((char*)buf)[size] = '\0';
+           end = 1;
         }
         memset(buf, "A", size);
         counter = counter + size;
