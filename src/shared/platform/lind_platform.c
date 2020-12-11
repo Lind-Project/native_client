@@ -409,7 +409,7 @@ int lind_close (int fd, int cageid)
 }
 
 int counter = 0;
-#define PIPE_AMOUNT 1UL << 14
+int PIPE_AMOUNT = 1UL << 14;
 
 int lind_read (int fd, int size, void *buf, int cageid)
 { 
