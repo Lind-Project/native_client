@@ -956,7 +956,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp,
                      size_t                count,
                      off_t                 offset) {
   struct NaClApp *nap = natp->nap;
-  fd = fd_cage_table[nap->cage_id][d];
+  int fd = fd_cage_table[nap->cage_id][d];
   return lind_pread(fd, buf, count, offset, nap->cage_id); 
 }
 
@@ -1041,7 +1041,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       size_t                count,
                       off_t                 offset) {
   struct NaClApp *nap = natp->nap;
-  fd = fd_cage_table[nap->cage_id][d];
+  int fd = fd_cage_table[nap->cage_id][d];
   return lind_pwrite(fd, buf, count, offset, nap->cage_id); 
 }
 
