@@ -156,7 +156,7 @@ SYSCALL_LIST = [
     ('NACL_sys_write', 'NaClSysWrite',
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_pwrite', 'NaClSysPwrite',
-     ['int d', 'void *buf', 'size_t count', 'off_t offset']),
+     ['int d', 'const void *buf', 'size_t count', 'off_t offset']),
     ('NACL_sys_lseek', 'NaClSysLseek',
      ['int d', 'nacl_abi_off_t *offp', 'int whence']),
     ('NACL_sys_ioctl', 'NaClSysIoctl',
