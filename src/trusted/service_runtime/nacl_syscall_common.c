@@ -954,13 +954,12 @@ int32_t NaClSysPread(struct NaClAppThread  *natp,
                      void                  *buf,
                      size_t                count,
                      off_t                 offset) { 
-  nacl_abi_off_t *cur_pos; //pointer to the current position
-  *cur_pos=0;
+  nacl_abi_off_t cur_pos = 0; //pointer to the current position
   int ret = 0;
-  *cur_pos = NaClSysLseek(natp, d, cur_pos, SEEK_CUR); 
+  cur_pos = NaClSysLseek(natp, d, &cur_pos, SEEK_CUR); 
   NaClSysLseek(natp, d, &offset ,SEEK_SET);
   ret = NaClSysRead(natp, d, buf, count);
-  NaClSysLseek(natp, d, cur_pos, SEEK_SET);
+  NaClSysLseek(natp, d, &cur_pos, SEEK_SET);
   return ret;
 }
 
@@ -1044,13 +1043,12 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       const void            *buf,
                       size_t                count,
                       off_t                 offset) {
-  nacl_abi_off_t *cur_pos; //pointer to the current position
-  *cur_pos = 0;
+  nacl_abi_off_t cur_pos = 0;
   int ret = 0;
-  *cur_pos = NaClSysLseek(natp, d, cur_pos, SEEK_CUR); 
+  cur_pos = NaClSysLseek(natp, d, &cur_pos, SEEK_CUR); 
   NaClSysLseek(natp, d, &offset ,SEEK_SET);
   ret = NaClSysWrite(natp, d, (void *)buf, count);
-  NaClSysLseek(natp, d, cur_pos, SEEK_SET);
+  NaClSysLseek(natp, d, &cur_pos, SEEK_SET);
   return ret;
 }
 
