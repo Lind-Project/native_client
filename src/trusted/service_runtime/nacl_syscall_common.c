@@ -954,7 +954,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp,
                      void                  *buf,
                      size_t                count,
                      off_t                 offset) { 
-  nacl_abi_off_t cur_pos = 0; //pointer to the current position
+  nacl_abi_off_t cur_pos = 0;
   int ret = 0;
   cur_pos = NaClSysLseek(natp, d, &cur_pos, SEEK_CUR); 
   NaClSysLseek(natp, d, &offset ,SEEK_SET);
