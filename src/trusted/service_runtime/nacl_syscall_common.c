@@ -949,18 +949,86 @@ out:
   return retval;
 }
 
-int32_t NaClSysPread(struct NaClAppThread  *natp,
+int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like read
                      int                   d,
                      void                  *buf,
                      size_t                count,
                      off_t                 offset) { 
-  nacl_abi_off_t cur_pos = 0;
-  int ret = 0;
-  cur_pos = NaClSysLseek(natp, d, &cur_pos, SEEK_CUR); 
-  NaClSysLseek(natp, d, &offset ,SEEK_SET);
-  ret = NaClSysRead(natp, d, buf, count);
-  NaClSysLseek(natp, d, &cur_pos, SEEK_SET);
-  return ret;
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         read_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+  char const      *ellipsis = "";
+
+  NaClLog(2, "Cage %d Entered NaClSysPRead(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  if (count > INT32_MAX) {
+    count = INT32_MAX;
+  }
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PRead(ndp, (void *)sysaddr, count, offset);
+
+  NaClVmIoHasEnded(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  if (read_result > 0) {
+    NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
+    log_bytes = (size_t) read_result;
+    if (log_bytes > INT32_MAX) {
+      log_bytes = INT32_MAX;
+      ellipsis = "...";
+    }
+    if (NaClLogGetVerbosity() < 10) {
+      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+        log_bytes = kdefault_io_buffer_bytes_to_log;
+        ellipsis = "...";
+      }
+    }
+    NaClLog(8, "read result: %.*s%s\n",
+            (int) log_bytes, (char *) sysaddr, ellipsis);
+  } else {
+    NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
+  }
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t) read_result;
+out:
+  return retval;
 }
 
 int32_t NaClSysWrite(struct NaClAppThread *natp,
@@ -1043,13 +1111,75 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       const void            *buf,
                       size_t                count,
                       off_t                 offset) {
-  nacl_abi_off_t cur_pos = 0;
-  int ret = 0;
-  cur_pos = NaClSysLseek(natp, d, &cur_pos, SEEK_CUR); 
-  NaClSysLseek(natp, d, &offset ,SEEK_SET);
-  ret = NaClSysWrite(natp, d, (void *)buf, count);
-  NaClSysLseek(natp, d, &cur_pos, SEEK_SET);
-  return ret;
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         write_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  char const      *ellipsis = "";
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+
+  NaClLog(2, "Cage %d Entered NaClSysPWrite(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", "
+          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  count = count > INT32_MAX ? INT32_MAX : count;
+  log_bytes = count;
+  if (log_bytes == INT32_MAX) {
+    ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(ellipsis);
+  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+     log_bytes = kdefault_io_buffer_bytes_to_log;
+     ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(log_bytes);
+  UNREFERENCED_PARAMETER(ellipsis);
+  NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t)(uintptr_t)buf,
+                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PWrite(ndp, (void *)sysaddr, count, offset);
+
+  NaClVmIoHasEnded(nap,
+                   (uint32_t)(uintptr_t)buf,
+                   (uint32_t)(((uintptr_t)buf) + count - 1));
+
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t)write_result;
+
+out:
+  return retval;
 }
 
 /*
