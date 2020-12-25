@@ -1000,7 +1000,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
   NaClVmIoWillStart(nap,
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
-  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PRead(ndp, (void *)sysaddr, count, offset);
+  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PRead(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
 
   NaClVmIoHasEnded(nap,
                     (uint32_t) (uintptr_t) buf,
@@ -1161,13 +1161,13 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   }
   UNREFERENCED_PARAMETER(log_bytes);
   UNREFERENCED_PARAMETER(ellipsis);
-  NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+  NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
   NaClVmIoWillStart(nap,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
-  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PWrite(ndp, (void *)sysaddr, count, offset);
+  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PWrite(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
 
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
