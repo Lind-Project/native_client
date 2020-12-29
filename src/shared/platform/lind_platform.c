@@ -315,24 +315,20 @@ cleanup:
 
 int lind_pread(int fd, void *buf, int count, off_t offset, int cageid)
 {
-    off_t cur_pos=0;
-    int ret = 0;
-    cur_pos = lind_lseek (0, fd, SEEK_CUR, cageid);
-    lind_lseek(offset, fd, SEEK_SET, cageid);
-    ret = lind_read(fd, count, buf, cageid);
-    lind_lseek(cur_pos, fd, SEEK_SET, cageid);
-    return ret;
-}
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_pread, fd, count, offset, cageid);
+    LIND_API_PART2;
+    COPY_DATA(buf, count)
+    LIND_API_PART3;
+} 
 
 int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid)
 {
-    off_t cur_pos=0;
-    int ret = 0;
-    cur_pos = lind_lseek (0, fd, SEEK_CUR, cageid);
-    lind_lseek(offset, fd, SEEK_SET, cageid);
-    ret = lind_write(fd, count, buf, cageid);
-    lind_lseek(cur_pos, fd, SEEK_SET, cageid);
-    return ret;
+    LIND_API_PART1;
+    CHECK_NOT_NULL(buf);
+    callArgs = Py_BuildValue("(i[iiis#i])", LIND_safe_fs_pwrite, fd, count, offset, buf, count, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
 }
 
 int lind_access (int version, const char *file)
