@@ -98,6 +98,8 @@
 #define LIND_comp_accept                107
 #define LIND_comp_recv                  108
 
+#define LIND_safe_fs_pread              126
+#define LIND_safe_fs_pwrite             127
 
 struct select_results {
     struct timeval used_t;
