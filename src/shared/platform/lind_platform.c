@@ -313,7 +313,7 @@ cleanup:
             _offset += ((int*)_data)[(current)];                        \
         }
 
-int lind_pread(int fd, void *buf, int count, off_t offset, int cageid)
+int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_pread, fd, count, offset, cageid);
@@ -322,7 +322,7 @@ int lind_pread(int fd, void *buf, int count, off_t offset, int cageid)
     LIND_API_PART3;
 } 
 
-int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid)
+int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
