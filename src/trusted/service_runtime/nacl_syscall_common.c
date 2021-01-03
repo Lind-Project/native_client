@@ -1006,7 +1006,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
                     (uint32_t) (uintptr_t) buf,
                     (uint32_t) (((uintptr_t) buf) + count - 1));
   if (read_result > 0) {
-    NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
+    NaClLog(4, "pread returned %"NACL_PRIdS" bytes\n", read_result);
     log_bytes = (size_t) read_result;
     if (log_bytes > INT32_MAX) {
       log_bytes = INT32_MAX;
@@ -1018,10 +1018,10 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
         ellipsis = "...";
       }
     }
-    NaClLog(8, "read result: %.*s%s\n",
+    NaClLog(8, "pread result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
   } else {
-    NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
+    NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
   }
   NaClDescUnref(ndp);
 
