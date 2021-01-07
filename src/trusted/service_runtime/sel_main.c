@@ -71,6 +71,9 @@
 # define NaClEnableOuterSandbox NULL
 #endif
 
+extern struct NaClMutex ccmut;
+extern struct NaClCondVar cccv;
+extern int cagecount;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -238,6 +241,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_qend = &redir_queue;
 
   nacl_main_begin = clock();
+  
+  cagecount = 0;
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
@@ -871,6 +876,12 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   /* yiwen: waiting for running cages to exit */
   ret_code = NaClWaitForMainThreadToExit(nap);
+
+  NaClXMutexLock(&ccmut);
+  while(cagecount > 0) {
+    NaClXCondVarWait(&cccv, &ccmut);
+  }
+  NaClXMutexUnlock(&ccmut);
   nacl_user_program_finish = clock();
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
@@ -925,6 +936,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   NaClLog(1, "[Performance results] LindPythonInit(): %f \n", time_counter);
+  sleep(1);
   LindPythonFinalize();
   NaClExit(ret_code);
 

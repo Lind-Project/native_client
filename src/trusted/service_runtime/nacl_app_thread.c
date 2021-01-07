@@ -35,15 +35,9 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
-
-/*
- * always points at original program context
- * Except fails on forks if parent thread exits first
- *
- * -jp
- */
-struct NaClThreadContext *master_ctx;
-
+struct NaClMutex ccmut;
+struct NaClCondVar cccv;
+int cagecount;
 
 /*
  * dynamically allocate and initilize a copy
@@ -78,6 +72,10 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
+
+  NaClXMutexLock(&ccmut);
+  cagecount++;
+  NaClXMutexUnlock(&ccmut);
 
   NaClXMutexLock(&nap_parent->children_mu);
   /*
@@ -315,10 +313,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
-  if (master_ctx == natp) {
-    master_ctx = NULL;
-  }
-
   /*
    * mark this thread as dead; doesn't matter if some other thread is
    * asking us to commit suicide.
@@ -338,6 +332,11 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     }
     NaClXCondVarBroadcast(&nap_parent->children_cv);
     NaClXMutexUnlock(&nap_parent->children_mu);
+
+    NaClXMutexLock(&ccmut);
+    cagecount--;
+    NaClCondVarBroadcast(&cccv);
+    NaClXMutexUnlock(&ccmut);
   }
 
   if (nap->debug_stub_callbacks) {
@@ -599,12 +598,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   /* Create context for master, or use loaded contexts to setup fork */
   if (tl_type == THREAD_LAUNCH_MAIN){
-    /*
-    * save master thread context pointer
-    */
-    if (nap_child->cage_id == 1 || !master_ctx) {
-      master_ctx = &natp_child->user;
-    }
     nap_child->parent = NULL;
   }
   else if (tl_type == THREAD_LAUNCH_FORK) {

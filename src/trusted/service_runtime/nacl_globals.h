@@ -57,8 +57,6 @@ struct NaClApp;
 /*
  * always points at original program context
  */
-extern struct NaClThreadContext *master_ctx;
-
 extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 extern double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
