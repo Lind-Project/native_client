@@ -38,6 +38,7 @@
 
 /*
  * always points at original program context
+ * Except fails on forks if parent thread exits first
  *
  * -jp
  */
@@ -51,12 +52,9 @@ struct NaClThreadContext *master_ctx;
  */
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
-  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_parent = nap;
-  struct NaClApp *nap_arr[] = {nap_master, nap_parent};
   NaClErrorCode *mod_status = NULL;
 
-  CHECK(nap_master);
   CHECK(nap_parent);
   CHECK(nap_child);
 
@@ -79,46 +77,26 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->user_entry_pt = nap_parent->user_entry_pt;
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
-  nap_child->master = nap_master;
   nap_child->in_fork = 0;
 
-  /* avoid incrementing child count twice */
-  if (nap_master == nap_parent) {
-    nap_arr[0] = NULL;
-  }
-
-  /* don't lock master twice */
-  NaClXMutexLock(&nap_master->children_mu);
-  if (nap_parent != nap_master) {
-    NaClXMutexLock(&nap_parent->children_mu);
-  }
+  NaClXMutexLock(&nap_parent->children_mu);
   /*
    * increment fork generation count and generate child
    * cage_id (both master and parent mutexes need to be held
    */
-  InitializeCage(nap_child, nap_master->cage_id + ++fork_num);
+  InitializeCage(nap_child, 1 +  ++fork_num);
   /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
-    if (!nap_arr[i]) {
-      continue;
-    }
-    NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
-    
-    nap_arr[i]->num_children++;
+  nap_parent->num_children++;
 
-    if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
-      NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
-    }
-    if (!DynArraySet(&nap_arr[i]->children, nap_child->cage_id, nap_child)) {
-      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_arr[i]->cage_id, nap_child->cage_id);
-    }
-    NaClLog(1, "[nap %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
+  if (nap_parent->num_children > CHILD_NUM_MAX) {
+    NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_parent->cage_id, CHILD_NUM_MAX);
   }
-  /* don't unlock master twice */
-  NaClXMutexUnlock(&nap_master->children_mu);
-  if (nap_parent != nap_master) {
-    NaClXMutexUnlock(&nap_parent->children_mu);
+  if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child)) {
+    NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_parent->cage_id, nap_child->cage_id);
   }
+  NaClLog(1, "[nap %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+
+  NaClXMutexUnlock(&nap_parent->children_mu);
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
   //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
@@ -334,15 +312,11 @@ void WINAPI NaClAppThreadLauncher(void *state) {
  */
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClApp  *nap_master = NULL;
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
   if (master_ctx == natp) {
     master_ctx = NULL;
-  }
-  if (master_ctx) {
-    nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   }
 
   /*
@@ -352,49 +326,18 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
     /* remove self from parent's list of children */
-  if (nap_master && nap_parent) {
-    struct NaClApp *nap_arr[] = {nap_master, nap_parent};
-    /* avoid incrementing child count twice */
-    if (nap_master == nap_parent) {
-      nap_arr[0] = NULL;
+  if (nap_parent) {
+    NaClXMutexLock(&nap_parent->children_mu);
+    nap_parent->num_children--;
+    NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+    if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    /* don't lock master twice */
-    NaClXMutexLock(&nap_master->children_mu);
-    if (nap_parent != nap_master) {
-      NaClXMutexLock(&nap_parent->children_mu);
+    else {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
-      if (!nap_arr[i]) {
-        continue;
-      }
-   
-      nap_arr[i]->num_children--;
-      NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
-      if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
-        NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-      }
-      else {
-        NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-      }
-      
-      NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
-    }
-    /* don't unlock master twice */
-    NaClXMutexUnlock(&nap_master->children_mu);
-    if (nap_parent != nap_master) {
-      NaClXMutexUnlock(&nap_parent->children_mu);
-    }
-  }
-
-  /* wait for master thread */
-  if (nap_master && nap != nap_master) {
-    NaClXMutexLock(&nap_master->children_mu);
-    NaClLog(1, "Master children count: %d\n", nap_master->num_children);
-    while (nap_master->num_children > 0) {
-      NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
-    }
-    NaClXCondVarBroadcast(&nap_master->children_cv);
-    NaClXMutexUnlock(&nap_master->children_mu);
+    NaClXCondVarBroadcast(&nap_parent->children_cv);
+    NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
   if (nap->debug_stub_callbacks) {
@@ -663,7 +606,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
       master_ctx = &natp_child->user;
     }
     nap_child->parent = NULL;
-    nap_child->master = ((struct NaClAppThread *)master_ctx)->nap;
   }
   else if (tl_type == THREAD_LAUNCH_FORK) {
     NaClForkThreadContextSetup(natp_parent, natp_child, stack_ptr_parent, stack_ptr_child);

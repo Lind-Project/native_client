@@ -134,7 +134,6 @@ struct NaClApp {
   struct NaClCondVar        children_cv;
   struct DynArray           children;
   struct NaClApp            *parent;
-  struct NaClApp            *master;
 
   volatile sig_atomic_t     num_children;
   volatile sig_atomic_t     cage_id;
