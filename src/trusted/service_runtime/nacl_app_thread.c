@@ -90,11 +90,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
 
   NaClXMutexLock(&nap_parent->children_mu);
   /*
-   * increment fork generation count and generate child
-   * cage_id (both master and parent mutexes need to be held
+   * increment fork generation count and generate child (holding parent mutex)
    */
-  InitializeCage(nap_child, 1 +  ++fork_num);
-  /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
+  InitializeCage(nap_child, ++fork_num);
   nap_parent->num_children++;
 
   if (nap_parent->num_children > CHILD_NUM_MAX) {
@@ -609,7 +607,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (!natp_child) return 0;
 
-  /* Create context for master, or use loaded contexts to setup fork */
   if (tl_type == THREAD_LAUNCH_MAIN){
     nap_child->parent = NULL;
   }
