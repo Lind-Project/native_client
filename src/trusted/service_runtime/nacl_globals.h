@@ -105,6 +105,7 @@ void  NaClGlobalModuleFini(void);
 void NaClInitGlobals(void);
 
 static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t size) {
+  return;
   size_t cnt = size / sizeof(uintptr_t);
   for (size_t i = 0; i < cnt; i++) {
     if ((start[i] & ~UNTRUSTED_ADDR_MASK) == parent_bits) {

@@ -936,7 +936,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   NaClLog(1, "[Performance results] LindPythonInit(): %f \n", time_counter);
-  sleep(1);
   LindPythonFinalize();
   NaClExit(ret_code);
 

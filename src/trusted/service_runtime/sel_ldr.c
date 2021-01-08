@@ -1640,6 +1640,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         } else {
           NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
         }
+      } else if(entry->desc == nap_parent->text_shm) {
+          
       }
     }
   }
@@ -1731,7 +1733,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClLog(2, "Initializing arch switcher\n");
   NaClInitSwitchToApp(nap_child);
   NaClLog(2, "Installing trampoline\n");
-  NaClLoadTrampoline(nap_child);
+  //NaClLoadTrampoline(nap_child); handled in NaClLoadFileAslr
   NaClLog(2, "Installing springboard\n");
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
