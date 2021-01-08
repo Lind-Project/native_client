@@ -1640,8 +1640,6 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         } else {
           NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
         }
-      } else if(entry->desc == nap_parent->text_shm) {
-          
       }
     }
   }
