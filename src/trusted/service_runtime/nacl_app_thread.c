@@ -48,6 +48,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
+  int envc = 0;
+  char const **childe;
 
   CHECK(nap_parent);
   CHECK(nap_child);
@@ -62,7 +64,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
-  nap_child->clean_environ = nap_parent->clean_environ;
   nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
@@ -72,6 +73,16 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
+
+  for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
+    envc++;
+  }
+  childe = malloc((envc + 1) * sizeof(char*));
+  nap_child->clean_environ = (const char *const *)childe;
+  for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
+     *childe++ = *ce;
+  }
+  *childe++ = NULL;
 
   NaClXMutexLock(&ccmut);
   cagecount++;
@@ -338,6 +349,8 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClCondVarBroadcast(&cccv);
     NaClXMutexUnlock(&ccmut);
   }
+
+  free((void*) nap->clean_environ);
 
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
