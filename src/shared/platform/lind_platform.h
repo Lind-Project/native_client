@@ -98,6 +98,8 @@
 #define LIND_comp_accept                107
 #define LIND_comp_recv                  108
 
+#define LIND_safe_fs_pread              126
+#define LIND_safe_fs_pwrite             127
 
 struct select_results {
     struct timeval used_t;
@@ -114,8 +116,8 @@ int LindPythonFinalize(void);
 PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args);
 int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len);
 
-int lind_pread(int fd, void* buf, int count, off_t offset, int cageid);
-int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid);
+int lind_pread(int fd, void* buf, size_t count, off_t offset, int cageid);
+int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
 int lind_access (int version, const char *file);
 int lind_unlink (const char *name);
 int lind_link (const char *from, const char *to);
