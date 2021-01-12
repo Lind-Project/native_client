@@ -1503,7 +1503,6 @@ static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicR
   if(-1 == process_vm_writev(getpid(), &inaddr, 1, &outaddr, 1, 0)) {
     NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
   }
-  NaClPatchAddr(offset, parent_offset, dyncode_addr, region->size);
   if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClMprotect failed!");
   }
@@ -1630,15 +1629,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
 
   
       if(entry->prot && (entry->desc != nap_parent->text_shm)) {
-        size_t endaddr = page_addr_child + copy_size;
         if (NaClMprotect((void *)page_addr_child, copy_size, entry->prot) == -1) {
           NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-        }
-        if(endaddr > child_stack_addr && child_stack_addr > page_addr_child) {
-          //likwise, if the mapping is the stack, only patch up to the stack pointer
-          NaClPatchAddr(offset, parent_offset, (uintptr_t *)child_stack_addr, endaddr - child_stack_addr);
-        } else {
-          NaClPatchAddr(offset, parent_offset, (uintptr_t *)page_addr_child, copy_size);
         }
       }
     }
@@ -1736,7 +1728,6 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memcpy((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  NaClPatchAddr(nap_child->mem_start, nap_parent->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information

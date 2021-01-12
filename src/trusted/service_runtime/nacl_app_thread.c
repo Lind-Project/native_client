@@ -35,6 +35,8 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
+#define INIT_PROCESS_NUM 1
+
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
 int cagecount;
@@ -92,7 +94,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   /*
    * increment fork generation count and generate child (holding parent mutex)
    */
-  InitializeCage(nap_child, ++fork_num);
+  InitializeCage(nap_child, INIT_PROCESS_NUM + ++fork_num);
   nap_parent->num_children++;
 
   if (nap_parent->num_children > CHILD_NUM_MAX) {

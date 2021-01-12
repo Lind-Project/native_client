@@ -104,21 +104,6 @@ void  NaClGlobalModuleFini(void);
 /* this is defined in src/trusted/service_runtime/arch/<arch>/ sel_rt.h */
 void NaClInitGlobals(void);
 
-static INLINE void NaClPatchAddr(uintptr_t child_bits, uintptr_t parent_bits, uintptr_t *start, size_t size) {
-  return;
-  size_t cnt = size / sizeof(uintptr_t);
-  for (size_t i = 0; i < cnt; i++) {
-    if ((start[i] & ~UNTRUSTED_ADDR_MASK) == parent_bits) {
-      NaClLog(1, "patching %p\n", (void *)start[i]);
-      /* clear upper bits */
-      start[i] &= UNTRUSTED_ADDR_MASK;
-      /* add child prefix */
-      start[i] |= child_bits;
-      NaClLog(1, "new addr %p\n", (void *)start[i]);
-    }
-  }
-}
-
 static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(uint32_t thread_index) {
   DCHECK(thread_index < NACL_THREAD_MAX);
   return NaClAppThreadFromThreadContext(nacl_user[thread_index]);

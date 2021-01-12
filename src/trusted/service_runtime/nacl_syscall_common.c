@@ -4332,7 +4332,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memmove((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  NaClPatchAddr(nap_child->mem_start, nap->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information
