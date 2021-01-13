@@ -167,6 +167,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     child_hd->d = parent_hd->d;
     child_hd->flags = parent_hd->flags;
     child_hd->cageid = nap_child->cage_id;
+    child_hd->lindfd = parent_hd->lindfd;
 
     /* Create and set new NaClDesc from Child HD in Child nap */
     int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
