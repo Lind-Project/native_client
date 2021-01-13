@@ -343,7 +343,7 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   int32_t pid;
   struct NaClApp *nap = natp->nap;
 
-  pid = nap->cage_id;
+  pid = lind_getpid(nap->cage_id);
   NaClLog(1, "NaClSysGetpid: returning %d\n", pid);
 
   return pid;
@@ -353,14 +353,9 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
   int32_t ppid;
   struct NaClApp *nap = natp->nap;
 
-  if (!nap->parent) {
-    ppid = 0;
-    goto out;
-  }
-  ppid = nap->parent->cage_id;
-
-out:
+  ppid = lind_getppid(nap->cage_id);
   NaClLog(1, "NaClSysGetpid: returning %d\n", ppid);
+
   return ppid;
 }
 
@@ -659,7 +654,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     int                   flags,
                     int                   mode) {
   struct NaClApp       *nap = natp->nap;
-  uint32_t             retval = -NACL_ABI_EINVAL;
+  int                  retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
@@ -714,56 +709,28 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  /*
-   * Perform a stat to determine whether the file is a directory.
-   *
-   * NB: it is okay for the stat to fail, since the request may be to
-   * create a new file.
-   *
-   * There is a race conditions here: between the stat and the
-   * open-as-a-file and open-as-a-dir, the type of the object that the
-   * path refers to can change.
-   */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
+  struct NaClHostDesc  *hd;
 
-  /* Windows does not have S_ISDIR(m) macro */
-  if (!retval && S_IFDIR == (S_IFDIR & stbuf.st_mode)) {
-    struct NaClHostDir  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* We need to assign a CageID to NaCl HostDirectories and HostDescriptors so that we can access cageid from Lind RPC calls*/
-    hd->cageid = nap->cage_id;
-    
-    retval = NaClHostDirOpen(hd, path);
-    NaClLog(1, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s) returned %d\n",
-            (uintptr_t) hd, path, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescDirDescMake(hd)));
-      NaClLog(1, "added directory to open file table at %d\n", retval);
-    }
-  } else {
-    struct NaClHostDesc  *hd;
-
-    hd = malloc(sizeof(*hd));
-    if (!hd) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-    /* Assign CageID to Host Descriptor */
-    hd->cageid = nap->cage_id;
-
-    retval = NaClHostDescOpen(hd, path, flags, mode);
-    NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
-            nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
-    if (!retval) {
-      retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      NaClLog(1, "Entered into open file table at %d\n", retval);
-    }
+  hd = malloc(sizeof(*hd));
+  if (!hd) {
+    retval = -NACL_ABI_ENOMEM;
+    goto cleanup;
   }
+  /* Assign CageID to Host Descriptor */
+  hd->cageid = nap->cage_id;
+
+  retval = NaClHostDescOpen(hd, path, flags, mode);
+  NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
+          nap->cage_id, (uintptr_t) hd, path, flags, mode, retval);
+  
+  if (retval < 0) {
+    NaClLog(1, "Open returned error %d\n", retval);
+    return -NACL_ABI_EPERM;
+  }
+  
+  retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  NaClLog(1, "Entered into open file table at %d\n", retval);
+
 
 cleanup:
   /*
@@ -772,10 +739,7 @@ cleanup:
   */
   
   fd_retval = NextFd(nap->cage_id);
-
   fd_cage_table[nap->cage_id][fd_retval] = retval;
-
-
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
   return fd_retval;
@@ -864,16 +828,22 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   if (count > INT32_MAX) {
     count = INT32_MAX;
   }
+
+
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) ndp;
+  int lind_fd = self->hd->d;
+
   /*
    * Grab addr space lock; getdents should not normally block, though
    * if the directory is on a networked filesystem this could, and
    * cause mmap to be slower on Windows.
    */
   NaClXMutexLock(&nap->mu);
-  getdents_ret = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Getdents)(ndp,
-                            (void *) sysaddr,
-                            count);
+
+  getdents_ret = lind_getdents(lind_fd,
+                              count,
+                              (void *) sysaddr,
+                              nap->cage_id);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
   if ((getdents_ret < INT32_MIN && !NaClSSizeIsNegErrno(&getdents_ret))
@@ -979,6 +949,88 @@ out:
   return retval;
 }
 
+int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like read
+                     int                   d,
+                     void                  *buf,
+                     size_t                count,
+                     off_t                 offset) { 
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         read_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+  char const      *ellipsis = "";
+
+  NaClLog(2, "Cage %d Entered NaClSysPRead(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  if (count > INT32_MAX) {
+    count = INT32_MAX;
+  }
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PRead(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
+
+  NaClVmIoHasEnded(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  if (read_result > 0) {
+    NaClLog(4, "pread returned %"NACL_PRIdS" bytes\n", read_result);
+    log_bytes = (size_t) read_result;
+    if (log_bytes > INT32_MAX) {
+      log_bytes = INT32_MAX;
+      ellipsis = "...";
+    }
+    if (NaClLogGetVerbosity() < 10) {
+      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+        log_bytes = kdefault_io_buffer_bytes_to_log;
+        ellipsis = "...";
+      }
+    }
+    NaClLog(8, "pread result: %.*s%s\n",
+            (int) log_bytes, (char *) sysaddr, ellipsis);
+  } else {
+    NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
+  }
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t) read_result;
+out:
+  return retval;
+}
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
@@ -1040,6 +1092,82 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+
+  NaClVmIoHasEnded(nap,
+                   (uint32_t)(uintptr_t)buf,
+                   (uint32_t)(((uintptr_t)buf) + count - 1));
+
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t)write_result;
+
+out:
+  return retval;
+}
+
+int32_t NaClSysPwrite(struct NaClAppThread *natp,
+                      int                   d,
+                      const void            *buf,
+                      size_t                count,
+                      off_t                 offset) {
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         write_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  char const      *ellipsis = "";
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+
+  NaClLog(2, "Cage %d Entered NaClSysPWrite(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", "
+          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  count = count > INT32_MAX ? INT32_MAX : count;
+  log_bytes = count;
+  if (log_bytes == INT32_MAX) {
+    ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(ellipsis);
+  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+     log_bytes = kdefault_io_buffer_bytes_to_log;
+     ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(log_bytes);
+  UNREFERENCED_PARAMETER(ellipsis);
+  NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t)(uintptr_t)buf,
+                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PWrite(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
 
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
@@ -1563,8 +1691,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   int                         holding_app_lock;
   struct nacl_abi_stat        stbuf;
   size_t                      alloc_rounded_length;
-  nacl_off64_t                file_size;
-  nacl_off64_t                file_bytes;
   nacl_off64_t                host_rounded_file_bytes;
   size_t                      alloc_rounded_file_bytes;
   int fd;
@@ -1677,108 +1803,8 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
             alloc_rounded_length);
   }
 
-  if (!ndp) {
-    /*
-     * Note: sentinel values are bigger than the NaCl module addr space.
-     */
-    file_size                = kMaxUsableFileSize;
-    file_bytes               = kMaxUsableFileSize;
-    host_rounded_file_bytes  = kMaxUsableFileSize;
-    /* alloc_rounded_file_bytes = kMaxUsableFileSize; */
-  } else {
-    /*
-     * We stat the file to figure out its actual size.
-     *
-     * This is necessary because the POSIXy interface we provide
-     * allows mapping beyond the extent of a file but Windows'
-     * interface does not.  We simulate the POSIX behaviour on
-     * Windows.
-     */
-    map_result = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-                  Fstat)(ndp, &stbuf);
-    if (map_result) {
-      goto cleanup;
-    }
-
-    /*
-     * Preemptively refuse to map anything that's not a regular file or
-     * shared memory segment.  Other types usually report st_size of zero,
-     * which the code below will handle by just doing a dummy PROT_NONE
-     * mapping for the requested size and never attempting the underlying
-     * NaClDesc Map operation.  So without this check, the host OS never
-     * gets the chance to refuse the mapping operation on an object that
-     * can't do it.
-     */
-    if (!NACL_ABI_S_ISREG(stbuf.nacl_abi_st_mode) &&
-        !NACL_ABI_S_ISSHM(stbuf.nacl_abi_st_mode) &&
-        !NACL_ABI_S_ISSHM_SYSV(stbuf.nacl_abi_st_mode)) {
-      map_result = -NACL_ABI_ENODEV;
-      goto cleanup;
-    }
-
-    /*
-     * BUG(bsy): there's a race between this fstat and the actual mmap
-     * below.  It's probably insoluble.  Even if we fstat again after
-     * mmap and compared, the mmap could have "seen" the file with a
-     * different size, after which the racing thread restored back to
-     * the same value before the 2nd fstat takes place.
-     */
-    file_size = stbuf.nacl_abi_st_size;
-
-    if (file_size < offset) {
-      map_result = -NACL_ABI_EINVAL;
-      goto cleanup;
-    }
-
-    file_bytes = file_size - offset;
-    NaClLog(4,
-            "NaClSysMmapIntern: file_bytes 0x%016"NACL_PRIxNACL_OFF"\n",
-            file_bytes);
-    if ((nacl_off64_t) kMaxUsableFileSize < file_bytes) {
-      host_rounded_file_bytes = kMaxUsableFileSize;
-    } else {
-      host_rounded_file_bytes = NaClRoundHostAllocPage((size_t) file_bytes);
-    }
-
-    ASSERT(host_rounded_file_bytes <= (nacl_off64_t) kMaxUsableFileSize);
-    /*
-     * We need to deal with NaClRoundHostAllocPage rounding up to zero
-     * from ~0u - n, where n < 4096 or 65536 (== 1 alloc page).
-     *
-     * Luckily, file_bytes is at most kMaxUsableFileSize which is
-     * smaller than SIZE_T_MAX, so it should never happen, but we
-     * leave the explicit check below as defensive programming.
-     */
-    alloc_rounded_file_bytes =
-      NaClRoundAllocPage((size_t) host_rounded_file_bytes);
-
-    if (!alloc_rounded_file_bytes && host_rounded_file_bytes) {
-      map_result = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-
-    /*
-     * NB: host_rounded_file_bytes and alloc_rounded_file_bytes can be
-     * zero.  Such an mmap just makes memory (offset relative to
-     * usraddr) in the range [0, alloc_rounded_length) inaccessible.
-     */
-  }
-
-  /*
-   * host_rounded_file_bytes is how many bytes we can map from the
-   * file, given the user-supplied starting offset.  It is at least
-   * one page.  If it came from a real file, it is a multiple of
-   * host-OS allocation size.  it cannot be larger than
-   * kMaxUsableFileSize.
-   */
-  if (mapping_code && (size_t) file_bytes < alloc_rounded_length) {
-    NaClLog(3,
-            "NaClSysMmap: disallowing partial allocation page extension for"
-            " short files\n");
-    map_result = -NACL_ABI_EINVAL;
-    goto cleanup;
-  }
-  length = MIN(alloc_rounded_length, (size_t) host_rounded_file_bytes);
+ 
+  length = alloc_rounded_length;
 
   /*
    * Lock the addr space.
@@ -2122,11 +2148,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       }
       goto cleanup_no_locks;
     } else {
-      /*
-       * This is a fix for Windows, where we cannot pass a size that
-       * goes beyond the non-page-rounded end of the file.
-       */
-      size_t length_to_map = MIN(length, (size_t) file_bytes);
+
 
       NaClLog(4,
               ("NaClSysMmap: (*ndp->Map)(,,0x%08"NACL_PRIxPTR","
@@ -2137,7 +2159,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                     Map)(ndp,
                          nap->effp,
                          (void *) sysaddr,
-                         length_to_map,
+                         length,
                          prot,
                          flags,
                          (off_t) offset);
@@ -2206,7 +2228,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                               flags,
                               ndp,
                               offset,
-                              file_size);
+                              length);
   }
 
   map_result = usraddr;
@@ -4310,7 +4332,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memmove((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  NaClPatchAddr(nap_child->mem_start, nap->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information
@@ -4361,6 +4382,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
+  NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
   ret = 0;

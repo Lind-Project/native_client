@@ -175,7 +175,18 @@ int NaClEnvCleanserInit(struct NaClEnvCleanser *self, char const *const *envp,
 }
 
 char const *const *NaClEnvCleanserEnvironment(struct NaClEnvCleanser *self) {
-  return (char const *const *) self->cleansed_environ;
+  int envc = 0;
+  char const **childe;
+  char const **rete;
+  for(char const *const *ce = self->cleansed_environ; ce && *ce; ++ce) {
+    envc++;
+  }
+  rete = childe = malloc((envc + 1) * sizeof(char*));
+  for(char const *const *ce = self->cleansed_environ; ce && *ce; ++ce) {
+     *childe++ = *ce;
+  }
+  *childe++ = NULL;
+  return (char const *const *) rete;
 }
 
 void NaClEnvCleanserDtor(struct NaClEnvCleanser *self) {
