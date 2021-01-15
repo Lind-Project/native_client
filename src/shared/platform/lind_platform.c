@@ -135,8 +135,6 @@ error:
 int LindPythonFinalize(void)
 {
     int retval = 0;
-    PyObject *repy_finalize_func = NULL;
-    PyObject *repy_finalize_args = NULL;
     PyObject *result = NULL;
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -145,11 +143,6 @@ int LindPythonFinalize(void)
     }
     result = CallPythonFunc0(py_context, "finalize");
     GOTO_ERROR_IF_NULL(result);
-    repy_finalize_func = PyObject_GetAttrString(py_repylib, "finalize");
-    GOTO_ERROR_IF_NULL(repy_finalize_func);
-    repy_finalize_args = Py_BuildValue("()");
-    result = PyObject_CallObject(repy_finalize_func, repy_finalize_args);
-    GOTO_ERROR_IF_NULL(result);
     Py_Finalize();
     initialized = 0;
     retval = 1;
@@ -157,12 +150,10 @@ int LindPythonFinalize(void)
 error:
     PyErr_Print();
 cleanup:
-    Py_XDECREF(repy_finalize_func);
     Py_XDECREF(result);
     Py_XDECREF(py_code);
     Py_XDECREF(py_context);
     Py_XDECREF(py_repylib);
-    PyGILState_Release(gstate);
     return retval;
 }
 

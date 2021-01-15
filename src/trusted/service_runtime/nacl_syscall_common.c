@@ -494,6 +494,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   NaClSetDesc(nap, old_hostfd, old_nd);
 
   ret = NextFd(nap->cage_id);
+  new_hd->lindfd = ret;
 
   fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
@@ -567,6 +568,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     new_hd->d = lind_dup(old_hd->d, nap->cage_id);
     new_hd->flags = old_hd->flags;
     new_hd->cageid = nap->cage_id;
+    new_hd->lindfd = newfd;
 
     /* Set new nacl desc as available */
     int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
@@ -665,6 +667,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   /* this is the virtual fd returned to the cage */
   int                  fd_retval;
+  struct NaClHostDesc  *hd = NULL;
+
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
@@ -709,8 +713,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  struct NaClHostDesc  *hd;
-
   hd = malloc(sizeof(*hd));
   if (!hd) {
     retval = -NACL_ABI_ENOMEM;
@@ -739,6 +741,7 @@ cleanup:
   */
   
   fd_retval = NextFd(nap->cage_id);
+  if(hd) hd->lindfd = fd_retval;
   fd_cage_table[nap->cage_id][fd_retval] = retval;
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 
@@ -4050,6 +4053,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_EBADF;
       goto out;
     }
+    hd->lindfd = pipe_fd;
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
 
@@ -4332,7 +4336,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memmove((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  NaClPatchAddr(nap_child->mem_start, nap->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information
@@ -4383,6 +4386,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
+  NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
   ret = 0;
