@@ -1342,27 +1342,26 @@ cleanup:
 }
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len) {
+                      uint32_t             buf,
+                      size_t               size) {
   struct NaClApp *nap = natp->nap;
   int32_t        retval = -NACL_ABI_EINVAL;
-  char           path[NACL_CONFIG_PATH_MAX];
 
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
   }
 
+  /*
   if (len >= NACL_CONFIG_PATH_MAX) {
     len = NACL_CONFIG_PATH_MAX - 1;
   }
+  */
+  printf("Before RPC in NaCl");
+  retval = lind_getcwd(size, nap->cage_id);
+  printf("After RPC in Nacl");
 
-  retval = NaClHostDescGetcwd(path, len);
-  if (retval) {
-    goto cleanup;
-  }
-
-  if (!NaClCopyOutToUser(nap, buffer, &path, strlen(path) + 1)) {
+  if (!NaClCopyOutToUser(nap, buf, retval, size)) {
     retval = -NACL_ABI_EFAULT;
   }
 

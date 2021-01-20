@@ -168,5 +168,6 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
+int lind_getcwd(size_t size, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

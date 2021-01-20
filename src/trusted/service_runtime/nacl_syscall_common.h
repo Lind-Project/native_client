@@ -126,8 +126,8 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname);
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len);
+                      uint32_t             buf,
+                      size_t               size);
 
 int32_t NaClSysUnlink(struct NaClAppThread *natp,
                       uint32_t             pathname);
