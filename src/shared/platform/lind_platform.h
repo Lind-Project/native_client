@@ -47,6 +47,7 @@
 #define LIND_safe_fs_write              13
 #define LIND_safe_fs_lseek              14
 #define LIND_fs_ioctl                   15
+#define LIND_safe_fs_getcwd             16
 #define LIND_safe_fs_fxstat             17
 #define LIND_safe_fs_fstatfs            19
 #define LIND_safe_fs_mmap               21
