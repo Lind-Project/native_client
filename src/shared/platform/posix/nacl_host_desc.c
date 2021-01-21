@@ -156,10 +156,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   if (flags & NACL_ABI_MAP_ANONYMOUS) {
     desc = -1;
   } else {
-    desc = d->d;
-  }
-  if(-1 != desc) {
-      desc = GetHostFdFromLindFd(desc, d->cageid);
+    desc = d->lindfd;
   }
   /*
    * Translate prot, flags to host_prot, host_flags.

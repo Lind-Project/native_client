@@ -741,7 +741,7 @@ cleanup:
   */
   
   fd_retval = NextFd(nap->cage_id);
-  if(hd) hd->lindfd = fd_retval;
+  if(hd) fd_retval = hd->lindfd = hd->d;
   fd_cage_table[nap->cage_id][fd_retval] = retval;
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
 

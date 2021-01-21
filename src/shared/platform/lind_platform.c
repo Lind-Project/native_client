@@ -136,8 +136,7 @@ int LindPythonFinalize(void)
 {
     int retval = 0;
     PyObject *result = NULL;
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
+    PyGILState_Ensure();
     if(!initialized) {
         return 0;
     }
@@ -154,34 +153,6 @@ cleanup:
     Py_XDECREF(py_code);
     Py_XDECREF(py_context);
     Py_XDECREF(py_repylib);
-    return retval;
-}
-
-int GetHostFdFromLindFd(int lindFd, int cageid)
-{
-    int retval = -1;
-    PyObject *pyHostFd = NULL;
-    PyObject *args = NULL;
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-    if(lindFd < 0) {
-        goto cleanup;
-    }
-    args = Py_BuildValue("(ii)", lindFd, cageid);
-    pyHostFd = CallPythonFunc(py_context, "GetHostFdFromLindFd", args);
-    GOTO_ERROR_IF_NULL(pyHostFd);
-    if(!PyInt_CheckExact(pyHostFd)) {
-        goto error;
-    }
-    retval = (int)PyInt_AsLong(pyHostFd);
-    goto cleanup;
-error:
-    PyErr_Print();
-cleanup:
-    Py_XDECREF(args);
-    Py_XDECREF(pyHostFd);
-    NaClLog(3, "host_fd:%d for lind_fd:%d\n", retval, lindFd);
-    PyGILState_Release(gstate);
     return retval;
 }
 
