@@ -666,7 +666,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const size_t         tls_end_idx = strlen(tls_prefix);
 
   /* this is the virtual fd returned to the cage */
-  int                  fd_retval;
   struct NaClHostDesc  *hd = NULL;
 
 
@@ -740,12 +739,14 @@ cleanup:
     Get next available, and set cagetable there to nacl retval
   */
   
-  fd_retval = NextFd(nap->cage_id);
-  if(hd) fd_retval = hd->lindfd = hd->d;
-  fd_cage_table[nap->cage_id][fd_retval] = retval;
-  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+  if(hd) { //if not error
+    hd->lindfd = hd->d; //in case of open, the host descriptor is the lindfd
+    fd_cage_table[nap->cage_id][hd->d] = retval;
+    NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", hd->d, path);
+    retval = hd->d;
+  }
 
-  return fd_retval;
+  return retval;
 }
 
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
