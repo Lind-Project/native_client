@@ -91,13 +91,6 @@
 #define LIND_safe_fs_fork               68
 #define LIND_safe_fs_exec               69
 
-
-
-#define LIND_comp_cia                   105
-#define LIND_comp_call                  106
-#define LIND_comp_accept                107
-#define LIND_comp_recv                  108
-
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
 
@@ -107,8 +100,6 @@ struct select_results {
     fd_set w;
     fd_set e;
 };
-
-int GetHostFdFromLindFd(int lindFd, int cageid);
 
 int LindPythonInit(void);
 int LindPythonFinalize(void);
