@@ -16,7 +16,7 @@ struct NaClHostDesc {
   int d;
   int flags;
   int cageid;
-  int lindfd;
+  int userfd;
 
   /*
    * friend int NaClDescIoDescExternalizeSize(...);

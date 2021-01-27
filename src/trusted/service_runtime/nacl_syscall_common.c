@@ -494,8 +494,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   NaClSetDesc(nap, old_hostfd, old_nd);
 
   ret = NextFd(nap->cage_id);
-  new_hd->lindfd = ret;
-
+  new_hd->userfd = ret;
   fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
 
@@ -568,7 +567,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     new_hd->d = lind_dup(old_hd->d, nap->cage_id);
     new_hd->flags = old_hd->flags;
     new_hd->cageid = nap->cage_id;
-    new_hd->lindfd = newfd;
+    new_hd->userfd = newfd;
 
     /* Set new nacl desc as available */
     int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
@@ -660,6 +659,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+  int                  fd_retval = -1;
   const char           *glibc_prefix = "/lib/glibc/";
   const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
@@ -729,7 +729,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     return -NACL_ABI_EPERM;
   }
   
-  retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  fd_retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   NaClLog(1, "Entered into open file table at %d\n", retval);
 
 
@@ -739,12 +739,12 @@ cleanup:
     Get next available, and set cagetable there to nacl retval
   */
   
-  if(hd) { //if not error
-    hd->lindfd = hd->d; //in case of open, the host descriptor is the lindfd
-    fd_cage_table[nap->cage_id][hd->d] = retval;
-    NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", hd->d, path);
-    retval = hd->d;
+  retval = NextFd(nap->cage_id);
+  if(hd) {
+    hd->userfd = retval;
   }
+  fd_cage_table[nap->cage_id][retval] = fd_retval;
+  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
 
   return retval;
 }
@@ -4054,7 +4054,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_EBADF;
       goto out;
     }
-    hd->lindfd = pipe_fd;
+    hd->userfd = pipe_fd;
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
 
