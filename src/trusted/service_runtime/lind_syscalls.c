@@ -376,7 +376,7 @@ cleanup:                                                                        
 
 #define CONVERT_NACL_DESC_TO_LIND(x)                                                            \
     NaClFastMutexLock(&nap->desc_mu);                                                           \
-    ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr));                               \
+    ndp = NaClGetDescMu(nap, fd_cage_table[nap->cage_id][inArgs[(x)].ptr]);                     \
     NaClFastMutexUnlock(&nap->desc_mu);                                                         \
     if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {       \
         retval = -NACL_ABI_EINVAL;                                                              \
@@ -390,7 +390,7 @@ cleanup:                                                                        
     UNREFERENCED_PARAMETER(inNum);                                                              \
     UNREFERENCED_PARAMETER(inArgs);                                                             \
     *xchangedata = malloc(sizeof(struct NaClHostDesc));                                         \
-    if (!*xchangedata) {                                                                 \
+    if (!*xchangedata) {                                                                        \
       retval = -NACL_ABI_ENOMEM;                                                                \
       goto cleanup;                                                                             \
     }                                                                                           \
@@ -400,14 +400,15 @@ cleanup:                                                                        
 #define CONVERT_NACL_DESC_TO_LIND_AND_ALLOC_RET_DESC(x)                                         \
       int retval = 0;                                                                           \
       struct NaClDesc *ndp = {0};                                                               \
+      int nacldesc = fd_cage_table[nap->cage_id][inArgs[(x)].ptr];                              \
       UNREFERENCED_PARAMETER(inNum);                                                            \
       *xchangedata = malloc(sizeof(struct NaClHostDesc));                                       \
-      if (!*xchangedata) {                                                               \
+      if (!*xchangedata) {                                                                      \
         retval = -NACL_ABI_ENOMEM;                                                              \
         goto cleanup;                                                                           \
       }                                                                                         \
       NaClFastMutexLock(&nap->desc_mu);                                                         \
-      ndp = NaClGetDescMu(nap, (int)(*(int64_t*)&inArgs[(x)].ptr));                             \
+      ndp = NaClGetDescMu(nap, nacldesc);                                                       \
       NaClFastMutexUnlock(&nap->desc_mu);                                                       \
       if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {     \
           retval = -NACL_ABI_EINVAL;                                                            \
@@ -421,12 +422,17 @@ cleanup:                                                                        
 #define BUILD_AND_RETURN_NACL_DESC()                                                            \
     int retval = 0;                                                                             \
     struct NaClHostDesc  *hd;                                                                   \
+    int userfd = -1;                                                                            \
     UNREFERENCED_PARAMETER(iserror);                                                            \
     UNREFERENCED_PARAMETER(data);                                                               \
     UNREFERENCED_PARAMETER(len);                                                                \
     hd = (struct NaClHostDesc*)xchangedata;                                                     \
     NaClHostDescCtor(hd, *code, NACL_ABI_O_RDWR);                                               \
+    hd->cageid = nap->cage_id;                                                                  \
     *code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    \
+    userfd = NextFd(nap->cage_id);                                                              \
+    fd_cage_table[nap->cage_id][userfd] = *code;                                                \
+    *code = userfd;                                                                             \
     return retval
 
 int LindSocketPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata)
@@ -573,6 +579,8 @@ int LindSocketPairPostprocess(struct NaClApp *nap,
     int retval = 0;
     struct NaClHostDesc  *hd;
     int lind_fd;
+    int nacl_fd;
+    int user_fd;
     UNREFERENCED_PARAMETER(iserror);
     UNREFERENCED_PARAMETER(code);
     UNREFERENCED_PARAMETER(len);
@@ -580,7 +588,10 @@ int LindSocketPairPostprocess(struct NaClApp *nap,
         hd = &((struct NaClHostDesc*)xchangedata)[i];
         lind_fd = ((int*)data)[i];
         NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR);
-        ((int*)data)[i] = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+        hd->cageid = nap->cage_id;
+        nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+        user_fd = NextFd(nap->cage_id);
+        fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
     }
     return retval;
 }

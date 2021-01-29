@@ -367,6 +367,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 
@@ -4387,6 +4388,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
   NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
