@@ -135,20 +135,12 @@ error:
 int LindPythonFinalize(void)
 {
     int retval = 0;
-    PyObject *repy_finalize_func = NULL;
-    PyObject *repy_finalize_args = NULL;
     PyObject *result = NULL;
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
+    PyGILState_Ensure();
     if(!initialized) {
         return 0;
     }
     result = CallPythonFunc0(py_context, "finalize");
-    GOTO_ERROR_IF_NULL(result);
-    repy_finalize_func = PyObject_GetAttrString(py_repylib, "finalize");
-    GOTO_ERROR_IF_NULL(repy_finalize_func);
-    repy_finalize_args = Py_BuildValue("()");
-    result = PyObject_CallObject(repy_finalize_func, repy_finalize_args);
     GOTO_ERROR_IF_NULL(result);
     Py_Finalize();
     initialized = 0;
@@ -157,40 +149,10 @@ int LindPythonFinalize(void)
 error:
     PyErr_Print();
 cleanup:
-    Py_XDECREF(repy_finalize_func);
     Py_XDECREF(result);
     Py_XDECREF(py_code);
     Py_XDECREF(py_context);
     Py_XDECREF(py_repylib);
-    PyGILState_Release(gstate);
-    return retval;
-}
-
-int GetHostFdFromLindFd(int lindFd, int cageid)
-{
-    int retval = -1;
-    PyObject *pyHostFd = NULL;
-    PyObject *args = NULL;
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-    if(lindFd < 0) {
-        goto cleanup;
-    }
-    args = Py_BuildValue("(ii)", lindFd, cageid);
-    pyHostFd = CallPythonFunc(py_context, "GetHostFdFromLindFd", args);
-    GOTO_ERROR_IF_NULL(pyHostFd);
-    if(!PyInt_CheckExact(pyHostFd)) {
-        goto error;
-    }
-    retval = (int)PyInt_AsLong(pyHostFd);
-    goto cleanup;
-error:
-    PyErr_Print();
-cleanup:
-    Py_XDECREF(args);
-    Py_XDECREF(pyHostFd);
-    NaClLog(3, "host_fd:%d for lind_fd:%d\n", retval, lindFd);
-    PyGILState_Release(gstate);
     return retval;
 }
 
@@ -313,26 +275,22 @@ cleanup:
             _offset += ((int*)_data)[(current)];                        \
         }
 
-int lind_pread(int fd, void *buf, int count, off_t offset, int cageid)
+int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid)
 {
-    off_t cur_pos=0;
-    int ret = 0;
-    cur_pos = lind_lseek (0, fd, SEEK_CUR, cageid);
-    lind_lseek(offset, fd, SEEK_SET, cageid);
-    ret = lind_read(fd, count, buf, cageid);
-    lind_lseek(cur_pos, fd, SEEK_SET, cageid);
-    return ret;
-}
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_pread, fd, count, offset, cageid);
+    LIND_API_PART2;
+    COPY_DATA(buf, count)
+    LIND_API_PART3;
+} 
 
-int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid)
+int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid)
 {
-    off_t cur_pos=0;
-    int ret = 0;
-    cur_pos = lind_lseek (0, fd, SEEK_CUR, cageid);
-    lind_lseek(offset, fd, SEEK_SET, cageid);
-    ret = lind_write(fd, count, buf, cageid);
-    lind_lseek(cur_pos, fd, SEEK_SET, cageid);
-    return ret;
+    LIND_API_PART1;
+    CHECK_NOT_NULL(buf);
+    callArgs = Py_BuildValue("(i[iiis#i])", LIND_safe_fs_pwrite, fd, count, offset, buf, count, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
 }
 
 int lind_access (int version, const char *file)

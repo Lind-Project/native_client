@@ -367,6 +367,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 
@@ -494,7 +495,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   NaClSetDesc(nap, old_hostfd, old_nd);
 
   ret = NextFd(nap->cage_id);
-
+  new_hd->userfd = ret;
   fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
 
@@ -567,6 +568,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     new_hd->d = lind_dup(old_hd->d, nap->cage_id);
     new_hd->flags = old_hd->flags;
     new_hd->cageid = nap->cage_id;
+    new_hd->userfd = newfd;
 
     /* Set new nacl desc as available */
     int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
@@ -658,13 +660,15 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   char                 path[NACL_CONFIG_PATH_MAX];
   nacl_host_stat_t     stbuf;
   int                  allowed_flags;
+  int                  fd_retval = -1;
   const char           *glibc_prefix = "/lib/glibc/";
   const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
 
   /* this is the virtual fd returned to the cage */
-  int                  fd_retval;
+  struct NaClHostDesc  *hd = NULL;
+
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
@@ -709,8 +713,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  struct NaClHostDesc  *hd;
-
   hd = malloc(sizeof(*hd));
   if (!hd) {
     retval = -NACL_ABI_ENOMEM;
@@ -728,7 +730,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     return -NACL_ABI_EPERM;
   }
   
-  retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  fd_retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   NaClLog(1, "Entered into open file table at %d\n", retval);
 
 
@@ -738,11 +740,14 @@ cleanup:
     Get next available, and set cagetable there to nacl retval
   */
   
-  fd_retval = NextFd(nap->cage_id);
-  fd_cage_table[nap->cage_id][fd_retval] = retval;
-  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", fd_retval, path);
+  retval = NextFd(nap->cage_id);
+  if(hd) {
+    hd->userfd = retval;
+  }
+  fd_cage_table[nap->cage_id][retval] = fd_retval;
+  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
 
-  return fd_retval;
+  return retval;
 }
 
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
@@ -949,6 +954,88 @@ out:
   return retval;
 }
 
+int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like read
+                     int                   d,
+                     void                  *buf,
+                     size_t                count,
+                     off_t                 offset) { 
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         read_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+  char const      *ellipsis = "";
+
+  NaClLog(2, "Cage %d Entered NaClSysPRead(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  if (count > INT32_MAX) {
+    count = INT32_MAX;
+  }
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PRead(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
+
+  NaClVmIoHasEnded(nap,
+                    (uint32_t) (uintptr_t) buf,
+                    (uint32_t) (((uintptr_t) buf) + count - 1));
+  if (read_result > 0) {
+    NaClLog(4, "pread returned %"NACL_PRIdS" bytes\n", read_result);
+    log_bytes = (size_t) read_result;
+    if (log_bytes > INT32_MAX) {
+      log_bytes = INT32_MAX;
+      ellipsis = "...";
+    }
+    if (NaClLogGetVerbosity() < 10) {
+      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+        log_bytes = kdefault_io_buffer_bytes_to_log;
+        ellipsis = "...";
+      }
+    }
+    NaClLog(8, "pread result: %.*s%s\n",
+            (int) log_bytes, (char *) sysaddr, ellipsis);
+  } else {
+    NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
+  }
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t) read_result;
+out:
+  return retval;
+}
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
@@ -1010,6 +1097,82 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                     (uint32_t)(uintptr_t)buf,
                     (uint32_t)(((uintptr_t)buf) + count - 1));
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+
+  NaClVmIoHasEnded(nap,
+                   (uint32_t)(uintptr_t)buf,
+                   (uint32_t)(((uintptr_t)buf) + count - 1));
+
+  NaClDescUnref(ndp);
+
+  /* This cast is safe because we clamped count above.*/
+  retval = (int32_t)write_result;
+
+out:
+  return retval;
+}
+
+int32_t NaClSysPwrite(struct NaClAppThread *natp,
+                      int                   d,
+                      const void            *buf,
+                      size_t                count,
+                      off_t                 offset) {
+  struct NaClApp  *nap = natp->nap;
+  int             fd = fd_cage_table[nap->cage_id][d];
+  int32_t         retval = -NACL_ABI_EINVAL;
+  ssize_t         write_result = -NACL_ABI_EINVAL;
+  uintptr_t       sysaddr;
+  char const      *ellipsis = "";
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+
+  NaClLog(2, "Cage %d Entered NaClSysPWrite(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", "
+          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  ndp = NaClGetDesc(nap, fd);
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+  if (!ndp) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
+  if (kNaClBadAddress == sysaddr) {
+    NaClDescUnref(ndp);
+    retval = -NACL_ABI_EFAULT;
+    goto out;
+  }
+
+  /*
+   * The maximum length for read and write is INT32_MAX--anything larger and
+   * the return value would overflow. Passing larger values isn't an error--
+   * we'll just clamp the request size if it's too large.
+   */
+  count = count > INT32_MAX ? INT32_MAX : count;
+  log_bytes = count;
+  if (log_bytes == INT32_MAX) {
+    ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(ellipsis);
+  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+     log_bytes = kdefault_io_buffer_bytes_to_log;
+     ellipsis = "...";
+  }
+  UNREFERENCED_PARAMETER(log_bytes);
+  UNREFERENCED_PARAMETER(ellipsis);
+  NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
+          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
+
+  NaClVmIoWillStart(nap,
+                    (uint32_t)(uintptr_t)buf,
+                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->PWrite(ndp, (void *)sysaddr, count, (nacl_off64_t) offset);
 
   NaClVmIoHasEnded(nap,
                    (uint32_t)(uintptr_t)buf,
@@ -3892,6 +4055,7 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
       ret = -NACL_ABI_EBADF;
       goto out;
     }
+    hd->userfd = pipe_fd;
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
 
@@ -4174,7 +4338,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClLoadSpringboard(nap_child);
   /* copy the trampolines from parent */
   memmove((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
-  NaClPatchAddr(nap_child->mem_start, nap->mem_start, (uintptr_t *)child_start_addr, tramp_size);
 
   /*
    * NaClMemoryProtection also initializes the mem_map w/ information
@@ -4225,6 +4388,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
+  NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
   ret = 0;
