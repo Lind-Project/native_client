@@ -832,7 +832,7 @@ void lind_exit(int status, int cageid)
 void lind_getcwd(char* buf, size_t size, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_getcwd, size, cageid);
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_sys_getcwd, buf, size, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, size);
     LIND_API_PART3;
