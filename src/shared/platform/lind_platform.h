@@ -47,7 +47,6 @@
 #define LIND_safe_fs_write              13
 #define LIND_safe_fs_lseek              14
 #define LIND_fs_ioctl                   15
-#define LIND_safe_fs_getcwd             16
 #define LIND_safe_fs_fxstat             17
 #define LIND_safe_fs_fstatfs            19
 #define LIND_safe_fs_mmap               21
@@ -56,6 +55,7 @@
 #define LIND_safe_fs_dup                24
 #define LIND_safe_fs_dup2               25
 #define LIND_safe_fs_statfs             26
+#define LIND_safe_sys_getcwd            27
 #define LIND_safe_fs_fcntl              28
 
 #define LIND_safe_sys_getppid           29
@@ -169,6 +169,6 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
-int lind_getcwd(size_t size, int cageid);
+void lind_getcwd(char* buf, size_t size, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

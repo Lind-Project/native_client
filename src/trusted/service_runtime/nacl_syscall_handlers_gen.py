@@ -188,7 +188,7 @@ SYSCALL_LIST = [
     ('NACL_sys_mkdir', 'NaClSysMkdir', ['uint32_t path', 'int mode']),
     ('NACL_sys_rmdir', 'NaClSysRmdir', ['uint32_t path']),
     ('NACL_sys_chdir', 'NaClSysChdir', ['uint32_t path']),
-    ('NACL_sys_getcwd', 'NaClSysGetcwd', ['uint32_t buffer', 'int len']),
+    ('NACL_sys_getcwd', 'NaClSysGetcwd', ['uint32_t buf', 'size_t size']),
     ('NACL_sys_unlink', 'NaClSysUnlink', ['uint32_t path']),
     ('NACL_sys_imc_makeboundsock', 'NaClSysImcMakeBoundSock',
      ['int32_t *sap']),

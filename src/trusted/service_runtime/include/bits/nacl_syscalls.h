@@ -43,7 +43,7 @@
 #define NACL_sys_mprotect               24
 
 #define NACL_sys_list_mappings          25
-
+#define NACL_sys_getcwd                 27
 #define NACL_sys_exit                   30
 #define NACL_sys_getpid                 31
 #define NACL_sys_sched_yield            32
@@ -58,7 +58,6 @@
 #define NACL_sys_mkdir                  45
 #define NACL_sys_rmdir                  46
 #define NACL_sys_chdir                  47
-#define NACL_sys_getcwd                 48
 #define NACL_sys_unlink                 49
 
 /* 50-58 previously used for multimedia syscalls */
