@@ -4550,3 +4550,19 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
   UNREFERENCED_PARAMETER(oldset);
   return 0;
 }
+
+int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len); {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  
+  NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
+
+  ret = lind_gethostname (name, len, nap->cage_id);
+  
+  NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
+  
+  return ret;
+}
