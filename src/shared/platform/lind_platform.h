@@ -91,6 +91,8 @@
 #define LIND_safe_fs_fork               68
 #define LIND_safe_fs_exec               69
 
+#define LIND_safe_net_gethostname       125
+
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
 
@@ -161,5 +163,7 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
+
+int lind_gethostname (char *name, size_t len);
 
 #endif /* LIND_PLATFORM_H_ */
