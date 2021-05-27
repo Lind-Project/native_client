@@ -4559,8 +4559,15 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
           "0x%08"NACL_PRIxPTR", "
           "%d)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
-
-  ret = lind_gethostname (name, len, nap->cage_id);
+  
+  /*Convert user addres to system adres*/
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) name, len);
+  if (kNaClBadAddress == sysaddr) {
+    ret = -NACL_ABI_EFAULT;
+    return ret;
+  }
+  
+  ret = lind_gethostname (sysaddr, len, nap->cage_id);
   
   NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
   
