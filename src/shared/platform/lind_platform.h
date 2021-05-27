@@ -93,6 +93,8 @@
 
 #define LIND_safe_net_gethostname       125
 
+#define LIND_safe_net_socket            136
+
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
 
@@ -165,5 +167,7 @@ int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
 
 int lind_gethostname (char *name, size_t len, int cageid);
+
+int lind_socket (int domain, int type, int protocol, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
