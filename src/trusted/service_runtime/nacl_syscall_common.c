@@ -4553,6 +4553,7 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
 
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   int32_t ret;
+  uintptr_t sysaddr;
   struct NaClApp *nap = natp->nap;
   
   NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
