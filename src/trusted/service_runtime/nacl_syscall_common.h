@@ -336,6 +336,7 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
 
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len);
 
+int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol);
 
 EXTERN_C_END
 
