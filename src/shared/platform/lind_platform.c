@@ -795,3 +795,11 @@ int lind_gethostname (char *name, size_t len, int cageid)
     COPY_DATA(name, len)
     LIND_API_PART3;
 }
+
+int lind_socket (int domain, int type, int protocol, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_socket, domain, type, protocol, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
