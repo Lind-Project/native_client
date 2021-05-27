@@ -4551,7 +4551,7 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
   return 0;
 }
 
-int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len); {
+int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   
