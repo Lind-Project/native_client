@@ -4598,14 +4598,13 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   ret = lind_socket (domain, type, protocol, nap->cage_id);
   
   
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
-  int retval = 0;                                                                             
+  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked                                                                            
   struct NaClHostDesc  *hd;                                                                   
   int userfd = -1;                                                                                                                                            
   hd = (struct NaClHostDesc*)xchangedata; 
   
-  hd->hd = code; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  h->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->d = code; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
   
   hd->cageid = nap->cage_id;                                                                  
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    
