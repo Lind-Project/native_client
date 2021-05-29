@@ -4587,8 +4587,8 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
           nap->cage_id, (uintptr_t) natp, domain, type, protocol);
    
   //Preprocessing start
-  *xchangedata = malloc(sizeof(struct NaClHostDesc));                                         
-  if (!*xchangedata) {                                                                        
+  xchangedata = malloc(sizeof(struct NaClHostDesc));                                         
+  if (!xchangedata) {                                                                        
     ret = -NACL_ABI_ENOMEM;                                                                
     return ret;                                                                             
   }                                                                                           
