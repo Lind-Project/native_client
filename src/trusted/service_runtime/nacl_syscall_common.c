@@ -4574,3 +4574,44 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   
   return ret;
 }
+
+int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
+  int32_t ret;
+
+  struct NaClApp *nap = natp->nap;
+  void *xchangeData = NULL;
+  int code = 0; //usage must be checked
+  
+  NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
+          "%d, %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, domain, type, protocol);
+   
+  //Preprocessing start
+  *xchangedata = malloc(sizeof(struct NaClHostDesc));                                         
+  if (!*xchangedata) {                                                                        
+    ret = -NACL_ABI_ENOMEM;                                                                
+    return ret;                                                                             
+  }                                                                                           
+  //Preprocessing end
+  
+  
+  ret = lind_socket (domain, type, protocol, nap->cage_id);
+  
+  
+  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
+  int retval = 0;                                                                             
+  struct NaClHostDesc  *hd;                                                                   
+  int userfd = -1;                                                                                                                                            
+  hd = (struct NaClHostDesc*)xchangedata;                                                     
+  NaClHostDescCtor(hd, code, NACL_ABI_O_RDWR);                                               
+  hd->cageid = nap->cage_id;                                                                  
+  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    
+  userfd = NextFd(nap->cage_id);                                                              
+  fd_cage_table[nap->cage_id][userfd] = code;                                                
+  code = userfd;                                                                             
+  //Postprocessing end
+  
+  NaClLog(2, "NaClSysSocket: returning %d\n", ret);
+  
+  return ret;
+}
