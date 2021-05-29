@@ -4579,7 +4579,7 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int32_t ret;
 
   struct NaClApp *nap = natp->nap;
-  void *xchangeData = NULL;
+  void *xchangedata = NULL;
   int code = 0; //usage must be checked
   
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
