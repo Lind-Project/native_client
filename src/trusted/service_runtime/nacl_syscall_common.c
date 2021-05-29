@@ -4602,8 +4602,11 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int retval = 0;                                                                             
   struct NaClHostDesc  *hd;                                                                   
   int userfd = -1;                                                                                                                                            
-  hd = (struct NaClHostDesc*)xchangedata;                                                     
-  NaClHostDescCtor(hd, code, NACL_ABI_O_RDWR);                                               
+  hd = (struct NaClHostDesc*)xchangedata; 
+  
+  hd->hd = code; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  h->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  
   hd->cageid = nap->cage_id;                                                                  
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    
   userfd = NextFd(nap->cage_id);                                                              
