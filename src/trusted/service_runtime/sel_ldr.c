@@ -1751,10 +1751,10 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
    * The contents of the dynamic text region will get remapped as
    * non-writable.
    */
-  NaClLog(2, "Applying memory protection\n");
-  if (NaClMemoryProtection(nap_child) != LOAD_OK) {
-    NaClLog(LOG_FATAL, "%s\n", "child NaClMemoryProtection failed!");
-  }
+  //NaClLog(2, "Applying memory protection\n");
+  //if (NaClMemoryProtection(nap_child) != LOAD_OK) {
+  //  NaClLog(LOG_FATAL, "%s\n", "child NaClMemoryProtection failed!");
+  //}
 
   /* reset permissions to executable */
   //NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
