@@ -55,9 +55,6 @@
 #define NACL_sys_clock_getres           43
 #define NACL_sys_clock_gettime          44
 
-#define NACL_sys_mkdir                  45
-#define NACL_sys_rmdir                  46
-#define NACL_sys_chdir                  47
 #define NACL_sys_getcwd                 48
 #define NACL_sys_unlink                 49
 
@@ -126,6 +123,10 @@
 
 #define NACL_sys_pread                   126
 #define NACL_sys_pwrite                  127
+
+#define NACL_sys_chdir                  130
+#define NACL_sys_mkdir                  131
+#define NACL_sys_rmdir                  132
 
 #define NACL_MAX_SYSCALLS               256
 

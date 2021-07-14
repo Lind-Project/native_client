@@ -93,6 +93,10 @@
 
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
+#define NACL_sys_chdir                  130
+#define NACL_sys_mkdir                  131
+#define NACL_sys_rmdir                  132
+
 
 struct select_results {
     struct timeval used_t;
@@ -113,7 +117,7 @@ int lind_access (int version, const char *file);
 int lind_unlink (const char *name);
 int lind_link (const char *from, const char *to);
 int lind_chdir (const char *name);
-int lind_mkdir (int mode, const char *path);
+int lind_mkdir (const char *path, int mode);
 int lind_rmdir (const char *path);
 int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid);
 int lind_open (int flags, int mode, const char *path, int cageid);

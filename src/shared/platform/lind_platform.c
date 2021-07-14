@@ -325,10 +325,10 @@ int lind_chdir (const char *name)
     LIND_API_PART3;
 }
 
-int lind_mkdir (int mode, const char *path)
+int lind_mkdir (const char *path, int mode)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_mkdir, mode, path);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_mkdir, path, mode);
     LIND_API_PART2;
     LIND_API_PART3;
 }
