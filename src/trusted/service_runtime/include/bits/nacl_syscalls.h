@@ -121,8 +121,12 @@
 #define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
 
-#define NACL_sys_pread                   126
-#define NACL_sys_pwrite                  127
+#define NACL_sys_gethostname            125
+
+#define NACL_sys_pread                  126
+#define NACL_sys_pwrite                 127
+
+#define NACL_sys_socket                 136
 
 #define NACL_sys_chdir                  130
 #define NACL_sys_mkdir                  131

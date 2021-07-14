@@ -351,8 +351,6 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClXMutexUnlock(&ccmut);
   }
 
-  free((void*) nap->clean_environ);
-
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
     /*

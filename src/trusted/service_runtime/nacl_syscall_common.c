@@ -367,6 +367,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 
@@ -4387,6 +4388,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
   NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
@@ -4547,4 +4549,71 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
   UNREFERENCED_PARAMETER(set);
   UNREFERENCED_PARAMETER(oldset);
   return 0;
+}
+
+int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
+  int32_t ret;
+  uintptr_t sysaddr;
+  struct NaClApp *nap = natp->nap;
+  
+  NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
+  
+  /*Convert user addres to system adres*/
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) name, len);
+  if (kNaClBadAddress == sysaddr) {
+    ret = -NACL_ABI_EFAULT;
+    return ret;
+  }
+  
+  ret = lind_gethostname (sysaddr, len, nap->cage_id);
+  
+  NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
+  
+  return ret;
+}
+
+int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
+  int32_t ret;
+
+  struct NaClApp *nap = natp->nap;
+  void *xchangedata = NULL;
+  int code = 0; //usage must be checked
+  
+  NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
+          "%d, %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, domain, type, protocol);
+   
+  //Preprocessing start
+  xchangedata = malloc(sizeof(struct NaClHostDesc));                                         
+  if (!xchangedata) {                                                                        
+    ret = -NACL_ABI_ENOMEM;                                                                
+    return ret;                                                                             
+  }                                                                                           
+  //Preprocessing end
+  
+  
+  ret = lind_socket (domain, type, protocol, nap->cage_id);
+  
+  
+  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked                                                                            
+  struct NaClHostDesc  *hd;                                                                   
+  int userfd = -1;                                                                                                                                            
+  hd = (struct NaClHostDesc*)xchangedata; 
+  
+  hd->d = code; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  
+  hd->cageid = nap->cage_id;                                                                  
+  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    
+  userfd = NextFd(nap->cage_id);                                                              
+  fd_cage_table[nap->cage_id][userfd] = code;                                                
+  code = userfd;                                                                             
+  //Postprocessing end
+  
+  NaClLog(2, "NaClSysSocket: returning %d\n", ret);
+  
+  return ret;
 }
