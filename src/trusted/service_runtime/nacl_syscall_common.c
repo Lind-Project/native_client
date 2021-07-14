@@ -1457,7 +1457,7 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescMkdir(path, mode);
+  retval = lind_mkdir(path, mode, natp->nap->cage_id);
 cleanup:
   return retval;
 }
@@ -1478,7 +1478,7 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescRmdir(path);
+  retval = lind_rmdir(path, natp->nap->cage_id);
 cleanup:
   return retval;
 }
@@ -1499,7 +1499,7 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescChdir(path);
+  retval = lind_chdir(path, natp->nap->cage_id);
 cleanup:
   return retval;
 }

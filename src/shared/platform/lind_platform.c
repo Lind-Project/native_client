@@ -317,26 +317,26 @@ int lind_link (const char *from, const char *to)
     LIND_API_PART3;
 }
 
-int lind_chdir (const char *name)
+int lind_chdir (const char *name, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[s])", LIND_safe_fs_chdir, name);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_chdir, name, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_mkdir (const char *path, int mode)
+int lind_mkdir (const char *path, int mode, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_mkdir, path, mode);
+    callArgs = Py_BuildValue("(i[sii])", LIND_safe_fs_mkdir, path, mode, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_rmdir (const char *path)
+int lind_rmdir (const char *path, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_rmdir, path);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_rmdir, path, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

@@ -37,9 +37,6 @@
 #define LIND_debug_trace                3
 #define LIND_safe_fs_unlink             4
 #define LIND_safe_fs_link               5
-#define LIND_safe_fs_chdir              6
-#define LIND_safe_fs_mkdir              7
-#define LIND_safe_fs_rmdir              8
 #define LIND_safe_fs_xstat              9
 #define LIND_safe_fs_open               10
 #define LIND_safe_fs_close              11
@@ -96,9 +93,9 @@
 
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
-#define NACL_sys_chdir                  130
-#define NACL_sys_mkdir                  131
-#define NACL_sys_rmdir                  132
+#define LIND_safe_fs_chdir             130
+#define LIND_safe_fs_mkdir             131
+#define LIND_safe_fs_rmdir             132
 
 
 struct select_results {
@@ -119,9 +116,9 @@ int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid)
 int lind_access (int version, const char *file);
 int lind_unlink (const char *name);
 int lind_link (const char *from, const char *to);
-int lind_chdir (const char *name);
-int lind_mkdir (const char *path, int mode);
-int lind_rmdir (const char *path);
+int lind_chdir (const char *name, int cageid);
+int lind_mkdir (const char *path, int mode, int cageid);
+int lind_rmdir (const char *path, int cageid);
 int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid);
 int lind_open (int flags, int mode, const char *path, int cageid);
 int lind_close (int fd, int cageid);
