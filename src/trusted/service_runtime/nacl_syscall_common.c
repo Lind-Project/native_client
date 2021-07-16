@@ -4613,7 +4613,7 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   code = userfd;
   //Postprocessing end
   
-  NaClLog(2, "NaClSysSocket: returning %d\n", ret);
+  NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
   
   return userfd;
 }
@@ -4635,16 +4635,22 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   const void* sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysSend(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
 
-  if (kNaClBadAddress == sysbufaddr) {
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysSend could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSend was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
 
   ret = lind_send(sockfd, len, flags, sysbufaddr, nap->cage_id);
+  NaClLog(2, "NaClSysSend: returning %d\n", ret);
   return ret;
 }
 int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
@@ -4652,27 +4658,44 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   const void* sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysSendto(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) buf, len, flags, (uintptr_t) dest_addr, addrlen);
 
-  if (kNaClBadAddress == sysbufaddr) {
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysSendto could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSendto was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
 
   ret = lind_sendto(sockfd, len, flags, addrlen, dest_addr, sysbufaddr, nap->cage_id);
+  NaClLog(2, "NaClSysSendto: returning %d\n", ret);
   return ret;
 }
 int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   void* sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysRecv(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
 
-  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0)
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysRecv could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+      NaClLog(2, "NaClSysRecv was passed an unrecognized file descriptor, returning %d\n", sockfd);
       return sockfd;
+  }
 
   ret = lind_recv(sockfd, len, flags, sysbufaddr, nap->cage_id);
+  NaClLog(2, "NaClSysRecv: returning %d\n", ret);
   return ret;
 }
 int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
@@ -4680,15 +4703,21 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int 
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   void* sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, addrlen, (uintptr_t) addrlen_out, (uintptr_t) buf, (uintptr_t) src_addr);
 
-  if (kNaClBadAddress == sysbufaddr) {
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysRecvfrom was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
 
   ret = lind_recvfrom(sockfd, len, flags, addrlen, addrlen_out, sysbufaddr, src_addr, nap->cage_id);
+  NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
   return ret;
 }
