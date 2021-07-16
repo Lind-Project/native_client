@@ -27,6 +27,7 @@ struct NaClDesc;
 struct NaClImcMsgHdr;
 struct nacl_abi_stat;
 struct rusage;
+struct sockaddr;
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp);
 
@@ -337,6 +338,12 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len);
 
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol);
+int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf);
+int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
+                         int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf);
+int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
+                           socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
 
 EXTERN_C_END
 

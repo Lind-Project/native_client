@@ -734,10 +734,10 @@ StubType stubs[] = {
         {0}, /* 31 */
         {LindSocketPreprocess, LindSocketPostprocess, 0}, /* 32 LIND_safe_net_socket */
         {LindCommonPreprocess, 0, 0}, /* 33 LIND_safe_net_bind */
-        {LindCommonPreprocess, 0, 0}, /* 34 LIND_safe_net_send */
-        {LindCommonPreprocess, 0, 0}, /* 35 LIND_safe_net_sendto */
-        {LindCommonPreprocess, 0, 0}, /* 36 LIND_safe_net_recv */
-        {LindCommonPreprocess, 0, 0}, /* 37 LIND_safe_net_recvfrom */
+        {0}, /* 34 */
+        {0}, /* 35 */
+        {0}, /* 36 */
+        {0}, /* 37 */
         {LindCommonPreprocess, 0, 0}, /* 38 LIND_safe_net_connect */
         {LindCommonPreprocess, 0, 0}, /* 39 LIND_safe_net_listen */
         {LindAcceptPreprocess, LindAcceptPostprocess, 0}, /* 40 LIND_safe_net_accept */

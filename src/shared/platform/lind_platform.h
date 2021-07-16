@@ -28,7 +28,6 @@
 #include "native_client/src/shared/platform/lind_stat.h"
 
 #if NACL_OSX
-# define sockaddr_in sockaddr
 # define __SOCKADDR_ARG struct sockaddr
 #endif
 
@@ -93,9 +92,10 @@
 
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
-#define LIND_safe_fs_chdir             130
-#define LIND_safe_fs_mkdir             131
-#define LIND_safe_fs_rmdir             132
+#define LIND_safe_fs_chdir              130
+#define LIND_safe_fs_mkdir              131
+#define LIND_safe_fs_rmdir              132
+
 
 
 struct select_results {
@@ -136,11 +136,11 @@ int lind_fcntl_get (int fd, int cmd);
 int lind_fcntl_set (int fd, int cmd, long set_op);
 
 int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr);
-int lind_send (int sockfd, size_t len, int flags, const void *buf);
-int lind_recv (int sockfd, size_t len, int flags, void *buf);
+int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid);
+int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid);
 int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr);
 int lind_listen (int sockfd, int backlog);
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr_in *dest_addr, const void *buf);
+int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid);
 int lind_accept (int sockfd, socklen_t addrlen);
 int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, socklen_t optlen, const void *optval);
@@ -148,7 +148,7 @@ int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void 
 int lind_shutdown (int sockfd, int how);
 int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, struct select_results *result);
 int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs);
-int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
+int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr, int cageid);
 int lind_poll (int nfds, int timeout, struct pollfd *fds_in, struct pollfd *fds_out);
 int lind_socketpair (int domain, int type, int protocol, int *fds);
 int lind_getuid (uid_t * buf);

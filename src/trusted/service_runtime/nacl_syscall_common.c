@@ -4587,33 +4587,92 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
           nap->cage_id, (uintptr_t) natp, domain, type, protocol);
    
   //Preprocessing start
-  xchangedata = malloc(sizeof(struct NaClHostDesc));                                         
-  if (!xchangedata) {                                                                        
-    ret = -NACL_ABI_ENOMEM;                                                                
-    return ret;                                                                             
-  }                                                                                           
+  xchangedata = malloc(sizeof(struct NaClHostDesc));
+  if (!xchangedata) {
+    ret = -NACL_ABI_ENOMEM;
+    return ret;
+  }
   //Preprocessing end
   
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
   
   
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked                                                                            
-  struct NaClHostDesc  *hd;                                                                   
-  int userfd = -1;                                                                                                                                            
+  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
+  struct NaClHostDesc  *hd;
+  int userfd = -1;
   hd = (struct NaClHostDesc*)xchangedata; 
   
   hd->d = code; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
   
-  hd->cageid = nap->cage_id;                                                                  
-  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));                    
-  userfd = NextFd(nap->cage_id);                                                              
-  fd_cage_table[nap->cage_id][userfd] = code;                                                
-  code = userfd;                                                                             
+  hd->cageid = nap->cage_id;
+  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  userfd = NextFd(nap->cage_id);
+  fd_cage_table[nap->cage_id][userfd] = code;
+  code = userfd;
   //Postprocessing end
   
   NaClLog(2, "NaClSysSocket: returning %d\n", ret);
   
+  return ret;
+}
+
+//in lieu of common preprocess
+int descnum2Lindfd(struct NaClApp *nap, int fd) {
+  struct NaClDesc * ndp;
+  struct NaClDescIoDesc *self;
+  int naclfd = fd_cage_table[nap->cage_id][fd];
+  if (naclfd < 0) {
+    return -NACL_ABI_EBADF;
+  }
+  NaClFastMutexLock(&nap->desc_mu);
+  if (!(ndp = NaClGetDesc(nap, naclfd))) {
+    return -NACL_ABI_EBADF;
+  }
+  NaClFastMutexUnlock(&nap->desc_mu);
+  return ((struct NaClDescIoDesc *) ndp)->hd->d;
+}
+
+int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0)
+      return sockfd;
+
+  ret = lind_send(sockfd, len, flags, buf, nap->cage_id);
+  return ret;
+}
+int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
+                         int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0)
+      return sockfd;
+
+  ret = lind_sendto(sockfd, len, flags, addrlen, dest_addr, buf, nap->cage_id);
+  return ret;
+}
+int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0)
+      return sockfd;
+
+  ret = lind_recv(sockfd, len, flags, buf, nap->cage_id);
+  return ret;
+}
+int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
+                           socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0)
+      return sockfd;
+
+  ret = lind_recvfrom(sockfd, len, flags, addrlen, addrlen_out, buf, src_addr, nap->cage_id);
   return ret;
 }

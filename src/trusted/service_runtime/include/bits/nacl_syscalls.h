@@ -48,6 +48,10 @@
 #define NACL_sys_getpid                 31
 #define NACL_sys_sched_yield            32
 #define NACL_sys_sysconf                33
+#define NACL_sys_send                   34
+#define NACL_sys_sendto                 35
+#define NACL_sys_recv                   36
+#define NACL_sys_recvfrom               37
 
 #define NACL_sys_gettimeofday           40
 #define NACL_sys_clock                  41

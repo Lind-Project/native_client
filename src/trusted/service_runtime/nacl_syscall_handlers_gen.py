@@ -265,7 +265,13 @@ SYSCALL_LIST = [
     ('NACL_sys_sigprocmask', 'NaClSysSigProcMask', ['int how', 'const void *set', 'void *oldset']),
     ('NACL_sys_lstat', 'NaClSysLStat', ['const char *path', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_gethostname', 'NaClSysGethostname', ['char *name', 'size_t len']),
-    ('NACL_sys_socket', 'NaClSysSocket', ['int domain', 'int type', 'int protocol'])
+    ('NACL_sys_socket', 'NaClSysSocket', ['int domain', 'int type', 'int protocol']),
+    ('NACL_sys_send', 'NaClSysSend', ['int sockfd', 'size_t len', 'int flags', 'const void *buf']),
+    ('NACL_sys_sendto', 'NaClSysSendto', 
+     ['int sockfd', 'const void *buf', 'size_t len', 'int flags', 'const struct sockaddr *dest_addr', 'socklen_t addrlen']),
+    ('NACL_sys_recv', 'NaClSysRecv', ['int sockfd', 'size_t len', 'int flags', 'void *buf']),
+    ('NACL_sys_recvfrom', 'NaClSysRecvfrom',
+     ['int sockfd', 'size_t len', 'int flags', 'socklen_t addrlen', 'socklen_t * addrlen_out', 'void *buf', 'struct sockaddr *src_addr'])
     ]
 
 
