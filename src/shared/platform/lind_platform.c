@@ -317,26 +317,26 @@ int lind_link (const char *from, const char *to)
     LIND_API_PART3;
 }
 
-int lind_chdir (const char *name)
+int lind_chdir (const char *name, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[s])", LIND_safe_fs_chdir, name);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_chdir, name, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_mkdir (int mode, const char *path)
+int lind_mkdir (const char *path, int mode, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_mkdir, mode, path);
+    callArgs = Py_BuildValue("(i[sii])", LIND_safe_fs_mkdir, path, mode, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_rmdir (const char *path)
+int lind_rmdir (const char *path, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_rmdir, path);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_rmdir, path, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -489,20 +489,20 @@ int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr)
     LIND_API_PART3;
 }
 
-int lind_send (int sockfd, size_t len, int flags, const void *buf)
+int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
-    callArgs = Py_BuildValue("(i[iiis#])", LIND_safe_net_send, sockfd, len, flags, buf, len);
+    callArgs = Py_BuildValue("(i[iiis#i])", LIND_safe_net_send, sockfd, len, flags, buf, len, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_recv (int sockfd, size_t len, int flags, void *buf)
+int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
-    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_recv, sockfd, len, flags);
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_recv, sockfd, len, flags, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, len)
     LIND_API_PART3;
@@ -526,15 +526,13 @@ int lind_listen (int sockfd, int backlog)
 }
 
 /* unimplemented */
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr_in *dest_addr, const void *buf)
+int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid)
 {
-    UNREFERENCED_PARAMETER(sockfd);
-    UNREFERENCED_PARAMETER(len);
-    UNREFERENCED_PARAMETER(flags);
-    UNREFERENCED_PARAMETER(addrlen);
-    UNREFERENCED_PARAMETER(dest_addr);
-    UNREFERENCED_PARAMETER(buf);
-    return 0;
+    LIND_API_PART1;
+    CHECK_NOT_NULL(buf);
+    callArgs = Py_BuildValue("(i[is#is#i])", LIND_safe_net_send, sockfd, buf, len, flags, dest_addr, addrlen, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
 }
 
 int lind_accept (int sockfd, socklen_t addrlen)
@@ -633,10 +631,10 @@ int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs)
     LIND_API_PART3;
 }
 
-int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t *addrlen_out, void *buf, struct sockaddr *src_addr)
+int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t *addrlen_out, void *buf, struct sockaddr *src_addr, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_recvfrom, sockfd, len, flags, addrlen);
+    callArgs = Py_BuildValue("(i[iiiii])", LIND_safe_net_recvfrom, sockfd, len, flags, addrlen, cageid);
     LIND_API_PART2;
     COPY_DATA_OFFSET(addrlen_out, sizeof(*addrlen_out), 3, 0)
     COPY_DATA_OFFSET(buf, len, 3, 1)

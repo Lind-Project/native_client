@@ -48,6 +48,10 @@
 #define NACL_sys_getpid                 31
 #define NACL_sys_sched_yield            32
 #define NACL_sys_sysconf                33
+#define NACL_sys_send                   34
+#define NACL_sys_sendto                 35
+#define NACL_sys_recv                   36
+#define NACL_sys_recvfrom               37
 
 #define NACL_sys_gettimeofday           40
 #define NACL_sys_clock                  41
@@ -55,9 +59,6 @@
 #define NACL_sys_clock_getres           43
 #define NACL_sys_clock_gettime          44
 
-#define NACL_sys_mkdir                  45
-#define NACL_sys_rmdir                  46
-#define NACL_sys_chdir                  47
 #define NACL_sys_getcwd                 48
 #define NACL_sys_unlink                 49
 
@@ -130,6 +131,10 @@
 #define NACL_sys_pwrite                 127
 
 #define NACL_sys_socket                 136
+
+#define NACL_sys_chdir                  130
+#define NACL_sys_mkdir                  131
+#define NACL_sys_rmdir                  132
 
 #define NACL_MAX_SYSCALLS               256
 
