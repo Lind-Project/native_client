@@ -301,18 +301,18 @@ int lind_access (int version, const char *file)
     LIND_API_PART3;
 }
 
-int lind_unlink (const char *name)
+int lind_unlink (const char *name, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[s])", LIND_safe_fs_unlink, name);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_unlink, name, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_link (const char *from, const char *to)
+int lind_link (const char *from, const char *to, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ss])", LIND_safe_fs_link, from, to);
+    callArgs = Py_BuildValue("(i[ssi])", LIND_safe_fs_link, from, to, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

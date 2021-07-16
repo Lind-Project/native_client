@@ -19,6 +19,8 @@
 
 #define NACL_sys_null                    1
 #define NACL_sys_nameservice             2
+#define NACL_sys_unlink                  4
+#define NACL_sys_link                    5
 
 #define NACL_sys_dup                     8
 #define NACL_sys_dup2                    9
@@ -60,7 +62,6 @@
 #define NACL_sys_clock_gettime          44
 
 #define NACL_sys_getcwd                 48
-#define NACL_sys_unlink                 49
 
 /* 50-58 previously used for multimedia syscalls */
 
