@@ -4736,6 +4736,11 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
   NaClLog(2, "Cage %d Entered NaClSysShutdown(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, sockfd, how);
 
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysShutdown was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  
   ret = lind_shutdown(sockfd, how, nap->cageid);
   NaClLog(2, "NaClSysShutdown returning %d\n", ret);
   return ret;
