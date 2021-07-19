@@ -704,11 +704,11 @@ StubType stubs[] = {
         {0}, /* 1 LIND_debug_noop */
         {0}, /* 2 LIND_safe_fs_access */
         {0}, /* 3 LIND_debug_trace */
-        {0}, /* 4 LIND_safe_fs_unlink */
-        {0}, /* 5 LIND_safe_fs_link */
-        {0}, /* 6 LIND_safe_fs_chdir */
-        {0}, /* 7 LIND_safe_fs_mkdir */
-        {0}, /* 8 LIND_safe_fs_rmdir */
+        {0}, /* 4 */
+        {0}, /* 5 */
+        {0}, /* 6 */
+        {0}, /* 7 */
+        {0}, /* 8 */
         {0}, /* 9 LIND_safe_fs_xstat */
         {0}, /* 10 LIND_safe_fs_open */
         {0}, /* 11 */

@@ -1533,25 +1533,31 @@ cleanup:
   return retval;
 }
 
-int32_t NaClSysUnlink(struct NaClAppThread *natp,
-                      uint32_t             pathname) {
+int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
+  struct NaClApp *nap = natp->nap;
+  char           srcpath[NACL_CONFIG_PATH_MAX];
+  char           dstpath[NACL_CONFIG_PATH_MAX];
+  int32_t        retval;
+
+  if ((retval = CopyPathFromUser(nap, srcpath, sizeof(srcpath), (uintptr_t) from))) {
+    return retval;
+  }
+  if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) {
+    return retval;
+  }
+
+  return lind_link(srcpath, dstpath, nap->cage_id);
+}
+int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
-  if (!NaClAclBypassChecks) {
-    retval = -NACL_ABI_EACCES;
-    goto cleanup;
+  if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) {
+    return retval;
   }
 
-  retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) {
-    goto cleanup;
-  }
-
-  retval = NaClHostDescUnlink(path);
-cleanup:
-  return retval;
+  return lind_unlink(path, nap->cage_id);
 }
 
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
