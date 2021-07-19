@@ -4741,7 +4741,7 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
     return sockfd;
   }
   
-  ret = lind_shutdown(sockfd, how, nap->cageid);
+  ret = lind_shutdown(sockfd, how, nap->cage_id);
   NaClLog(2, "NaClSysShutdown returning %d\n", ret);
   return ret;
 }
