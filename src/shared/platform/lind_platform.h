@@ -69,7 +69,7 @@
 #define LIND_safe_net_getsockname       42
 #define LIND_safe_net_getsockopt        43
 #define LIND_safe_net_setsockopt        44
-#define LIND_safe_net_shutdown          45
+#define LIND_safe_net_shutdown          45 //unchanged, already in location
 #define LIND_safe_net_select            46
 #define LIND_safe_net_getifaddrs        47
 #define LIND_safe_net_poll              48
@@ -145,7 +145,7 @@ int lind_accept (int sockfd, socklen_t addrlen);
 int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, socklen_t optlen, const void *optval);
 int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void *optval);
-int lind_shutdown (int sockfd, int how);
+int lind_shutdown (int sockfd, int how, int cageid);
 int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, struct select_results *result);
 int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs);
 int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr, int cageid);

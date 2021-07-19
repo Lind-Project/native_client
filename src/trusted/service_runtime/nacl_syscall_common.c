@@ -4567,7 +4567,7 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
           "%d)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
   
-  /*Convert user addres to system adres*/
+  /*Convert user address to system address*/
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) name, len);
   if (kNaClBadAddress == sysaddr) {
     ret = -NACL_ABI_EFAULT;
@@ -4725,5 +4725,18 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int 
 
   ret = lind_recvfrom(sockfd, len, flags, addrlen, addrlen_out, sysbufaddr, src_addr, nap->cage_id);
   NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysShutdown(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, how);
+
+  ret = lind_shutdown(sockfd, how, nap->cageid);
+  NaClLog(2, "NaClSysShutdown returning %d\n", ret);
   return ret;
 }

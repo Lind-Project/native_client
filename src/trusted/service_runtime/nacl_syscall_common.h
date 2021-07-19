@@ -345,6 +345,8 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
 int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
                            socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
 
+int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */
