@@ -46,7 +46,7 @@ int cagecount;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
@@ -108,19 +108,17 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   NaClXMutexUnlock(&nap_parent->children_mu);
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-  //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
-  //nap_child->main_exe_prevalidated = 1;
-  //if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-  //  NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-  //  NaClLog(LOG_FATAL, "%s\n%s\n",
-  //                     "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-  //                     "or a corrupt nexe file may be responsible for this error.");
-  //}
-  {
-    //NaClFileNameForValgrind(nap_child->nacl_file);
-    //NaClDescUnref((struct NaClDesc *) NaClDescIoDescOpen(nap_child->nacl_file, NACL_ABI_O_RDONLY,
-    //                                            0666, nap_child->cage_id));
-
+  if(origin == NONFORK_CHILD) {
+    //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
+    //nap_child->main_exe_prevalidated = 1;
+    //exec not prevalidated
+    if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
+      NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+      NaClLog(LOG_FATAL, "%s\n%s\n",
+                         "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                         "or a corrupt nexe file may be responsible for this error.");
+    }
+  } else {
     nap_child->stack_size = nap_parent->stack_size;
     nap_child->static_text_end = nap_parent->static_text_end;
     nap_child->rodata_start = nap_parent->rodata_start;

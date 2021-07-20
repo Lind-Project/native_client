@@ -4086,7 +4086,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   /* set up new "child" NaClApp */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(natp->nap);
+  nap_child = NaClChildNapCtor(natp->nap, FORK_CHILD);
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
@@ -4244,7 +4244,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(nap);
+  nap_child = NaClChildNapCtor(nap, NONFORK_CHILD);
   nap_child->running = 0;
   nap_child->in_fork = 0;
 

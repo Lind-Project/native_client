@@ -150,7 +150,11 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 };
 
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap);
+enum ChildOrigin {
+  FORK_CHILD, NONFORK_CHILD
+};
+
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin);
 
 void WINAPI NaClAppThreadLauncher(void *state);
 
