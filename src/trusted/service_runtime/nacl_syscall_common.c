@@ -4745,3 +4745,16 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
   NaClLog(2, "NaClSysShutdown returning %d\n", ret);
   return ret;
 }
+
+int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFlock(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, operation);
+  
+  ret = lind_flock(fd, operation, nap->cage_id);
+  NaClLog(2, "NaClSysFlock returning %d\n", ret);
+  return ret;
+}
