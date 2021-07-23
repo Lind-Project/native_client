@@ -571,10 +571,10 @@ int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void 
     LIND_API_PART3;
 }
 
-int lind_shutdown (int sockfd, int how)
+int lind_shutdown (int sockfd, int how, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_shutdown, sockfd, how);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_shutdown, sockfd, how, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
