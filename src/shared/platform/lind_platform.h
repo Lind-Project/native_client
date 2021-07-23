@@ -69,7 +69,7 @@
 #define LIND_safe_net_getsockname       42
 #define LIND_safe_net_getsockopt        43
 #define LIND_safe_net_setsockopt        44
-#define LIND_safe_net_shutdown          45 //unchanged, already in location
+#define LIND_safe_net_shutdown          45
 #define LIND_safe_net_select            46
 #define LIND_safe_net_getifaddrs        47
 #define LIND_safe_net_poll              48

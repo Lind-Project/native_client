@@ -745,7 +745,7 @@ StubType stubs[] = {
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
         {LindCommonPreprocess, 0, 0}, /* 43 LIND_safe_net_getsockopt */
         {LindCommonPreprocess, 0, 0}, /* 44 LIND_safe_net_setsockopt */
-        {0},
+        {0}, /* 45 */
         {LindSelectPreprocess, LindSelectPostprocess, LindSelectCleanup}, /* 46 LIND_safe_net_select */
         {0}, /* 47 */
         {LindPollPreprocess, LindPollPostprocess, LindPollCleanup}, /* 48 LIND_safe_net_poll */
