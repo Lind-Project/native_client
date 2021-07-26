@@ -4754,7 +4754,7 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
   NaClLog(2, "Cage %d Entered NaClSysFlock(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, fd, operation);
   
-  fd = descnum2Lindfd(nap, fd)
+  fd = descnum2Lindfd(nap, fd);
 
   ret = lind_flock(fd, operation, nap->cage_id);
   NaClLog(2, "NaClSysFlock returning %d\n", ret);
