@@ -692,10 +692,10 @@ int lind_getegid (int cageid)
     LIND_API_PART3;
 }
 
-int lind_flock (int fd, int operation)
+int lind_flock (int fd, int operation, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_flock, fd, operation);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_flock, fd, operation, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

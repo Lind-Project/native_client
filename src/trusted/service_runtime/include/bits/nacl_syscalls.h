@@ -68,6 +68,7 @@
 #define NACL_sys_geteuid                51
 #define NACL_sys_getgid                 52
 #define NACL_sys_getegid                53
+#define NACL_sys_flock                  54
 
 #define NACL_sys_imc_makeboundsock      60
 #define NACL_sys_imc_accept             61

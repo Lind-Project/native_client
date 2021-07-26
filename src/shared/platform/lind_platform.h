@@ -155,7 +155,7 @@ int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);
 int lind_getegid (int cageid);
-int lind_flock (int fd, int operation);
+int lind_flock (int fd, int operation, int cageid);
 int lind_pipe(int* pipefds, int cageid);
 int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
 int lind_fork(int newcageid, int cageid);

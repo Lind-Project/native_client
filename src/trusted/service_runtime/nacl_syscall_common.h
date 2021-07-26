@@ -350,6 +350,7 @@ int32_t NaClSysGetuid(struct NaClAppThread *natp);
 int32_t NaClSysGeteuid(struct NaClAppThread *natp);
 int32_t NaClSysGetgid(struct NaClAppThread *natp);
 int32_t NaClSysGetegid(struct NaClAppThread *natp);
+int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
 
 EXTERN_C_END
 
