@@ -4754,6 +4754,11 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
   NaClLog(2, "Cage %d Entered NaClSysFlock(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, fd, operation);
   
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFlock was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
   ret = lind_flock(fd, operation, nap->cage_id);
   NaClLog(2, "NaClSysFlock returning %d\n", ret);
   return ret;
