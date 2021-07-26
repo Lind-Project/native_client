@@ -64,8 +64,11 @@
 
 #define NACL_sys_getcwd                 48
 
+#define NACL_sys_getuid                 50
+#define NACL_sys_geteuid                51
+#define NACL_sys_getgid                 52
+#define NACL_sys_getegid                53
 #define NACL_sys_flock                  54
-/* 50-58 previously used for multimedia syscalls */
 
 #define NACL_sys_imc_makeboundsock      60
 #define NACL_sys_imc_accept             61
