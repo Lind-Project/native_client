@@ -346,6 +346,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int 
                            socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
 
 int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how);
+int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
 
 EXTERN_C_END
 

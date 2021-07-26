@@ -64,6 +64,7 @@
 
 #define NACL_sys_getcwd                 48
 
+#define NACL_sys_flock                  54
 /* 50-58 previously used for multimedia syscalls */
 
 #define NACL_sys_imc_makeboundsock      60
