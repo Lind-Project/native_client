@@ -4745,3 +4745,32 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
   NaClLog(2, "NaClSysShutdown returning %d\n", ret);
   return ret;
 }
+
+int32_t NaClSysGetuid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getuid(nap->cage_id);
+  NaClLog(2, "NaClSysGetuid returning %d\n", ret);
+  return ret;
+}
+int32_t NaClSysGeteuid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_geteuid(nap->cage_id);
+  NaClLog(2, "NaClSysGeteuid returning %d\n", ret);
+  return ret;
+}
+int32_t NaClSysGetgid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getgid(nap->cage_id);
+  NaClLog(2, "NaClSysGetgid returning %d\n", ret);
+  return ret;
+}
+int32_t NaClSysGetegid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getegid(nap->cage_id);
+  NaClLog(2, "NaClSysGetegid returning %d\n", ret);
+  return ret;
+}

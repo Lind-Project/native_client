@@ -273,7 +273,11 @@ SYSCALL_LIST = [
     ('NACL_sys_recv', 'NaClSysRecv', ['int sockfd', 'size_t len', 'int flags', 'void *buf']),
     ('NACL_sys_recvfrom', 'NaClSysRecvfrom',
      ['int sockfd', 'size_t len', 'int flags', 'socklen_t addrlen', 'socklen_t * addrlen_out', 'void *buf', 'struct sockaddr *src_addr']),
-     ('NACL_sys_shutdown', 'NaClSysShutdown', ['int sockfd', 'int how'])
+     ('NACL_sys_shutdown', 'NaClSysShutdown', ['int sockfd', 'int how']),
+    ('NACL_sys_getuid', 'NaClSysGetuid', []),
+    ('NACL_sys_geteuid', 'NaClSysGeteuid', []),
+    ('NACL_sys_getgid', 'NaClSysGetgid', []),
+    ('NACL_sys_getegid', 'NaClSysGetegid', [])
     ]
 
 

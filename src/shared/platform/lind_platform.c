@@ -660,39 +660,35 @@ int lind_socketpair (int domain, int type, int protocol, int *fds)
     LIND_API_PART3;
 }
 
-int lind_getuid (uid_t * buf)
+int lind_getuid (int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_safe_sys_getuid);
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getuid, cageid);
     LIND_API_PART2;
-    COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
-int lind_geteuid (uid_t * buf)
+int lind_geteuid (int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_safe_sys_geteuid);
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_geteuid, cageid);
     LIND_API_PART2;
-    COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
-int lind_getgid (gid_t * buf)
+int lind_getgid (int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_safe_sys_getgid);
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getgid, cageid);
     LIND_API_PART2;
-    COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
-int lind_getegid (gid_t * buf)
+int lind_getegid (int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_safe_sys_getegid);
+    callArgs = Py_BuildValue("(i[i])", LIND_safe_sys_getegid, cageid);
     LIND_API_PART2;
-    COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
