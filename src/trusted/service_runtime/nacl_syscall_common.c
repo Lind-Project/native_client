@@ -4791,3 +4791,21 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
   NaClLog(2, "NaClSysFlock returning %d\n", ret);
   return ret;
 }
+
+int32_t NaClSysFstatfs(struct NaClAppThread *natp, int fd, struct statfs *buf)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, buf);
+  
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFstatfs was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  ret = lind_fstatfs(fd, buf, nap->cage_id);
+  NaClLog(2, "NaClSysFstat returning %d\n", ret);
+  return ret;
+}
