@@ -351,6 +351,10 @@ int32_t NaClSysGeteuid(struct NaClAppThread *natp);
 int32_t NaClSysGetgid(struct NaClAppThread *natp);
 int32_t NaClSysGetegid(struct NaClAppThread *natp);
 int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
+int32_t NaClSysFstatfs(struct NaClAppThread *natp, int fd, struct statfs *buf);
+int32_t NaClSysFxstat(struct NaClAppThread *natp, int fd, int version, struct stat *buf);
+int32_t NaClSysStatfs(struct NaClAppThread *natp, const char *path, struct statfs *buf);
+int32_t NaClSysXstat(struct NaClAppThread *natp, int version, const char *path, struct stat *buf);
 
 EXTERN_C_END
 

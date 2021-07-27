@@ -142,6 +142,11 @@
 #define NACL_sys_mkdir                  131
 #define NACL_sys_rmdir                  132
 
+#define NACL_sys_fstatfs                140
+#define NACL_sys_fxstat                 141
+#define NACL_sys_statfs                 142
+#define NACL_sys_xstat                  143
+
 #define NACL_MAX_SYSCALLS               256
 
 #endif

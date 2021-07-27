@@ -278,7 +278,11 @@ SYSCALL_LIST = [
     ('NACL_sys_geteuid', 'NaClSysGeteuid', []),
     ('NACL_sys_getgid', 'NaClSysGetgid', []),
     ('NACL_sys_getegid', 'NaClSysGetegid', []),
-    ('NACL_sys_flock', 'NaClSysFlock', ['int fd', 'int operation'])
+    ('NACL_sys_flock', 'NaClSysFlock', ['int fd', 'int operation']),
+    ('NACL_sys_fstatfs', 'NaClSysFstatfs', ['int fd', 'struct statfs *buf']),
+    ('NACL_sys_fxstat', 'NaClSysFxstat', ['int fd', 'int version', 'struct stat *buf']),
+    ('NACL_sys_statfs', 'NaClSysStatfs', ['const char *path', 'struct statfs *buf']),
+    ('NACL_sys_xstat', 'NaClSysXstat', ['int version', 'const char *path', 'struct stat *buf'])
     ]
 
 

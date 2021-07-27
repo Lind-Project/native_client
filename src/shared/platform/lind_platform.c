@@ -413,19 +413,19 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_fstatfs (int fd, struct lind_statfs *buf)
+int lind_fstatfs (int fd, struct lind_statfs *buf, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_fs_fstatfs, fd);
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fstatfs, fd, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
-int lind_statfs (const char *path, struct lind_statfs *buf)
+int lind_statfs (const char *path, struct lind_statfs *buf, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[s])", LIND_safe_fs_statfs, path);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_statfs, path, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
