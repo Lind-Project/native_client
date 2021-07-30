@@ -4798,7 +4798,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp, int fd, struct statfs *buf)
   struct NaClApp *nap = natp->nap;
 
   NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, %d)\n",
-          nap->cage_id, (uintptr_t) natp, fd, buf);
+          nap->cage_id, (uintptr_t) natp, fd, (uintptr_t) buf);
   
   if((fd = descnum2Lindfd(nap, fd)) < 0) {
     NaClLog(2, "NaClSysFstatfs was passed an unrecognized file descriptor, returning %d\n", fd);
@@ -4807,5 +4807,49 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp, int fd, struct statfs *buf)
 
   ret = lind_fstatfs(fd, buf, nap->cage_id);
   NaClLog(2, "NaClSysFstat returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysFxstat(struct NaClAppThread *natp, int fd, int version, struct stat *buf)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFxstat(0x%08"NACL_PRIxPTR", %d, %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, version, (uintptr_t) buf);
+  
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFxstat was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  ret = lind_fxstat(fd, version, buf, nap->cage_id);
+  NaClLog(2, "NaClSysFxstat returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysStatfs(struct NaClAppThread *natp, const char *path, struct statfs *buf)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysStatfs(0x%08"NACL_PRIxPTR", %s, %d)\n",
+          nap->cage_id, (uintptr_t) natp, path, (uintptr_t) buf);
+
+  ret = lind_statfs(path, buf, nap->cage_id);
+  NaClLog(2, "NaClSysStatfs returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysXstat(struct NaClAppThread *natp, int version, const char *path, struct stat *buf)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysXstat(0x%08"NACL_PRIxPTR", %d, %s, %d)\n",
+          nap->cage_id, (uintptr_t) natp, version, path, buf);
+
+  ret = lind_xstat(version, path, buf, nap->cage_id);
+  NaClLog(2, "NaClSysXtat returning %d\n", ret);
   return ret;
 }
