@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/statfs.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -4847,7 +4848,7 @@ int32_t NaClSysXstat(struct NaClAppThread *natp, int version, const char *path, 
   struct NaClApp *nap = natp->nap;
 
   NaClLog(2, "Cage %d Entered NaClSysXstat(0x%08"NACL_PRIxPTR", %d, %s, %d)\n",
-          nap->cage_id, (uintptr_t) natp, version, path, buf);
+          nap->cage_id, (uintptr_t) natp, version, path, (uintptr_t) buf);
 
   ret = lind_xstat(version, path, buf, nap->cage_id);
   NaClLog(2, "NaClSysXtat returning %d\n", ret);

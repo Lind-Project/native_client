@@ -28,6 +28,8 @@ struct NaClImcMsgHdr;
 struct nacl_abi_stat;
 struct rusage;
 struct sockaddr;
+struct stat;
+struct statfs;
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp);
 
