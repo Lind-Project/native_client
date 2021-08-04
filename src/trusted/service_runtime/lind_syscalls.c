@@ -710,7 +710,7 @@ StubType stubs[] = {
         {0}, /* 7 */
         {0}, /* 8 */
         {0}, /* 9 LIND_safe_fs_xstat */
-        {0}, /* 10 LIND_safe_fs_open */
+        {0}, /* 10 */
         {0}, /* 11 */
         {0}, /* 12 */
         {0}, /* 13 */
@@ -743,8 +743,8 @@ StubType stubs[] = {
         {LindAcceptPreprocess, LindAcceptPostprocess, 0}, /* 40 LIND_safe_net_accept */
         {LindCommonPreprocess, 0, 0}, /* 41 LIND_safe_net_getpeername */
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
-        {LindCommonPreprocess, 0, 0}, /* 43 LIND_safe_net_getsockopt */
-        {LindCommonPreprocess, 0, 0}, /* 44 LIND_safe_net_setsockopt */
+        {0}, /* 43 */
+        {0}, /* 44 */
         {0}, /* 45 */
         {LindSelectPreprocess, LindSelectPostprocess, LindSelectCleanup}, /* 46 LIND_safe_net_select */
         {0}, /* 47 */

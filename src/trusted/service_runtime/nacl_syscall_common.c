@@ -4786,3 +4786,53 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
   NaClLog(2, "NaClSysFlock returning %d\n", ret);
   return ret;
 }
+
+int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  unsigned int* syslenaddr = (unsigned int*) NaClUserToSysAddr(nap, (uintptr_t) optlen);
+  void* sysvaladdr;
+
+  if ((void*) kNaClBadAddress == syslenaddr) {
+    NaClLog(2, "NaClSysGetsockopt could not translate optlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  sysvaladdr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, *syslenaddr);
+  NaClLog(2, "Cage %d Entered NaClSysGetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, (uintptr_t) optlen);
+  NaClLog(2, "NaClSysgetSockopt %d %p %p\n", *syslenaddr, syslenaddr, optlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysGetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetsockopt was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  ret = lind_getsockopt(sockfd, level, optname, sysvaladdr, syslenaddr, nap->cage_id);
+
+  return ret;
+}
+int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const void* sysvaladdr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, optlen);
+  NaClLog(2, "Cage %d Entered NaClSysSetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %u)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, optlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysSetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSetsockopt was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  ret = lind_setsockopt(sockfd, level, optname, sysvaladdr, optlen, nap->cage_id);
+
+  return ret;
+}

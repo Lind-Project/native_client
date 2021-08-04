@@ -278,7 +278,9 @@ SYSCALL_LIST = [
     ('NACL_sys_geteuid', 'NaClSysGeteuid', []),
     ('NACL_sys_getgid', 'NaClSysGetgid', []),
     ('NACL_sys_getegid', 'NaClSysGetegid', []),
-    ('NACL_sys_flock', 'NaClSysFlock', ['int fd', 'int operation'])
+    ('NACL_sys_flock', 'NaClSysFlock', ['int fd', 'int operation']),
+    ('NACL_sys_getsockopt', 'NaClSysGetsockopt', ['int sockfd', 'int level', 'int optname', 'void *optval', 'socklen_t *optlen']),
+    ('NACL_sys_setsockopt', 'NaClSysSetsockopt', ['int sockfd', 'int level', 'int optname', 'const void *optval', 'socklen_t optlen'])
     ]
 
 
