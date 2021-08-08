@@ -64,7 +64,7 @@ typedef int (*TYPE_nacl_read) (int desc, void *buf, size_t count);
 
 typedef int (*TYPE_nacl_close) (int desc);
 
-typedef int (*TYPE_nacl_fstat) (int fd, struct stat *stbp);
+typedef int (*TYPE_nacl_fxstat) (int vers, int fd, struct stat *stbp);
 
 typedef int (*TYPE_nacl_write) (int desc, void const *buf, size_t count);
 
@@ -74,7 +74,7 @@ typedef int (*TYPE_nacl_lseek) (int desc,
                                 off_t *offset, /* 64 bit value */
                                 int whence);
 
-typedef int (*TYPE_nacl_stat) (const char *file, struct stat *st);
+typedef int (*TYPE_nacl_statx) (int vers, const char *file, struct stat *st);
 
 /* ============================================================ */
 /* imc */
