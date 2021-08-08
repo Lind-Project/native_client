@@ -51,8 +51,8 @@ static int nacl_irt_dup2(int fd, int newfd) {
   return 0;
 }
 
-static int nacl_irt_fstat(int fd, struct stat *st) {
-  return -NACL_SYSCALL(fstat)(fd, st);
+static int nacl_irt_fxstat(int vers, int fd, struct stat *st) {
+  return -NACL_SYSCALL(fxstat)(vers, fd, st);
 }
 
 static int nacl_irt_getdents(int fd, struct dirent *buf, size_t count,
@@ -71,6 +71,6 @@ const struct nacl_irt_fdio nacl_irt_fdio = {
   nacl_irt_read,
   nacl_irt_write,
   nacl_irt_seek,
-  nacl_irt_fstat,
+  nacl_irt_fxstat,
   nacl_irt_getdents,
 };
