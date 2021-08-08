@@ -204,8 +204,8 @@ int unlink(const char *path) {
  * This is a stub since _start will call it but we don't want to
  * do the normal initialization.
  */
-void __libnacl_irt_init(Elf32_auxv_t *auxv) {
-}
+/*void __libnacl_irt_init(Elf32_auxv_t *auxv) {
+}*/
 
 /*
  * These have to be weak because the IRT defines its own versions.
