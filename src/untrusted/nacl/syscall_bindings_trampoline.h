@@ -74,7 +74,7 @@ typedef int (*TYPE_nacl_lseek) (int desc,
                                 off_t *offset, /* 64 bit value */
                                 int whence);
 
-typedef int (*TYPE_nacl_statx) (int vers, const char *file, struct stat *st);
+typedef int (*TYPE_nacl_xstat) (int vers, const char *file, struct stat *st);
 
 /* ============================================================ */
 /* imc */
