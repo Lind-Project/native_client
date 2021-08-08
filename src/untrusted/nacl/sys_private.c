@@ -157,12 +157,12 @@ int dup2(int oldfd, int newfd) {
   return errno_value_call(NACL_SYSCALL(dup2)(oldfd, newfd));
 }
 
-int fstat(int fd, struct stat *st) {
-  return errno_call(NACL_SYSCALL(fstat)(fd, st));
+int fxstat(int vers, int fd, struct stat *st) {
+  return errno_call(NACL_SYSCALL(fxstat)(vers, fd, st));
 }
 
-int stat(const char *file, struct stat *st) {
-  return errno_call(NACL_SYSCALL(stat)(file, st));
+int xstat(int vers, const char *file, struct stat *st) {
+  return errno_call(NACL_SYSCALL(xstat)(vers, file, st));
 }
 
 int getdents(int fd, struct dirent *buf, size_t count) {
