@@ -31,8 +31,6 @@
 #define NACL_sys_write                  14
 #define NACL_sys_lseek                  15
 #define NACL_sys_ioctl                  16
-#define NACL_sys_stat                   17
-#define NACL_sys_fstat                  18
 #define NACL_sys_chmod                  19
 /* no fchmod emulation on windows */
 

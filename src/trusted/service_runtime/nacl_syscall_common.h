@@ -116,16 +116,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
                      int                  request,
-                     void                 *arg);
-
-int32_t NaClSysFstat(struct NaClAppThread *natp,
-                     int                  d,
-                     struct nacl_abi_stat *nasp);
-
-int32_t NaClSysStat(struct NaClAppThread *natp,
-                    const char           *pathname,
-                    struct nacl_abi_stat *buf);
-
+                     void                 *arg);    
+                     
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
                     struct nacl_abi_stat  *buf);
