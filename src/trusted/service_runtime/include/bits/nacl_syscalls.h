@@ -136,11 +136,13 @@
 #define NACL_sys_pread                  126
 #define NACL_sys_pwrite                 127
 
-#define NACL_sys_socket                 136
-
 #define NACL_sys_chdir                  130
 #define NACL_sys_mkdir                  131
 #define NACL_sys_rmdir                  132
+
+#define NACL_sys_socket                 136
+#define NACL_sys_getsockopt             137
+#define NACL_sys_setsockopt             138
 
 #define NACL_MAX_SYSCALLS               256
 

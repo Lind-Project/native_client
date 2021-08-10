@@ -553,21 +553,22 @@ int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, soc
     return 0;
 }
 
-int lind_setsockopt (int sockfd, int level, int optname, socklen_t optlen, const void *optval)
+int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(optval);
-    callArgs = Py_BuildValue("(i[iiiis#])", LIND_safe_net_setsockopt, sockfd, level, optname, optlen, optval, optlen);
+    callArgs = Py_BuildValue("(i[iiiis#i])", LIND_safe_net_setsockopt, sockfd, level, optname, optlen, optval, optlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_getsockopt (int sockfd, int level, int optname, socklen_t optlen, void *optval)
+int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t* optlen, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_getsockopt, sockfd, level, optname, optlen);
+    callArgs = Py_BuildValue("(i[iiiii])", LIND_safe_net_getsockopt, sockfd, level, optname, *optlen, cageid);
     LIND_API_PART2;
-    COPY_DATA(optval, optlen)
+    COPY_DATA(optval, *optlen);
+	*optlen = _len;
     LIND_API_PART3;
 }
 

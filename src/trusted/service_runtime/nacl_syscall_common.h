@@ -351,6 +351,8 @@ int32_t NaClSysGeteuid(struct NaClAppThread *natp);
 int32_t NaClSysGetgid(struct NaClAppThread *natp);
 int32_t NaClSysGetegid(struct NaClAppThread *natp);
 int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
+int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 
 EXTERN_C_END
 
