@@ -4640,7 +4640,7 @@ int descnum2Lindfd(struct NaClApp *nap, int fd) {
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  const void* sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  const void *sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
   NaClLog(2, "Cage %d Entered NaClSysSend(0x%08"NACL_PRIxPTR", "
           "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
@@ -4663,7 +4663,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
                          int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  const void* sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  const void *sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
   NaClLog(2, "Cage %d Entered NaClSysSendto(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) buf, len, flags, (uintptr_t) dest_addr, addrlen);
@@ -4685,7 +4685,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
 int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  void* sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
   NaClLog(2, "Cage %d Entered NaClSysRecv(0x%08"NACL_PRIxPTR", "
           "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
@@ -4708,7 +4708,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int 
                            socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  void* sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
   NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
           "%d, %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, len, flags, addrlen, (uintptr_t) addrlen_out, (uintptr_t) buf, (uintptr_t) src_addr);
@@ -4795,8 +4795,8 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
 int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  unsigned int* syslenaddr = (unsigned int*) NaClUserToSysAddr(nap, (uintptr_t) optlen);
-  void* sysvaladdr;
+  unsigned int *syslenaddr = (unsigned int*) NaClUserToSysAddr(nap, (uintptr_t) optlen);
+  void *sysvaladdr;
 
   if ((void*) kNaClBadAddress == syslenaddr) {
     NaClLog(2, "NaClSysGetsockopt could not translate optlen address, returning %d\n", -NACL_ABI_EFAULT);
@@ -4824,7 +4824,7 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  const void* sysvaladdr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, optlen);
+  const void *sysvaladdr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, optlen);
   NaClLog(2, "Cage %d Entered NaClSysSetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %u)\n",
           nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, optlen);
 
@@ -4838,6 +4838,62 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
     return sockfd;
   }
   ret = lind_setsockopt(sockfd, level, optname, sysvaladdr, optlen, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysFstatfs(struct NaClAppThread *natp,
+                       int                  d,
+                       struct lind_statfs   *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  struct lind_statfs *sysbufaddr = (struct lind_statfs*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct lind_statfs));
+  NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysFstatfs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((d = descnum2Lindfd(nap, d)) < 0) {
+    NaClLog(2, "NaClSysFstatfs was passed an unrecognized file descriptor, returning %d\n", d);
+    return d;
+  }
+  ret = lind_fstatfs(d, sysbufaddr, nap->cage_id);
+
+  if(ret > 0) ret = 0;
+
+  return ret;
+}
+
+int32_t NaClSysStatfs(struct NaClAppThread *natp,
+                      const char           *pathname,
+                      struct lind_statfs   *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  struct lind_statfs *sysbufaddr = (struct lind_statfs*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct lind_statfs));
+  char           path[NACL_CONFIG_PATH_MAX];
+
+  ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
+
+  NaClLog(2, "Cage %d Entered NaClSysStatfs(0x%08"NACL_PRIxPTR", %s, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, path, (uintptr_t) buf);
+
+  if (ret) {
+    NaClLog(2, "NaClSysStatfs could not translate path address, returning %d\n", ret);
+    return ret;
+  }
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysStatfs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+
+  ret = lind_statfs(path, sysbufaddr, nap->cage_id);
+
+  if(ret > 0) ret = 0;
 
   return ret;
 }

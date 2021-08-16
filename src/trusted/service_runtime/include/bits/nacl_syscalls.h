@@ -139,6 +139,8 @@
 #define NACL_sys_chdir                  130
 #define NACL_sys_mkdir                  131
 #define NACL_sys_rmdir                  132
+#define NACL_sys_statfs                 133
+#define NACL_sys_fstatfs                134
 
 #define NACL_sys_socket                 136
 #define NACL_sys_getsockopt             137
