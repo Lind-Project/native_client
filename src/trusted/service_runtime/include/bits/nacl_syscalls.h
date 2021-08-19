@@ -146,6 +146,10 @@
 #define NACL_sys_getsockopt             137
 #define NACL_sys_setsockopt             138
 
+#define NACL_sys_access                 139
+#define NACL_sys_accept                 140
+#define NACL_sys_connect                141
+
 #define NACL_MAX_SYSCALLS               256
 
 #endif

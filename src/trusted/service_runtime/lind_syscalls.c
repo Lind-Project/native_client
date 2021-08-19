@@ -397,28 +397,6 @@ cleanup:                                                                        
 cleanup:                                                                                        \
     return retval
 
-#define CONVERT_NACL_DESC_TO_LIND_AND_ALLOC_RET_DESC(x)                                         \
-      int retval = 0;                                                                           \
-      struct NaClDesc *ndp = {0};                                                               \
-      int nacldesc = fd_cage_table[nap->cage_id][inArgs[(x)].ptr];                              \
-      UNREFERENCED_PARAMETER(inNum);                                                            \
-      *xchangedata = malloc(sizeof(struct NaClHostDesc));                                       \
-      if (!*xchangedata) {                                                                      \
-        retval = -NACL_ABI_ENOMEM;                                                              \
-        goto cleanup;                                                                           \
-      }                                                                                         \
-      NaClFastMutexLock(&nap->desc_mu);                                                         \
-      ndp = NaClGetDescMu(nap, nacldesc);                                                       \
-      NaClFastMutexUnlock(&nap->desc_mu);                                                       \
-      if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {     \
-          retval = -NACL_ABI_EINVAL;                                                            \
-          goto cleanup;                                                                         \
-      }                                                                                         \
-      *(int64_t*)&inArgs[(x)].ptr = ((struct NaClDescIoDesc *)ndp)->hd->d;                      \
-cleanup:                                                                                        \
-      NaClDescSafeUnref(ndp);                                                                   \
-      return retval
-
 #define BUILD_AND_RETURN_NACL_DESC()                                                            \
     int retval = 0;                                                                             \
     struct NaClHostDesc  *hd;                                                                   \
@@ -441,21 +419,6 @@ int LindSocketPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, v
 }
 
 int LindSocketPostprocess(struct NaClApp *nap,
-                          int iserror,
-                          int *code,
-                          char *data,
-                          int len,
-                          void *xchangedata)
-{
-    BUILD_AND_RETURN_NACL_DESC();
-}
-
-int LindAcceptPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata)
-{
-    CONVERT_NACL_DESC_TO_LIND_AND_ALLOC_RET_DESC(0);
-}
-
-int LindAcceptPostprocess(struct NaClApp *nap,
                           int iserror,
                           int *code,
                           char *data,
@@ -702,7 +665,7 @@ int LindPollCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *
 StubType stubs[] = {
         {0}, /* 0 */
         {0}, /* 1 LIND_debug_noop */
-        {0}, /* 2 LIND_safe_fs_access */
+        {0}, /* 2 */
         {0}, /* 3 LIND_debug_trace */
         {0}, /* 4 */
         {0}, /* 5 */
@@ -738,9 +701,9 @@ StubType stubs[] = {
         {0}, /* 35 */
         {0}, /* 36 */
         {0}, /* 37 */
-        {LindCommonPreprocess, 0, 0}, /* 38 LIND_safe_net_connect */
+        {0}, /* 38 */
         {LindCommonPreprocess, 0, 0}, /* 39 LIND_safe_net_listen */
-        {LindAcceptPreprocess, LindAcceptPostprocess, 0}, /* 40 LIND_safe_net_accept */
+        {0}, /* 40 */
         {LindCommonPreprocess, 0, 0}, /* 41 LIND_safe_net_getpeername */
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
         {0}, /* 43 */
@@ -766,8 +729,8 @@ StubType stubs[] = {
         {0}, /* 63 */
         {0}, /* 64 */
         {0}, /* 65 */
-        {0}, /* 66 LIND_sys_pipe */
-        {0}, /* 67 LIND_sys_pipe2 */
+        {0}, /* 66 */
+        {0}, /* 67 */
         {0}, /* 68 LIND_fs_fork */
         {0}, /* 69 */
         {0}, /* 70 */
