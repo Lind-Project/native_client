@@ -480,11 +480,11 @@ int lind_fcntl_set (int fd, int cmd, long set_op)
     LIND_API_PART3;
 }
 
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr)
+int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(addr);
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_bind, sockfd, addrlen, addr, addrlen);
+    callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_net_bind, sockfd, addrlen, addr, addrlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

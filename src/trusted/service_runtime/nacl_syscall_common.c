@@ -4938,3 +4938,30 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   return userfd;
 }
 
+int32_t NaClSysBind(struct NaClAppThread *natp,
+                       int sockfd, 
+                       socklen_t addrlen, 
+                       const struct sockaddr *addr) {
+  
+  struct NaClApp *nap = natp->nap;
+  const struct sockaddr* sysvaladdr;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysBind(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, addrlen, (uintptr_t) addr);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysBind was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, addrlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysBind could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  ret = lind_bind(sockfd, addrlen, sysvaladdr, nap->cage_id);
+  return ret;
+}

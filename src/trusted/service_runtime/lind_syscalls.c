@@ -696,7 +696,7 @@ StubType stubs[] = {
         {0}, /* 30 */
         {0}, /* 31 */
         {LindSocketPreprocess, LindSocketPostprocess, 0}, /* 32 LIND_safe_net_socket */
-        {LindCommonPreprocess, 0, 0}, /* 33 LIND_safe_net_bind */
+        {0}, /* 33 */
         {0}, /* 34 */
         {0}, /* 35 */
         {0}, /* 36 */

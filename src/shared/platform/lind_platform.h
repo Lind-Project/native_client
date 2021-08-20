@@ -135,7 +135,7 @@ int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
 int lind_fcntl_get (int fd, int cmd);
 int lind_fcntl_set (int fd, int cmd, long set_op);
 
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr);
+int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr, int cageid);
 int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid);
 int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid);
 int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid);
