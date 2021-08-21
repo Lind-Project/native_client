@@ -517,10 +517,10 @@ int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen
     LIND_API_PART3;
 }
 
-int lind_listen (int sockfd, int backlog)
+int lind_listen (int sockfd, int backlog, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_listen, sockfd, backlog);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_listen, sockfd, backlog, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

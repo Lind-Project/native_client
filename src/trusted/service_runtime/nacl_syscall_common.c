@@ -4965,3 +4965,22 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
   ret = lind_bind(sockfd, addrlen, sysvaladdr, nap->cage_id);
   return ret;
 }
+
+int32_t NaClSysListen(struct NaClAppThread *natp,
+                       int sockfd, 
+                       int backlog) {
+  
+  struct NaClApp *nap = natp->nap;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysListen(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, backlog);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysListen was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_listen(sockfd, sysvaladdr, nap->cage_id);
+  return ret;
+}

@@ -702,7 +702,7 @@ StubType stubs[] = {
         {0}, /* 36 */
         {0}, /* 37 */
         {0}, /* 38 */
-        {LindCommonPreprocess, 0, 0}, /* 39 LIND_safe_net_listen */
+        {0}, /* 39 */
         {0}, /* 40 */
         {LindCommonPreprocess, 0, 0}, /* 41 LIND_safe_net_getpeername */
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
