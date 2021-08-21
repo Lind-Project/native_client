@@ -4981,6 +4981,6 @@ int32_t NaClSysListen(struct NaClAppThread *natp,
     return sockfd;
   }
 
-  ret = lind_listen(sockfd, sysvaladdr, nap->cage_id);
+  ret = lind_listen(sockfd, backlog, nap->cage_id);
   return ret;
 }
