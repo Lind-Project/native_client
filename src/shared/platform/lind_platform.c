@@ -546,13 +546,18 @@ int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cage
 }
 
 /* unimplemented */
-int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t *addrlen_out)
+int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t *addrlen_out, int cageid)
 {
-    UNREFERENCED_PARAMETER(sockfd);
-    UNREFERENCED_PARAMETER(addrlen_in);
-    UNREFERENCED_PARAMETER(addr);
-    UNREFERENCED_PARAMETER(addrlen_out);
-    return 0;
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getpeername, sockfd, addrlen_in, cageid);
+    LIND_API_PART2;	
+	COPY_DATA_OFFSET(addr, sizeof(*addr), 2, 0)
+    if (addrlen_out)
+	{
+        *addrlen_out = addrlen_in;
+	}
+    COPY_DATA_OFFSET(addrlen_out, sizeof(*addrlen_out), 2, 1)
+	LIND_API_PART3;
 }
 
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid)

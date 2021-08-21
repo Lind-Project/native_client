@@ -151,6 +151,7 @@
 #define NACL_sys_connect                141
 #define NACL_sys_bind                   142
 #define NACL_sys_listen                 143
+#define NACL_sys_getpeername            144
 
 #define NACL_MAX_SYSCALLS               256
 

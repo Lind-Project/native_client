@@ -345,9 +345,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, 
 int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc);
 int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage);
 int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set, void *oldset);
-
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len);
-
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol);
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf);
 int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
@@ -355,7 +353,6 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
 int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf);
 int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
                            socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
-
 int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how);
 int32_t NaClSysGetuid(struct NaClAppThread *natp);
 int32_t NaClSysGeteuid(struct NaClAppThread *natp);
@@ -367,6 +364,7 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
+int32_t NaClSysGetpeername(struct NaClAppThread *natp, int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t *addrlen_out);
 
 EXTERN_C_END
 

@@ -4984,3 +4984,24 @@ int32_t NaClSysListen(struct NaClAppThread *natp,
   ret = lind_listen(sockfd, backlog, nap->cage_id);
   return ret;
 }
+
+int32_t NaClSysGetpeername(struct NaClAppThread *natp,
+                       int sockfd, 
+                       socklen_t addrlen_in, 
+                       __SOCKADDR_ARG addr, 
+                       socklen_t *addrlen_out) {
+  
+  struct NaClApp *nap = natp->nap;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysGetpeername(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, addrlen_in, addr, addrlen_out);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetpeername was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_getpeername(sockfd, addrlen_in, addr, addrlen_out, nap->cage_id);
+  return ret;
+}

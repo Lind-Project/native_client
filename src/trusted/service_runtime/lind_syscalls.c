@@ -684,7 +684,7 @@ StubType stubs[] = {
         {0}, /* 18 */
         {0}, /* 19 */
         {0}, /* 20 */
-        {0}, // 21
+        {0}, /* 21 */
         {0}, /* 22 */
         {0}, /* 23 */
         {0}, /* 24 */
@@ -704,7 +704,7 @@ StubType stubs[] = {
         {0}, /* 38 */
         {0}, /* 39 */
         {0}, /* 40 */
-        {LindCommonPreprocess, 0, 0}, /* 41 LIND_safe_net_getpeername */
+        {0}, /* 41 */
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
         {0}, /* 43 */
         {0}, /* 44 */
