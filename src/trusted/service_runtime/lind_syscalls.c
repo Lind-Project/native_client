@@ -696,13 +696,13 @@ StubType stubs[] = {
         {0}, /* 30 */
         {0}, /* 31 */
         {LindSocketPreprocess, LindSocketPostprocess, 0}, /* 32 LIND_safe_net_socket */
-        {LindCommonPreprocess, 0, 0}, /* 33 LIND_safe_net_bind */
+        {0}, /* 33 */
         {0}, /* 34 */
         {0}, /* 35 */
         {0}, /* 36 */
         {0}, /* 37 */
         {0}, /* 38 */
-        {LindCommonPreprocess, 0, 0}, /* 39 LIND_safe_net_listen */
+        {0}, /* 39 */
         {0}, /* 40 */
         {LindCommonPreprocess, 0, 0}, /* 41 LIND_safe_net_getpeername */
         {LindCommonPreprocess, 0, 0}, /* 42 LIND_safe_net_getsockname */
