@@ -95,6 +95,12 @@ int32_t NaClSysPread(struct NaClAppThread  *natp,
                     size_t                count,
                     off_t                 offset);
 
+int32_t NaClSysFcntlGet (struct NaClAppThread *natp,
+                         int fd, int cmd);
+
+int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
+                         int fd, int cmd, long set_op);
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,
@@ -221,11 +227,14 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
                                 int32_t              *sap);
 
-int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
-                         int                   d);
-
-int32_t NaClSysImcConnect(struct NaClAppThread *natp,
-                          int                  d);
+int32_t NaClSysAccept(struct NaClAppThread *natp,
+                      int sockfd, 
+                      struct sockaddr *addr, 
+                      socklen_t *addrlen);
+int32_t NaClSysConnect(struct NaClAppThread *natp,
+                       int sockfd, 
+                       const struct sockaddr *addr, 
+                       socklen_t addrlen);
 
 int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
                           int                          d,
@@ -361,6 +370,9 @@ int32_t NaClSysGetegid(struct NaClAppThread *natp);
 int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
 int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
+int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
+int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
 
 EXTERN_C_END
 
