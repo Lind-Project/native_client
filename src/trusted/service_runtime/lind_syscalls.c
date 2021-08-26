@@ -74,24 +74,6 @@ typedef int(*CleanupType)(struct NaClApp*, uint32_t, LindArg*, void*);
 
 typedef struct _StubType {PreprocessType pre; PostprocessType post; CleanupType clean;} StubType;
 
-static int NaClFdToRepyFD(struct NaClApp *nap, int NaClFd) {
-        int fd = fd_cage_table[nap->cage_id][NaClFd];
-        struct NaClDesc *ndp;
-        int retval;
-        NaClFastMutexLock(&nap->desc_mu);
-        ndp = NaClGetDescMu(nap, fd);
-        NaClFastMutexUnlock(&nap->desc_mu);
-        if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
-                retval = -1;
-                goto cleanup;
-        }
-        retval = ((struct NaClDescIoDesc *)ndp)->hd->d;
-cleanup:
-        NaClDescSafeUnref(ndp);
-        NaClLog(1, "NaClFdToRepyFD: %d->%d\n", NaClFd, retval);
-        return retval;
-}
-
 static int NaClHostDescCtor(struct NaClHostDesc  *d,
                             int fd,
                             int flags) {
@@ -100,91 +82,6 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
   NaClLog(1, "%s\n", "NaClHostDescCtor: success.");
   return 0;
 }
-
-struct FcntlExchangeData {
-        struct NaClHostDesc *nhd;
-        int minFd;
-};
-
-int LindFcntlPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata) {
-        int retval;
-        int lindFd;
-        NaClLog(1, "Entered LindFcntlPreprocess inNum=%8u\n", inNum);
-        *xchangedata = 0;
-        lindFd = NaClFdToRepyFD(nap, (int)(*(int64_t*)&inArgs[0].ptr));
-        if(lindFd<0) {
-                retval = -NACL_ABI_EINVAL;
-                goto cleanup;
-        }
-        inArgs[0].ptr = lindFd;
-        if(inNum>=3 && (inArgs[1].ptr == 0 /*F_DUPFD*/ || inArgs[1].ptr == 1030 /*F_DUPFD_CLOEXEC*/)) {
-                *xchangedata = (struct FcntlExchangeData*)malloc(sizeof(struct FcntlExchangeData));
-                if(!*xchangedata) {
-                        retval = -NACL_ABI_ENOMEM;
-                        goto cleanup;
-                }
-                ((struct FcntlExchangeData*)(*xchangedata))->nhd = (struct NaClHostDesc*)malloc(sizeof(struct NaClHostDesc));
-                if(!((struct FcntlExchangeData*)(*xchangedata))->nhd) {
-                        retval = -NACL_ABI_ENOMEM;
-                        free(*xchangedata);
-                        goto cleanup;
-                }
-                ((struct FcntlExchangeData*)(*xchangedata))->minFd = (int)(*(int64_t *)&inArgs[2].ptr);
-                NaClLog(1, "MinFD: %d\n", ((struct FcntlExchangeData*)(*xchangedata))->minFd);
-        }
-        retval = 0;
-cleanup:
-        NaClLog(1, "%s\n", "Exiting LindFcntlPreprocess");
-        return retval;
-}
-
-int LindFcntlPostprocess(struct NaClApp *nap,
-                         int iserror,
-                         int *code,
-                         char *data,
-                         int len,
-                         void *xchangedata) {
-        struct NaClHostDesc  *hd;
-        int minFd;
-        UNREFERENCED_PARAMETER(nap);
-        UNREFERENCED_PARAMETER(iserror);
-        UNREFERENCED_PARAMETER(data);
-        UNREFERENCED_PARAMETER(len);
-        NaClLog(1, "%s\n", "Entered LindFcntlPostprocess");
-        if(xchangedata) {
-                hd = ((struct FcntlExchangeData*)xchangedata)->nhd;
-                NaClHostDescCtor(hd, *code, NACL_ABI_O_RDWR);
-                minFd = ((struct FcntlExchangeData*)xchangedata)->minFd;
-                NaClLog(1, "Try to find a valid FD: %d\n", minFd);
-                NaClFastMutexLock(&nap->desc_mu);
-                while(DynArrayGet(&nap->desc_tbl, minFd)) {
-                        ++minFd;
-                }
-                NaClLog(1, "Found a valid FD: %d\n", minFd);
-                if (!DynArraySet(&nap->desc_tbl, minFd, ((struct NaClDesc *) NaClDescIoDescMake(hd)))) {
-                NaClLog(LOG_FATAL,
-                                "NaClSetDesc: could not set descriptor %d to 0x%08"
-                                NACL_PRIxPTR"\n",
-                                minFd,
-                                (uintptr_t) hd);
-                }
-                NaClFastMutexUnlock(&nap->desc_mu);
-                *code = minFd;
-        }
-        NaClLog(1, "%s\n", "Exiting LindFcntlPostprocess");
-        return 0;
-}
-
-int LindFcntlCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *xchangedata) {
-        UNREFERENCED_PARAMETER(nap);
-        UNREFERENCED_PARAMETER(inNum);
-        UNREFERENCED_PARAMETER(inArgs);
-        if(xchangedata) {
-                free(xchangedata);
-        }
-        return 0;
-}
-
 
 int LindSelectCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *xchangedata)
 {
@@ -691,11 +588,11 @@ StubType stubs[] = {
         {0}, /* 25 */
         {0}, /* 26 */
         {0}, /* 27 */
-        {LindFcntlPreprocess, LindFcntlPostprocess, LindFcntlCleanup}, /* 28 LIND_safe_fs_fcntl */
+        {0}, /* 28 */
         {0}, /* 29 */
         {0}, /* 30 */
         {0}, /* 31 */
-        {LindSocketPreprocess, LindSocketPostprocess, 0}, /* 32 LIND_safe_net_socket */
+        {0}, /* 32 */
         {0}, /* 33 */
         {0}, /* 34 */
         {0}, /* 35 */

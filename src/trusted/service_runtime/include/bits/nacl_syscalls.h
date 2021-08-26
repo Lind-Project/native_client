@@ -136,6 +136,9 @@
 #define NACL_sys_pread                  126
 #define NACL_sys_pwrite                 127
 
+#define NACL_sys_fcntl_get              128
+#define NACL_sys_fcntl_set              129
+
 #define NACL_sys_chdir                  130
 #define NACL_sys_mkdir                  131
 #define NACL_sys_rmdir                  132

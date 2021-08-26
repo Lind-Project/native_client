@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -4982,5 +4983,86 @@ int32_t NaClSysListen(struct NaClAppThread *natp,
   }
 
   ret = lind_listen(sockfd, backlog, nap->cage_id);
+  return ret;
+}
+int32_t NaClSysFcntlGet (struct NaClAppThread *natp,
+                         int fd, int cmd) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  NaClLog(2, "Cage %d Entered NaClSysFcntlGet(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, cmd);
+
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFcntlGet was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  ret = lind_fcntl_get(fd, cmd, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
+                         int fd, int cmd, long set_op) {
+  int32_t ret;
+  int fdtrans;
+  struct NaClApp *nap = natp->nap;
+  NaClLog(2, "Cage %d Entered NaClSysFcntlSet(0x%08"NACL_PRIxPTR", %d, %d, %ld)\n",
+          nap->cage_id, (uintptr_t) natp, fd, cmd, set_op);
+
+  if((fdtrans = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+    struct NaClHostDesc *nhd = malloc(sizeof(struct NaClHostDesc));
+    int new_hostfd;
+    int newuser;
+    int old_hostfd;
+    struct NaClDesc *old_nd;
+    struct NaClDescIoDesc *old_self;
+    struct NaClHostDesc *old_hd;
+
+    if(nhd == NULL) {
+      ret = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+
+    old_hostfd = fd_cage_table[nap->cage_id][fd];
+
+    if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
+      ret = -NACL_ABI_EBADF;
+      goto cleanup;
+    }
+
+    old_self = (struct NaClDescIoDesc *) &old_nd->base;
+    old_hd = old_self->hd;
+
+    ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
+    if(ret < 0) {
+        goto cleanup;
+    }
+
+    newuser = NextFdBounded(nap->cage_id, set_op);
+    nhd->d = ret;
+    nhd->flags = old_hd->flags;
+    nhd->cageid = nap->cage_id;
+    nhd->userfd = newuser;
+
+    /* Set new nacl desc as available */
+    new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nhd)));
+    /* and add the new hostfd to the cage table */
+    fd_cage_table[nap->cage_id][newuser] = new_hostfd;
+  
+    /* We've got to put that old NaClDescriptor back in there... */
+    NaClSetDesc(nap, old_hostfd, old_nd);
+  
+    ret = newuser;
+  } else {
+    ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
+  }
+  
+cleanup:
+  NaClLog(2, "Exiting NaClSysFcntlSet\n");
   return ret;
 }

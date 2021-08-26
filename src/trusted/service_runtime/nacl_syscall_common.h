@@ -95,6 +95,12 @@ int32_t NaClSysPread(struct NaClAppThread  *natp,
                     size_t                count,
                     off_t                 offset);
 
+int32_t NaClSysFcntlGet (struct NaClAppThread *natp,
+                         int fd, int cmd);
+
+int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
+                         int fd, int cmd, long set_op);
+
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,
                      void                 *buf,

@@ -1789,3 +1789,12 @@ int NextFd(int cage_id){
 
   return -NACL_ABI_EBADF;
 }
+
+int NextFdBounded(int cage_id, int lowerbound){
+
+  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
+    if (fd_cage_table[cage_id][fd] == -1) return fd;
+  }
+
+  return -NACL_ABI_EBADF;
+}
