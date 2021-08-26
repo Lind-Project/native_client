@@ -113,7 +113,7 @@ int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMess
 
 int lind_pread(int fd, void* buf, size_t count, off_t offset, int cageid);
 int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
-int lind_access (int version, const char *file);
+int lind_access (const char *file, int mode, int cageid);
 int lind_unlink (const char *name, int cageid);
 int lind_link (const char *from, const char *to, int cageid);
 int lind_chdir (const char *name, int cageid);
@@ -135,13 +135,13 @@ int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
 int lind_fcntl_get (int fd, int cmd, int cageid);
 int lind_fcntl_set (int fd, int cmd, long set_op, int cageid);
 
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr);
+int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr, int cageid);
 int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid);
 int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid);
-int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr);
-int lind_listen (int sockfd, int backlog);
+int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid);
+int lind_listen (int sockfd, int backlog, int cageid);
 int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid);
-int lind_accept (int sockfd, socklen_t addrlen);
+int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid);
 int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t *optlen, int cageid);

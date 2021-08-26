@@ -293,10 +293,10 @@ int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid)
     LIND_API_PART3;
 }
 
-int lind_access (int version, const char *file)
+int lind_access (const char *file, int mode, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_access, version, file);
+    callArgs = Py_BuildValue("(i[sii])", LIND_safe_fs_access, file, mode, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -476,11 +476,11 @@ int lind_fcntl_set (int fd, int cmd, long set_op, int cageid)
     LIND_API_PART3;
 }
 
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr)
+int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(addr);
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_bind, sockfd, addrlen, addr, addrlen);
+    callArgs = Py_BuildValue("(i[iis#i])", LIND_safe_net_bind, sockfd, addrlen, addr, addrlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -504,19 +504,19 @@ int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr)
+int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(src_addr);
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_connect, sockfd, addrlen, src_addr, addrlen);
+    callArgs = Py_BuildValue("(i[is#ii])", LIND_safe_net_connect, sockfd, src_addr, addrlen, addrlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_listen (int sockfd, int backlog)
+int lind_listen (int sockfd, int backlog, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_listen, sockfd, backlog);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_listen, sockfd, backlog, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -531,11 +531,13 @@ int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const str
     LIND_API_PART3;
 }
 
-int lind_accept (int sockfd, socklen_t addrlen)
+int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_accept, sockfd, addrlen);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_accept, sockfd, *addrlen, cageid);
     LIND_API_PART2;
+    COPY_DATA(addr, *addrlen);
+	*addrlen = _len;
     LIND_API_PART3;
 }
 
