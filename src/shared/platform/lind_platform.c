@@ -389,19 +389,15 @@ int _lind_lseek (off_t offset, int fd, int whence, off_t * ret, int cageid)
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
     LIND_API_PART2;
-    COPY_DATA(ret, sizeof(*ret))
     LIND_API_PART3;
 }
 
 int lind_lseek (off_t offset, int fd, int whence, int cageid)
 {
-    off_t ret_off=0;
-    int ret=0;
-    ret = _lind_lseek (offset, fd, whence, &ret_off, cageid);
-    if(ret<0) {
-        return ret;
-    }
-    return ret_off;
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
 }
 
 int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid)
@@ -464,18 +460,18 @@ int lind_getdents (int fd, size_t nbytes, char *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_fcntl_get (int fd, int cmd)
+int lind_fcntl_get (int fd, int cmd, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fcntl, fd, cmd);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fcntl, fd, cmd, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_fcntl_set (int fd, int cmd, long set_op)
+int lind_fcntl_set (int fd, int cmd, long set_op, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iil])", LIND_safe_fs_fcntl, fd, cmd, set_op);
+    callArgs = Py_BuildValue("(i[iili])", LIND_safe_fs_fcntl, fd, cmd, set_op, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }

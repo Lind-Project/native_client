@@ -282,7 +282,9 @@ SYSCALL_LIST = [
     ('NACL_sys_getsockopt', 'NaClSysGetsockopt', ['int sockfd', 'int level', 'int optname', 'void *optval', 'socklen_t *optlen']),
     ('NACL_sys_setsockopt', 'NaClSysSetsockopt', ['int sockfd', 'int level', 'int optname', 'const void *optval', 'socklen_t optlen']),
     ('NACL_sys_fstatfs', 'NaClSysFstatfs', ['int d', 'struct lind_statfs *buf']),
-    ('NACL_sys_statfs', 'NaClSysStatfs', ['const char *path', 'struct lind_statfs *buf'])
+    ('NACL_sys_statfs', 'NaClSysStatfs', ['const char *path', 'struct lind_statfs *buf']),
+    ('NACL_sys_fcntl_get', 'NaClSysFcntlGet', ['int fd', 'int cmd']),
+    ('NACL_sys_fcntl_set', 'NaClSysFcntlSet', ['int fd', 'int cmd', 'long set_op'])
     ]
 
 
