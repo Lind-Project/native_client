@@ -4619,7 +4619,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
     return sockfd;
   }
 
-  ret = lind_sendto(sockfd, len, flags, addrlen, dest_addr, sysbufaddr, nap->cage_id);
+  ret = lind_sendto(sockfd, dest_addr, len, flags, sysbufaddr, addrlen, nap->cage_id);
   NaClLog(2, "NaClSysSendto: returning %d\n", ret);
   return ret;
 }
@@ -4641,7 +4641,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
       return sockfd;
   }
 
-  ret = lind_recv(sockfd, len, flags, sysbufaddr, nap->cage_id);
+  ret = lind_recv(sockfd, sysbufaddr, len, flags, nap->cage_id);
   NaClLog(2, "NaClSysRecv: returning %d\n", ret);
   return ret;
 }

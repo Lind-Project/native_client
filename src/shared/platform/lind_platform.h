@@ -136,11 +136,11 @@ int lind_fcntl_get (int fd, int cmd, int cageid);
 int lind_fcntl_set (int fd, int cmd, long set_op, int cageid);
 
 int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid);
-int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid);
-int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid);
+int lind_send (int sockfd, const void *buf, size_t len, int flags, int cageid);
+int lind_recv (int sockfd, void *buf, size_t len, int flags, int cageid);
 int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid);
 int lind_listen (int sockfd, int backlog, int cageid);
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid);
+int lind_sendto (int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen, int cageid);
 int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t * addrlen_out);
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid);

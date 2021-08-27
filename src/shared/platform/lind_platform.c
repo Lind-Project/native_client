@@ -486,7 +486,7 @@ int lind_send (int sockfd, const void *buf, size_t len, int flags, int cageid)
     LIND_API_PART3;
 }
 
-int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid)
+int lind_recv (int sockfd, void *buf, size_t len, int flags, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
@@ -514,7 +514,7 @@ int lind_listen (int sockfd, int backlog, int cageid)
 }
 
 /* unimplemented */
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid)
+int lind_sendto (int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
