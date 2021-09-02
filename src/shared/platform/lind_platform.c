@@ -551,12 +551,11 @@ int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, soc
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getpeername, sockfd, addrlen_in, cageid);
     LIND_API_PART2;	
-	COPY_DATA_OFFSET(addrlen_in, sizeof(*addrlen_in), 2, 0)
+    COPY_DATA_OFFSET(addrlen_out, sizeof(*addrlen_out), 2, 1)
     if (addrlen_out)
 	{
         *addrlen_out = addrlen_in;
-	}
-    COPY_DATA_OFFSET(addrlen_out, sizeof(*addrlen_out), 2, 1)
+	}    
 	LIND_API_PART3;
 }
 
