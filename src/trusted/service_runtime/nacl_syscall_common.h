@@ -373,6 +373,8 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
+int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
+                       fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
 
 EXTERN_C_END
 
