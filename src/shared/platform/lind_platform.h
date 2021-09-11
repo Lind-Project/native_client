@@ -165,9 +165,9 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
-
 int lind_gethostname (char *name, size_t len, int cageid);
-
 int lind_socket (int domain, int type, int protocol, int cageid);
+int lind_getsockname (int sockfd, socklen_t addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid);
+
 
 #endif /* LIND_PLATFORM_H_ */
