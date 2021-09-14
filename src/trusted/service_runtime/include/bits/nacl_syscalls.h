@@ -155,6 +155,10 @@
 #define NACL_sys_bind                   142
 #define NACL_sys_listen                 143
 
+#define NACL_sys_epoll_create           157
+#define NACL_sys_epoll_ctl              158
+#define NACL_sys_epoll_wait             159
+
 #define NACL_MAX_SYSCALLS               256
 
 #endif
