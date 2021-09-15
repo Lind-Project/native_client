@@ -5127,7 +5127,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp,
                         struct epoll_event  *event) {
 
   struct NaClApp *nap = natp->nap;
-  const struct epoll_event *eventsysaddr;
+  struct epoll_event *eventsysaddr;
   int32_t ret;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %d)\n",
@@ -5162,7 +5162,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp,
                         int                   timeout) {
 
   struct NaClApp *nap = natp->nap;
-  const struct epoll_event *eventsysaddr;
+  struct epoll_event *eventsysaddr;
   int retval = 0;
   int nfds;
   int hfd;
