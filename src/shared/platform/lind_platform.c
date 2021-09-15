@@ -628,15 +628,6 @@ int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, st
     LIND_API_PART3;
 }
 
-int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs)
-{
-    LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_net_getifaddrs, ifaddrs_buf_siz);
-    LIND_API_PART2;
-    COPY_DATA(ifaddrs, ifaddrs_buf_siz)
-    LIND_API_PART3;
-}
-
 int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t *addrlen_out, void *buf, struct sockaddr *src_addr, int cageid)
 {
     LIND_API_PART1;
