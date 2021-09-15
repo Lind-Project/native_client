@@ -847,8 +847,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   NaClXMutexLock(&nap->mu);
 
   getdents_ret = lind_getdents(lind_fd,
-                              count,
                               (void *) sysaddr,
+                              count,
                               nap->cage_id);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
@@ -4596,7 +4596,7 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
     return sockfd;
   }
 
-  ret = lind_send(sockfd, len, flags, sysbufaddr, nap->cage_id);
+  ret = lind_send(sockfd, sysbufaddr, len, flags, nap->cage_id);
   NaClLog(2, "NaClSysSend: returning %d\n", ret);
   return ret;
 }
@@ -4619,7 +4619,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
     return sockfd;
   }
 
-  ret = lind_sendto(sockfd, len, flags, addrlen, dest_addr, sysbufaddr, nap->cage_id);
+  ret = lind_sendto(sockfd, dest_addr, len, flags, sysbufaddr, addrlen, nap->cage_id);
   NaClLog(2, "NaClSysSendto: returning %d\n", ret);
   return ret;
 }
@@ -4641,7 +4641,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
       return sockfd;
   }
 
-  ret = lind_recv(sockfd, len, flags, sysbufaddr, nap->cage_id);
+  ret = lind_recv(sockfd, sysbufaddr, len, flags, nap->cage_id);
   NaClLog(2, "NaClSysRecv: returning %d\n", ret);
   return ret;
 }
@@ -4963,7 +4963,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
     return -NACL_ABI_EFAULT;
   }
 
-  ret = lind_bind(sockfd, addrlen, sysvaladdr, nap->cage_id);
+  ret = lind_bind(sockfd, sysvaladdr, addrlen, nap->cage_id);
   return ret;
 }
 
