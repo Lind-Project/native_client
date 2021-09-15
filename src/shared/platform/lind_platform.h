@@ -31,9 +31,7 @@
 # define __SOCKADDR_ARG struct sockaddr
 #endif
 
-#define LIND_debug_noop                 1
 #define LIND_safe_fs_access             2
-#define LIND_debug_trace                3
 #define LIND_safe_fs_unlink             4
 #define LIND_safe_fs_link               5
 #define LIND_safe_fs_xstat              9
@@ -127,7 +125,6 @@ int lind_lseek (int fd, off_t offset, int whence, int cageid);
 int lind_fxstat (int fd, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct lind_statfs *buf, int cageid);
 int lind_statfs (const char *path, struct lind_statfs *buf, int cageid);
-int lind_noop (int cageid);
 int lind_dup (int oldfd, int cageid);
 int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, char *buf, size_t nbytes, int cageid);

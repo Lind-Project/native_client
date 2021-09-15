@@ -419,14 +419,6 @@ int lind_statfs (const char *path, struct lind_statfs *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_noop (int cageid)
-{
-    LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_debug_noop, cageid);
-    LIND_API_PART2;
-    LIND_API_PART3;
-}
-
 int lind_dup (int oldfd, int cageid)
 {
     LIND_API_PART1;

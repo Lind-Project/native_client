@@ -384,9 +384,9 @@ int LindPollCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *
 
 StubType stubs[] = {
         {0}, /* 0 */
-        {0}, /* 1 LIND_debug_noop */
+        {0}, /* 1 */
         {0}, /* 2 */
-        {0}, /* 3 LIND_debug_trace */
+        {0}, /* 3 */
         {0}, /* 4 */
         {0}, /* 5 */
         {0}, /* 6 */
