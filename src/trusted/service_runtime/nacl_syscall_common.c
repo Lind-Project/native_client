@@ -5085,10 +5085,11 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp,
   struct NaClHostDesc  *hd;
   int userfd;
   int code = 0; //usage must be checked
+  int32_t ret;
+
   
-  NaClLog(2, "Cage %d Entered NaClSysEpollCreate(0x%08"NACL_PRIxPTR", "
-          "%d, %d, %d)\n",
-          nap->cage_id, (uintptr_t) natp, domain, type, protocol);
+  NaClLog(2, "Cage %d Entered NaClSysEpollCreate(0x%08"NACL_PRIxPTR", ""%d)\n",
+          nap->cage_id, (uintptr_t) natp, size);
    
   //Preprocessing start
   hd = malloc(sizeof(struct NaClHostDesc));
