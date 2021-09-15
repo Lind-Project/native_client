@@ -5078,8 +5078,7 @@ cleanup:
 
 
 
-int32_t NaClSysEpollCreate(struct NaClAppThread  *natp,
-                           int                   size) {
+int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
 
   struct NaClApp *nap = natp->nap;
   struct NaClHostDesc  *hd;
@@ -5120,11 +5119,7 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp,
   return userfd;
 }
 
-int32_t NaClSysEpollCtl(struct NaClAppThread  *natp,
-                        int                   epfd,
-                        int                   op,
-                        int                   fd,
-                        struct epoll_event  *event) {
+int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, struct epoll_event *event) {
 
   struct NaClApp *nap = natp->nap;
   struct epoll_event *eventsysaddr;
@@ -5155,11 +5150,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp,
 }
 
 
-int32_t NaClSysEpollWait(struct NaClAppThread  *natp,
-                        int                   epfd,
-                        struct epoll_event *events,
-                        int                   maxevents,
-                        int                   timeout) {
+int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout) {
 
   struct NaClApp *nap = natp->nap;
   struct epoll_event *eventsysaddr;
