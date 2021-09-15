@@ -5205,9 +5205,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     }
   }
 
-  puts("Never leaving lind call?");
   retval = lind_select(max_fd, safeposixreadfds2, safeposixwritefds2, safeposixexceptfds2, nacltimeout, nap->cage_id);
-  puts("Never leaving lind call no");
   
   if(safeposixreadfds2)
     fd_set_fd_translator_fromlind(nap, naclreadfds, safeposixreadfds2, nfds);
