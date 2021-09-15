@@ -172,7 +172,7 @@ void lind_exit(int status, int cageid);
 int lind_gethostname (char *name, size_t len, int cageid);
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_epoll_create(int size, int cageid);
-int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
-int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
+int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);
+int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
