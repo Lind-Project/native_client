@@ -147,7 +147,6 @@ int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t
 int lind_shutdown (int sockfd, int how, int cageid);
 int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid);
 int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs);
-int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, struct select_results *result);
 int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr, int cageid);
 int lind_poll (int nfds, int timeout, struct pollfd *fds_in, struct pollfd *fds_out);
 int lind_socketpair (int domain, int type, int protocol, int *fds);

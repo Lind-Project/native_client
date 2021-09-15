@@ -442,8 +442,8 @@ StubType stubs[] = {
         {LindEpollCreatePreprocess, LindEpollCreatePostprocess, 0}, /* 56 epoll_create */
         {LindEpollCtlPreprocess, 0, 0}, /* 57 epoll_ctl */
         {LindEpollWaitPreprocess, LindEpollWaitPostprocess, 0}, /* 58 epoll_wait */
-        {LindCommonPreprocess, 0, 0}, /* 59 sendmsg */
-        {LindCommonPreprocess, 0, 0}, /* 60 */
+        {0}, /* 59 */
+        {0}, /* 60 */
         {0}, /* 61 */
         {0}, /* 62 */
         {0}, /* 63 */
@@ -451,7 +451,7 @@ StubType stubs[] = {
         {0}, /* 65 */
         {0}, /* 66 */
         {0}, /* 67 */
-        {0}, /* 68 LIND_fs_fork */
+        {0}, /* 68 */
         {0}, /* 69 */
         {0}, /* 70 */
         {0}, /* 71 */
@@ -508,7 +508,7 @@ StubType stubs[] = {
         {0}, /* 122 */
         {0}, /* 123 */
         {0}, /* 124 */
-        {0}, /* 125 LIND_safe_net_gethostname*/
+        {0}, /* 125 */
         {0}, /* 126 */
         {0}, /* 127 */
         {0}, /* 128 */
