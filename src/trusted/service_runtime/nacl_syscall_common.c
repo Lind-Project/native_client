@@ -5079,8 +5079,8 @@ static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int
       if(translated_fd < 0) {
         return (char*) -NACL_ABI_EBADF;
       }
-      if(translated_fd > ourmax)
-        ourmax = translated_fd;
+      if(translated_fd >= ourmax)
+        ourmax = translated_fd + 1;
     }
   }
 
@@ -5102,7 +5102,6 @@ static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int
 static void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
   int fds[FD_SETSIZE];
   int fdsindex = 0;
-  int ourmax = 0;
 
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {
@@ -5120,89 +5119,109 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   struct NaClApp *nap = natp->nap;
   int retval;
   int max_fd = 0;
-  fd_set *naclwritefds = NULL, *naclreadfds = NULL, *naclexceptfds = NULL;
-  struct timeval* nacltimeout;
+  fd_set *naclwritefds, *naclreadfds, *naclexceptfds;
+  struct timeval* nacltimeout = NULL;
   char *safeposixreadfds, *safeposixwritefds, *safeposixexceptfds;
-  char *safeposixreadfds2, *safeposixwritefds2, *safeposixexceptfds2;
+  char *safeposixreadfds2 = NULL, *safeposixwritefds2 = NULL, *safeposixexceptfds2 = NULL;
   NaClLog(2, "Cage %d Entered NaClSysSelect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, nfds, (uintptr_t) readfds, (uintptr_t) writefds, (uintptr_t) exceptfds, (uintptr_t) timeout);
 
-  naclreadfds = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(fd_set));
+  if(readfds) {
+    naclreadfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) readfds, sizeof(fd_set));
 
-  if ((void*) kNaClBadAddress == naclreadfds) {
-    NaClLog(2, "NaClSysBind could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
-    return -NACL_ABI_EFAULT;
+    if ((void*) kNaClBadAddress == naclreadfds) {
+      NaClLog(2, "NaClSysBind could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+    safeposixreadfds = fd_set_fd_translator_tolind(nap, naclreadfds, nfds, &max_fd);
+
+    if ((long) safeposixreadfds < 0) {
+      NaClLog(2, "NaClSysBind could not translate fds in readfds %d\n", -NACL_ABI_EFAULT);
+      return (long) safeposixreadfds;
+    }
   }
   
-  naclwritefds = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(fd_set));
+  if(writefds) {
+    naclwritefds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) writefds, sizeof(fd_set));
 
-  if ((void*) kNaClBadAddress == naclwritefds) {
-    NaClLog(2, "NaClSysBind could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
-    return -NACL_ABI_EFAULT;
+    if ((void*) kNaClBadAddress == naclwritefds) {
+      NaClLog(2, "NaClSysBind could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+
+    safeposixwritefds = fd_set_fd_translator_tolind(nap, naclwritefds, nfds, &max_fd);
+
+    if ((long) safeposixwritefds < 0) {
+      NaClLog(2, "NaClSysBind could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
+      retval = (long) safeposixwritefds;
+      goto cleanup;
+    }
   }
 
-  naclexceptfds = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(fd_set));
+  if(exceptfds) {
+    naclexceptfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) exceptfds, sizeof(fd_set));
 
-  if ((void*) kNaClBadAddress == naclexceptfds) {
-    NaClLog(2, "NaClSysBind could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
-    return -NACL_ABI_EFAULT;
+    if ((void*) kNaClBadAddress == naclexceptfds) {
+      NaClLog(2, "NaClSysBind could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+
+    safeposixexceptfds = fd_set_fd_translator_tolind(nap, naclexceptfds, nfds, &max_fd);
+
+    if ((long) safeposixexceptfds < 0) {
+      NaClLog(2, "NaClSysBind could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
+      retval = (long) safeposixexceptfds;
+      goto cleanup;
+    }
   }
 
-  nacltimeout = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct timeout));
+  if(nacltimeout) {
+    nacltimeout = (struct timeval*) NaClUserToSysAddrRange(nap, (uintptr_t) timeout, sizeof(struct timeval));
 
-  if ((void*) kNaClBadAddress == nacltimeout) {
-    NaClLog(2, "NaClSysBind could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
-    return -NACL_ABI_EFAULT;
+    if ((void*) kNaClBadAddress == nacltimeout) {
+      NaClLog(2, "NaClSysBind could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
   }
 
-  safeposixreadfds = fd_set_fd_translator_tolind(nap, readfds, nfds, &max_fd);
-
-  if ((long) safeposixreadfds < 0) {
-    NaClLog(2, "NaClSysBind could not translate fds in readfds %d\n", -NACL_ABI_EFAULT);
-    return (long) safeposixreadfds;
+  if(readfds && safeposixreadfds) {
+    if(!(safeposixreadfds2 = realloc(safeposixreadfds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
   }
 
-  safeposixwritefds = fd_set_fd_translator_tolind(nap, writefds, nfds, &max_fd);
-
-  if ((long) safeposixwritefds < 0) {
-    NaClLog(2, "NaClSysBind could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
-    retval = (long) safeposixwritefds;
-    goto cleanup;
+  if(writefds && safeposixwritefds) {
+    if(!(safeposixwritefds2 = realloc(safeposixwritefds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
   }
 
-  safeposixexceptfds = fd_set_fd_translator_tolind(nap, exceptfds, nfds, &max_fd);
-
-  if ((long) safeposixexceptfds < 0) {
-    NaClLog(2, "NaClSysBind could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
-    retval = (long) safeposixexceptfds;
-    goto cleanup;
+  if(exceptfds && safeposixexceptfds) {
+    if(!(safeposixexceptfds2 = realloc(safeposixexceptfds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
   }
 
-  if(!(safeposixreadfds2 = realloc(safeposixreadfds, (max_fd + 7)/8))) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-  if(!(safeposixwritefds2 = realloc(safeposixwritefds, (max_fd + 7)/8))) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-  if(!(safeposixexceptfds2 = realloc(safeposixexceptfds, (max_fd + 7)/8))) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-
+  puts("Never leaving lind call?");
   retval = lind_select(max_fd, safeposixreadfds2, safeposixwritefds2, safeposixexceptfds2, nacltimeout, nap->cage_id);
+  puts("Never leaving lind call no");
   
-  fd_set_fd_translator_fromlind(nap, naclreadfds, safeposixreadfds2, nfds);
-  fd_set_fd_translator_fromlind(nap, naclwritefds, safeposixwritefds2, nfds);
-  fd_set_fd_translator_fromlind(nap, naclexceptfds, safeposixexceptfds2, nfds);
+  if(safeposixreadfds2)
+    fd_set_fd_translator_fromlind(nap, naclreadfds, safeposixreadfds2, nfds);
+  if(safeposixwritefds2)
+    fd_set_fd_translator_fromlind(nap, naclwritefds, safeposixwritefds2, nfds);
+  if(safeposixexceptfds2)
+    fd_set_fd_translator_fromlind(nap, naclexceptfds, safeposixexceptfds2, nfds);
 
 cleanup:
-  if(safeposixreadfds) 
+  if(safeposixreadfds2) 
     free(safeposixreadfds);
-  if(safeposixwritefds) 
+  if(safeposixwritefds2) 
     free(safeposixwritefds);
-  if(safeposixexceptfds) 
+  if(safeposixexceptfds2)
     free(safeposixexceptfds);
 
   return retval;

@@ -572,7 +572,7 @@ int lind_shutdown (int sockfd, int how, int cageid)
 
 int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid)
 {
-	struct select_results *result;
+	struct select_results result;
     PyObject *readFdObj = NULL;
     PyObject *writeFdObj = NULL;
     PyObject *exceptFdObj = NULL;
@@ -602,6 +602,9 @@ int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, st
         timeValObj = Py_None;
         Py_INCREF(timeValObj);
     }
+	//Note: our python implementation can currently only handle NaCl fds up to 1024
+	//and our NaCl implementation here can not easily be made to handle more than that
+	//However, our drop-in replacement implementation will so there is no need to change anything here
     callArgs = Py_BuildValue("(i[iOOOOi])", LIND_safe_net_select, nfds, readFdObj,
             writeFdObj, exceptFdObj, timeValObj, cageid);
     Py_XDECREF(readFdObj);
@@ -609,18 +612,18 @@ int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, st
     Py_XDECREF(exceptFdObj);
     Py_XDECREF(timeValObj);
     LIND_API_PART2;
-    COPY_DATA(result, sizeof(*result))
+    COPY_DATA(&result, sizeof(result))
     if(readfds) {
-	    *readfds = result->r;
+	    memcpy(readfds, &result.r, sizeof(fd_set));
     }
     if(writefds) {
-	    *writefds = result->w;
+	    memcpy(writefds, &result.w, sizeof(fd_set));
     }
     if(exceptfds) {
-	    *exceptfds = result->e;
+	    memcpy(exceptfds, &result.e, sizeof(fd_set));
     }
 	if(timeout) {
-		*timeout = result->used_t;
+		*timeout = result.used_t;
 	}
     LIND_API_PART3;
 }
