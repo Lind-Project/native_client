@@ -16,6 +16,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/poll.h>
+#include <sys/epoll.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE

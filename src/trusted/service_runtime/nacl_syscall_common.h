@@ -374,8 +374,8 @@ int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
 int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size);
-int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, struct nacl_abi_epoll_event *event);
-int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct nacl_abi_epoll_event *events, int maxevents, int timeout);
+int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, struct epoll_event *event);
+int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */
