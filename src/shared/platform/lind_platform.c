@@ -797,9 +797,9 @@ int lind_getsockname (int sockfd, socklen_t addrlen_in, struct sockaddr * addr, 
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iis#ii])", LIND_safe_net_getsockopt, sockfd, level, optname, *optlen, cageid);
     LIND_API_PART2;
-    if(addrlen_out) {
-        *addrlen_out = addrlen_in;
-    }
     COPY_DATA(addr, *addrlen_in)
+    if (addrlen_out){
+    *addrlen_out = _len
+    }
     LIND_API_PART3;
 }

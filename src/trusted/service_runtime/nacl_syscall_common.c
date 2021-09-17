@@ -4906,10 +4906,18 @@ int32_t NaClGetsockname(struct NaClAppThread *natp,
   int32_t ret;
   struct NaClApp *nap = natp->nap;
 
-
-  //WIP: Add %d for other variables
-  NaClLog(2, "Cage %d Entered NaClGetsockname(0x%08"NACL_PRIxPTR", %d, %d, 0x%08"NACL_PRIxPTR", //addr ,0x%08"NACL_PRIxPTR")\n",
-          nap->cage_id, (uintptr_t) natp, sockfd, addrlen_in, addr, addrlen_out);
+  NaClLog(2, "Cage %d Entered NaClGetsockname(
+    0x%08"NACL_PRIxPTR", 
+    %d,
+    %d,
+    0x%08"NACL_PRIxPTR",
+    0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, 
+          (uintptr_t) natp, 
+          sockfd, 
+          addrlen_in,
+          (uintptr_t) addr, 
+          (uintptr_t) addrlen_out);
   
   //WIP
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
