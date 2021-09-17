@@ -63,7 +63,7 @@
 #define NACL_sys_shutdown               45
 #define NACL_sys_poll                   48
 
-#define NACL_sys_getcwd                 48
+#define NACL_sys_getcwd                 49
 
 #define NACL_sys_getuid                 50
 #define NACL_sys_geteuid                51
