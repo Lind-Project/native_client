@@ -799,7 +799,7 @@ int lind_getsockname (int sockfd, socklen_t addrlen_in, struct sockaddr * addr, 
     LIND_API_PART2;
     COPY_DATA(addr, *addrlen_in)
     if (addrlen_out){
-    *addrlen_out = _len
+    *addrlen_out = _len;
     }
     LIND_API_PART3;
 }
