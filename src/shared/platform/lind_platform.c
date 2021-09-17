@@ -785,8 +785,8 @@ int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cage
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_ctl, epfd, op, fd, cageid);
-    COPY_DATA(event, sizeof(*event))
     LIND_API_PART2;
+    COPY_DATA(event, sizeof(*event))
     LIND_API_PART3;
 }
 
@@ -794,7 +794,7 @@ int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int tim
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_wait, epfd, maxevents, timeout, cageid);
-    COPY_DATA(events, sizeof(*events))
     LIND_API_PART2;
+    COPY_DATA(events, sizeof(*events))
     LIND_API_PART3;
 }

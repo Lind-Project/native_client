@@ -5176,12 +5176,12 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   }
 
   nfds = lind_epoll_wait(epfd, pfds, maxevents, timeout, nap->cage_id);
+          
+  NaClFastMutexLock(&nap->desc_mu);
 
   for(int i = 0; i < nfds; ++i) {
       for(int j = 0; j < 1024; ++j) {
-          NaClFastMutexLock(&nap->desc_mu);
           ndp = NaClGetDescMu(nap, j);
-          NaClFastMutexUnlock(&nap->desc_mu);
           if(!ndp) {
               NaClDescSafeUnref(ndp);
               continue;
@@ -5193,5 +5193,9 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
           NaClDescUnref(ndp);
       }
   }
+  
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+
   return retval;
 }

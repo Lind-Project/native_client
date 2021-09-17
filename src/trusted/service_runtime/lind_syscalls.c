@@ -534,9 +534,9 @@ StubType stubs[] = {
         {0}, /* 53 */
         {0}, /* 54 */
         {0}, /* 55 */
-        {0}, /* 56 epoll_create */
-        {0}, /* 57 epoll_ctl */
-        {0}, /* 58 epoll_wait */
+        {0}, /* 56 */
+        {0}, /* 57 */
+        {0}, /* 58 */
         {LindCommonPreprocess, 0, 0}, /* 59 sendmsg */
         {LindCommonPreprocess, 0, 0}, /* 60 */
         {0}, /* 61 */
