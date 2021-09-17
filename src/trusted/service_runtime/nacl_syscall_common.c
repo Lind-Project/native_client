@@ -5066,3 +5066,44 @@ cleanup:
   NaClLog(2, "Exiting NaClSysFcntlSet\n");
   return ret;
 }
+
+
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout)
+{
+  struct NaClApp *nap = natp->nap;
+
+  int retval = 0;
+  struct pollfd *lind_fds;
+
+  lind_fds = malloc(sizeof(pollfd) * nfds);
+  if (!lind_fds) {
+    retval = -NACL_ABI_ENOMEM;
+    goto cleanup;
+  }
+
+  NaClFastMutexLock(&nap->desc_mu);
+  for(int i = 0; i < nfds; ++i) {
+      
+    if((lind_fds[i].fd = descnum2Lindfd(nap, fds[i].fd)) < 0) {
+      NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds[i].fd);
+      return fds[i].fd;
+    }
+    lind_fds[i].events = fds[i].events;
+    lind_fds[i].revents = lind_fds[i].revents;
+
+  }
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+
+
+  retval = lind_poll(lind_fds, nfds, timeout, nap->cage_id);
+
+  for(int i = 0; i < nfds; ++i) {
+    fds[i].revents = lind_fds[i].revents;
+  }
+    
+cleanup:
+  NaClLog(2, "Exiting NaClSysFcntlSet\n");
+  free(lind_fds);
+  return retval;
+}

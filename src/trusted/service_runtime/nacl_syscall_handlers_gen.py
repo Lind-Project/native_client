@@ -287,7 +287,8 @@ SYSCALL_LIST = [
     ('NACL_sys_bind', 'NaClSysBind', ['int sockfd', 'socklen_t addrlen', 'const struct sockaddr *addr']),
     ('NACL_sys_listen', 'NaClSysListen', ['int sockfd', 'int backlog']),
     ('NACL_sys_fcntl_get', 'NaClSysFcntlGet', ['int fd', 'int cmd']),
-    ('NACL_sys_fcntl_set', 'NaClSysFcntlSet', ['int fd', 'int cmd', 'long set_op'])
+    ('NACL_sys_fcntl_set', 'NaClSysFcntlSet', ['int fd', 'int cmd', 'long set_op']),
+    ('NACL_sys_poll', 'NaClSysPoll', ['struct pollfd *fds', 'nfds_t nfds', 'int timeout'])
     ]
 
 

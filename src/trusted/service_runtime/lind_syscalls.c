@@ -456,108 +456,7 @@ int LindSocketPairPostprocess(struct NaClApp *nap,
     return retval;
 }
 
-struct poll_map
-{
-    int nacl_fd;
-    int lind_fd;
-};
 
-int LindPollPreprocess(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void** xchangedata)
-{
-    int retval = 0;
-    struct pollfd *pfds;
-    struct pollfd *inpfds;
-    struct poll_map *mapdata;
-    int nfds;
-    struct NaClDesc *ndp;
-    UNREFERENCED_PARAMETER(inNum);
-    nfds = (int)inArgs[0].ptr;
-    if(nfds <= 0) {
-        retval = -NACL_ABI_EINVAL;
-        goto finish;
-    }
-    inpfds = (struct pollfd*)inArgs[2].ptr;
-    if(!inpfds) {
-        retval = -NACL_ABI_EINVAL;
-        goto finish;
-    }
-    *xchangedata = malloc(sizeof(int)+sizeof(struct poll_map)*nfds);
-    if (!*xchangedata) {
-      retval = -NACL_ABI_ENOMEM;
-      goto finish;
-    }
-    ((int*)(*xchangedata))[0] = nfds; //first sizeof(int) bytes contains # of fds
-    mapdata = (struct poll_map*)&((int*)(*xchangedata))[1]; //map data begins after sizeof(int) bytes
-    pfds = malloc(sizeof *pfds * nfds);
-    if (!pfds) {
-      retval = -NACL_ABI_ENOMEM;
-      goto cleanup_xdata;
-    }
-    NaClFastMutexLock(&nap->desc_mu);
-    for(int i=0; i<nfds; ++i) {
-        pfds[i] = inpfds[i];
-        ndp = NaClGetDescMu(nap, inpfds[i].fd);
-        if(!ndp || ndp->base.vtbl != (struct NaClRefCountVtbl const *)&kNaClDescIoDescVtbl) {
-            NaClDescSafeUnref(ndp);
-            retval = -NACL_ABI_EINVAL;
-            goto cleanup_pfds;
-        }
-        pfds[i].fd = ((struct NaClDescIoDesc*)ndp)->hd->d;
-        mapdata[i].nacl_fd = inpfds[i].fd;
-        mapdata[i].lind_fd = pfds[i].fd;
-        NaClDescUnref(ndp);
-    }
-    NaClFastMutexUnlock(&nap->desc_mu);
-    inArgs[2].ptr = (uint64_t)(uintptr_t)pfds;
-    goto finish;
-cleanup_pfds:
-    free(pfds);
-cleanup_xdata:
-    free(*xchangedata);
-finish:
-    return retval;
-}
-
-int LindPollPostprocess(struct NaClApp *nap,
-                        int iserror,
-                        int *code,
-                        char *data,
-                        int len,
-                        void *xchangedata)
-{
-    int retval = 0;
-    struct poll_map *mapdata;
-    int nfds;
-    struct pollfd *pfds;
-    UNREFERENCED_PARAMETER(nap);
-    UNREFERENCED_PARAMETER(iserror);
-    UNREFERENCED_PARAMETER(code);
-    UNREFERENCED_PARAMETER(len);
-    /* first sizeof(int) bytes contains # of fds */
-    nfds = ((int *)xchangedata)[0];
-    /* map data begins after sizeof(int) bytes */
-    mapdata = (struct poll_map*)&((int *)xchangedata)[1];
-    pfds = (struct pollfd*)data;
-    for(int i = 0; i < nfds; ++i) {
-        for(int j = 0; j < nfds; ++j) {
-            if(pfds[i].fd == mapdata[j].lind_fd) {
-                pfds[i].fd = mapdata[j].nacl_fd;
-            }
-        }
-    }
-    return retval;
-}
-
-int LindPollCleanup(struct NaClApp *nap, uint32_t inNum, LindArg *inArgs, void *xchangedata)
-{
-    UNREFERENCED_PARAMETER(nap);
-    UNREFERENCED_PARAMETER(inNum);
-    if(xchangedata) {
-        free((void*)inArgs[2].ptr);
-        free(xchangedata);
-    }
-    return 0;
-}
 
 StubType stubs[] = {
         {0}, /* 0 */
@@ -608,7 +507,7 @@ StubType stubs[] = {
         {0}, /* 45 */
         {LindSelectPreprocess, LindSelectPostprocess, LindSelectCleanup}, /* 46 LIND_safe_net_select */
         {0}, /* 47 */
-        {LindPollPreprocess, LindPollPostprocess, LindPollCleanup}, /* 48 LIND_safe_net_poll */
+        {0}, /* 48 LIND_safe_net_poll */
         {LindSocketPairPreprocess, LindSocketPairPostprocess, 0}, /* 49 LIND_safe_net_socketpair */
         {0}, /* 50 */
         {0}, /* 51 */
