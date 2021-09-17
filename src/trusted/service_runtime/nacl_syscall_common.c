@@ -5075,7 +5075,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   int retval = 0;
   struct pollfd *lind_fds;
 
-  lind_fds = malloc(sizeof(pollfd) * nfds);
+  lind_fds = malloc(sizeof(struct pollfd) * nfds);
   if (!lind_fds) {
     retval = -NACL_ABI_ENOMEM;
     goto cleanup;
