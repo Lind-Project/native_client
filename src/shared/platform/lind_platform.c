@@ -627,7 +627,7 @@ int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen
 int lind_poll (struct pollfd *fds, nfds_t nfds, int timeout, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[s#iii])", LIND_safe_net_poll, fds, sizeof(struct pollfd)*nfds), nfds, timeout, cageid);
+    callArgs = Py_BuildValue("(i[s#iii])", LIND_safe_net_poll, fds, sizeof(struct pollfd)*nfds, nfds, timeout, cageid);
     LIND_API_PART2;
     COPY_DATA(fds, sizeof(struct pollfd)*nfds)
     LIND_API_PART3;
