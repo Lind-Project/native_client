@@ -5175,7 +5175,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     }
   }
 
-  if(nacltimeout) {
+  if(timeout) {
     nacltimeout = (struct timeval*) NaClUserToSysAddrRange(nap, (uintptr_t) timeout, sizeof(struct timeval));
 
     if ((void*) kNaClBadAddress == nacltimeout) {
