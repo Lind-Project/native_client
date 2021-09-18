@@ -4898,34 +4898,24 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
   return ret;
 }
 
-int32_t NaClGetsockname(struct NaClAppThread *natp, 
+int32_t NaClSysGetsockname(struct NaClAppThread *natp, 
                         int sockfd, 
-                        socklen_t addrlen_in, 
+                        socklen_t * addrlen_in, 
                         struct sockaddr * addr, 
                         socklen_t * addrlen_out) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
 
-  NaClLog(2, "Cage %d Entered NaClGetsockname(
-    0x%08"NACL_PRIxPTR", 
-    %d,
-    %d,
-    0x%08"NACL_PRIxPTR",
-    0x%08"NACL_PRIxPTR")\n",
-          nap->cage_id, 
-          (uintptr_t) natp, 
-          sockfd, 
-          addrlen_in,
-          (uintptr_t) addr, 
-          (uintptr_t) addrlen_out);
+  NaClLog(2, "Cage %d Entered NaClSysGetsockname(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n", 
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addrlen_in, (uintptr_t) addr, (uintptr_t) addrlen_out);
 
   //WIP
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
-    NaClLog(2, "NaClGetsockname was passed an unrecognized file descriptor, returning %d\n", fd);
+    NaClLog(2, "NaClSysGetsockname was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
 
   ret = lind_getsockname(sockfd, addrlen_in, addr, addrlen_out, nap->cage_id);
-  NaClLog(2, "NaClGetsockname returning %d\n", ret);
+  NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
   return ret; 
 }
