@@ -3169,7 +3169,11 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)xchangedata)[i];
     lind_fd = ((int*)fds)[i];
-    NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR);
+
+    //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
+    hd->d = lind_fd;
+    hd->flags = NACL_ABI_O_RDWR;
+
     hd->cageid = nap->cage_id;
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
     user_fd = NextFd(nap->cage_id);
