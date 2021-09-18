@@ -633,10 +633,10 @@ int lind_poll (int nfds, int timeout, struct pollfd *fds_in, struct pollfd *fds_
     LIND_API_PART3;
 }
 
-int lind_socketpair (int domain, int type, int protocol, int *fds)
+int lind_socketpair (int domain, int type, int protocol, int *fds, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_socketpair, domain, type, protocol);
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_socketpair, domain, type, protocol, cageid);
     LIND_API_PART2;
     COPY_DATA(fds, sizeof(int)*2)
     LIND_API_PART3;
