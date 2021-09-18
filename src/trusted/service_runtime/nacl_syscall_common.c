@@ -3137,6 +3137,51 @@ cleanup:
   return retval;
 }
 
+int32_t NaClSysSocketPair(struct NaClAppThread *natp,
+                          int                  domain,
+                          int                  type,
+                          int                  protocol,
+                          int                  *fds) {
+
+  struct NaClApp          *nap = natp->nap;
+  void                    *xchangedata = NULL;
+  int32_t                 retval;
+
+  NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
+           "%d, %d, %d, 0x%08"NACL_PRIx32")\n",
+           nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
+
+  //Preprocessing start
+  *xchangedata = malloc(sizeof(struct NaClHostDesc)*2);
+  if (!*xchangedata) {
+    retval = -NACL_ABI_ENOMEM;
+    return retval;
+  }
+  //Preprocessing end
+
+  retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
+
+  //Postprocessing start
+  struct NaClHostDesc  *hd;
+  int lind_fd;
+  int nacl_fd;
+  int user_fd;
+  for(int i=0; i<2; ++i) {
+    hd = &((struct NaClHostDesc*)xchangedata)[i];
+    lind_fd = ((int*)fds)[i];
+    NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR);
+    hd->cageid = nap->cage_id;
+    nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+    user_fd = NextFd(nap->cage_id);
+    fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
+  }
+  //Postprocessing end
+
+  NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
+
+  return retval;
+}
+
 int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr) {
   int32_t   retval = -NACL_ABI_EINVAL;
