@@ -66,7 +66,7 @@
 #define LIND_safe_net_listen            39
 #define LIND_safe_net_accept            40
 #define LIND_safe_net_getpeername       41
-#define LIND_safe_net_getsockname       42
+
 #define LIND_safe_net_getsockopt        43
 #define LIND_safe_net_setsockopt        44
 #define LIND_safe_net_shutdown          45
@@ -96,7 +96,7 @@
 #define LIND_safe_fs_mkdir              131
 #define LIND_safe_fs_rmdir              132
 
-
+#define LIND_safe_net_getsockname       144
 
 struct select_results {
     struct timeval used_t;
