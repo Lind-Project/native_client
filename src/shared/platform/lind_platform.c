@@ -570,28 +570,28 @@ int lind_shutdown (int sockfd, int how, int cageid)
     LIND_API_PART3;
 }
 
-int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds,
-        struct timeval *timeout, struct select_results *result)
+int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid)
 {
+	struct select_results result;
     PyObject *readFdObj = NULL;
     PyObject *writeFdObj = NULL;
     PyObject *exceptFdObj = NULL;
     PyObject *timeValObj = NULL;
     LIND_API_PART1;
     if(readfds) {
-        readFdObj = PyString_FromStringAndSize((char*)readfds, sizeof(fd_set));
+        readFdObj = PyString_FromStringAndSize((char*)readfds, (nfds + 7) / 8);
     } else {
         readFdObj = Py_None;
         Py_INCREF(readFdObj);
     }
     if(writefds) {
-        writeFdObj = PyString_FromStringAndSize((char*)writefds, sizeof(fd_set));
+        writeFdObj = PyString_FromStringAndSize((char*)writefds, (nfds + 7) / 8);
     } else {
         writeFdObj = Py_None;
         Py_INCREF(writeFdObj);
     }
     if(exceptfds) {
-        exceptFdObj = PyString_FromStringAndSize((char*)exceptfds, sizeof(fd_set));
+        exceptFdObj = PyString_FromStringAndSize((char*)exceptfds, (nfds + 7) / 8);
     } else {
         exceptFdObj = Py_None;
         Py_INCREF(exceptFdObj);
@@ -602,14 +602,29 @@ int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptf
         timeValObj = Py_None;
         Py_INCREF(timeValObj);
     }
-    callArgs = Py_BuildValue("(i[iOOOO])", LIND_safe_net_select, nfds, readFdObj,
-            writeFdObj, exceptFdObj, timeValObj);
+	//Note: our python implementation can currently only handle NaCl fds up to 1024
+	//and our NaCl implementation here can not easily be made to handle more than that
+	//However, our drop-in replacement implementation will so there is no need to change anything here
+    callArgs = Py_BuildValue("(i[iOOOOi])", LIND_safe_net_select, nfds, readFdObj,
+            writeFdObj, exceptFdObj, timeValObj, cageid);
     Py_XDECREF(readFdObj);
     Py_XDECREF(writeFdObj);
     Py_XDECREF(exceptFdObj);
     Py_XDECREF(timeValObj);
     LIND_API_PART2;
-    COPY_DATA(result, sizeof(*result))
+    COPY_DATA(&result, sizeof(result))
+    if(readfds) {
+	    memcpy(readfds, &result.r, sizeof(fd_set));
+    }
+    if(writefds) {
+	    memcpy(writefds, &result.w, sizeof(fd_set));
+    }
+    if(exceptfds) {
+	    memcpy(exceptfds, &result.e, sizeof(fd_set));
+    }
+	if(timeout) {
+		*timeout = result.used_t;
+	}
     LIND_API_PART3;
 }
 
