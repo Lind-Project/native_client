@@ -762,7 +762,7 @@ void lind_exit(int status, int cageid)
     LIND_API_PART3;
 }
 
-int lind_gethostname (char *name, size_t len, int cageid)
+int lind_gethostname(char *name, size_t len, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_gethostname, len, cageid);
@@ -771,10 +771,37 @@ int lind_gethostname (char *name, size_t len, int cageid)
     LIND_API_PART3;
 }
 
-int lind_socket (int domain, int type, int protocol, int cageid)
+int lind_socket(int domain, int type, int protocol, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_socket, domain, type, protocol, cageid);
     LIND_API_PART2;
+    LIND_API_PART3;
+}
+
+
+int lind_epoll_create(int size, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_epoll_create, size, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
+
+int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_ctl, epfd, op, fd, cageid);
+    LIND_API_PART2;
+    COPY_DATA(event, sizeof(*event))
+    LIND_API_PART3;
+}
+
+int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_wait, epfd, maxevents, timeout, cageid);
+    LIND_API_PART2;
+    COPY_DATA(events, sizeof(*events))
     LIND_API_PART3;
 }
