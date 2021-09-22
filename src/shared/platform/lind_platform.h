@@ -65,7 +65,6 @@
 #define LIND_safe_net_connect           38
 #define LIND_safe_net_listen            39
 #define LIND_safe_net_accept            40
-#define LIND_safe_net_getpeername       41
 
 #define LIND_safe_net_getsockopt        43
 #define LIND_safe_net_setsockopt        44
@@ -97,6 +96,7 @@
 #define LIND_safe_fs_rmdir              132
 
 #define LIND_safe_net_getsockname       144
+#define LIND_safe_net_getpeername       145
 
 struct select_results {
     struct timeval used_t;
@@ -170,5 +170,6 @@ int lind_gethostname (char *name, size_t len, int cageid);
 
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_getsockname (int sockfd, socklen_t *addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid);
+int lind_getpeername (int sockfd, socklen_t *addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

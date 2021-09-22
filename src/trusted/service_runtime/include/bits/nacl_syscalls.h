@@ -147,6 +147,7 @@
 #define NACL_sys_setsockopt             138
 
 #define NACL_sys_getsockname            144
+#define NACL_sys_getpeername            145
 
 #define NACL_MAX_SYSCALLS               256
 

@@ -543,16 +543,6 @@ int lind_accept (int sockfd, socklen_t addrlen)
     LIND_API_PART3;
 }
 
-/* unimplemented */
-int lind_getpeername (int sockfd, socklen_t addrlen_in, __SOCKADDR_ARG addr, socklen_t *addrlen_out)
-{
-    UNREFERENCED_PARAMETER(sockfd);
-    UNREFERENCED_PARAMETER(addrlen_in);
-    UNREFERENCED_PARAMETER(addr);
-    UNREFERENCED_PARAMETER(addrlen_out);
-    return 0;
-}
-
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid)
 {
     LIND_API_PART1;
@@ -795,6 +785,18 @@ int lind_getsockname (int sockfd, socklen_t* addrlen_in, struct sockaddr * addr,
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getsockname, sockfd, *addrlen_in, cageid);
+    LIND_API_PART2;
+    COPY_DATA(addr, *addrlen_in)
+    if (addrlen_out){
+    *addrlen_out = _len;
+    }
+    LIND_API_PART3;
+} 
+
+int lind_getpeername (int sockfd, socklen_t* addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getpeername, sockfd, *addrlen_in, cageid);
     LIND_API_PART2;
     COPY_DATA(addr, *addrlen_in)
     if (addrlen_out){
