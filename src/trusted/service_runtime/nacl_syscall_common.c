@@ -4907,10 +4907,16 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
 
   struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * insaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen_in, sizeof(socklen_t));
   socklen_t * outsaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen_out, sizeof(socklen_t));
 
   if ((void*) kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysGetsockname could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == insaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen_in address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
@@ -4928,8 +4934,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
     return sockfd;
   }
 
-  socklen_t * addrin_ptr = &addrlen_in; 
-  ret = lind_getsockname(sockfd, addrin_ptr, sysaddr, outsaddr, nap->cage_id);
+  ret = lind_getsockname(sockfd, insaddr, sysaddr, outsaddr, nap->cage_id);
   NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
   return ret; 
 }
@@ -4943,10 +4948,16 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
 
   struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * insaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen_in, sizeof(socklen_t));
   socklen_t * outsaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen_out, sizeof(socklen_t));
 
   if ((void*) kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysGetpeername could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+    if ((void*) kNaClBadAddress == insaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen_in address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
@@ -4964,8 +4975,7 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
     return sockfd;
   }
 
-  socklen_t * addrin_ptr = &addrlen_in; 
-  ret = lind_getpeername(sockfd, addrin_ptr, sysaddr, outsaddr, nap->cage_id);
+  ret = lind_getpeername(sockfd, insaddr, sysaddr, outsaddr, nap->cage_id);
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
   return ret; 
 }
