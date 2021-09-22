@@ -288,7 +288,11 @@ SYSCALL_LIST = [
     ('NACL_sys_listen', 'NaClSysListen', ['int sockfd', 'int backlog']),
     ('NACL_sys_fcntl_get', 'NaClSysFcntlGet', ['int fd', 'int cmd']),
     ('NACL_sys_fcntl_set', 'NaClSysFcntlSet', ['int fd', 'int cmd', 'long set_op']),
-    ('NACL_sys_poll', 'NaClSysPoll', ['struct pollfd *fds', 'nfds_t nfds', 'int timeout'])
+    ('NACL_sys_poll', 'NaClSysPoll', ['struct pollfd *fds', 'nfds_t nfds', 'int timeout']),
+    ('NACL_sys_epoll_create', 'NaClSysEpollCreate', ['int size']),
+    ('NACL_sys_epoll_ctl', 'NaClSysEpollCtl', ['int epfd', 'int op', 'int fd', 'struct epoll_event *event']),
+    ('NACL_sys_epoll_wait', 'NaClSysEpollWait', ['int epfd', 'struct epoll_event *events', 'int maxevents', 'int timeout']),
+    ('NACL_sys_select', 'NaClSysSelect', ['int nfds', 'fd_set *readfds', 'fd_set *writefds', 'fd_set *exceptfds', 'struct timeval *timeout'])
     ]
 
 
