@@ -3144,7 +3144,11 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  *fds) {
 
   struct NaClApp          *nap = natp->nap;
-  void                    *xchangedata = NULL;
+  void                    *hd_struct = NULL;
+  struct NaClHostDesc     *hd;
+  int                     lind_fd;
+  int                     nacl_fd;
+  int                     user_fd;
   int32_t                 retval;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
@@ -3152,8 +3156,8 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
   //Preprocessing start
-  xchangedata = malloc(sizeof(struct NaClHostDesc)*2);
-  if (!xchangedata) {
+  hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
+  if (!hd_struct) {
     retval = -NACL_ABI_ENOMEM;
     return retval;
   }
@@ -3162,12 +3166,8 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
 
   //Postprocessing start
-  struct NaClHostDesc  *hd;
-  int lind_fd;
-  int nacl_fd;
-  int user_fd;
   for(int i=0; i<2; ++i) {
-    hd = &((struct NaClHostDesc*)xchangedata)[i];
+    hd = &((struct NaClHostDesc*)hd_struct)[i];
     lind_fd = ((int*)fds)[i];
 
     //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
