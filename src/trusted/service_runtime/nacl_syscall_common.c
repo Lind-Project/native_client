@@ -4914,8 +4914,11 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
     NaClLog(2, "NaClSysGetsockname was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
-
-  ret = lind_getsockname(sockfd, addrlen_in, addr, addrlen_out, nap->cage_id);
+  
+  //Fix this to 32-bit address.
+  socklen_t * addrin_ptr = &addrlen_in; 
+  
+  ret = lind_getsockname(sockfd, addrin_ptr, addr, addrlen_out, nap->cage_id);
   NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
   return ret; 
 }
