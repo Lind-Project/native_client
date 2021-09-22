@@ -4965,7 +4965,7 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   }
 
   socklen_t * addrin_ptr = &addrlen_in; 
-  ret = lind_getpeerame(sockfd, addrin_ptr, sysaddr, outsaddr, nap->cage_id);
+  ret = lind_getpeername(sockfd, addrin_ptr, sysaddr, outsaddr, nap->cage_id);
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
   return ret; 
 }
