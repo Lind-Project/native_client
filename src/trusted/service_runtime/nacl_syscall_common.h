@@ -16,6 +16,7 @@
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/trusted/service_runtime/include/sys/time.h"
+#include <sys/poll.h>
 #include <sys/epoll.h>
 
 
@@ -375,6 +376,7 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout);
 int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size);
 int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, struct epoll_event *event);
 int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);

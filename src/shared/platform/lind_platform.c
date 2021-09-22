@@ -639,12 +639,12 @@ int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen
     LIND_API_PART3;
 }
 
-int lind_poll (int nfds, int timeout, struct pollfd *fds_in, struct pollfd *fds_out)
+int lind_poll (struct pollfd *fds, nfds_t nfds, int timeout, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_poll, nfds, timeout, fds_in, sizeof(struct pollfd)*nfds);
+    callArgs = Py_BuildValue("(i[s#iii])", LIND_safe_net_poll, fds, sizeof(struct pollfd)*nfds, nfds, timeout, cageid);
     LIND_API_PART2;
-    COPY_DATA(fds_out, sizeof(struct pollfd)*nfds)
+    COPY_DATA(fds, sizeof(struct pollfd)*nfds)
     LIND_API_PART3;
 }
 
