@@ -284,7 +284,7 @@ SYSCALL_LIST = [
     ('NACL_sys_fstatfs', 'NaClSysFstatfs', ['int d', 'struct lind_statfs *buf']),
     ('NACL_sys_statfs', 'NaClSysStatfs', ['const char *path', 'struct lind_statfs *buf']),
     ('NACL_sys_getsockname', 'NaClSysGetsockname', ['int sockfd', 'socklen_t * addrlen_in', 'struct sockaddr * addr', 'socklen_t * addrlen_out']),
-    ('NACL_sys_getpeername', 'NaClSysGetpeername', ['int sockfd', 'socklen_t * addrlen_in', 'struct sockaddr * addr', 'socklen_t * addrlen_out'])
+    ('NACL_sys_getpeername', 'NaClSysGetpeername', ['int sockfd', 'socklen_t * addrlen', 'struct sockaddr * addr'])
     ]
 
 
