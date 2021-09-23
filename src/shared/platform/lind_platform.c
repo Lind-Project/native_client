@@ -293,10 +293,10 @@ int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid)
     LIND_API_PART3;
 }
 
-int lind_access (int version, const char *file)
+int lind_access (const char *file, int mode, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[is])", LIND_safe_fs_access, version, file);
+    callArgs = Py_BuildValue("(i[sii])", LIND_safe_fs_access, file, mode, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -341,19 +341,19 @@ int lind_rmdir (const char *path, int cageid)
     LIND_API_PART3;
 }
 
-int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid)
+int lind_xstat (const char *path, struct lind_stat *buf, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[isi])", LIND_safe_fs_xstat, version, path, cageid);
+    callArgs = Py_BuildValue("(i[si])", LIND_safe_fs_xstat, path, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
 }
 
-int lind_open (int flags, int mode, const char *path, int cageid)
+int lind_open (const char *path, int flags, int mode, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iisi])", LIND_safe_fs_open, flags, mode, path, cageid);
+    callArgs = Py_BuildValue("(i[siii])", LIND_safe_fs_open, path, flags, mode, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -366,7 +366,7 @@ int lind_close (int fd, int cageid)
     LIND_API_PART3;
 }
 
-int lind_read (int fd, int size, void *buf, int cageid)
+int lind_read (int fd, void *buf, int size, int cageid)
 { 
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_read, fd, size, cageid);
@@ -375,7 +375,7 @@ int lind_read (int fd, int size, void *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_write (int fd, size_t count, const void *buf, int cageid)
+int lind_write (int fd, const void *buf, size_t count, int cageid)
 { 
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
@@ -384,30 +384,18 @@ int lind_write (int fd, size_t count, const void *buf, int cageid)
     LIND_API_PART3;
 }
 
-int _lind_lseek (off_t offset, int fd, int whence, off_t * ret, int cageid)
+int lind_lseek (int fd, off_t offset, int whence, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, offset, fd, whence, cageid);
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_fs_lseek, fd, offset, whence, cageid);
     LIND_API_PART2;
-    COPY_DATA(ret, sizeof(*ret))
     LIND_API_PART3;
 }
 
-int lind_lseek (off_t offset, int fd, int whence, int cageid)
-{
-    off_t ret_off=0;
-    int ret=0;
-    ret = _lind_lseek (offset, fd, whence, &ret_off, cageid);
-    if(ret<0) {
-        return ret;
-    }
-    return ret_off;
-}
-
-int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid)
+int lind_fxstat (int fd, struct lind_stat *buf, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fxstat, fd, version, cageid);
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fxstat, fd, cageid);
     LIND_API_PART2;
     COPY_DATA(buf, sizeof(*buf))
     LIND_API_PART3;
@@ -431,10 +419,10 @@ int lind_statfs (const char *path, struct lind_statfs *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_noop (void)
+int lind_noop (int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[])", LIND_debug_noop);
+    callArgs = Py_BuildValue("(i[i])", LIND_debug_noop, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
@@ -455,7 +443,7 @@ int lind_dup2 (int oldfd, int newfd, int cageid)
     LIND_API_PART3;
 }
 
-int lind_getdents (int fd, size_t nbytes, char *buf, int cageid)
+int lind_getdents (int fd, char *buf, size_t nbytes, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_getdents, fd, nbytes, cageid);
@@ -464,41 +452,41 @@ int lind_getdents (int fd, size_t nbytes, char *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_fcntl_get (int fd, int cmd)
+int lind_fcntl_get (int fd, int cmd, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_fs_fcntl, fd, cmd);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_fs_fcntl, fd, cmd, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_fcntl_set (int fd, int cmd, long set_op)
+int lind_fcntl_set (int fd, int cmd, long set_op, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iil])", LIND_safe_fs_fcntl, fd, cmd, set_op);
+    callArgs = Py_BuildValue("(i[iili])", LIND_safe_fs_fcntl, fd, cmd, set_op, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr)
+int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(addr);
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_bind, sockfd, addrlen, addr, addrlen);
+    callArgs = Py_BuildValue("(i[is#ii])", LIND_safe_net_bind, sockfd, addr, addrlen, addrlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid)
+int lind_send (int sockfd, const void *buf, size_t len, int flags, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
-    callArgs = Py_BuildValue("(i[iiis#i])", LIND_safe_net_send, sockfd, len, flags, buf, len, cageid);
+    callArgs = Py_BuildValue("(i[is#iii])", LIND_safe_net_send, sockfd, buf, len, len, flags, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid)
+int lind_recv (int sockfd, void *buf, size_t len, int flags, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
@@ -508,25 +496,25 @@ int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid)
     LIND_API_PART3;
 }
 
-int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr)
+int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(src_addr);
-    callArgs = Py_BuildValue("(i[iis#])", LIND_safe_net_connect, sockfd, addrlen, src_addr, addrlen);
+    callArgs = Py_BuildValue("(i[is#ii])", LIND_safe_net_connect, sockfd, src_addr, addrlen, addrlen, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
-int lind_listen (int sockfd, int backlog)
+int lind_listen (int sockfd, int backlog, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_listen, sockfd, backlog);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_listen, sockfd, backlog, cageid);
     LIND_API_PART2;
     LIND_API_PART3;
 }
 
 /* unimplemented */
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid)
+int lind_sendto (int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen, int cageid)
 {
     LIND_API_PART1;
     CHECK_NOT_NULL(buf);
@@ -535,11 +523,13 @@ int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const str
     LIND_API_PART3;
 }
 
-int lind_accept (int sockfd, socklen_t addrlen)
+int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_accept, sockfd, addrlen);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_accept, sockfd, *addrlen, cageid);
     LIND_API_PART2;
+    COPY_DATA(addr, *addrlen);
+	*addrlen = _len;
     LIND_API_PART3;
 }
 
@@ -570,28 +560,28 @@ int lind_shutdown (int sockfd, int how, int cageid)
     LIND_API_PART3;
 }
 
-int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds,
-        struct timeval *timeout, struct select_results *result)
+int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid)
 {
+	struct select_results result;
     PyObject *readFdObj = NULL;
     PyObject *writeFdObj = NULL;
     PyObject *exceptFdObj = NULL;
     PyObject *timeValObj = NULL;
     LIND_API_PART1;
     if(readfds) {
-        readFdObj = PyString_FromStringAndSize((char*)readfds, sizeof(fd_set));
+        readFdObj = PyString_FromStringAndSize((char*)readfds, (nfds + 7) / 8);
     } else {
         readFdObj = Py_None;
         Py_INCREF(readFdObj);
     }
     if(writefds) {
-        writeFdObj = PyString_FromStringAndSize((char*)writefds, sizeof(fd_set));
+        writeFdObj = PyString_FromStringAndSize((char*)writefds, (nfds + 7) / 8);
     } else {
         writeFdObj = Py_None;
         Py_INCREF(writeFdObj);
     }
     if(exceptfds) {
-        exceptFdObj = PyString_FromStringAndSize((char*)exceptfds, sizeof(fd_set));
+        exceptFdObj = PyString_FromStringAndSize((char*)exceptfds, (nfds + 7) / 8);
     } else {
         exceptFdObj = Py_None;
         Py_INCREF(exceptFdObj);
@@ -602,23 +592,29 @@ int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptf
         timeValObj = Py_None;
         Py_INCREF(timeValObj);
     }
-    callArgs = Py_BuildValue("(i[iOOOO])", LIND_safe_net_select, nfds, readFdObj,
-            writeFdObj, exceptFdObj, timeValObj);
+	//Note: our python implementation can currently only handle NaCl fds up to 1024
+	//and our NaCl implementation here can not easily be made to handle more than that
+	//However, our drop-in replacement implementation will so there is no need to change anything here
+    callArgs = Py_BuildValue("(i[iOOOOi])", LIND_safe_net_select, nfds, readFdObj,
+            writeFdObj, exceptFdObj, timeValObj, cageid);
     Py_XDECREF(readFdObj);
     Py_XDECREF(writeFdObj);
     Py_XDECREF(exceptFdObj);
     Py_XDECREF(timeValObj);
     LIND_API_PART2;
-    COPY_DATA(result, sizeof(*result))
-    LIND_API_PART3;
-}
-
-int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs)
-{
-    LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[i])", LIND_safe_net_getifaddrs, ifaddrs_buf_siz);
-    LIND_API_PART2;
-    COPY_DATA(ifaddrs, ifaddrs_buf_siz)
+    COPY_DATA(&result, sizeof(result))
+    if(readfds) {
+	    memcpy(readfds, &result.r, sizeof(fd_set));
+    }
+    if(writefds) {
+	    memcpy(writefds, &result.w, sizeof(fd_set));
+    }
+    if(exceptfds) {
+	    memcpy(exceptfds, &result.e, sizeof(fd_set));
+    }
+	if(timeout) {
+		*timeout = result.used_t;
+	}
     LIND_API_PART3;
 }
 
@@ -764,7 +760,7 @@ void lind_exit(int status, int cageid)
     LIND_API_PART3;
 }
 
-int lind_gethostname (char *name, size_t len, int cageid)
+int lind_gethostname(char *name, size_t len, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_gethostname, len, cageid);
@@ -773,7 +769,7 @@ int lind_gethostname (char *name, size_t len, int cageid)
     LIND_API_PART3;
 }
 
-int lind_socket (int domain, int type, int protocol, int cageid)
+int lind_socket(int domain, int type, int protocol, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_socket, domain, type, protocol, cageid);
@@ -787,7 +783,7 @@ int lind_getsockname (int sockfd, struct sockaddr * addr, socklen_t* addrlen, in
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getsockname, sockfd, *addrlen, cageid);
     LIND_API_PART2;
     if (*addrlen > _len) {COPY_DATA(addr, _len);}
-    else {COPY_DATA(addr, _len);}
+    else {COPY_DATA(addr, *addrlen);}
     *addrlen = _len;
     LIND_API_PART3;
 } 
@@ -798,7 +794,33 @@ int lind_getpeername (int sockfd, struct sockaddr * addr, socklen_t* addrlen, in
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getpeername, sockfd, *addrlen, cageid);
     LIND_API_PART2;
     if (*addrlen > _len) {COPY_DATA(addr, _len);}
-    else {COPY_DATA(addr, _len);}
+    else {COPY_DATA(addr, *addrlen);}
     *addrlen = _len;
     LIND_API_PART3;
 } 
+
+int lind_epoll_create(int size, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[ii])", LIND_safe_net_epoll_create, size, cageid);
+    LIND_API_PART2;
+    LIND_API_PART3;
+}
+
+int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_ctl, epfd, op, fd, cageid);
+    LIND_API_PART2;
+    COPY_DATA(event, sizeof(*event))
+    LIND_API_PART3;
+}
+
+int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid)
+{
+    LIND_API_PART1;
+    callArgs = Py_BuildValue("(i[iiii])", LIND_safe_net_epoll_wait, epfd, maxevents, timeout, cageid);
+    LIND_API_PART2;
+    COPY_DATA(events, sizeof(*events))
+    LIND_API_PART3;
+}

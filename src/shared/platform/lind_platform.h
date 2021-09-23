@@ -16,6 +16,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/poll.h>
+#include <sys/epoll.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -70,7 +71,6 @@
 #define LIND_safe_net_setsockopt        44
 #define LIND_safe_net_shutdown          45
 #define LIND_safe_net_select            46
-#define LIND_safe_net_getifaddrs        47
 #define LIND_safe_net_poll              48
 #define LIND_safe_net_socketpair        49
 #define LIND_safe_sys_getuid            50
@@ -79,6 +79,9 @@
 #define LIND_safe_sys_getegid           53
 #define LIND_safe_fs_flock              54
 #define LIND_safe_fs_rename             55
+#define LIND_safe_net_epoll_create      56
+#define LIND_safe_net_epoll_ctl         57
+#define LIND_safe_net_epoll_wait        58
 
 #define LIND_safe_fs_pipe               66
 #define LIND_safe_fs_pipe2              67
@@ -113,39 +116,38 @@ int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMess
 
 int lind_pread(int fd, void* buf, size_t count, off_t offset, int cageid);
 int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
-int lind_access (int version, const char *file);
+int lind_access (const char *file, int mode, int cageid);
 int lind_unlink (const char *name, int cageid);
 int lind_link (const char *from, const char *to, int cageid);
 int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
-int lind_xstat (int version, const char *path, struct lind_stat *buf, int cageid);
-int lind_open (int flags, int mode, const char *path, int cageid);
+int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
+int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
-int lind_read (int fd, int size, void *buf, int cageid);
-int lind_write (int fd, size_t count, const void *buf, int cageid);
-int lind_lseek (off_t offset, int fd, int whence, int cageid);
-int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid);
+int lind_read (int fd, void *buf, int size, int cageid);
+int lind_write (int fd, const void *buf, size_t count, int cageid);
+int lind_lseek (int fd, off_t offset, int whence, int cageid);
+int lind_fxstat (int fd, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct lind_statfs *buf, int cageid);
 int lind_statfs (const char *path, struct lind_statfs *buf, int cageid);
-int lind_noop (void);
+int lind_noop (int cageid);
 int lind_dup (int oldfd, int cageid);
 int lind_dup2 (int oldfd, int newfd, int cageid);
-int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
-int lind_fcntl_get (int fd, int cmd);
-int lind_fcntl_set (int fd, int cmd, long set_op);
-
-int lind_bind (int sockfd, socklen_t addrlen, const struct sockaddr *addr);
-int lind_send (int sockfd, size_t len, int flags, const void *buf, int cageid);
-int lind_recv (int sockfd, size_t len, int flags, void *buf, int cageid);
-int lind_connect (int sockfd, socklen_t addrlen, const struct sockaddr *src_addr);
-int lind_listen (int sockfd, int backlog);
-int lind_sendto (int sockfd, size_t len, int flags, socklen_t addrlen, const struct sockaddr *dest_addr, const void *buf, int cageid);
-int lind_accept (int sockfd, socklen_t addrlen);
+int lind_getdents (int fd, char *buf, size_t nbytes, int cageid);
+int lind_fcntl_get (int fd, int cmd, int cageid);
+int lind_fcntl_set (int fd, int cmd, long set_op, int cageid);
+int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid);
+int lind_send (int sockfd, const void *buf, size_t len, int flags, int cageid);
+int lind_recv (int sockfd, void *buf, size_t len, int flags, int cageid);
+int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid);
+int lind_listen (int sockfd, int backlog, int cageid);
+int lind_sendto (int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen, int cageid);
+int lind_accept (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid);
 int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t *optlen, int cageid);
 int lind_shutdown (int sockfd, int how, int cageid);
-int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, struct select_results *result);
+int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid);
 int lind_getifaddrs (int ifaddrs_buf_siz, void *ifaddrs);
 int lind_recvfrom (int sockfd, size_t len, int flags, socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr, int cageid);
 int lind_poll (int nfds, int timeout, struct pollfd *fds_in, struct pollfd *fds_out);
@@ -164,11 +166,12 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 void lind_exit(int status, int cageid);
-
 int lind_gethostname (char *name, size_t len, int cageid);
-
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_getsockname (int sockfd, struct sockaddr * addr, socklen_t *addrlen, int cageid);
 int lind_getpeername (int sockfd, struct sockaddr * addr, socklen_t *addrlen, int cageid);
+int lind_epoll_create(int size, int cageid);
+int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);
+int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */
