@@ -373,6 +373,9 @@ int32_t NaClSysGetegid(struct NaClAppThread *natp);
 int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation);
 int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int32_t NaClSysGetsockname(struct NaClAppThread *natp, int sockfd,  struct sockaddr * addr, socklen_t * addrlen);
+int32_t NaClSysGetpeername(struct NaClAppThread *natp, int sockfd,  struct sockaddr * addr, socklen_t * addrlen);
+
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);

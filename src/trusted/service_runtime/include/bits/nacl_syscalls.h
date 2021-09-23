@@ -150,12 +150,14 @@
 #define NACL_sys_getsockopt             137
 #define NACL_sys_setsockopt             138
 
+
 #define NACL_sys_access                 139
 #define NACL_sys_accept                 140
 #define NACL_sys_connect                141
 #define NACL_sys_bind                   142
 #define NACL_sys_listen                 143
-
+#define NACL_sys_getsockname            144
+#define NACL_sys_getpeername            145
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159

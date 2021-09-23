@@ -4847,6 +4847,70 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
   return ret;
 }
 
+int32_t NaClSysGetsockname(struct NaClAppThread *natp, 
+                        int sockfd, 
+                        struct sockaddr * addr,
+                        socklen_t * addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+
+  if ((void*) kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlen) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  NaClLog(2, "Cage %d Entered NaClSysGetsockname(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n", 
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetsockname was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_getsockname(sockfd, sysaddr, sysaddrlen, nap->cage_id);
+  NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
+  return ret; 
+}
+
+int32_t NaClSysGetpeername(struct NaClAppThread *natp, 
+                        int sockfd, 
+                        struct sockaddr * addr,
+                        socklen_t * addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+
+  if ((void*) kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlen) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  NaClLog(2, "Cage %d Entered NaClSysGetpeername(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n", 
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetpeername was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_getpeername(sockfd, sysaddr, sysaddrlen, nap->cage_id);
+  NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
+  return ret; 
 int32_t NaClSysAccess(struct NaClAppThread *natp, 
                       const char *file, int mode) {
   int32_t ret;
