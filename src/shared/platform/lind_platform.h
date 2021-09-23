@@ -168,7 +168,7 @@ void lind_exit(int status, int cageid);
 int lind_gethostname (char *name, size_t len, int cageid);
 
 int lind_socket (int domain, int type, int protocol, int cageid);
-int lind_getsockname (int sockfd, socklen_t *addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid);
-int lind_getpeername (int sockfd, socklen_t *addrlen, struct sockaddr * addr, int cageid);
+int lind_getsockname (int sockfd, struct sockaddr * addr, socklen_t *addrlen, int cageid);
+int lind_getpeername (int sockfd, struct sockaddr * addr, socklen_t *addrlen, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

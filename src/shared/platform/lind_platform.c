@@ -781,29 +781,24 @@ int lind_socket (int domain, int type, int protocol, int cageid)
     LIND_API_PART3;
 }
 
-int lind_getsockname (int sockfd, socklen_t* addrlen_in, struct sockaddr * addr, socklen_t * addrlen_out, int cageid)
+int lind_getsockname (int sockfd, struct sockaddr * addr, socklen_t* addrlen, int cageid)
 {
     LIND_API_PART1;
-    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getsockname, sockfd, *addrlen_in, cageid);
+    callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getsockname, sockfd, *addrlen, cageid);
     LIND_API_PART2;
-    COPY_DATA(addr, *addrlen_in)
-    if (addrlen_out){
-    *addrlen_out = _len;
-    }
+    if (*addrlen > _len) {COPY_DATA(addr, _len);}
+    else {COPY_DATA(addr, _len);}
+    *addrlen = _len;
     LIND_API_PART3;
 } 
 
-int lind_getpeername (int sockfd, socklen_t* addrlen, struct sockaddr * addr, int cageid)
+int lind_getpeername (int sockfd, struct sockaddr * addr, socklen_t* addrlen, int cageid)
 {
     LIND_API_PART1;
     callArgs = Py_BuildValue("(i[iii])", LIND_safe_net_getpeername, sockfd, *addrlen, cageid);
     LIND_API_PART2;
-    COPY_DATA(addr, _len)
+    if (*addrlen > _len) {COPY_DATA(addr, _len);}
+    else {COPY_DATA(addr, _len);}
     *addrlen = _len;
-
-    /*     
-    if (addrlen_out){
-    *addrlen_out = _len;
-    } */
     LIND_API_PART3;
 } 

@@ -742,7 +742,7 @@ StubType stubs[] = {
         {LindCommonPreprocess, 0, 0}, /* 39 LIND_safe_net_listen */
         {LindAcceptPreprocess, LindAcceptPostprocess, 0}, /* 40 LIND_safe_net_accept */
         {0}, /* 41 */
-        {LindCommonPreprocess, 0, 0}, /* 42 */
+        {0}, /* 42 */
         {0}, /* 43 */
         {0}, /* 44 */
         {0}, /* 45 */
