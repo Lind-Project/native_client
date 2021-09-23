@@ -4862,7 +4862,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
     return -NACL_ABI_EFAULT;
   }
 
-    if ((void*) kNaClBadAddress == sysaddrlen) {
+  if ((void*) kNaClBadAddress == sysaddrlen) {
     NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
@@ -4895,7 +4895,7 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
     return -NACL_ABI_EFAULT;
   }
 
-    if ((void*) kNaClBadAddress == sysaddrlen) {
+  if ((void*) kNaClBadAddress == sysaddrlen) {
     NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
