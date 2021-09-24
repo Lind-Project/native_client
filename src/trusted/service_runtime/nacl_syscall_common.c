@@ -5348,7 +5348,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   return retval;
 }
 
-static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
+char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
   //before this we must translate the ptr
   int fds[FD_SETSIZE];
   int fdsindex = 0;
