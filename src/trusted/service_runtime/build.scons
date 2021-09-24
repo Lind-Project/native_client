@@ -70,7 +70,6 @@ ldr_inputs = [
     'sys_list_mappings.c',
     'thread_suspension_common.c',
     'thread_suspension_unwind.c',
-    'lind_syscalls.c',
 ]
 
 if env.Bit('build_x86_32'):

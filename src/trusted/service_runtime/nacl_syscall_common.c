@@ -84,7 +84,6 @@
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
-#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
@@ -4596,8 +4595,8 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int userfd;
   hd = (struct NaClHostDesc*)xchangedata; 
   
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
@@ -5254,8 +5253,8 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   
   //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
     
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
