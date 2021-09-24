@@ -312,6 +312,12 @@ int32_t NaClCommonDescSocketPair(struct NaClDesc      **pair);
 
 int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
                              uint32_t             descs_out);
+
+int32_t NaClSysSocketPair(struct NaClAppThread *natp,
+                          int                  domain,
+                          int                  type,
+                          int                  protocol,
+                          int                  *fds);              
 /* Semaphores */
 int32_t NaClSysSemCreate(struct NaClAppThread *natp,
                          int32_t              init_value);

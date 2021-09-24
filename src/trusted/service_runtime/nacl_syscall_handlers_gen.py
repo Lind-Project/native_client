@@ -230,6 +230,7 @@ SYSCALL_LIST = [
       'struct nacl_abi_timespec *ts']),
     ('NACL_sys_imc_socketpair', 'NaClSysImcSocketPair',
      ['uint32_t descs_out']),
+    ('NACL_sys_socketpair', 'NaClSysSocketPair', ['int domain', 'int type', 'int protocol', 'int *fds']),
     ('NACL_sys_sem_create', 'NaClSysSemCreate', ['int32_t init_value']),
     ('NACL_sys_sem_wait', 'NaClSysSemWait', ['int32_t sem_handle']),
     ('NACL_sys_sem_post', 'NaClSysSemPost', ['int32_t sem_handle']),

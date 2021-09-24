@@ -61,10 +61,11 @@
 #define NACL_sys_clock_getres           43
 #define NACL_sys_clock_gettime          44
 #define NACL_sys_shutdown               45
-#define NACL_sys_select                 46
-#define NACL_sys_poll                   48
-#define NACL_sys_getcwd                 49
 
+#define NACL_sys_select                 46
+#define NACL_sys_getcwd                 47
+#define NACL_sys_poll                   48
+#define NACL_sys_socketpair             49
 #define NACL_sys_getuid                 50
 #define NACL_sys_geteuid                51
 #define NACL_sys_getgid                 52
