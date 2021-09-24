@@ -4957,6 +4957,9 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   ret = lind_getpeername(sockfd, sysaddr, sysaddrlen, nap->cage_id);
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
   return ret; 
+
+}
+
 int32_t NaClSysAccess(struct NaClAppThread *natp, 
                       const char *file, int mode) {
   int32_t ret;
@@ -5186,8 +5189,7 @@ cleanup:
   return ret;
 }
 
-int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout)
-{
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
   struct NaClApp *nap = natp->nap;
 
   int retval = 0;
