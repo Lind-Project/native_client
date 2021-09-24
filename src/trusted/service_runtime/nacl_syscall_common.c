@@ -4571,39 +4571,29 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int32_t ret;
 
   struct NaClApp *nap = natp->nap;
-  void *xchangedata = NULL;
-  int code = 0; //usage must be checked
-  
+  struct NaClHostDesc *hd;
+  int naclfd;
+  int userfd;
+
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
           "%d, %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, domain, type, protocol);
    
-  //Preprocessing start
-  xchangedata = malloc(sizeof(struct NaClHostDesc));
-  if (!xchangedata) {
+  hd = malloc(sizeof(struct NaClHostDesc));
+  if (!hd) {
     ret = -NACL_ABI_ENOMEM;
     return ret;
   }
-  //Preprocessing end
-  
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
-  
-  
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
-  struct NaClHostDesc  *hd;
-  int userfd;
-  hd = (struct NaClHostDesc*)xchangedata; 
-  
+   
   hd->d = ret; //old NaClHostDescCtor 
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
-  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   userfd = NextFd(nap->cage_id);
-  fd_cage_table[nap->cage_id][userfd] = code;
-  code = userfd;
-  //Postprocessing end
+  fd_cage_table[nap->cage_id][userfd] = naclfd;
   
   NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
   
