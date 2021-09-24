@@ -3155,17 +3155,14 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
            "%d, %d, %d, 0x%08"NACL_PRIx32")\n",
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
-  //Preprocessing start
   hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
   if (!hd_struct) {
     retval = -NACL_ABI_ENOMEM;
     return retval;
   }
-  //Preprocessing end
 
   retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
 
-  //Postprocessing start
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
     lind_fd = ((int*)fds)[i];
@@ -3178,8 +3175,8 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
     user_fd = NextFd(nap->cage_id);
     fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
+    fds[i] = user_fd;
   }
-  //Postprocessing end
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
 
