@@ -25,5 +25,6 @@ platform_inputs = [
 
 libplatform = env.NaClSdkLibrary('libplatform',
                                  platform_inputs,
-                                 LIBS=['pthread', 'gio'])
+                                 LIBS=['pthread', 'safeposix_rust'],
+                                 LIBPATH=['/home/lind/lind_project/src/safeposix-rust/target/debug/'])
 

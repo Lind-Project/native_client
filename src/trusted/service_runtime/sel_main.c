@@ -182,6 +182,9 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
+int nacl_syscall_counter;
+int lind_syscall_counter;
+
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
@@ -419,10 +422,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  if (!LindPythonInit()) {
-      fflush(NULL);
-      exit(EXIT_FAILURE);
-  }
+  lindrustinit();
 
   if (debug_mode_ignore_validator == 1) {
     NaClLog(1, "%s\n", "DEBUG MODE ENABLED (ignore validator)");
@@ -935,8 +935,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
 #endif
 
-  NaClLog(1, "[Performance results] LindPythonInit(): %f \n", time_counter);
-  LindPythonFinalize();
+  lindrustfinalize();
   NaClExit(ret_code);
 
 done:
@@ -968,10 +967,7 @@ done:
 #endif
   NaClAllModulesFini();
 
-  if(!LindPythonFinalize()) {
-      fflush(NULL);
-      exit(EXIT_SUCCESS);
-  }
+  lindrustfinalize();
 
   NaClExit(ret_code);
 
