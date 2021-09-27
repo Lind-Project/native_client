@@ -159,8 +159,8 @@ int lind_accept(int sockfd, struct sockaddr *sockaddr, socklen_t *addrlen, int c
 int lind_listen (int sockfd, int backlog, int cageid);
 int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t *optlen, int cageid);
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid);
-int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, int cageid);
-int lind_poll (struct pollfd *fds, unsigned long int nfds, int timeout, int cageid);
+int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid);
+int lind_poll (struct pollfd *fds, nfds_t nfds, int timeout, int cageid);
 int lind_epoll_create(int size, int cageid);
 int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);
 int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid);
@@ -170,6 +170,7 @@ int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_shutdown (int sockfd, int how, int cageid);
+int lind_socketpair (int domain, int type, int protocol, int *fds, int cageid);
 int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);
