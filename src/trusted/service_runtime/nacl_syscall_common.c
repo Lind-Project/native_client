@@ -84,7 +84,6 @@
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
-#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
@@ -4572,39 +4571,29 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int32_t ret;
 
   struct NaClApp *nap = natp->nap;
-  void *xchangedata = NULL;
-  int code = 0; //usage must be checked
-  
+  struct NaClHostDesc *hd;
+  int naclfd;
+  int userfd;
+
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
           "%d, %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, domain, type, protocol);
    
-  //Preprocessing start
-  xchangedata = malloc(sizeof(struct NaClHostDesc));
-  if (!xchangedata) {
+  hd = malloc(sizeof(struct NaClHostDesc));
+  if (!hd) {
     ret = -NACL_ABI_ENOMEM;
     return ret;
   }
-  //Preprocessing end
-  
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
-  
-  
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
-  struct NaClHostDesc  *hd;
-  int userfd;
-  hd = (struct NaClHostDesc*)xchangedata; 
-  
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+   
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
-  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   userfd = NextFd(nap->cage_id);
-  fd_cage_table[nap->cage_id][userfd] = code;
-  code = userfd;
-  //Postprocessing end
+  fd_cage_table[nap->cage_id][userfd] = naclfd;
   
   NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
   
@@ -4970,7 +4959,8 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
   return ret; 
 }
-int32_t NaClSysAccess(struct NaClAppThread *natp, 
+
+int32_t NaClSysAccess(struct NaClAppThread *natp,
                       const char *file, int mode) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
@@ -5199,8 +5189,7 @@ cleanup:
   return ret;
 }
 
-int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout)
-{
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
   struct NaClApp *nap = natp->nap;
 
   int retval = 0;
@@ -5265,8 +5254,8 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   
   //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
     
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
@@ -5361,7 +5350,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   return retval;
 }
 
-static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
+char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
   //before this we must translate the ptr
   int fds[FD_SETSIZE];
   int fdsindex = 0;
@@ -5393,7 +5382,7 @@ static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int
   return newset;
 }
 
-static void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
+void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
   int fds[FD_SETSIZE];
   int fdsindex = 0;
 
