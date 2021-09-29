@@ -71,6 +71,9 @@
 # define NaClEnableOuterSandbox NULL
 #endif
 
+extern struct NaClMutex ccmut;
+extern struct NaClCondVar cccv;
+extern int cagecount;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -238,6 +241,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_qend = &redir_queue;
 
   nacl_main_begin = clock();
+  
+  cagecount = 0;
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
@@ -863,13 +868,20 @@ int NaClSelLdrMain(int argc, char **argv) {
   // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
-  NaClEnvCleanserDtor(&env_cleanser);
+  //NaClEnvCleanserDtor(&env_cleanser);
+  //JS: Fix!!! do reference counter or something?
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);
 
   /* yiwen: waiting for running cages to exit */
   ret_code = NaClWaitForMainThreadToExit(nap);
+
+  NaClXMutexLock(&ccmut);
+  while(cagecount > 0) {
+    NaClXCondVarWait(&cccv, &ccmut);
+  }
+  NaClXMutexUnlock(&ccmut);
   nacl_user_program_finish = clock();
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);

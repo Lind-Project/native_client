@@ -120,7 +120,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
   NaClLog(3, "Protecting guard pages for 0x%08"NACL_PRIxPTR"\n",
           nap->mem_start);
   /* Add the zero page to the mmap */
-  NaClVmmapAdd(&nap->mem_map,
+  NaClVmmapAddWithOverwrite(&nap->mem_map,
                0,
                NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                PROT_NONE,
@@ -151,7 +151,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
             err);
     return LOAD_MPROTECT_FAIL;
   }
-  NaClVmmapAdd(&nap->mem_map,
+  NaClVmmapAddWithOverwrite(&nap->mem_map,
                NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                region_size >> NACL_PAGESHIFT,
                NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
@@ -177,7 +177,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
      * prevented by a separate range check, which is done by
      * NaClSysCommonAddrRangeContainsExecutablePages_mu().
      */
-    NaClVmmapAdd(&nap->mem_map,
+    NaClVmmapAddWithOverwrite(&nap->mem_map,
                  NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
@@ -220,7 +220,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
               err);
       return LOAD_MPROTECT_FAIL;
     }
-    NaClVmmapAdd(&nap->mem_map,
+    NaClVmmapAddWithOverwrite(&nap->mem_map,
                  NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_READ,
@@ -255,7 +255,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
               err);
       return LOAD_MPROTECT_FAIL;
     }
-    NaClVmmapAdd(&nap->mem_map,
+    NaClVmmapAddWithOverwrite(&nap->mem_map,
                  NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,
@@ -288,7 +288,7 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
     return LOAD_MPROTECT_FAIL;
   }
 
-  NaClVmmapAdd(&nap->mem_map,
+  NaClVmmapAddWithOverwrite(&nap->mem_map,
                NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                nap->stack_size >> NACL_PAGESHIFT,
                NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE,

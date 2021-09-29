@@ -124,6 +124,9 @@
 #define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
 
+#define NACL_sys_pread                   126
+#define NACL_sys_pwrite                  127
+
 #define NACL_MAX_SYSCALLS               256
 
 #endif

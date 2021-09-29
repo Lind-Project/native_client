@@ -57,7 +57,9 @@
 #define LIND_safe_fs_statfs             26
 #define LIND_safe_fs_fcntl              28
 
-#define LIND_sys_getpid                 31
+#define LIND_safe_sys_getppid           29
+#define LIND_safe_sys_exit              30
+#define LIND_safe_sys_getpid            31
 
 #define LIND_safe_net_socket            32
 #define LIND_safe_net_bind              33
@@ -89,13 +91,8 @@
 #define LIND_safe_fs_fork               68
 #define LIND_safe_fs_exec               69
 
-
-
-#define LIND_comp_cia                   105
-#define LIND_comp_call                  106
-#define LIND_comp_accept                107
-#define LIND_comp_recv                  108
-
+#define LIND_safe_fs_pread              126
+#define LIND_safe_fs_pwrite             127
 
 struct select_results {
     struct timeval used_t;
@@ -104,16 +101,14 @@ struct select_results {
     fd_set e;
 };
 
-int GetHostFdFromLindFd(int lindFd, int cageid);
-
 int LindPythonInit(void);
 int LindPythonFinalize(void);
 
 PyObject* CallPythonFunc(PyObject* context, const char* func, PyObject* args);
 int ParseResponse(PyObject* response, int* isError, int* code, char** dataOrMessage, int* len);
 
-int lind_pread(int fd, void* buf, int count, off_t offset, int cageid);
-int lind_pwrite(int fd, const void *buf, int count, off_t offset, int cageid);
+int lind_pread(int fd, void* buf, size_t count, off_t offset, int cageid);
+int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
 int lind_access (int version, const char *file);
 int lind_unlink (const char *name);
 int lind_link (const char *from, const char *to);
@@ -130,7 +125,6 @@ int lind_fxstat (int fd, int version, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct lind_statfs *buf);
 int lind_statfs (const char *path, struct lind_statfs *buf);
 int lind_noop (void);
-int lind_getpid (pid_t * buf);
 int lind_dup (int oldfd, int cageid);
 int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, size_t nbytes, char *buf, int cageid);
@@ -163,6 +157,9 @@ int lind_pipe2(int* pipefds, int flags, int cageid);  /* unimplemented */
 int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
+int lind_getpid(int cageid);
+int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
+void lind_exit(int status, int cageid);
 
 #endif /* LIND_PLATFORM_H_ */

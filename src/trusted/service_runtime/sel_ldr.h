@@ -134,7 +134,6 @@ struct NaClApp {
   struct NaClCondVar        children_cv;
   struct DynArray           children;
   struct NaClApp            *parent;
-  struct NaClApp            *master;
 
   volatile sig_atomic_t     num_children;
   volatile sig_atomic_t     cage_id;
@@ -905,12 +904,13 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
 
 /*
  * Copy the entire dynamic text section in an NaClApp to a child process.
+ * Also copy all the virtual memory in a NaClApp to a child process and populate its vmmap.
  *
  * preconditions:
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /*
  * Copy the entire address execution context of an NaClApp to a child
@@ -920,7 +920,7 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child);
  * * `child` must be a pointer to a valid, initialized NaClApp
  * * Caller must hold both the nap->mu and the child->mu mutexes
  */
-void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
