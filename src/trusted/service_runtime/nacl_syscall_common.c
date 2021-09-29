@@ -84,7 +84,6 @@
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
-#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
@@ -3152,7 +3151,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   int32_t                 retval;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
-           "%d, %d, %d, 0x%08"NACL_PRIx32")\n",
+           "%d, %d, %d, %lx)\n",
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
   hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
@@ -4134,7 +4133,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   uintptr_t tramp_pnum;
 
   /* Convert pathname from user path, set binary */
-  sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
+  sys_pathname = NaClUserToSysAddr(nap, path);
   binary = sys_pathname ? strdup(sys_pathname) : 0;
 
   /* 
@@ -4572,39 +4571,29 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   int32_t ret;
 
   struct NaClApp *nap = natp->nap;
-  void *xchangedata = NULL;
-  int code = 0; //usage must be checked
-  
+  struct NaClHostDesc *hd;
+  int naclfd;
+  int userfd;
+
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
           "%d, %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, domain, type, protocol);
    
-  //Preprocessing start
-  xchangedata = malloc(sizeof(struct NaClHostDesc));
-  if (!xchangedata) {
+  hd = malloc(sizeof(struct NaClHostDesc));
+  if (!hd) {
     ret = -NACL_ABI_ENOMEM;
     return ret;
   }
-  //Preprocessing end
-  
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
-  
-  
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
-  struct NaClHostDesc  *hd;
-  int userfd;
-  hd = (struct NaClHostDesc*)xchangedata; 
-  
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+   
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
-  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   userfd = NextFd(nap->cage_id);
-  fd_cage_table[nap->cage_id][userfd] = code;
-  code = userfd;
-  //Postprocessing end
+  fd_cage_table[nap->cage_id][userfd] = naclfd;
   
   NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
   
@@ -4694,17 +4683,29 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   return ret;
 }
 
-int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
-                           socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr) {
+int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_t len, int flags,
+                           struct sockaddr *src_addr, socklen_t *addrlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  socklen_t *sysaddrlenaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+  struct sockaddr *sysaddraddr;
   NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
-          "%d, %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
-          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, addrlen, (uintptr_t) addrlen_out, (uintptr_t) buf, (uintptr_t) src_addr);
+          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, buf, len, flags, (uintptr_t)src_addr, (uintptr_t)addrlen);
 
   if ((void*) kNaClBadAddress == sysbufaddr) {
     NaClLog(2, "NaClSysRecvfrom could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlenaddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate address length pointer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+  sysaddraddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, *sysaddrlenaddr);
+  if ((void*) kNaClBadAddress == sysaddraddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate address pointer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 
@@ -4713,7 +4714,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int 
     return sockfd;
   }
 
-  ret = lind_recvfrom(sockfd, len, flags, addrlen, addrlen_out, sysbufaddr, src_addr, nap->cage_id);
+  ret = lind_recvfrom(sockfd, sysbufaddr, len, flags, sysaddraddr, sysaddrlenaddr, nap->cage_id);
   NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
   return ret;
 }
@@ -4957,7 +4958,9 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   ret = lind_getpeername(sockfd, sysaddr, sysaddrlen, nap->cage_id);
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
   return ret; 
-int32_t NaClSysAccess(struct NaClAppThread *natp, 
+}
+
+int32_t NaClSysAccess(struct NaClAppThread *natp,
                       const char *file, int mode) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
@@ -5010,7 +5013,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
                       struct sockaddr *addr, 
                       socklen_t *addrlen) {
   struct NaClApp *nap = natp->nap;
-  const struct sockaddr* sysvaladdr;
+  struct sockaddr* sysvaladdr;
   const socklen_t* syslenaddr;
   int32_t ret;
   int userfd;
@@ -5186,8 +5189,7 @@ cleanup:
   return ret;
 }
 
-int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout)
-{
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
   struct NaClApp *nap = natp->nap;
 
   int retval = 0;
@@ -5200,7 +5202,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   }
 
   NaClFastMutexLock(&nap->desc_mu);
-  for(int i = 0; i < nfds; ++i) {
+  for(unsigned int i = 0; i < nfds; ++i) {
       
     if((lind_fds[i].fd = descnum2Lindfd(nap, fds[i].fd)) < 0) {
       NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds[i].fd);
@@ -5216,7 +5218,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
 
   retval = lind_poll(lind_fds, nfds, timeout, nap->cage_id);
 
-  for(int i = 0; i < nfds; ++i) {
+  for(unsigned int i = 0; i < nfds; ++i) {
     fds[i].revents = lind_fds[i].revents;
   }
     
@@ -5252,8 +5254,8 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   
   //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
     
-  hd->d = ret; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
-  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor in src/trusted/service_runtime/lind_syscalls.c
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
@@ -5348,7 +5350,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   return retval;
 }
 
-static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
+char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
   //before this we must translate the ptr
   int fds[FD_SETSIZE];
   int fdsindex = 0;
@@ -5380,7 +5382,7 @@ static char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int
   return newset;
 }
 
-static void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
+void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
   int fds[FD_SETSIZE];
   int fdsindex = 0;
 
