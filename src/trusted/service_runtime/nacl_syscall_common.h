@@ -368,8 +368,8 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
 int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
                          int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
 int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf);
-int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, size_t len, int flags,
-                           socklen_t addrlen, socklen_t * addrlen_out, void *buf, struct sockaddr *src_addr);
+int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_t len, int flags,
+                           struct sockaddr *src_addr, socklen_t *addrlen);
 
 int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how);
 int32_t NaClSysGetuid(struct NaClAppThread *natp);
