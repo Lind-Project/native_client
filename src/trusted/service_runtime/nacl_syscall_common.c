@@ -5206,7 +5206,8 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
       
     if((lind_fds[i].fd = descnum2Lindfd(nap, fds[i].fd)) < 0) {
       NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds[i].fd);
-      return fds[i].fd;
+      retval = fds[i].fd;
+      goto cleanup;
     }
     lind_fds[i].events = fds[i].events;
     lind_fds[i].revents = lind_fds[i].revents;
