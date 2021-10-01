@@ -4600,7 +4600,7 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   return userfd;
 }
 
-//in lieu of common preprocess
+// Translate Host FD to Lind FD
 int descnum2Lindfd(struct NaClApp *nap, int fd) {
   struct NaClDesc * ndp;
   int naclfd = fd_cage_table[nap->cage_id][fd];
@@ -5241,20 +5241,14 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   NaClLog(2, "Cage %d Entered NaClSysEpollCreate(0x%08"NACL_PRIxPTR", ""%d)\n",
           nap->cage_id, (uintptr_t) natp, size);
    
-  //Preprocessing start
   hd = malloc(sizeof(struct NaClHostDesc));
   if (!hd) {
     ret = -NACL_ABI_ENOMEM;
     return ret;
   }
-  //Preprocessing end
-  
   
   ret = lind_epoll_create(size, nap->cage_id);
-  
-  
-  //Postprocessing start ( BUILD_AND_RETURN_NACL_DESC() ) must be checked
-    
+      
   hd->d = ret; //old NaClHostDescCtor 
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
@@ -5263,7 +5257,6 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   userfd = NextFd(nap->cage_id);
   fd_cage_table[nap->cage_id][userfd] = code;
   code = userfd;
-  //Postprocessing end
   
   NaClLog(2, "NaClSysEpollCreate: returning %d\n", userfd);
   
