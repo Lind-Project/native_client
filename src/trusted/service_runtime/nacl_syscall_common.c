@@ -5414,13 +5414,13 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     naclreadfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) readfds, sizeof(fd_set));
 
     if ((void*) kNaClBadAddress == naclreadfds) {
-      NaClLog(2, "NaClSysBind could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
       return -NACL_ABI_EFAULT;
     }
     safeposixreadfds = fd_set_fd_translator_tolind(nap, naclreadfds, nfds, &max_fd);
 
     if ((long) safeposixreadfds < 0) {
-      NaClLog(2, "NaClSysBind could not translate fds in readfds %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate fds in readfds %d\n", -NACL_ABI_EFAULT);
       return (long) safeposixreadfds;
     }
   }
@@ -5429,14 +5429,14 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     naclwritefds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) writefds, sizeof(fd_set));
 
     if ((void*) kNaClBadAddress == naclwritefds) {
-      NaClLog(2, "NaClSysBind could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
       goto earlycleanup_write;
     }
 
     safeposixwritefds = fd_set_fd_translator_tolind(nap, naclwritefds, nfds, &max_fd);
 
     if ((long) safeposixwritefds < 0) {
-      NaClLog(2, "NaClSysBind could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
       retval = (long) safeposixwritefds;
       goto earlycleanup_write;
     }
@@ -5446,14 +5446,14 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     naclexceptfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) exceptfds, sizeof(fd_set));
 
     if ((void*) kNaClBadAddress == naclexceptfds) {
-      NaClLog(2, "NaClSysBind could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
       goto earlycleanup_except;
     }
 
     safeposixexceptfds = fd_set_fd_translator_tolind(nap, naclexceptfds, nfds, &max_fd);
 
     if ((long) safeposixexceptfds < 0) {
-      NaClLog(2, "NaClSysBind could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
       retval = (long) safeposixexceptfds;
       goto earlycleanup_except;
     }
@@ -5463,7 +5463,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     nacltimeout = (struct timeval*) NaClUserToSysAddrRange(nap, (uintptr_t) timeout, sizeof(struct timeval));
 
     if ((void*) kNaClBadAddress == nacltimeout) {
-      NaClLog(2, "NaClSysBind could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
+      NaClLog(2, "NaClSysSelect could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
       goto earlycleanup_timeout;
     }
   }
