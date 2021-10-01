@@ -5430,7 +5430,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
 
     if ((void*) kNaClBadAddress == naclwritefds) {
       NaClLog(2, "NaClSysBind could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
-      return -NACL_ABI_EFAULT;
+      goto earlycleanup_write;
     }
 
     safeposixwritefds = fd_set_fd_translator_tolind(nap, naclwritefds, nfds, &max_fd);
@@ -5438,7 +5438,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     if ((long) safeposixwritefds < 0) {
       NaClLog(2, "NaClSysBind could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
       retval = (long) safeposixwritefds;
-      goto cleanup;
+      goto earlycleanup_write;
     }
   }
 
@@ -5447,7 +5447,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
 
     if ((void*) kNaClBadAddress == naclexceptfds) {
       NaClLog(2, "NaClSysBind could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
-      return -NACL_ABI_EFAULT;
+      goto earlycleanup_except;
     }
 
     safeposixexceptfds = fd_set_fd_translator_tolind(nap, naclexceptfds, nfds, &max_fd);
@@ -5455,7 +5455,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     if ((long) safeposixexceptfds < 0) {
       NaClLog(2, "NaClSysBind could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
       retval = (long) safeposixexceptfds;
-      goto cleanup;
+      goto earlycleanup_except;
     }
   }
 
@@ -5464,7 +5464,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
 
     if ((void*) kNaClBadAddress == nacltimeout) {
       NaClLog(2, "NaClSysBind could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
-      return -NACL_ABI_EFAULT;
+      goto earlycleanup_timeout;
     }
   }
 
@@ -5507,4 +5507,14 @@ cleanup:
     free(safeposixexceptfds);
 
   return retval;
+earlycleanup_timeout:
+  if(exceptfds)
+    free(safeposixexceptfds);
+earlycleanup_except:
+  if(writefds)
+    free(safeposixwritefds);
+earlycleanup_write:
+  if(readfds) 
+    free(safeposixreadfds);
+  return -NACL_ABI_EFAULT;
 }
