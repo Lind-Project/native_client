@@ -72,9 +72,6 @@
 #endif
 
 
-int nacl_syscall_counter;
-int nacl_syscall_trace_level_counter;
-
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;

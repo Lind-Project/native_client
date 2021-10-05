@@ -30,8 +30,7 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
  */
 uintptr_t                   nacl_global_xlate_base;
 
-int nacl_syscall_counter;
-int nacl_syscall_trace_level_counter;
+
 int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 
