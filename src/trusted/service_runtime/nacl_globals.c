@@ -29,7 +29,7 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
  * and (2) gdb doesn't need debug info (it just needs symbol info).
  */
 uintptr_t                   nacl_global_xlate_base;
-
+int lind_syscall_counter = 0;
 int nacl_syscall_counter = 0;
 int nacl_syscall_trace_level_counter = 0;
 int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
