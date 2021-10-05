@@ -183,9 +183,6 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
-int nacl_syscall_counter;
-int lind_syscall_counter;
-
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
