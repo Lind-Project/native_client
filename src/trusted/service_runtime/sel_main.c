@@ -934,6 +934,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  fflush(stdout);
   NaClExit(ret_code);
 
 done:
