@@ -935,7 +935,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   lindrustfinalize();
   printf("Ending Lind.\n");
-  fflush(NULL);
+  fflush(stdout);
   NaClExit(ret_code);
 
 done:
