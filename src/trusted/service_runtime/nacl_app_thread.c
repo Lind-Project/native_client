@@ -35,7 +35,6 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
-#define INIT_PROCESS_NUM 1
 
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
@@ -46,7 +45,7 @@ int cagecount;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
@@ -94,7 +93,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   /*
    * increment fork generation count and generate child (holding parent mutex)
    */
-  InitializeCage(nap_child, INIT_PROCESS_NUM + ++fork_num);
+  InitializeCage(nap_child, child_cage_id);
   nap_parent->num_children++;
 
   if (nap_parent->num_children > CHILD_NUM_MAX) {
@@ -107,7 +106,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
 
   NaClXMutexUnlock(&nap_parent->children_mu);
 
-  NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  NaClLog(1, "child_cage_id = %d, cage_id = %d\n", child_cage_id, nap_child->cage_id);
   //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
   nap_child->main_exe_prevalidated = 1;
   if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
@@ -509,8 +508,8 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
     base_ptr_offset = parent_ctx.rbp - (uintptr_t)stack_ptr_parent;
     /* copy parent page tables and execution context */
     NaClCopyExecutionContext(nap_parent, nap_child, parent_ctx.rsp);
-    NaClLog(1, "fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
-            fork_num,
+    NaClLog(1, "child_cage_id: [%d], child cage_id: [%d], parent cage id: [%d]\n",
+            child_cage_id,
             nap_child->cage_id,
             nap_parent->cage_id);
     NaClLog(1, "%s\n", "Thread context of child before copy");
