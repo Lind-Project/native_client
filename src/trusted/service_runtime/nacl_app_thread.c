@@ -508,8 +508,7 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
     base_ptr_offset = parent_ctx.rbp - (uintptr_t)stack_ptr_parent;
     /* copy parent page tables and execution context */
     NaClCopyExecutionContext(nap_parent, nap_child, parent_ctx.rsp);
-    NaClLog(1, "child_cage_id: [%d], child cage_id: [%d], parent cage id: [%d]\n",
-            child_cage_id,
+    NaClLog(1, "child cage_id: [%d], parent cage id: [%d]\n",
             nap_child->cage_id,
             nap_parent->cage_id);
     NaClLog(1, "%s\n", "Thread context of child before copy");
