@@ -4104,7 +4104,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
 fail:
   /* exit failed process in safeposix */
-  lind_exit(child_cage_id);
+  lind_exit(EXIT_FAILURE, child_cage_id);
   return ret;
 }
 
