@@ -4237,7 +4237,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(nap);
+  int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
+  nap_child = NaClChildNapCtor(nap, child_cage_id);
   nap_child->running = 0;
   nap_child->in_fork = 0;
 
