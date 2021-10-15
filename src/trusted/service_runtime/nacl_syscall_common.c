@@ -4095,6 +4095,9 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
+
+    /* exit failed process in safeposix */
+    lind_exit(EXIT_FAILURE, child_cage_id);
     goto fail;
   }
 
@@ -4103,8 +4106,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 fail:
-  /* exit failed process in safeposix */
-  lind_exit(EXIT_FAILURE, child_cage_id);
+
   return ret;
 }
 
