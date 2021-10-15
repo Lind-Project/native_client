@@ -4078,24 +4078,26 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   /* set up new "child" NaClApp */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(natp->nap);
+
+  /* get new id and setup new cage in safeposix */
+  NaClXMutexLock(&nap->mu); 
+  int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
+  lind_fork(child_cage_id, nap->cage_id); 
+  NaClXMutexUnlock(&nap->mu);
+
+  nap_child = NaClChildNapCtor(natp->nap, child_cage_id);
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
-  ret = nap_child->cage_id;
-
-  NaClXMutexLock(&nap->mu); 
-  NaClXMutexLock(&nap_child->mu); 
-
-  lind_fork(ret, nap->cage_id);
-  
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap->mu);
+  ret = child_cage_id;
 
   /* start fork thread */
   if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
+
+    /* exit failed process in safeposix */
+    lind_exit(EXIT_FAILURE, child_cage_id);
     goto fail;
   }
 
@@ -4104,6 +4106,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 fail:
+
   return ret;
 }
 
@@ -4236,7 +4239,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(nap);
+  int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
+  nap_child = NaClChildNapCtor(nap, child_cage_id);
   nap_child->running = 0;
   nap_child->in_fork = 0;
 
