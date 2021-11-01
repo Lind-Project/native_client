@@ -930,11 +930,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "read result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
@@ -1012,11 +1010,9 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "pread result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
@@ -1079,7 +1075,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
@@ -1149,7 +1145,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
