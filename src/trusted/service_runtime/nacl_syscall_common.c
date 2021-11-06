@@ -1375,11 +1375,14 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   char *sys_pathname;
   sys_pathname = NaClUserToSysAddr(nap, pathname);
 
-  NaClLog(2, "Entered NaClSysStat-SysPathname(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
+  char* sysaddr = (char*) NaClUserToSysAddrRange(nap, (uintptr_t) pathname, sizeof(char));
+  //socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+
+  NaClLog(2, "Entered NaClSysStat-SysPathAddr(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n",
-          (uintptr_t)natp,(uintptr_t)sys_pathname, (uintptr_t)buf);
+          (uintptr_t)natp,(uintptr_t)sysaddr, (uintptr_t)buf);
   
-  retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) sys_pathname);
+  retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) sysaddr);
   if (retval) {
     goto cleanup;
   }
