@@ -581,7 +581,7 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
 
   result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
   if (result) {
-    NaClDescRef(result);
+    // NaClDescRef(result);
   }
 
   return result;
@@ -625,9 +625,9 @@ struct NaClDesc *NaClGetDesc(struct NaClApp *nap,
                              int            d) {
   struct NaClDesc *res;
 
-  NaClFastMutexLock(&nap->desc_mu);
+  // NaClFastMutexLock(&nap->desc_mu);
   res = NaClGetDescMu(nap, d);
-  NaClFastMutexUnlock(&nap->desc_mu);
+  // NaClFastMutexUnlock(&nap->desc_mu);
   return res;
 }
 
