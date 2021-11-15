@@ -1057,7 +1057,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    // NaClDescUnref(ndp);
+    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1085,7 +1085,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
-  // NaClDescUnref(ndp);
+  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;

@@ -581,7 +581,7 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
 
   result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
   if (result) {
-    // NaClDescRef(result);
+    NaClDescRef(result);
   }
 
   return result;
