@@ -183,6 +183,18 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
+double LindGetTime(void) {
+  struct timespec tp;
+  double clock_time;
+
+  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
+    perror( "clock gettime" );
+    exit( EXIT_FAILURE );
+  }
+
+  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
+}
+
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
@@ -210,13 +222,13 @@ int NaClSelLdrMain(int argc, char **argv) {
   char                          *blob_library_file = NULL;
   char                          *log_file = NULL;
   const char                    **envp;
-  clock_t                       nacl_main_begin;
-  clock_t                       nacl_main_finish;
-  clock_t                       nacl_initialization_finish;
+  double                        nacl_main_begin;
+  double                        nacl_main_finish;
+  double                        nacl_initialization_finish;
   double                        nacl_main_spent;
   double                        nacl_initialization_spent;
-  clock_t                       nacl_user_program_begin;
-  clock_t                       nacl_user_program_finish;
+  double                        nacl_user_program_begin;
+  double                        nacl_user_program_finish;
   double                        nacl_user_program_spent;
   int                           toggle_time_info = 0;
   #ifdef SYSCALL_TIMING
@@ -241,7 +253,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_queue = NULL;
   redir_qend = &redir_queue;
 
-  nacl_main_begin = clock();
+  nacl_main_begin = LindGetTime();
   
   cagecount = 0;
 
@@ -851,7 +863,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  nacl_initialization_finish = clock();
+  nacl_initialization_finish = LindGetTime();
   if (!NaClCreateThread(THREAD_LAUNCH_MAIN,
                         NULL,
                         nap,
@@ -861,7 +873,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }
-  nacl_user_program_begin = clock();
+  nacl_user_program_begin = LindGetTime();
 
   // ***********************************************************************
   // yiwen: cleanup and exit
@@ -880,7 +892,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClXCondVarWait(&cccv, &ccmut);
   }
   NaClXMutexUnlock(&ccmut);
-  nacl_user_program_finish = clock();
+  nacl_user_program_finish = LindGetTime();
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   NaClPerfCounterMark(&time_all_main, "SelMainEnd");
@@ -894,17 +906,17 @@ int NaClSelLdrMain(int argc, char **argv) {
    * before we clean up the address space.
    */
 
-  nacl_main_finish = clock();
+  nacl_main_finish = LindGetTime();
   NaClLog(1, "%s\n", "[NaClMain] End of the program! \n");
 
 
   if (toggle_time_info)
   {
-    nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+    nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin);
     fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
-    nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
+    nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin);
     fprintf(stderr, "[TimeInfo] NaCl initialization time spent = %f \n", nacl_initialization_spent);
-    nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
+    nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin);
     fprintf(stderr, "[TimeInfo] NaCl user program time spent = %f \n", nacl_user_program_spent);
   }
 
