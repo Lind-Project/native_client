@@ -185,7 +185,6 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 double LindGetTime(void) {
   struct timespec tp;
-  double clock_time;
 
   if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
     perror( "clock gettime" );
