@@ -28,11 +28,11 @@
     arg6.dispatch_ulong = 0//no semicolon here to force macro caller to place one for neatness
 
 #define DISPATCH_SYSCALL_0_inner(callnum) \
-    int ret = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6);
-    if (ret < 0) {
-        errno = -ret;
-        ret = -1;
-    }  
+    int ret = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
+    if (ret < 0) { \
+        errno = -ret; \
+        ret = -1; \
+    }  \
     return ret//no semicolon here to force macro caller to place one for neatness
 #define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val) \
     arg1.dispatch_ ## arg1type = arg1val; \
