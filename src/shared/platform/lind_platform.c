@@ -27,11 +27,11 @@
     arg5.dispatch_ulong = 0; \
     arg6.dispatch_ulong = 0//no semicolon here to force macro caller to place one for neatness
 
-#define GENERIC_ERROR_HANDLER   (ret < 0)
+#define GENERIC_ERROR_HANDLER   (retval < 0)
 #define MMAP_ERROR_HANDLER      ((unsigned) retval > (0xffffffffu - 256))
 
 #define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
-    int ret = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
+    int retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
     if (errhandler) { \
         errno = -ret; \
         ret = -1; \
