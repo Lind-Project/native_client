@@ -72,6 +72,8 @@ EXTERN_C_BEGIN
 
 #define NACL_BAD_FD                     -1
 
+#define INIT_PROCESS_NUM 1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;
