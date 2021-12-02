@@ -19,6 +19,7 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
 #define BLANKARGS \
+    int retval; \
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
     arg2.dispatch_ulong = 0; \
@@ -31,7 +32,6 @@
 #define MMAP_ERROR_HANDLER      ((unsigned) retval > (0xffffffffu - 256))
 
 #define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
-    int retval; \
     retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
     if (errhandler) { \
         errno = -retval; \
