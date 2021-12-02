@@ -289,6 +289,7 @@ int lind_fork(int newcageid, int cageid) {
 }
 
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid) {
+    BLANKARGS;
     DISPATCH_SYSCALL_6_inner(LIND_safe_fs_mmap, cbuf, addr, size_t, length, int, prot, int, flags, int, fd, off_t, offset, MMAP_ERROR_HANDLER);
 }
 
