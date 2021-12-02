@@ -33,10 +33,10 @@
 #define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
     int retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
     if (errhandler) { \
-        errno = -ret; \
-        ret = -1; \
+        errno = -retval; \
+        retval = -1; \
     }  \
-    return ret//no semicolon here to force macro caller to place one for neatness
+    return retval //no semicolon here to force macro caller to place one for neatness
 #define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, errhandler) \
     arg1.dispatch_ ## arg1type = arg1val; \
     DISPATCH_SYSCALL_0_inner(callnum, errhandler)
