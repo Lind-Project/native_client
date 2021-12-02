@@ -31,7 +31,8 @@
 #define MMAP_ERROR_HANDLER      ((unsigned) retval > (0xffffffffu - 256))
 
 #define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
-    int retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
+    int retval; \
+    retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
     if (errhandler) { \
         errno = -retval; \
         retval = -1; \
