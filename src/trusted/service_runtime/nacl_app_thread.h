@@ -20,13 +20,6 @@
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 
 
-enum NaClThreadLaunchType {
-  THREAD_LAUNCH_MAIN,
-  THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
-};
-
-
 EXTERN_C_BEGIN
 
 struct NaClApp;

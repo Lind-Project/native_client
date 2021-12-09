@@ -118,12 +118,6 @@ struct NaClSpringboardInfo {
   uint32_t end_addr;
 };
 
-enum NaClThreadLaunchType {
-  THREAD_LAUNCH_MAIN,
-  THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
-};
-
 struct NaClApp {
   /*
    * children table lock children_mu is higher in the locking order than
