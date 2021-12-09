@@ -679,8 +679,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap) {
   * envv may be NULL (this happens on MacOS/Cocoa and in tests)
   * if envv is non-NULL it is 'consistent', null terminated etc.
   */
-NaClCreateThread(enum NaClThreadLaunchType tl_type,
-                struct NaClAppThread     *natp_parent,
+NaClCreateThread(struct NaClAppThread     *natp_parent,
                 struct NaClApp           *nap_child,
                 int                      argc,
                 char                     **argv,
@@ -710,10 +709,6 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   retval = 0;
   size = 0;
   envc = 0;
-
-  /* Set nap's thread launch type */
-  nap_child->tl_type = tl_type;
-
 
   if (tl_type == THREAD_LAUNCH_FORK){
 

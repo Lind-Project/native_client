@@ -641,8 +641,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  */
 
 
-int NaClCreateThread(enum NaClThreadLaunchType tl_type,
-                     struct NaClAppThread     *natp_parent,
+int NaClCreateThread(struct NaClAppThread     *natp_parent,
                      struct NaClApp           *nap_child,
                      int                      argc,
                      char                     **argv,
