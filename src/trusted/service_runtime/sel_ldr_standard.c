@@ -710,6 +710,9 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
   size = 0;
   envc = 0;
 
+  enum NaClThreadLaunchType tl_type = nap_child->tl_type;
+
+
   if (tl_type == THREAD_LAUNCH_FORK){
 
     nap_parent = natp_parent->nap;
