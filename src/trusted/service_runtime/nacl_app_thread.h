@@ -18,7 +18,13 @@
 #include "native_client/src/shared/platform/nacl_threads.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
-#include "native_client/src/trusted/service_runtime/sel_ldr.h"
+
+
+enum NaClThreadLaunchType {
+  THREAD_LAUNCH_MAIN,
+  THREAD_LAUNCH_FORK,
+  THREAD_LAUNCH_EXEC
+};
 
 
 EXTERN_C_BEGIN
