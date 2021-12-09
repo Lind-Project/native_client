@@ -250,8 +250,8 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
    * the linux-style brk system call (which returns current break on
    * failure) permits a non-aligned address as argument.
    */
-  
-  if (nap->parent) nap->break_addr = nap->parent->break_addr;
+
+  if (nap->tl_type == THREAD_LAUNCH_FORK) nap->break_addr = nap->parent->break_addr;
   else nap->break_addr = max_vaddr;
   nap->data_end = max_vaddr;
 
