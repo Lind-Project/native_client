@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
 
   RegisterHandlers();
 
-  app->tl_type = THREAD_LAUNCH_MAIN;
+  app.tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, argc - 1, argv + 1, NULL));
   NaClWaitForMainThreadToExit(&app);

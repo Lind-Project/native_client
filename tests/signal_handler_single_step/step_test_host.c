@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
   NaClSignalHandlerInit();
   NaClSignalHandlerSet(TrapSignalHandler);
 
-  app->tl_type = THREAD_LAUNCH_MAIN;
+  app.tl_type = THREAD_LAUNCH_MAIN;
 
 
   CHECK(NaClAppLoadFileFromFilename(&app, argv[1]) == LOAD_OK);
