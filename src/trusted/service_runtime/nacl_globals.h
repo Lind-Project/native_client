@@ -54,12 +54,6 @@ struct NaClAppThread;
 struct NaClMutex;
 struct NaClApp;
 
-enum NaClThreadLaunchType {
-  THREAD_LAUNCH_MAIN,
-  THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
-};
-
 /*
  * always points at original program context
  */
