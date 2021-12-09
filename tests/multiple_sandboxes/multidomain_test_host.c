@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   NaClAddImcHandle(&app[1], handle_pair[1], RECEIVE_DESC);
 
   &app[0].tl_type = THREAD_LAUNCH_MAIN;
-
+  &app[1].tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app[0], 2, domain1_args, NULL));
   CHECK(NaClCreateThread(NULL, &app[1], 2, domain2_args, NULL));
