@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 
   RegisterExceptionHandler();
 
-  &app.tl_type = THREAD_LAUNCH_MAIN;
+  app->tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
   NaClWaitForMainThreadToExit(&app);

@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
   g_test_shm = (struct RegsTestShm *) NaClUserToSys(&app, mmap_addr);
   SNPRINTF(arg_string, sizeof(arg_string), "0x%x", (unsigned int) mmap_addr);
 
-  &app.tl_type = THREAD_LAUNCH_MAIN;
+  app->tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, 2, args, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);

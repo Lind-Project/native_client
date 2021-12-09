@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   CHECK(NaClAppLoadFileFromFilename(&app, argv[2]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
 
-  &app.tl_type = THREAD_LAUNCH_MAIN;
+  app->tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);
