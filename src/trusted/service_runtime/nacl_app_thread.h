@@ -18,7 +18,6 @@
 #include "native_client/src/shared/platform/nacl_threads.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
-#include "native_client/src/trusted/service_runtime/nacl_globals.h"
 
 
 EXTERN_C_BEGIN
