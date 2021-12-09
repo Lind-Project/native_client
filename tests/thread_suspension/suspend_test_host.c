@@ -82,10 +82,11 @@ static struct SuspendTestShm *StartGuestWithSharedMemory(
       NACL_ABI_MAP_PRIVATE | NACL_ABI_MAP_ANONYMOUS,
       -1, 0);
   SNPRINTF(arg_string, sizeof(arg_string), "0x%x", (unsigned int) mmap_addr);
+  nap->tl_type = THREAD_LAUNCH_MAIN;
 
   WaitForThreadToExitFully(nap);
 
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, nap, 3, args, NULL));
+  CHECK(NaClCreateThread(NULL, nap, 3, args, NULL));
   return (struct SuspendTestShm *) NaClUserToSys(nap, mmap_addr);
 }
 
