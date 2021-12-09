@@ -4085,7 +4085,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   lind_fork(child_cage_id, nap->cage_id); 
   NaClXMutexUnlock(&nap->mu);
 
-  nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_EXEC);
+  nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
