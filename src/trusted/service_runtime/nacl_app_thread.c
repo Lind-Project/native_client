@@ -45,7 +45,7 @@ int cagecount;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
@@ -62,6 +62,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id) {
   }
 
   mod_status = &nap_child->module_load_status;
+  nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
