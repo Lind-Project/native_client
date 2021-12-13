@@ -2993,7 +2993,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   if (kern_nanimh.desc_length < num_user_desc) {
     kern_nanimh.flags |= NACL_ABI_RECVMSG_DESC_TRUNCATED;
     for (i = kern_nanimh.desc_length; i < num_user_desc; ++i) {
-      NaClDescUnref(new_desc[i]);
+      // NaClDescUnref(new_desc[i]);
       new_desc[i] = NULL;
     }
     num_user_desc = kern_nanimh.desc_length;
@@ -3004,7 +3004,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
   for (i = 0; i < num_user_desc; ++i) {
     if (invalid_desc == new_desc[i]) {
       usr_desc[i] = kKnownInvalidDescNumber;
-      NaClDescUnref(new_desc[i]);
+      // NaClDescUnref(new_desc[i]);
     } else {
       usr_desc[i] = NaClSetAvail(nap, new_desc[i]);
     }
@@ -3031,12 +3031,12 @@ cleanup:
   if (retval < 0) {
     for (i = 0; i < sizeof(new_desc) / sizeof(*new_desc); ++i) {
       if (new_desc[i]) {
-        NaClDescUnref(new_desc[i]);
+        // NaClDescUnref(new_desc[i]);
         new_desc[i] = NULL;
       }
     }
   }
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
   NaClDescSafeUnref(invalid_desc);
   NaClLog(3, "NaClSysImcRecvMsg: returning %d\n", retval);
 cleanup_leave:
@@ -3318,7 +3318,7 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Lock)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 
 cleanup:
   return retval;
@@ -3341,7 +3341,7 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Unlock)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 
 cleanup:
   return retval;
@@ -3364,7 +3364,7 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->TryLock)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 
 cleanup:
   return retval;
@@ -3422,8 +3422,8 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
 
   retval = (*((struct NaClDescVtbl const *) cv_desc->base.vtbl)->
             Wait)(cv_desc, mutex_desc);
-  NaClDescUnref(cv_desc);
-  NaClDescUnref(mutex_desc);
+  // NaClDescUnref(cv_desc);
+  // NaClDescUnref(mutex_desc);
 
 cleanup:
   return retval;
@@ -3446,7 +3446,7 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Signal)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 cleanup:
   return retval;
 }
@@ -3468,7 +3468,7 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Broadcast)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 
 cleanup:
   return retval;
@@ -3510,8 +3510,8 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   }
 
   retval = ((struct NaClDescVtbl const *)cv_desc->base.vtbl)->TimedWaitAbs(cv_desc, mutex_desc, &trusted_ts);
-  NaClDescUnref(cv_desc);
-  NaClDescUnref(mutex_desc);
+  // NaClDescUnref(cv_desc);
+  // NaClDescUnref(mutex_desc);
 cleanup:
   return retval;
 }
@@ -3566,7 +3566,7 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
    * synchronization objects makes sense.
    */
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->SemWait)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 cleanup:
   return retval;
 }
@@ -3589,7 +3589,7 @@ int32_t NaClSysSemPost(struct NaClAppThread *natp,
   }
 
   retval = ((struct NaClDescVtbl const *) desc->base.vtbl)->Post(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 cleanup:
   return retval;
 }
@@ -3612,7 +3612,7 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->GetValue)(desc);
-  NaClDescUnref(desc);
+  // NaClDescUnref(desc);
 cleanup:
   return retval;
 }
@@ -5316,14 +5316,14 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
       for(int j = 0; j < 1024; ++j) {
           ndp = NaClGetDescMu(nap, j);
           if(!ndp) {
-              NaClDescSafeUnref(ndp);
+              // NaClDescSafeUnref(ndp);
               continue;
           }
           hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
           if(pfds[i].data.fd == hfd) {
               pfds[i].data.fd = j;
           }
-          NaClDescUnref(ndp);
+          // NaClDescUnref(ndp);
       }
   }
   
