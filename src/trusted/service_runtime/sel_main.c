@@ -185,7 +185,6 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 double LindGetTime(void) {
   struct timespec tp;
-  double clock_time;
 
   if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
     perror( "clock gettime" );
@@ -864,8 +863,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   nacl_initialization_finish = LindGetTime();
-  if (!NaClCreateThread(THREAD_LAUNCH_MAIN,
-                        NULL,
+  nap->tl_type = THREAD_LAUNCH_MAIN; //set main thread
+  if (!NaClCreateThread(NULL,
                         nap,
                         argc - optind,
                         argv + optind,
