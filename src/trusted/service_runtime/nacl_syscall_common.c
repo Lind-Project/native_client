@@ -895,7 +895,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  // ndp = NaClGetDesc(nap, fd);
   ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -939,7 +938,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   } else {
     NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
   }
-  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -1050,7 +1048,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  // ndp = NaClGetDesc(nap, fd);
   ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1088,8 +1085,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
 
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
-
-  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
