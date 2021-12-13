@@ -440,7 +440,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
     }
     /* write */
     NaClXMutexLock(&nap->mu);
-    NaClDescUnref(nap->name_service_conn_cap);
+    // NaClDescUnref(nap->name_service_conn_cap);
     nap->name_service_conn_cap = desc_obj_ptr;
     NaClXMutexUnlock(&nap->mu);
     retval = 0;
@@ -772,7 +772,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   if (fd >= 0 && ndp){
     NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
     NaClSetDescMu(nap, fd, NULL);
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
     ret = 0;
   }
 
@@ -865,7 +865,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   }
 
 cleanup_unref:
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 
 cleanup:
   return retval;
@@ -904,7 +904,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -937,7 +937,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   } else {
     NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
   }
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -979,7 +979,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1017,7 +1017,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
   } else {
     NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
   }
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -1057,7 +1057,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1085,7 +1085,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -1127,7 +1127,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1161,7 +1161,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                    (uint32_t)(uintptr_t)buf,
                    (uint32_t)(((uintptr_t)buf) + count - 1));
 
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -1222,7 +1222,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     }
   }
 out_unref:
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 out:
   return retval;
 }
@@ -1291,7 +1291,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
             Ioctl)(ndp, request, (void *) sysaddr);
   NaClXMutexUnlock(&nap->mu);
 cleanup_unref:
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 cleanup:
   return retval;
 }
@@ -1338,7 +1338,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
     }
   }
 
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 cleanup:
   return retval;
 }
@@ -2234,7 +2234,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   }
  cleanup_no_locks:
   if (ndp) {
-    NaClDescUnref(ndp);
+    // NaClDescUnref(ndp);
   }
 
   /*
@@ -2825,11 +2825,11 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
 cleanup:
   for (i = 0; i < kern_nanimh.desc_length; ++i) {
     if (kern_desc[i]) {
-      NaClDescUnref(kern_desc[i]);
+      // NaClDescUnref(kern_desc[i]);
       kern_desc[i] = NULL;
     }
   }
-  NaClDescUnref(ndp);
+  // NaClDescUnref(ndp);
 cleanup_leave:
   NaClLog(2, "NaClSysImcSendmsg: returning %d\n", retval);
   return retval;
