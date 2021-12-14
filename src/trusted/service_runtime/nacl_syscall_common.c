@@ -896,7 +896,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   }
 
   ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
-
+  /* Use DynArrayGet to bypass GetDesc locks for fast IO */
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -918,7 +918,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   if (count > INT32_MAX) {
     count = INT32_MAX;
   }
-
 
   read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
 
@@ -1049,7 +1048,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   }
 
   ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
-
+  /* Use DynArrayGet to bypass GetDesc locks for fast IO */
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
