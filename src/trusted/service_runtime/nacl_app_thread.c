@@ -75,6 +75,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
+  nap_child->nap_atomic_flag = ATOMIC_FLAG_INIT;
+  nap_child->desc_atomic_flag = ATOMIC_FLAG_INIT;
 
   for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
     envc++;

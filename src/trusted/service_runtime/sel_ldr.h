@@ -30,6 +30,8 @@
 
 #include <signal.h>
 #include <stdbool.h>
+#include <stdatomic.h>
+
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
@@ -276,6 +278,7 @@ struct NaClApp {
 
   struct NaClMutex          mu;
   struct NaClCondVar        cv;
+  atomic_flag               nap_atomic_flag;
 
 #if NACL_WINDOWS
   /*
@@ -425,6 +428,8 @@ struct NaClApp {
 
   struct NaClFastMutex      desc_mu;
   struct DynArray           desc_tbl;  /* NaClDesc pointers */
+  atomic_flag               desc_atomic_flag;
+
 
   const struct NaClDebugCallbacks *debug_stub_callbacks;
   struct NaClMutex          exception_mu;

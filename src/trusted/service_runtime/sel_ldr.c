@@ -256,6 +256,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_threads_mu;
   }
 
+  nap->nap_atomic_flag = ATOMIC_FLAG_INIT;
+  nap->desc_atomic_flag = ATOMIC_FLAG_INIT;
+
   nap->running = 0;
   nap->exit_status = -1;
 
@@ -625,27 +628,27 @@ struct NaClDesc *NaClGetDesc(struct NaClApp *nap,
                              int            d) {
   struct NaClDesc *res;
 
-  NaClFastMutexLock(&nap->desc_mu);
+  atomic_lock(&nap->desc_atomic_flag);
   res = NaClGetDescMu(nap, d);
-  NaClFastMutexUnlock(&nap->desc_mu);
+  atomic_unlock(&nap->desc_atomic_flag);
   return res;
 }
 
 void NaClSetDesc(struct NaClApp   *nap,
                  int              d,
                  struct NaClDesc  *ndp) {
-  NaClFastMutexLock(&nap->desc_mu);
+  atomic_lock(&nap->desc_atomic_flag);
   NaClSetDescMu(nap, d, ndp);
-  NaClFastMutexUnlock(&nap->desc_mu);
+  atomic_unlock(&nap->desc_atomic_flag);
 }
 
 int32_t NaClSetAvail(struct NaClApp  *nap,
                      struct NaClDesc *ndp) {
   int32_t pos;
 
-  NaClFastMutexLock(&nap->desc_mu);
+  atomic_lock(&nap->desc_atomic_flag);
   pos = NaClSetAvailMu(nap, ndp);
-  NaClFastMutexUnlock(&nap->desc_mu);
+  atomic_unlock(&nap->desc_atomic_flag);
 
   return pos;
 }
@@ -1396,22 +1399,22 @@ struct NaClSrpcHandlerDesc const secure_handlers[] = {
 void NaClVmIoWillStart(struct NaClApp *nap,
                        uint32_t addr_first_usr,
                        uint32_t addr_last_usr) {
-  NaClXMutexLock(&nap->mu);
+  atomic_lock(&nap->nap_atomic_flag);
   (*nap->mem_io_regions->vtbl->AddInterval)(nap->mem_io_regions,
                                             addr_first_usr,
                                             addr_last_usr);
-  NaClXMutexUnlock(&nap->mu);
+  atomic_unlock(&nap->nap_atomic_flag);
 }
 
 
 void NaClVmIoHasEnded(struct NaClApp *nap,
                       uint32_t addr_first_usr,
                       uint32_t addr_last_usr) {
-  NaClXMutexLock(&nap->mu);
+  atomic_lock(&nap->nap_atomic_flag);
   (*nap->mem_io_regions->vtbl->RemoveInterval)(nap->mem_io_regions,
                                                addr_first_usr,
                                                addr_last_usr);
-  NaClXMutexUnlock(&nap->mu);
+  atomic_unlock(&nap->nap_atomic_flag);
 }
 
 void NaClVmIoPendingCheck_mu(struct NaClApp *nap,
@@ -1797,4 +1800,16 @@ int NextFdBounded(int cage_id, int lowerbound){
   }
 
   return -NACL_ABI_EBADF;
+}
+
+
+void atomic_lock(atomic_flag _lockflag)
+{
+    while(_lockflag.test_and_set(memory_order_acquire))
+    { }
+}
+
+void atomic_unlock(atomic_flag _lockflag)
+{
+    _lockflag.clear();
 }
