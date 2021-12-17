@@ -30,13 +30,8 @@
 
 #include <signal.h>
 #include <stdbool.h>
+#include <atomic>
 
-#ifndef __cplusplus
-# include <stdatomic.h>
-#else
-# include <atomic>
-# define _Atomic(X) std::atomic< X >
-#endif
 
 
 #include "native_client/src/include/atomic_ops.h"
