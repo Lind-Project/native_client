@@ -257,8 +257,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   }
 
   // init atomic flags
-  memset(nap->nap_atomic_flag, 0, sizeof(atomic_flag));
-  memset(nap->desc_atomic_flag, 0, sizeof(atomic_flag));
+  memset(&nap->nap_atomic_flag, 0, sizeof(atomic_flag));
+  memset(&nap->desc_atomic_flag, 0, sizeof(atomic_flag));
 
   nap->running = 0;
   nap->exit_status = -1;
@@ -1806,11 +1806,11 @@ int NextFdBounded(int cage_id, int lowerbound){
 
 void atomic_lock(atomic_flag _lockflag)
 {
-    while(_lockflag.test_and_set(memory_order_acquire))
+    while(test_and_set(_lockflag))
     { }
 }
 
 void atomic_unlock(atomic_flag _lockflag)
 {
-    _lockflag.clear();
+    atomic_flag_clear(_lockflag);
 }
