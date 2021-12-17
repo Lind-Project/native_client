@@ -1025,6 +1025,9 @@ static INLINE void NaClLogAddressSpaceLayout(struct NaClApp *nap) {
   NaClLog(2, "nap->bundle_size        = 0x%x\n", nap->bundle_size);
 }
 
+void atomic_lock(atomic_flag* _lockflag);
+void atomic_unlock(atomic_flag* _lockflag);
+
 
 EXTERN_C_END
 
