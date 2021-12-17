@@ -256,8 +256,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_threads_mu;
   }
 
-  nap->nap_atomic_flag = ATOMIC_FLAG_INIT;
-  nap->desc_atomic_flag = ATOMIC_FLAG_INIT;
+  // init atomic flags
+  memset(nap->nap_atomic_flag, 0, sizeof(atomic_flag));
+  memset(nap->desc_atomic_flag, 0, sizeof(atomic_flag));
 
   nap->running = 0;
   nap->exit_status = -1;
