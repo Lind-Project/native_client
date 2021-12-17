@@ -2328,7 +2328,7 @@ def MakeUnixLikeEnv():
         '-fvisibility=hidden',
         '-fstack-protector',
         ] + werror_flags,
-    CXXFLAGS=['-std=c++98'],
+    CXXFLAGS=['-std=c++11'],
     # NOTE: pthread is only neeeded for libppNaClPlugin.so and on arm
     LIBS = ['pthread'],
     CPPDEFINES = [['__STDC_LIMIT_MACROS', '1'],
@@ -2722,7 +2722,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
 
     CFLAGS = ['-std=c11',
               ],
-    CXXFLAGS = ['-std=gnu++98',
+    CXXFLAGS = ['-std=gnu++11',
                 '-Wno-long-long',
                 ],
 
