@@ -1804,13 +1804,13 @@ int NextFdBounded(int cage_id, int lowerbound){
 }
 
 
-void atomic_lock(atomic_flag _lockflag)
+void atomic_lock(atomic_flag* _lockflag)
 {
     while(test_and_set(_lockflag))
     { }
 }
 
-void atomic_unlock(atomic_flag _lockflag)
+void atomic_unlock(atomic_flag* _lockflag)
 {
     atomic_flag_clear(_lockflag);
 }
