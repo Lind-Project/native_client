@@ -2307,7 +2307,7 @@ def MakeUnixLikeEnv():
   # TODO(nfullagar): should we consider switching to -std=c99 ?
   unix_like_env.Prepend(
     CFLAGS = [
-        '-std=gnu11',
+        '-std=c11',
         '-Wdeclaration-after-statement',
         # Require defining functions as "foo(void)" rather than
         # "foo()" because, in C (but not C++), the latter defines a
@@ -2720,7 +2720,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
                ] +
               werror_flags,
 
-    CFLAGS = ['-std=gnu11',
+    CFLAGS = ['-std=c11',
               ],
     CXXFLAGS = ['-std=gnu++98',
                 '-Wno-long-long',
