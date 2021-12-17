@@ -9,6 +9,7 @@
  */
 
 #include <string.h>
+#include <stdatomic.h>
 
 #include "native_client/src/shared/platform/aligned_malloc.h"
 #include "native_client/src/shared/platform/nacl_check.h"
