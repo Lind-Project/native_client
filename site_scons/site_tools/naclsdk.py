@@ -200,7 +200,7 @@ def _SetEnvForNativeSdk(env, sdk_path):
               BASE_CXXFLAGS=[cc_mode_flag],
               BASE_ASFLAGS=[as_mode_flag],
               BASE_ASPPFLAGS=[cc_mode_flag],
-              CFLAGS=['-std=c11'],
+              CFLAGS=['-std=gnu11'],
               CCFLAGS=['-O3',
                        '-Werror',
                        '-Wall',
@@ -302,7 +302,7 @@ def _SetEnvForPnacl(env, root):
   # instead of CFLAGS etc to keep them from getting blown away by some
   # tests. Don't add flags here unless they always need to be preserved.
   pnacl_cxx_flags = ''
-  pnacl_cc_flags = ' -std=c11'
+  pnacl_cc_flags = ' -std=gnu11'
   pnacl_ld_flags = ' ' + ' '.join(env['PNACL_BCLDFLAGS'])
   pnacl_translate_flags = ''
 

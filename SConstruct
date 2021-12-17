@@ -2307,7 +2307,7 @@ def MakeUnixLikeEnv():
   # TODO(nfullagar): should we consider switching to -std=c99 ?
   unix_like_env.Prepend(
     CFLAGS = [
-        '-std=c11',
+        '-std=gnu11',
         '-Wdeclaration-after-statement',
         # Require defining functions as "foo(void)" rather than
         # "foo()" because, in C (but not C++), the latter defines a
@@ -2328,7 +2328,7 @@ def MakeUnixLikeEnv():
         '-fvisibility=hidden',
         '-fstack-protector',
         ] + werror_flags,
-    CXXFLAGS=['-std=c++11'],
+    CXXFLAGS=['-std=gnu++11'],
     # NOTE: pthread is only neeeded for libppNaClPlugin.so and on arm
     LIBS = ['pthread'],
     CPPDEFINES = [['__STDC_LIMIT_MACROS', '1'],
@@ -2720,7 +2720,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
                ] +
               werror_flags,
 
-    CFLAGS = ['-std=c11',
+    CFLAGS = ['-std=gnu11',
               ],
     CXXFLAGS = ['-std=gnu++11',
                 '-Wno-long-long',

@@ -39,7 +39,7 @@
       'DYNAMIC_ANNOTATIONS_PREFIX=NACL_',
     ],
     'nacl_default_compile_flags': [
-      #'-std=c11',  Added by build_nexe
+      #'-std=gnu11',  Added by build_nexe
       '-O2',
       '-g',
       '-Wall',

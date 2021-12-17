@@ -26,7 +26,7 @@ if env.Bit('bitcode'):
   env.Append(CCFLAGS=['-allow-asm'])
 
 cpp11_env = env.Clone()
-cpp11_env.Append(CCFLAGS=['-std=c++11'])
+cpp11_env.Append(CCFLAGS=['-std=gnu++11'])
 
 # All the libraries were already included via -l switches in LINKFLAGS.
 # But we use them again in LIBS so scons knows about the dependencies.
