@@ -1806,7 +1806,7 @@ int NextFdBounded(int cage_id, int lowerbound){
 
 void atomic_lock(atomic_flag* _lockflag)
 {
-    while(test_and_set(_lockflag))
+    while(atomic_flag_test_and_set(_lockflag))
     { }
 }
 
