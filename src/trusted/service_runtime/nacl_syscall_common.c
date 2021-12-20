@@ -895,8 +895,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
-  /* Use DynArrayGet to bypass GetDesc locks for fast IO */
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -905,7 +907,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -919,6 +920,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
+
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
 
   if (read_result > 0) {
@@ -941,6 +946,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1047,8 +1053,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  ndp = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, fd);
-  /* Use DynArrayGet to bypass GetDesc locks for fast IO */
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -1057,7 +1066,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1082,13 +1090,16 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
