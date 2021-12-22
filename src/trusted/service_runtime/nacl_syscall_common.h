@@ -127,11 +127,11 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
 
 int32_t NaClSysFstat(struct NaClAppThread *natp,
                      int                  d,
-                     struct nacl_abi_stat *nasp);
+                     struct stat          *buf);
 
 int32_t NaClSysStat(struct NaClAppThread *natp,
                     const char           *pathname,
-                    struct nacl_abi_stat *buf);
+                    struct stat          *buf);
 
 int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        int                  d,
@@ -143,7 +143,7 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
 
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
-                    struct nacl_abi_stat  *buf);
+                    struct stat          *buf);
 
 int32_t NaClSysMkdir(struct NaClAppThread *natp,
                      uint32_t             pathname,

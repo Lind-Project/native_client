@@ -1308,11 +1308,10 @@ cleanup:
 
 int32_t NaClSysFstat(struct NaClAppThread *natp,
                      int                  d,
-                     struct nacl_abi_stat *nasp) {
+                     struct stat          *buf) {
   struct NaClApp        *nap = natp->nap;
   int32_t               retval = -NACL_ABI_EINVAL;
   struct NaClDesc       *ndp;
-  struct nacl_abi_stat  result;
   int                   fd;
 
   NaClLog(2, "Entered NaClSysFstat(0x%08"NACL_PRIxPTR
@@ -1339,13 +1338,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   }
 
   retval = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-            Fstat)(ndp, &result);
-  if (!retval) {
-    if (!NaClCopyOutToUser(nap, (uintptr_t) nasp,
-                           &result, sizeof(result))) {
-      retval = -NACL_ABI_EFAULT;
-    }
-  }
+            Fstat)(ndp,buf);
 
   NaClDescUnref(ndp);
 cleanup:
@@ -1354,11 +1347,10 @@ cleanup:
 
 int32_t NaClSysStat(struct NaClAppThread  *natp,
                     const char            *pathname,
-                    struct nacl_abi_stat  *buf) {
+                    struct stat           *buf) {
   struct NaClApp      *nap = natp->nap;
   int32_t             retval = -NACL_ABI_EINVAL;
   char                path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t    stbuf;
 
   NaClLog(2, "Entered NaClSysStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n",
@@ -1377,24 +1369,15 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
-  if (!retval) {
-    struct nacl_abi_stat abi_stbuf;
+  retval = NaClHostDescStat(path, buf, nap->cage_id);
 
-    retval = NaClAbiStatHostDescStatXlateCtor(&abi_stbuf,
-                                              &stbuf);
-    if (!NaClCopyOutToUser(nap, (uintptr_t) buf,
-                           &abi_stbuf, sizeof(abi_stbuf))) {
-      retval = -NACL_ABI_EFAULT;
-    }
-  }
 cleanup:
   return retval;
 }
 
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
-                    struct nacl_abi_stat  *buf) {
+                    struct stat           *buf) {
   struct NaClApp      *nap = natp->nap;
   int32_t             retval = -NACL_ABI_EINVAL;
   char                path[NACL_CONFIG_PATH_MAX];
@@ -1415,19 +1398,10 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   }
 
   /*
-   * Perform a host stat.
+   * Perform a host stat, since we dont have symlinks
    */
-  retval = NaClHostDescStat(path, &stbuf, nap->cage_id);
-  if (!retval) {
-    struct nacl_abi_stat abi_stbuf;
+  retval = NaClHostDescStat(path, buf, nap->cage_id);
 
-    retval = NaClAbiStatHostDescStatXlateCtor(&abi_stbuf,
-                                              &stbuf);
-    if (!NaClCopyOutToUser(nap, (uintptr_t) buf,
-                           &abi_stbuf, sizeof(abi_stbuf))) {
-      retval = -NACL_ABI_EFAULT;
-    }
-  }
 cleanup:
   return retval;
 }

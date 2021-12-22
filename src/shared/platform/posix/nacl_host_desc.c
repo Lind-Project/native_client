@@ -491,14 +491,14 @@ int NaClHostDescIoctl(struct NaClHostDesc *d,
  * See NaClHostDescStat below.
  */
 int NaClHostDescFstat(struct NaClHostDesc  *d,
-                      nacl_host_stat_t     *nhsp) {
+                      struct stat          *buf) {
   NaClHostDescCheckValidity("NaClHostDescFstat", d);
 #if NACL_LINUX
-  if (lind_fxstat(d->d, nhsp, d->cageid) == -1) {
+  if (lind_fxstat(d->d, buf, d->cageid) == -1) {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_fxstat(d->d, nhsp, d->cageid) == -1) {
+  if (lind_fxstat(d->d, buf, d->cageid) == -1) {
     return -errno;
   }
 #else
@@ -524,15 +524,15 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
  * fstat and should behave similarly.
  */
 int NaClHostDescStat(char const       *host_os_pathname,
-                     nacl_host_stat_t *nhsp,
+                     struct stat      *buf,
 		     int cageid) {
 
 #if NACL_LINUX
-  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1) {
+  if (lind_xstat(host_os_pathname, buf, cageid) == -1) {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1) {
+  if (lind_xstat(host_os_pathname, buf, cageid) == -1) {
     return -errno;
   }
 #else

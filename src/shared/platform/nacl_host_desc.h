@@ -15,7 +15,6 @@
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
-#include "native_client/src/shared/platform/lind_stat.h"
 
 #if NACL_LINUX || NACL_OSX
 # include "native_client/src/shared/platform/posix/nacl_host_desc_types.h"
@@ -48,10 +47,7 @@ typedef int64_t nacl_off64_t;
  * platforms, and to know that the st_size field is a 64-bit value
  * compatible w/ nacl_off64_t above.
  */
-#if NACL_LINUX
-typedef struct lind_stat nacl_host_stat_t;
-#elif NACL_OSX
-typedef struct lind_stat nacl_host_stat_t;
+
 #elif NACL_WINDOWS
 typedef struct _stati64 nacl_host_stat_t;
 #elif defined __native_client__
@@ -298,7 +294,7 @@ extern int NaClHostDescIoctl(struct NaClHostDesc  *d,
  * Fstat.
  */
 extern int NaClHostDescFstat(struct NaClHostDesc  *d,
-                             nacl_host_stat_t     *nasp) NACL_WUR;
+                             struct stat          *buf) NACL_WUR;
 
 /*
  * Dtor for the NaClHostFile object. Close the file.
@@ -308,7 +304,7 @@ extern int NaClHostDescFstat(struct NaClHostDesc  *d,
 extern int NaClHostDescClose(struct NaClHostDesc  *d) NACL_WUR;
 
 extern int NaClHostDescStat(char const        *host_os_pathname,
-                            nacl_host_stat_t  *nasp,
+                            struct stat          *buf,
 			    int cageid) NACL_WUR;
 
 /*
