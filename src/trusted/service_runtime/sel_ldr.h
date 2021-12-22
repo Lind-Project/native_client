@@ -858,7 +858,7 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
  */
 
 /* Lind
- * We're not only using Linux so it's fine to disregard these operations which are
+ * We're only using Linux so it's fine to disregard these operations which are
  * Windows specific. 
  * /
 
