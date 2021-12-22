@@ -587,6 +587,15 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
   return result;
 }
 
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                               int            d) {
+  struct NaClDesc *result;
+
+  result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
+
+  return result;
+}
+
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
                    struct NaClDesc  *ndp) {
@@ -625,9 +634,7 @@ struct NaClDesc *NaClGetDesc(struct NaClApp *nap,
                              int            d) {
   struct NaClDesc *res;
 
-  NaClFastMutexLock(&nap->desc_mu);
   res = NaClGetDescMu(nap, d);
-  NaClFastMutexUnlock(&nap->desc_mu);
   return res;
 }
 

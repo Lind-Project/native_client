@@ -686,6 +686,9 @@ int32_t NaClSetAvail(struct NaClApp   *nap,
 struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
                                int            d);
 
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                                    int            d);
+
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
                    struct NaClDesc  *ndp);
@@ -853,6 +856,11 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
  * concurrent "read" and "write" syscalls racing on the same memory
  * region..
  */
+
+/* Lind
+ * We're only using Linux so it's fine to disregard these operations which are
+ * Windows specific. 
+ * /
 
 /*
  * Some potentially blocking I/O operation is about to start.  Syscall

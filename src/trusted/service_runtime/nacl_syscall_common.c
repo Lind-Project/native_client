@@ -290,17 +290,15 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
    */
   NaClLog(1, "NaClOpenAclCheck(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o)\n",
           (uintptr_t) nap, path, flags, mode);
-  if (3 < NaClLogGetVerbosity()) {
-    NaClLog(0, "O_ACCMODE: 0%o\n", flags & NACL_ABI_O_ACCMODE);
-    NaClLog(0, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
-    NaClLog(0, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
-    NaClLog(0, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
+  NaClLog(4, "O_ACCMODE: 0%o\n", flags & NACL_ABI_O_ACCMODE);
+  NaClLog(4, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
+  NaClLog(4, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
+  NaClLog(4, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
 #define FLOG(VAR, BIT) NaClLog(1, "%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no")
     FLOG(flags, NACL_ABI_O_CREAT);
     FLOG(flags, NACL_ABI_O_TRUNC);
     FLOG(flags, NACL_ABI_O_APPEND);
 #undef FLOG
-  }
   if (NaClAclBypassChecks) {
     return 0;
   }
@@ -897,7 +895,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -906,7 +907,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -920,14 +920,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
-  NaClVmIoWillStart(nap,
-                    (uint32_t) (uintptr_t) buf,
-                    (uint32_t) (((uintptr_t) buf) + count - 1));
+
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
 
-  NaClVmIoHasEnded(nap,
-                    (uint32_t) (uintptr_t) buf,
-                    (uint32_t) (((uintptr_t) buf) + count - 1));
   if (read_result > 0) {
     NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
     log_bytes = (size_t) read_result;
@@ -935,22 +933,20 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "read result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
   } else {
     NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
   }
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1017,11 +1013,9 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "pread result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
@@ -1059,7 +1053,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -1068,7 +1066,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1084,7 +1081,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
@@ -1093,21 +1090,16 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-  NaClVmIoWillStart(nap,
-                    (uint32_t)(uintptr_t)buf,
-                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
-
-  NaClVmIoHasEnded(nap,
-                   (uint32_t)(uintptr_t)buf,
-                   (uint32_t)(((uintptr_t)buf) + count - 1));
-
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1160,7 +1152,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
