@@ -42,7 +42,7 @@ void NaClMetadataFromFDCtor(struct NaClValidationMetadata *metadata,
                             const char* file_name,
                             size_t file_name_length) {
   struct NaClHostDesc wrapper;
-  nacl_host_stat_t stat;
+  struct stat stbuf;
 #if NACL_WINDOWS
   BY_HANDLE_FILE_INFORMATION file_info;
 #endif
@@ -51,7 +51,7 @@ void NaClMetadataFromFDCtor(struct NaClValidationMetadata *metadata,
   /* If we early out, identity_type will be 0 / NaClCodeIdentityData. */
 
   wrapper.d = file_desc;
-  if(NaClHostDescFstat(&wrapper, &stat))
+  if(NaClHostDescFstat(&wrapper, &stbuf))
     return;
 
 #if NACL_WINDOWS
@@ -72,12 +72,12 @@ void NaClMetadataFromFDCtor(struct NaClValidationMetadata *metadata,
                        file_info.nFileIndexLow);
 #else
   /* st_dev is not actually a property of the device, so skip it. */
-  metadata->file_id = stat.st_ino;
+  metadata->file_id = stbuf.st_ino;
 #endif
 
-  metadata->file_size = stat.st_size;
-  metadata->mtime = stat.st_mtime;
-  metadata->ctime = stat.st_ctime;
+  metadata->file_size = stbuf.st_size;
+  metadata->mtime = stbuf.st_mtime;
+  metadata->ctime = stbuf.st_ctime;
 
   CHECK(0 < file_name_length);
   metadata->file_name = malloc(file_name_length);
