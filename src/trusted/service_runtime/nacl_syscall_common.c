@@ -1314,13 +1314,16 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   struct NaClDesc       *ndp;
   int                   fd;
 
-  NaClLog(2, "Entered NaClSysFstat(0x%08"NACL_PRIxPTR
-           ", %d, 0x%08"NACL_PRIxPTR")\n",
-           (uintptr_t)natp,
-           d, (uintptr_t)buf);
 
-  NaClLog(2, "sizeof(struct stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
-          sizeof(*buf), sizeof(*buf));
+
+  struct stat *sysbufaddr = (struct stat*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct stat));
+  NaClLog(2, "Cage %d Entered NaClSysFstat(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysFstat could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
 
   fd = fd_cage_table[nap->cage_id][d];
 
@@ -1341,7 +1344,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  retval = NaClHostDescFstat(hd, buf);
+  retval = NaClHostDescFstat(hd, sysbufaddr);
 
 
   NaClDescUnref(ndp);
@@ -1356,9 +1359,16 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   int32_t             retval = -NACL_ABI_EINVAL;
   char                path[NACL_CONFIG_PATH_MAX];
 
-  NaClLog(2, "Entered NaClSysStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
-           " 0x%08"NACL_PRIxPTR")\n",
-          (uintptr_t)natp,(uintptr_t)pathname, (uintptr_t)buf);
+
+  struct stat *sysbufaddr = (struct stat*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct stat));
+  NaClLog(2, "Cage %d Entered NaClSysStat(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysStat could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
 
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
   if (retval) {
@@ -1373,7 +1383,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = NaClHostDescStat(path, buf, nap->cage_id);
+  retval = NaClHostDescStat(path, sysbufaddr, nap->cage_id);
 
 cleanup:
   return retval;
