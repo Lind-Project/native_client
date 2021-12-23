@@ -143,7 +143,7 @@ int NaClHostDirCtor(struct NaClHostDir  *d,
 int NaClHostDirOpen(struct NaClHostDir  *d,
                     char                *path) {
   int         fd;
-  nacl_host_stat_t stbuf;
+  struct stat stbuf;
   int         rv;
 
   NaClLog(3, "NaClHostDirOpen(0x%08"NACL_PRIxPTR", %s)\n", (uintptr_t) d, path);
