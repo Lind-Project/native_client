@@ -1396,9 +1396,16 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   int32_t             retval = -NACL_ABI_EINVAL;
   char                path[NACL_CONFIG_PATH_MAX];
 
-  NaClLog(2, "Entered NaClSysLStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
-           " 0x%08"NACL_PRIxPTR")\n",
-          (uintptr_t)natp,(uintptr_t)pathname, (uintptr_t)buf);
+
+  struct stat *sysbufaddr = (struct stat*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct stat));
+  NaClLog(2, "Cage %d Entered NaClSysLStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp,  (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysLStat could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
 
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
   if (retval) {
@@ -1413,7 +1420,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat, since we dont have symlinks
    */
-  retval = NaClHostDescStat(path, buf, nap->cage_id);
+  retval = NaClHostDescStat(path, sysbufaddr, nap->cage_id);
 
 cleanup:
   return retval;
