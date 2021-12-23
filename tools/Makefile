@@ -961,7 +961,7 @@ ifeq ($(INST_GLIBC_PROGRAM), none)
 else
 	$(INST_GLIBC_PROGRAM) "$(DESTDIR)$(PREFIX)"
 endif
-	cp -f SRC/glibc/sysdeps/nacl/{irt_syscalls}.h \
+	cp -f SRC/glibc/sysdeps/nacl/irt_syscalls.h \
 	  "$(DESTDIR)$(PREFIX)/$(CROSSARCH)"/include
 	$(MAKE) -f $(THISMAKEFILE) export-headers
 	$(MAKE) -f $(THISMAKEFILE) glibc-adhoc-files
