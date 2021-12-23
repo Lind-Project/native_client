@@ -48,7 +48,7 @@ typedef int64_t nacl_off64_t;
  * compatible w/ nacl_off64_t above.
  */
 
-#elif NACL_WINDOWS
+#if NACL_WINDOWS
 typedef struct _stati64 nacl_host_stat_t;
 #elif defined __native_client__
 /* nacl_host_stat_t not exposed to NaCl module code */

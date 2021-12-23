@@ -276,7 +276,6 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
                      int                  flags,
                      int                  mode) {
   int host_desc;
-  nacl_host_stat_t stbuf;
   int posix_flags;
 
   NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
