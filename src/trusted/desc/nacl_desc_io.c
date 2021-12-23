@@ -308,7 +308,7 @@ static int NaClDescIoDescIoctl(struct NaClDesc         *vself,
 }
 
 static int NaClDescIoDescFstat(struct NaClDesc         *vself,
-                               struct nacl_abi_stat    *statbuf) {
+                               struct stat          *statbuf) {
 
   /* Unimplemented */
   return 0;

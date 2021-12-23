@@ -358,7 +358,7 @@ int BasicPermChecks(struct NaClHostDesc *test_file,
 int SeekPastEndAndWriteTest(struct NaClHostDesc *test_file,
                             struct NaClHostDesc *ro_view,
                             void const *test_params) {
-  nacl_host_stat_t stbuf;
+  sruct stat stbuf;
   nacl_off64_t new_size;
   ssize_t io_err;
   int err;
