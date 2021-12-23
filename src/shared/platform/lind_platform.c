@@ -150,7 +150,7 @@ int lind_fstatfs (int fd, struct statfs *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fstatfs, int, fd, statfsstruct, buf);
 }
 
-int lind_statfs (const char *path, struct statfs *buf, int cageid) {
+int lind_statfs(const char *path, struct statfs *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_statfs, cbuf, path, statfsstruct, buf);
 }
 
