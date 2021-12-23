@@ -108,10 +108,8 @@ uint32_t ExtractNames(struct string_array *dest_array,
                       char const          *dir_path) {
   struct nacl_abi_dirent  *nadp;
   char                    path[4096];
-  nacl_host_stat_t        host_stat;
+  struct stat             host_stat;
   int                     rv;
-  int32_t                 rv32;
-  struct nacl_abi_stat    nabi_stat;
   uint32_t                error_count = 0;
 
   while (buffer_size > 0) {
@@ -136,7 +134,6 @@ uint32_t ExtractNames(struct string_array *dest_array,
       goto next_entry;
     }
 
-  
     if (host_stat.st_ino != nadp->nacl_abi_d_ino) {
       fprintf(stderr,
               "inode values differ: expected 0x%"NACL_PRIx64
