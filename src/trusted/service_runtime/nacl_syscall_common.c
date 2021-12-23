@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/vfs.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -4816,7 +4817,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        struct statfs  *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(statfs));
+  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct statfs));
   NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
 
@@ -4841,7 +4842,7 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
                       struct statfs  *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(statfs));
+  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct statfs));
   char           path[NACL_CONFIG_PATH_MAX];
 
   ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
