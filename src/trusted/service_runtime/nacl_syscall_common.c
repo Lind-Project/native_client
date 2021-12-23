@@ -1361,8 +1361,8 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
 
 
   struct stat *sysbufaddr = (struct stat*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct stat));
-  NaClLog(2, "Cage %d Entered NaClSysStat(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
+  NaClLog(2, "Cage %d Entered NaClSysStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp,  (uintptr_t) buf);
 
   if ((void*) kNaClBadAddress == sysbufaddr) {
     NaClLog(2, "NaClSysStat could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
