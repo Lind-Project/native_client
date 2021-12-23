@@ -656,7 +656,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   struct NaClApp       *nap = natp->nap;
   int                  retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t     stbuf;
   int                  allowed_flags;
   int                  fd_retval = -1;
   const char           *glibc_prefix = "/lib/glibc/";
@@ -1385,7 +1384,6 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   struct NaClApp      *nap = natp->nap;
   int32_t             retval = -NACL_ABI_EINVAL;
   char                path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t    stbuf;
 
   NaClLog(2, "Entered NaClSysLStat(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
            " 0x%08"NACL_PRIxPTR")\n",
@@ -1670,7 +1668,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   int                         mapping_code;
   uintptr_t                   map_result;
   int                         holding_app_lock;
-  struct nacl_abi_stat        stbuf;
   size_t                      alloc_rounded_length;
   nacl_off64_t                host_rounded_file_bytes;
   size_t                      alloc_rounded_file_bytes;
