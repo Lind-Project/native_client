@@ -135,22 +135,13 @@ uint32_t ExtractNames(struct string_array *dest_array,
       ++error_count;
       goto next_entry;
     }
-    rv32 = NaClAbiStatHostDescStatXlateCtor(&nabi_stat, &host_stat);
-    if (0 != rv32) {
-      fprintf(stderr, "NaClAbiStatHostDescStatXlateCtor failed: %d\n", rv32);
-      ++error_count;
-      goto next_entry;
-    }
-    /*
-     * the inode number may be masked, but both
-     * NaClAbiStatHostDescStatXlateCtor and NaClHostDirGetdents should
-     * mask identically.
-     */
-    if (nabi_stat.nacl_abi_st_ino != nadp->nacl_abi_d_ino) {
+
+  
+    if (host_stat.st_ino != nadp->nacl_abi_d_ino) {
       fprintf(stderr,
               "inode values differ: expected 0x%"NACL_PRIx64
               ", got 0x%"NACL_PRIx64"\n",
-              nabi_stat.nacl_abi_st_ino, nadp->nacl_abi_d_ino);
+              host_stat.st_ino, nadp->nacl_abi_d_ino);
       ++error_count;
     }
  next_entry:

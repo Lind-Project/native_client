@@ -1337,8 +1337,8 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = (*((struct NaClDescVtbl const *) ndp->base.vtbl)->
-            Fstat)(ndp,buf);
+  retval = NaClHostDescFstat(path, buf, nap->cage_id);
+
 
   NaClDescUnref(ndp);
 cleanup:

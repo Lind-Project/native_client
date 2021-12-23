@@ -307,19 +307,6 @@ static int NaClDescIoDescIoctl(struct NaClDesc         *vself,
   return NaClHostDescIoctl(self->hd, request, arg);
 }
 
-static int NaClDescIoDescFstat(struct NaClDesc         *vself,
-                               struct nacl_abi_stat    *statbuf) {
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
-  int                   rv;
-  nacl_host_stat_t      hstatbuf;
-
-  rv = NaClHostDescFstat(self->hd, &hstatbuf);
-  if (0 != rv) {
-    return rv;
-  }
-  return NaClAbiStatHostDescStatXlateCtor(statbuf, &hstatbuf);
-}
-
 static int NaClDescIoDescExternalizeSize(struct NaClDesc *vself,
                                          size_t          *nbytes,
                                          size_t          *nhandles) {
@@ -376,7 +363,6 @@ struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   NaClDescIoDescPRead,
   NaClDescIoDescPWrite,
   NaClDescIoDescIoctl,
-  NaClDescIoDescFstat,
   NaClDescGetdentsNotImplemented,
   NaClDescIoDescExternalizeSize,
   NaClDescIoDescExternalize,
