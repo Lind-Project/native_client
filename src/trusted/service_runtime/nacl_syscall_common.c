@@ -1340,7 +1340,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  retval = NaClHostDescFstat(hd, buf, nap->cage_id);
+  retval = NaClHostDescFstat(hd, buf);
 
 
   NaClDescUnref(ndp);
