@@ -4816,7 +4816,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        struct statfs  *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  struct statfs*sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct statfs));
+  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(statfs));
   NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
 
@@ -4841,7 +4841,7 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
                       struct statfs  *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  struct statfs*sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct statfs));
+  struct statfs *sysbufaddr = (struct statfs) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(statfs));
   char           path[NACL_CONFIG_PATH_MAX];
 
   ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
@@ -4860,7 +4860,7 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
   }
 
 
-  ret = statfs(path, sysbufaddr, nap->cage_id);
+  ret = lind_statfs(path, sysbufaddr, nap->cage_id);
 
   if(ret > 0) ret = 0;
 
