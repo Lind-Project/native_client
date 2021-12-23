@@ -1317,10 +1317,10 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysFstat(0x%08"NACL_PRIxPTR
            ", %d, 0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp,
-           d, (uintptr_t)nasp);
+           d, (uintptr_t)buf);
 
-  NaClLog(2, "sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
-          sizeof(*nasp), sizeof(*nasp));
+  NaClLog(2, "sizeof(struct stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
+          sizeof(*buf), sizeof(*buf));
 
   fd = fd_cage_table[nap->cage_id][d];
 
@@ -1337,7 +1337,11 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescFstat(path, buf, nap->cage_id);
+  /* Translate to host desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+  struct NaClHostDesc *hd = self->hd;
+
+  retval = NaClHostDescFstat(hd, buf, nap->cage_id);
 
 
   NaClDescUnref(ndp);
