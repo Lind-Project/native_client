@@ -20,6 +20,8 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 
+#include "native_client/src/shared/platform/lind_stat.h"
+
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
