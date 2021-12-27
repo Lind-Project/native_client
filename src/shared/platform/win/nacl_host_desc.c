@@ -38,6 +38,7 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
+
 #define OFFSET_FOR_FILEPOS_LOCK (GG_LONGLONG(0x7000000000000000))
 
 /*
