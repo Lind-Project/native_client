@@ -166,7 +166,7 @@ int NaClHostDirOpen(struct NaClHostDir  *d,
     (void) lind_close(fd, d->cageid);
     return -NaClXlateErrno(errno);
   }
-  if (!S_ISDIR(stbuf.st_mode)) {
+  if (!S_ISDIR(stbuf.nacl_abi_st_mode)) {
     (void) lind_close(fd, d->cageid);
     return -NACL_ABI_ENOTDIR;
   }

@@ -51,10 +51,10 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat    *dst,
 #if defined(NACL_MASK_INODES)
   dst->nacl_abi_st_ino = NACL_FAKE_INODE_NUM;
 #else
-  dst->nacl_abi_st_ino = src->st_ino;
+  dst->nacl_abi_st_ino = src->nacl_abi_st_ino;
 #endif
 
-  switch (src->st_mode & S_IFMT) {
+  switch (src->nacl_abi_st_mode & S_IFMT) {
     case S_IFREG:
       m = NACL_ABI_S_IFREG;
       break;
@@ -74,29 +74,29 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat    *dst,
                " The NaCl app has a file with st_mode = 0%o."
                " (This is normal for std{in,out,err}, or other"
                " inherited/injected files.)\n"),
-              src->st_mode);
+              src->nacl_abi_st_mode);
       m = NACL_ABI_S_UNSUP;
   }
-  if (0 != (src->st_mode & S_IRUSR)) {
+  if (0 != (src->nacl_abi_st_mode & S_IRUSR)) {
       m |= NACL_ABI_S_IRUSR;
   }
-  if (0 != (src->st_mode & S_IWUSR)) {
+  if (0 != (src->nacl_abi_st_mode & S_IWUSR)) {
       m |= NACL_ABI_S_IWUSR;
   }
-  if (0 != (src->st_mode & S_IXUSR)) {
+  if (0 != (src->nacl_abi_st_mode & S_IXUSR)) {
       m |= NACL_ABI_S_IXUSR;
   }
   dst->nacl_abi_st_mode = m;
-  dst->nacl_abi_st_nlink = src->st_nlink;
+  dst->nacl_abi_st_nlink = src->nacl_abi_st_nlink;
   dst->nacl_abi_st_uid = -1;  /* not root */
   dst->nacl_abi_st_gid = -1;  /* not wheel */
   dst->nacl_abi_st_rdev = 0;
-  dst->nacl_abi_st_size = (nacl_abi_off_t) src->st_size;
+  dst->nacl_abi_st_size = (nacl_abi_off_t) src->nacl_abi_st_size;
   dst->nacl_abi_st_blksize = 0;
   dst->nacl_abi_st_blocks = 0;
-  dst->nacl_abi_st_atime = src->st_atime;
-  dst->nacl_abi_st_mtime = src->st_mtime;
-  dst->nacl_abi_st_ctime = src->st_ctime;
+  dst->nacl_abi_st_atime = src->nacl_abi_st_atime;
+  dst->nacl_abi_st_mtime = src->nacl_abi_st_mtime;
+  dst->nacl_abi_st_ctime = src->nacl_abi_st_ctime;
 
   /*
    * For now, zero these fields.  We may want to expose the

@@ -20,7 +20,6 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 
-#include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -28,6 +27,8 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include "native_client/src/trusted/service_runtime/include/sys/stat.h"
+
 
 #if NACL_OSX
 # define __SOCKADDR_ARG struct sockaddr
