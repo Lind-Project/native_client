@@ -17,6 +17,8 @@
 #include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/shared/platform/nacl_log.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
+#include "native_client/src/trusted/service_runtime/include/sys/stat.h"
+
 
 #define BLANKARGS \
     int retval; \
