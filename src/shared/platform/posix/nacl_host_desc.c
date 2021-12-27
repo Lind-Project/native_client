@@ -34,38 +34,43 @@
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
 #if NACL_LINUX
-# define PREAD pread64
-# define PWRITE pwrite64
+#define PREAD pread64
+#define PWRITE pwrite64
 #elif NACL_OSX
-# define PREAD pread
-# define PWRITE pwrite
+#define PREAD pread
+#define PWRITE pwrite
 #else
-# error "Which POSIX OS?"
+#error "Which POSIX OS?"
 #endif
 
 /*
  * Map our ABI to the host OS's ABI.  On linux, this should be a big no-op.
  */
-static INLINE int NaClMapOpenFlags(int nacl_flags) {
+static INLINE int NaClMapOpenFlags(int nacl_flags)
+{
   int host_os_flags;
 
-  nacl_flags &= (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
-                 | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
+  nacl_flags &= (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
 
   host_os_flags = 0;
-#define C(H) case NACL_ABI_ ## H: \
-  host_os_flags |= H;             \
-  break;
-  switch (nacl_flags & NACL_ABI_O_ACCMODE) {
+#define C(H)            \
+  case NACL_ABI_##H:    \
+    host_os_flags |= H; \
+    break;
+  switch (nacl_flags & NACL_ABI_O_ACCMODE)
+  {
     C(O_RDONLY);
     C(O_WRONLY);
     C(O_RDWR);
   }
 #undef C
-#define M(H) do { \
-    if (0 != (nacl_flags & NACL_ABI_ ## H)) {   \
-      host_os_flags |= H;                       \
-    }                                           \
+#define M(H)                              \
+  do                                      \
+  {                                       \
+    if (0 != (nacl_flags & NACL_ABI_##H)) \
+    {                                     \
+      host_os_flags |= H;                 \
+    }                                     \
   } while (0)
   M(O_CREAT);
   M(O_TRUNC);
@@ -74,14 +79,18 @@ static INLINE int NaClMapOpenFlags(int nacl_flags) {
   return host_os_flags;
 }
 
-static INLINE int NaClMapOpenPerm(int nacl_perm) {
+static INLINE int NaClMapOpenPerm(int nacl_perm)
+{
   int host_os_perm;
 
   host_os_perm = 0;
-#define M(H) do { \
-    if (0 != (nacl_perm & NACL_ABI_ ## H)) { \
-      host_os_perm |= H; \
-    } \
+#define M(H)                             \
+  do                                     \
+  {                                      \
+    if (0 != (nacl_perm & NACL_ABI_##H)) \
+    {                                    \
+      host_os_perm |= H;                 \
+    }                                    \
   } while (0)
   M(S_IRUSR);
   M(S_IWUSR);
@@ -89,14 +98,18 @@ static INLINE int NaClMapOpenPerm(int nacl_perm) {
   return host_os_perm;
 }
 
-static INLINE int NaClMapFlagMap(int nacl_map_flags) {
+static INLINE int NaClMapFlagMap(int nacl_map_flags)
+{
   int host_os_flags;
 
   host_os_flags = 0;
-#define M(H) do { \
-    if (0 != (nacl_map_flags & NACL_ABI_ ## H)) { \
-      host_os_flags |= H; \
-    } \
+#define M(H)                                  \
+  do                                          \
+  {                                           \
+    if (0 != (nacl_map_flags & NACL_ABI_##H)) \
+    {                                         \
+      host_os_flags |= H;                     \
+    }                                         \
   } while (0)
   M(MAP_SHARED);
   M(MAP_PRIVATE);
@@ -112,40 +125,44 @@ static INLINE int NaClMapFlagMap(int nacl_map_flags) {
  */
 uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
                           struct NaClDescEffector *effp,
-                          void                *start_addr,
-                          size_t              len,
-                          int                 prot,
-                          int                 flags,
-                          nacl_off64_t        offset) {
-  int   desc;
-  void  *map_addr;
-  int   host_prot;
-  int   tmp_prot;
-  int   host_flags;
-  int   need_exec;
-  int   whichcage;
+                          void *start_addr,
+                          size_t len,
+                          int prot,
+                          int flags,
+                          nacl_off64_t offset)
+{
+  int desc;
+  void *map_addr;
+  int host_prot;
+  int tmp_prot;
+  int host_flags;
+  int need_exec;
+  int whichcage;
   unsigned long topbits;
   unsigned int mapbottom;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
-          ("NaClHostDescMap(0x%08"NACL_PRIxPTR", "
-           "0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxS", "
-           "0x%x, 0x%x, 0x%08"NACL_PRIx64")\n"),
-          (uintptr_t) d,
-          (uintptr_t) start_addr,
+          ("NaClHostDescMap(0x%08" NACL_PRIxPTR ", "
+           "0x%08" NACL_PRIxPTR ", 0x%08" NACL_PRIxS ", "
+           "0x%x, 0x%x, 0x%08" NACL_PRIx64 ")\n"),
+          (uintptr_t)d,
+          (uintptr_t)start_addr,
           len,
           prot,
           flags,
-          (int64_t) offset);
-  if (NULL == d && 0 == (flags & NACL_ABI_MAP_ANONYMOUS)) {
+          (int64_t)offset);
+  if (NULL == d && 0 == (flags & NACL_ABI_MAP_ANONYMOUS))
+  {
     NaClLog(LOG_FATAL, "NaClHostDescMap: 'this' is NULL and not anon map\n");
   }
-  if (NULL != d && -1 == d->d) {
+  if (NULL != d && -1 == d->d)
+  {
     NaClLog(LOG_FATAL, "NaClHostDescMap: already closed\n");
   }
   if ((0 == (flags & NACL_ABI_MAP_SHARED)) ==
-      (0 == (flags & NACL_ABI_MAP_PRIVATE))) {
+      (0 == (flags & NACL_ABI_MAP_PRIVATE)))
+  {
     NaClLog(LOG_FATAL,
             "NaClHostDescMap: exactly one of NACL_ABI_MAP_SHARED"
             " and NACL_ABI_MAP_PRIVATE must be set.\n");
@@ -153,9 +170,12 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
 
   prot &= NACL_ABI_PROT_MASK;
 
-  if (flags & NACL_ABI_MAP_ANONYMOUS) {
+  if (flags & NACL_ABI_MAP_ANONYMOUS)
+  {
     desc = -1;
-  } else {
+  }
+  else
+  {
     desc = d->d;
   }
   /*
@@ -185,13 +205,14 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   need_exec = (0 != (PROT_EXEC & host_prot));
   //By this point in execution, the mmap call is MAP_FIXED,
   //so start_addr should and cannot be null, but we sanity check
-  if(!start_addr){
+  if (!start_addr)
+  {
     NaClLog(LOG_FATAL,
             "NaClHostDescMap: start_addr cannot be NULL.\n");
   }
   //if no hostDesc is specified, let the cageid to be 0, the init cage
   whichcage = d ? d->cageid : 0;
-  topbits = (long) start_addr & 0xffffffff00000000L;
+  topbits = (long)start_addr & 0xffffffff00000000L;
   /* The RPC interface can only return ints, not longs. This means  
    * we can't get the top 32 bits of the address. Thankfully, the 
    * top 32 bits of the address, a cage invariant, are already
@@ -203,9 +224,11 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    * return a long -1 as our return value. Otherwise, combine the 
    * top bits and bottom bits into our full return value.
    */
-  map_addr = (void*) (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
-  if (need_exec && MAP_FAILED != map_addr) {
-    if (0 != mprotect(map_addr, len, host_prot)) {
+  map_addr = (void *)(mapbottom == (unsigned int)-1 ? (unsigned long)-1L : topbits | (unsigned long)mapbottom);
+  if (need_exec && MAP_FAILED != map_addr)
+  {
+    if (0 != mprotect(map_addr, len, host_prot))
+    {
       /*
        * Not being able to turn on PROT_EXEC is fatal: we have already
        * replaced the original mapping -- restoring them would be too
@@ -221,86 +244,96 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
        */
       NaClLog(LOG_FATAL,
               "NaClHostDescMap: mprotect to turn on PROT_EXEC failed,"
-              " errno %d\n", errno);
+              " errno %d\n",
+              errno);
     }
   }
 
-  NaClLog(4, "NaClHostDescMap: mmap returned %"NACL_PRIxPTR"\n",
-          (uintptr_t) map_addr);
+  NaClLog(4, "NaClHostDescMap: mmap returned %" NACL_PRIxPTR "\n",
+          (uintptr_t)map_addr);
 
-  if (MAP_FAILED == map_addr) {
+  if (MAP_FAILED == map_addr)
+  {
     NaClLog(LOG_INFO,
             ("NaClHostDescMap: "
-             "mmap(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS", "
-             "0x%x, 0x%x, 0x%d, 0x%"NACL_PRIx64")"
+             "mmap(0x%08" NACL_PRIxPTR ", 0x%" NACL_PRIxS ", "
+             "0x%x, 0x%x, 0x%d, 0x%" NACL_PRIx64 ")"
              " failed, errno %d.\n"),
-            (uintptr_t) start_addr, len, host_prot, host_flags, desc,
-            (int64_t) offset,
+            (uintptr_t)start_addr, len, host_prot, host_flags, desc,
+            (int64_t)offset,
             errno);
     return -NaClXlateErrno(errno);
   }
-  if (0 != (flags & NACL_ABI_MAP_FIXED) && map_addr != start_addr) {
+  if (0 != (flags & NACL_ABI_MAP_FIXED) && map_addr != start_addr)
+  {
     NaClLog(LOG_FATAL,
             ("NaClHostDescMap: mmap with MAP_FIXED not fixed:"
-             " returned 0x%08"NACL_PRIxPTR" instead of 0x%08"NACL_PRIxPTR"\n"),
-            (uintptr_t) map_addr,
-            (uintptr_t) start_addr);
+             " returned 0x%08" NACL_PRIxPTR " instead of 0x%08" NACL_PRIxPTR "\n"),
+            (uintptr_t)map_addr,
+            (uintptr_t)start_addr);
   }
-  NaClLog(4, "NaClHostDescMap: returning 0x%08"NACL_PRIxPTR"\n",
-          (uintptr_t) map_addr);
+  NaClLog(4, "NaClHostDescMap: returning 0x%08" NACL_PRIxPTR "\n",
+          (uintptr_t)map_addr);
 
-  return (uintptr_t) map_addr;
+  return (uintptr_t)map_addr;
 }
 
-int NaClHostDescUnmapUnsafe(void *start_addr, size_t len) {
+int NaClHostDescUnmapUnsafe(void *start_addr, size_t len)
+{
   return (0 == munmap(start_addr, len)) ? 0 : -errno;
 }
 
-static int NaClHostDescCtor(struct NaClHostDesc  *d,
+static int NaClHostDescCtor(struct NaClHostDesc *d,
                             int fd,
-                            int flags) {
+                            int flags)
+{
   d->d = fd;
   d->flags = flags;
   NaClLog(3, "NaClHostDescCtor: success.\n");
   return 0;
 }
 
-int NaClHostDescPipe(struct NaClHostDesc  *d,
-                            int fd,
-                            int flags) {
+int NaClHostDescPipe(struct NaClHostDesc *d,
+                     int fd,
+                     int flags)
+{
   return NaClHostDescCtor(d, fd, flags);
 }
 
-int NaClHostDescOpen(struct NaClHostDesc  *d,
-                     char const           *path,
-                     int                  flags,
-                     int                  mode) {
+int NaClHostDescOpen(struct NaClHostDesc *d,
+                     char const *path,
+                     int flags,
+                     int mode)
+{
   int host_desc;
   nacl_host_stat_t stbuf;
   int posix_flags;
 
-  NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
-          (uintptr_t) d, path, flags, mode);
-  if (NULL == d) {
+  NaClLog(3, "NaClHostDescOpen(0x%08" NACL_PRIxPTR ", %s, 0x%x, 0x%x)\n",
+          (uintptr_t)d, path, flags, mode);
+  if (NULL == d)
+  {
     NaClLog(LOG_FATAL, "NaClHostDescOpen: 'this' is NULL\n");
   }
   /*
    * Sanitize access flags.
    */
-  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS)) {
+  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS))
+  {
     return -NACL_ABI_EINVAL;
   }
 
-  switch (flags & NACL_ABI_O_ACCMODE) {
-    case NACL_ABI_O_RDONLY:
-    case NACL_ABI_O_WRONLY:
-    case NACL_ABI_O_RDWR:
-      break;
-    default:
-      NaClLog(LOG_ERROR,
-              "NaClHostDescOpen: bad access flags 0x%x.\n",
-              flags);
-      return -NACL_ABI_EINVAL;
+  switch (flags & NACL_ABI_O_ACCMODE)
+  {
+  case NACL_ABI_O_RDONLY:
+  case NACL_ABI_O_WRONLY:
+  case NACL_ABI_O_RDWR:
+    break;
+  default:
+    NaClLog(LOG_ERROR,
+            "NaClHostDescOpen: bad access flags 0x%x.\n",
+            flags);
+    return -NACL_ABI_EINVAL;
   }
 
   posix_flags = NaClMapOpenFlags(flags);
@@ -313,43 +346,49 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
           path, posix_flags, mode);
   host_desc = lind_open(path, posix_flags, mode, d->cageid);
   NaClLog(3, "NaClHostDescOpen: got descriptor %d\n", host_desc);
-  if (-1 == host_desc) {
+  if (-1 == host_desc)
+  {
     NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
   }
- 
+
   return NaClHostDescCtor(d, host_desc, flags);
 }
 
-int NaClHostDescPosixDup(struct NaClHostDesc  *d,
-                         int                  posix_d,
-                         int                  flags) {
+int NaClHostDescPosixDup(struct NaClHostDesc *d,
+                         int posix_d,
+                         int flags)
+{
   int host_desc;
 
-  if (NULL == d) {
+  if (NULL == d)
+  {
     NaClLog(LOG_FATAL, "NaClHostDescPosixDup: 'this' is NULL\n");
   }
   /*
    * Sanitize access flags.
    */
-  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS)) {
+  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS))
+  {
     return -NACL_ABI_EINVAL;
   }
 
-  switch (flags & NACL_ABI_O_ACCMODE) {
-    case NACL_ABI_O_RDONLY:
-    case NACL_ABI_O_WRONLY:
-    case NACL_ABI_O_RDWR:
-      break;
-    default:
-      NaClLog(LOG_ERROR,
-              "NaClHostDescPosixDup: bad access flags 0x%x.\n",
-              flags);
-      return -NACL_ABI_EINVAL;
+  switch (flags & NACL_ABI_O_ACCMODE)
+  {
+  case NACL_ABI_O_RDONLY:
+  case NACL_ABI_O_WRONLY:
+  case NACL_ABI_O_RDWR:
+    break;
+  default:
+    NaClLog(LOG_ERROR,
+            "NaClHostDescPosixDup: bad access flags 0x%x.\n",
+            flags);
+    return -NACL_ABI_EINVAL;
   }
 
   host_desc = lind_dup(posix_d, d->cageid);
-  if (-1 == host_desc) {
+  if (-1 == host_desc)
+  {
     return -NACL_ABI_EINVAL;
   }
   d->d = host_desc;
@@ -358,28 +397,32 @@ int NaClHostDescPosixDup(struct NaClHostDesc  *d,
 }
 
 int NaClHostDescPosixTake(struct NaClHostDesc *d,
-                          int                 posix_d,
-                          int                 flags) {
-  if (NULL == d) {
+                          int posix_d,
+                          int flags)
+{
+  if (NULL == d)
+  {
     NaClLog(LOG_FATAL, "NaClHostDescPosixTake: 'this' is NULL\n");
   }
   /*
    * Sanitize access flags.
    */
-  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS)) {
+  if (0 != (flags & ~NACL_ALLOWED_OPEN_FLAGS))
+  {
     return -NACL_ABI_EINVAL;
   }
 
-  switch (flags & NACL_ABI_O_ACCMODE) {
-    case NACL_ABI_O_RDONLY:
-    case NACL_ABI_O_WRONLY:
-    case NACL_ABI_O_RDWR:
-      break;
-    default:
-      NaClLog(LOG_ERROR,
-              "NaClHostDescPosixTake: bad access flags 0x%x.\n",
-              flags);
-      return -NACL_ABI_EINVAL;
+  switch (flags & NACL_ABI_O_ACCMODE)
+  {
+  case NACL_ABI_O_RDONLY:
+  case NACL_ABI_O_WRONLY:
+  case NACL_ABI_O_RDWR:
+    break;
+  default:
+    NaClLog(LOG_ERROR,
+            "NaClHostDescPosixTake: bad access flags 0x%x.\n",
+            flags);
+    return -NACL_ABI_EINVAL;
   }
 
   d->d = posix_d;
@@ -387,74 +430,88 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
   return 0;
 }
 
-ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
-                         void                 *buf,
-                         size_t               len) {
+ssize_t NaClHostDescRead(struct NaClHostDesc *d,
+                         void *buf,
+                         size_t len)
+{
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescRead", d);
-  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE))
+  {
     NaClLog(3, "NaClHostDescRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
   return ((-1 == (retval = lind_read(d->d, buf, len, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 }
 
 ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
-                          void const          *buf,
-                          size_t              len) {
+                          void const *buf,
+                          size_t len)
+{
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescWrite", d);
-  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE))
+  {
     NaClLog(3, "NaClHostDescWrite: RDONLY file\n");
     return -NACL_ABI_EBADF;
   }
   return ((-1 == (retval = lind_write(d->d, buf, len, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 }
 
-nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
-                              nacl_off64_t         offset,
-                              int                  whence) {
+nacl_off64_t NaClHostDescSeek(struct NaClHostDesc *d,
+                              nacl_off64_t offset,
+                              int whence)
+{
   nacl_off64_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescSeek", d);
 #if NACL_LINUX
   return ((-1 == (retval = lind_lseek(d->d, offset, whence, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 #elif NACL_OSX
   return ((-1 == (retval = lind_lseek(d->d, offset, whence, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 #else
-# error "What Unix-like OS is this?"
+#error "What Unix-like OS is this?"
 #endif
 }
 
 ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
                           void *buf,
                           size_t len,
-                          nacl_off64_t offset) {
+                          nacl_off64_t offset)
+{
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescPRead", d);
-  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE))
+  {
     NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
   return ((-1 == (retval = lind_pread(d->d, buf, len, offset, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 }
 
 ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
                            void const *buf,
                            size_t len,
-                           nacl_off64_t offset) {
+                           nacl_off64_t offset)
+{
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescPWrite", d);
-  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE))
+  {
     NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");
     return -NACL_ABI_EBADF;
   }
@@ -468,18 +525,21 @@ ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
    * using the write syscall, we ensure that the
    * seek-to-end-before-write semantics apply.
    */
-  if (0 != (d->flags & NACL_ABI_O_APPEND)) {
+  if (0 != (d->flags & NACL_ABI_O_APPEND))
+  {
     return ((-1 == (retval = lind_write(d->d, buf, len, d->cageid)))
-            ? -NaClXlateErrno(errno) : retval);
+                ? -NaClXlateErrno(errno)
+                : retval);
   }
   return ((-1 == (retval = lind_pwrite(d->d, buf, len, offset, d->cageid)))
-          ? -NaClXlateErrno(errno) : retval);
+              ? -NaClXlateErrno(errno)
+              : retval);
 }
 
-
 int NaClHostDescIoctl(struct NaClHostDesc *d,
-                      int                 request,
-                      void                *arg) {
+                      int request,
+                      void *arg)
+{
   UNREFERENCED_PARAMETER(request);
   UNREFERENCED_PARAMETER(arg);
 
@@ -490,30 +550,35 @@ int NaClHostDescIoctl(struct NaClHostDesc *d,
 /*
  * See NaClHostDescStat below.
  */
-int NaClHostDescFstat(struct NaClHostDesc  *d,
-                      nacl_host_stat_t     *nhsp) {
+int NaClHostDescFstat(struct NaClHostDesc *d,
+                      nacl_abi_stat *nhsp)
+{
   NaClHostDescCheckValidity("NaClHostDescFstat", d);
 #if NACL_LINUX
-  if (lind_fxstat(d->d, nhsp, d->cageid) == -1) {
+  if (lind_fxstat(d->d, nhsp, d->cageid) == -1)
+  {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_fxstat(d->d, nhsp, d->cageid) == -1) {
+  if (lind_fxstat(d->d, nhsp, d->cageid) == -1)
+  {
     return -errno;
   }
 #else
-# error "What OS?"
+#error "What OS?"
 #endif
 
   return 0;
 }
 
-int NaClHostDescClose(struct NaClHostDesc *d) {
+int NaClHostDescClose(struct NaClHostDesc *d)
+{
   int retval;
 
   NaClHostDescCheckValidity("NaClHostDescClose", d);
   retval = lind_close(d->d, d->cageid);
-  if (-1 != retval) {
+  if (-1 != retval)
+  {
     d->d = -1;
   }
   return (-1 == retval) ? -NaClXlateErrno(errno) : retval;
@@ -523,50 +588,58 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
  * This is not a host descriptor function, but is closely related to
  * fstat and should behave similarly.
  */
-int NaClHostDescStat(char const       *host_os_pathname,
-                     nacl_host_stat_t *nhsp,
-		     int cageid) {
+int NaClHostDescStat(char const *host_os_pathname,
+                     nacl_abi_stat *nhsp,
+                     int cageid)
+{
 
 #if NACL_LINUX
-  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1) {
+  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1)
+  {
     return -errno;
   }
 #elif NACL_OSX
-  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1) {
+  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1)
+  {
     return -errno;
   }
 #else
-# error "What OS?"
+#error "What OS?"
 #endif
 
   return 0;
 }
 
-int NaClHostDescMkdir(const char *path, int mode) {
+int NaClHostDescMkdir(const char *path, int mode)
+{
   if (mkdir(path, mode) != 0)
     return -NaClXlateErrno(errno);
   return 0;
 }
 
-int NaClHostDescRmdir(const char *path) {
+int NaClHostDescRmdir(const char *path)
+{
   if (rmdir(path) != 0)
     return -NaClXlateErrno(errno);
   return 0;
 }
 
-int NaClHostDescChdir(const char *path) {
+int NaClHostDescChdir(const char *path)
+{
   if (chdir(path) != 0)
     return -NaClXlateErrno(errno);
   return 0;
 }
 
-int NaClHostDescGetcwd(char *path, size_t len) {
+int NaClHostDescGetcwd(char *path, size_t len)
+{
   if (getcwd(path, len) == NULL)
     return -NaClXlateErrno(errno);
   return 0;
 }
 
-int NaClHostDescUnlink(const char *path) {
+int NaClHostDescUnlink(const char *path)
+{
   if (unlink(path) != 0)
     return -errno;
   return 0;
