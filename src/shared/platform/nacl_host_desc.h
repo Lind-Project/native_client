@@ -47,8 +47,11 @@ typedef int64_t nacl_off64_t;
  * platforms, and to know that the st_size field is a 64-bit value
  * compatible w/ nacl_off64_t above.
  */
-
-if NACL_WINDOWS
+#if NACL_LINUX
+typedef struct nacl_abi_stat nacl_host_stat_t;
+#elif NACL_OSX
+typedef struct nacl_abi_stat nacl_host_stat_t;
+#elif NACL_WINDOWS
 typedef struct _stati64 nacl_host_stat_t;
 #elif defined __native_client__
 /* nacl_host_stat_t not exposed to NaCl module code */
