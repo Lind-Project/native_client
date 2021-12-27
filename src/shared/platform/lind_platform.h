@@ -116,8 +116,8 @@ union RustArg {
     const char *dispatch_cstr;
     const char *const *dispatch_cstrarr;
     struct rlimit *strdispatch_rlimitstruct;
-    struct stat *dispatch_statstruct;
-    struct statfs *dispatch_statfsstruct;
+    struct nacl_abi_stat *dispatch_statstruct;
+    struct nacl_abi_statfs *dispatch_statfsstruct;
     struct timeval *dispatch_timevalstruct;
     struct sockaddr *dispatch_sockaddrstruct;
     struct epoll_event *dispatch_epolleventstruct;
