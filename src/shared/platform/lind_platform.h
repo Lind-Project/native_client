@@ -20,7 +20,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 
-#include "native_client/src/shared/platform/lind_stat.h"
+#include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -137,15 +137,15 @@ int lind_access (const char *file, int mode, int cageid);
 int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
-int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
+int lind_xstat (const char *path, struct nacl_abi_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
 int lind_read (int fd, void *buf, int size, int cageid);
 int lind_write (int fd, const void *buf, size_t count, int cageid);
 int lind_lseek (int fd, off_t offset, int whence, int cageid);
-int lind_fxstat (int fd, struct lind_stat *buf, int cageid);
-int lind_fstatfs (int fd, struct lind_statfs *buf, int cageid);
-int lind_statfs (const char *path, struct lind_statfs *buf, int cageid);
+int lind_fxstat (int fd, struct nacl_abi_stat *buf, int cageid);
+int lind_fstatfs (int fd, struct nacl_abi_statfs *buf, int cageid);
+int lind_statfs (const char *path, struct nacl_abi_statfs *buf, int cageid);
 int lind_dup (int oldfd, int cageid);
 int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, char *buf, size_t nbytes, int cageid);
