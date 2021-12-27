@@ -11,6 +11,7 @@
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
+#include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
 struct NaClAppThread;
 
