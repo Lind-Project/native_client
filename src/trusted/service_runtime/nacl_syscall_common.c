@@ -702,7 +702,6 @@ int32_t NaClSysOpen(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int retval = -NACL_ABI_EINVAL;
   char path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t stbuf;
   int allowed_flags;
   int fd_retval = -1;
   const char *glibc_prefix = "/lib/glibc/";

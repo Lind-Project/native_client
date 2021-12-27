@@ -370,7 +370,7 @@ int SeekPastEndAndWriteTest(struct NaClHostDesc *test_file,
     fprintf(stderr, "SeekPastEndAndWriteTest: fstat failed\n");
     return 0;
   }
-  new_size = stbuf.st_size + (2 << 16);
+  new_size = stbuf.nacl_abi_st_size + (2 << 16);
   seek_result = NaClHostDescSeek(test_file, new_size, 0);
   if (seek_result != new_size) {
     fprintf(stderr, "SeekPastEndAndWriteTest: seek failed\n");
@@ -390,7 +390,7 @@ int SeekPastEndAndWriteTest(struct NaClHostDesc *test_file,
     fprintf(stderr,
             "SeekPastEndAndWriteTest: size did not extend to expected value\n"
             " got %"NACL_PRIdNACL_OFF64", expected %"NACL_PRIdNACL_OFF64"\n",
-            (nacl_off64_t) stbuf.st_size, new_size + 1);
+            (nacl_off64_t) stbuf.nacl_abi_st_size, new_size + 1);
     return 0;
   }
   err = NaClHostDescFstat(ro_view, &stbuf);
@@ -399,11 +399,11 @@ int SeekPastEndAndWriteTest(struct NaClHostDesc *test_file,
             "SeekPastEndAndWriteTest: post-write ro_view fstat failed\n");
     return 0;
   }
-  if (stbuf.st_size != new_size + 1) {
+  if (stbuf.nacl_abi_st_size != new_size + 1) {
     fprintf(stderr,
             "SeekPastEndAndWriteTest: ro_view size error\n"
             " got %"NACL_PRIdNACL_OFF64", expected %"NACL_PRIdNACL_OFF64"\n",
-            (nacl_off64_t) stbuf.st_size, new_size + 1);
+            (nacl_off64_t) stbuf.nacl_abi_st_size, new_size + 1);
     return 0;
   }
   return 1;

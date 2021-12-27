@@ -311,9 +311,8 @@ static int NaClDescIoDescFstat(struct NaClDesc         *vself,
                                struct nacl_abi_stat    *statbuf) {
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
   int                   rv;
-  nacl_host_stat_t      hstatbuf;
 
-  rv = NaClHostDescFstat(self->hd, &hstatbuf);
+  rv = NaClHostDescFstat(self->hd, &statbuf);
   if (0 != rv) {
     return rv;
   }
