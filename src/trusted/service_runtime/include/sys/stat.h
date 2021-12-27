@@ -53,8 +53,7 @@ struct nacl_abi_stat {  /* must be renamed when ABI is exported */
 };
 
 
-struct nacl_abi_stat_fs
-  {
+struct nacl_abi_stat_fs {
     int64_t f_type;
     int64_t f_bsize;
     uint64_t f_blocks;
@@ -67,7 +66,7 @@ struct nacl_abi_stat_fs
     int64_t f_frsize;
     int64_t f_flags;
     int64_t f_spare[4];
-  };
+};
 
 #ifdef __native_client__
 extern int stat(char const *path, struct nacl_abi_stat *stbuf);
