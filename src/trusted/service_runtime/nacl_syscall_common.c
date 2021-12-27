@@ -1479,7 +1479,7 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
 
   lind_fd = ((struct NaClDescIoDesc *)ndp)->hd->d;
 
-  retval = lind_xstat(path, nasp, nap->cage_id));
+  retval = lind_xstat(path, nasp, nap->cage_id);
 
 cleanup:
   return retval;
@@ -1513,7 +1513,7 @@ int32_t NaClSysLStat(struct NaClAppThread *natp,
 
   lind_fd = ((struct NaClDescIoDesc *)ndp)->hd->d;
 
-  retval = lind_xstat(path, nasp, nap->cage_id));
+  retval = lind_xstat(path, nasp, nap->cage_id);
 
 cleanup:
   return retval;
