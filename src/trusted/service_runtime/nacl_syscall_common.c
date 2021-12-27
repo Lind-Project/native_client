@@ -1458,7 +1458,6 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
   char path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t stbuf;
 
   NaClLog(2, "Entered NaClSysStat(0x%08" NACL_PRIxPTR ", 0x%08" NACL_PRIxPTR ","
              " 0x%08" NACL_PRIxPTR ")\n",
@@ -1476,8 +1475,6 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  lind_fd = ((struct NaClDescIoDesc *)ndp)->hd->d;
-
   retval = lind_xstat(path, nasp, nap->cage_id);
 
 cleanup:
@@ -1491,7 +1488,6 @@ int32_t NaClSysLStat(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
   char path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t stbuf;
 
   NaClLog(2, "Entered NaClSysLStat(0x%08" NACL_PRIxPTR ", 0x%08" NACL_PRIxPTR ","
              " 0x%08" NACL_PRIxPTR ")\n",
@@ -1508,9 +1504,6 @@ int32_t NaClSysLStat(struct NaClAppThread *natp,
   {
     goto cleanup;
   }
-
-
-  lind_fd = ((struct NaClDescIoDesc *)ndp)->hd->d;
 
   retval = lind_xstat(path, nasp, nap->cage_id);
 
