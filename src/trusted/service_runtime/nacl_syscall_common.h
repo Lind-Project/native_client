@@ -135,11 +135,11 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
 
 int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        int                  d,
-                       struct lind_statfs   *buf);
+                       struct nacl_abi_statfs   *buf);
 
 int32_t NaClSysStatfs(struct NaClAppThread *natp,
                       const char           *pathname,
-                      struct lind_statfs   *buf);
+                      struct nacl_abi_statfs   *buf);
 
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
