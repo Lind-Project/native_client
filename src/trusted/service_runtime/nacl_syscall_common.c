@@ -1497,8 +1497,8 @@ cleanup:
 }
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len) {
+                      char                 *buf,
+                      size_t               size) {
   struct NaClApp *nap = natp->nap;
   int32_t        retval = -NACL_ABI_EINVAL;
   char           path[NACL_CONFIG_PATH_MAX];
@@ -1508,16 +1508,16 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  if (len >= NACL_CONFIG_PATH_MAX) {
-    len = NACL_CONFIG_PATH_MAX - 1;
+  if (size >= NACL_CONFIG_PATH_MAX) {
+    size = NACL_CONFIG_PATH_MAX - 1;
   }
 
-  retval = NaClHostDescGetcwd(path, len);
+  retval = NaClHostDescGetcwd(path, size);
   if (retval) {
     goto cleanup;
   }
 
-  if (!NaClCopyOutToUser(nap, buffer, &path, strlen(path) + 1)) {
+  if (!NaClCopyOutToUser(nap, buf, &path, strlen(path) + 1)) {
     retval = -NACL_ABI_EFAULT;
   }
 
