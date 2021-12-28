@@ -1524,7 +1524,7 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
     return retval;
   }
 
-  retval = lind_chdir(sysaddr, size, natp->nap->cage_id);
+  retval = lind_getcwd(sysaddr, size, natp->nap->cage_id);
 
 cleanup:
   NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
