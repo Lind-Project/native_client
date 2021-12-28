@@ -118,7 +118,7 @@ int lind_rmdir (const char *path, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_rmdir, cstr, path);
 }
 
-int lind_xstat (const char *path, struct stat *buf, int cageid) {
+int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_xstat, cstr, path, statstruct, buf);
 }
 
@@ -142,7 +142,7 @@ int lind_lseek (int fd, off_t offset, int whence, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_lseek, int, fd, off_t, offset, int, whence);
 }
 
-int lind_fxstat (int fd, struct stat *buf, int cageid) {
+int lind_fxstat (int fd, struct lind_stat *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fxstat, int, fd, statstruct, buf);
 }
 

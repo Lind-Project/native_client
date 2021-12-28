@@ -1,5 +1,5 @@
 /*
- * lind_stat.h
+ * 
  *
  *  Created on: Jul 24, 2013
  *      Author: sji
@@ -20,11 +20,10 @@ struct lind_stat
 {
     uint64_t st_dev;     /* Device.  */
     uint64_t st_ino;     /* File serial number.  */
-    uint64_t st_nlink;     /* Link count.  */
     uint32_t st_mode;       /* File mode.  */
+    uint32_t st_nlink;     /* Link count.  */
     uint32_t st_uid;     /* User ID of the file's owner. */
     uint32_t st_gid;     /* Group ID of the file's group.*/
-    int32_t __pad0;
     uint64_t st_rdev;        /* Device number, if device.  */
     int64_t st_size;            /* Size of file, in bytes.  */
     int64_t st_blksize; /* Optimal block size for I/O.  */

@@ -40,16 +40,9 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat   *dst,
     return -NACL_ABI_EOVERFLOW;
   }
 
-  dst->nacl_abi_st_dev = 0;
-#if defined(NACL_MASK_INODES)
-  dst->nacl_abi_st_ino = NACL_FAKE_INODE_NUM;
-#else
+  dst->nacl_abi_st_dev = src->st_dev;
   dst->nacl_abi_st_ino = src->st_ino;
-  /*
-   * MSDN says: st_ino has no meaning on most windows file systems,
-   * but in case windows mounts a Unix filesystem, we copy it anyway.
-   */
-#endif
+
 
   switch (src->st_mode & S_IFMT) {
     case S_IFREG:
@@ -79,12 +72,12 @@ int32_t NaClAbiStatHostDescStatXlateCtor(struct nacl_abi_stat   *dst,
   }
   dst->nacl_abi_st_mode = m;
   dst->nacl_abi_st_nlink = src->st_nlink;
-  dst->nacl_abi_st_uid = -1;  /* not root */
-  dst->nacl_abi_st_gid = -1;  /* not wheel */
-  dst->nacl_abi_st_rdev = 0;
+  dst->nacl_abi_st_uid = src->st_uid;
+  dst->nacl_abi_st_gid = src->gid;
+  dst->nacl_abi_st_rdev = src->rdev;
   dst->nacl_abi_st_size = (nacl_abi_off_t) src->st_size;
-  dst->nacl_abi_st_blksize = 0;
-  dst->nacl_abi_st_blocks = 0;
+  dst->nacl_abi_st_blksize =src->blksize;
+  dst->nacl_abi_st_blocks = src->st_blocks;
   dst->nacl_abi_st_atime = (nacl_abi_time_t) src->st_atime;
   dst->nacl_abi_st_mtime = (nacl_abi_time_t) src->st_mtime;
   dst->nacl_abi_st_ctime = (nacl_abi_time_t) src->st_ctime;
