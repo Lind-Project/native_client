@@ -236,6 +236,10 @@ int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid) {
     DISPATCH_SYSCALL_4(LIND_safe_net_socketpair, int, domain, int, type, int, protocol, pipearray, sv);
 }
 
+int lind_getcwd (char *buf, size_t size, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_getcwd, mutcbuf, buf, size_t, size);
+}
+
 int lind_gethostname (char *name, size_t len, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_net_gethostname, mutcbuf, name, size_t, len);
 }
