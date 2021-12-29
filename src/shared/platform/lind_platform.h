@@ -14,7 +14,7 @@
 #if NACL_LINUX
 # include <sys/statfs.h>
 #endif
-#include <sys/stat.h>
+#include "native_client/src/shared/platform/lind_stat.h"
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/poll.h>
@@ -113,7 +113,7 @@ union RustArg {
     const char *dispatch_cstr;
     const char *const *dispatch_cstrarr;
     struct rlimit *strdispatch_rlimitstruct;
-    struct stat *dispatch_statstruct;
+    struct lind_stat *dispatch_statstruct;
     struct statfs *dispatch_statfsstruct;
     struct timeval *dispatch_timevalstruct;
     struct sockaddr *dispatch_sockaddrstruct;
@@ -135,13 +135,13 @@ int lind_access (const char *file, int mode, int cageid);
 int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
-int lind_xstat (const char *path, struct stat *buf, int cageid);
+int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
 int lind_read (int fd, void *buf, int size, int cageid);
 int lind_write (int fd, const void *buf, size_t count, int cageid);
 int lind_lseek (int fd, off_t offset, int whence, int cageid);
-int lind_fxstat (int fd, struct stat *buf, int cageid);
+int lind_fxstat (int fd, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct statfs *buf, int cageid);
 int lind_statfs (const char *path, struct statfs *buf, int cageid);
 int lind_dup (int oldfd, int cageid);
