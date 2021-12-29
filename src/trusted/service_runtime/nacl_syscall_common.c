@@ -4462,12 +4462,13 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
    * TODO: implement pid == WAIT_ANY_PG (0), we currently don't deal with process groups
    */
   if (pid <= 0) {
+    NaClXMutexLock(&nap->children_mu);
+
     while(1){
 
       /* Cycle through possible cages up to the fork number (max amount of created cages) */
       for (int cage_id = 0; cage_id < fork_num; cage_id++) {
 
-        NaClXMutexLock(&nap->children_mu);
 
         /* make sure children exist, if not send ABI_ECHILD */
         if (!nap->num_children) {
@@ -4492,10 +4493,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     
         NaClXCondVarBroadcast(&nap->children_cv);
 
-        NaClXMutexUnlock(&nap->children_mu);
       }
       
     }
+    NaClXMutexUnlock(&nap->children_mu);
+
     
   }
 
