@@ -110,7 +110,7 @@ int NaClEnvCleanserInit(struct NaClEnvCleanser *self, char const *const *envp,
    * then n*sizeof(void *) will have an arithmetic overflow.
    */
 
-  if ((NULL == envp || NULL == *envp)|| (NULL == extra_env || NULL == *extra_env)) {
+  if ((NULL == envp || NULL == *envp) && (NULL == extra_env || NULL == *extra_env)) {
     self->cleansed_environ = NULL;
     return 1;
   }
