@@ -4110,6 +4110,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   uint32_t *sys_envp_ptr = { NULL };
   char **new_envp = 0;
   int new_envc = 0;
+  int ret = -NACL_ABI_ENOMEM;
 
 
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
@@ -4161,17 +4162,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-
+  ret = NaClSysExecInternal(natp, path, argv);
 
 fail:
-  for (char **pp = new_envp; pp && *pp; pp++) {
-    free(*pp);
-  }
-  free(new_envp);
 
-  return NaClSysExecInternal(natp, path, argv);
-
-
+  return ret; 
 }
 
 int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
