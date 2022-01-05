@@ -4133,7 +4133,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
       char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
       env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
       if (!env) {
-        new_envp[i] = 0;
+        new_envp[i] = NULL;
         break;
       }
       else {
@@ -4143,7 +4143,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
       } 
     }
   }
-  new_envp[new_envc] = 0;
+  new_envp[new_envc] = NULL;
 
   /* We've already cleaned the native environment, so just supply extra args from this syscall */
   if (!NaClEnvCleanserInit(&env_cleanser, (char const *const *)new_envp, 0)) {
@@ -4187,7 +4187,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
 
   /* Convert pathname from user path, set binary */
   sys_pathname = NaClUserToSysAddr(nap, path);
-  binary = sys_pathname ? strdup(sys_pathname) : 0;
+  binary = sys_pathname ? strdup(sys_pathname) : NULL;
 
   /* 
     Convert to a Sys Pointer for argv** 
@@ -4234,9 +4234,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
   for (int i = 0; i < new_argc; i++) {
-    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : 0;
+    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
-  child_argv[child_argc] = 0;
+  child_argv[child_argc] = NULL;
   nap->argc = child_argc;
   nap->argv = child_argv;
   if (binary) {
