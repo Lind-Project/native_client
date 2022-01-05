@@ -4110,10 +4110,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
 
-
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
   if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
-
 
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
 
@@ -4160,7 +4158,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  ret = NaClSysExecInternal(natp, path, argv);
+  ret = NaClSysExecv(natp, path, argv);
 
 fail:
 
@@ -4168,12 +4166,6 @@ fail:
 }
 
 int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
-  struct NaClApp *nap = natp->nap;
-
-  return NaClSysExecInternal(natp, path, argv);
-}
-
-int32_t NaClSysExecInternal(struct NaClAppThread *natp, char const *path, char *const *argv) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
   char *sys_pathname;
