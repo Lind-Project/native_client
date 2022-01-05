@@ -4137,20 +4137,29 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     for (int i = 0; i < new_envc; i++) {
       char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
       env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
-      new_envp[i] = env ? strdup(env) : 0;
+
       if (!env) {
+        new_envp[i] = 0;
         break;
       }
+      else {
+        new_envp[i] = malloc(NACL_ENV_PREFIX_LENGTH + strlen(env) + 1);
+        strcpy(new_envp[i], NACL_ENV_PREFIX);
+        strcat(new_envp[i], env);
+      } 
+    
     }
   }
 
   new_envp[new_envc] = 0;
+
   /* We've already cleaned the native environment, so just supply extra args from this syscall */
-  if (!NaClEnvCleanserInit(&env_cleanser, environ, (char const *const *)new_envp)) {
+  if (!NaClEnvCleanserInit(&env_cleanser, (char const *const *)new_envp, 0)) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to initialize environment cleanser");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
+
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
 
 
