@@ -142,7 +142,7 @@ int NaClEnvCleanserInit(struct NaClEnvCleanser *self, char const *const *envp,
   if (0 != ((1 + num_env) & ptr_size_mult_overflow_mask)) {
     return 0;
   }
-  ptr_bytes = (1 + num_env) * sizeof(*envp);
+  ptr_bytes = (1 + num_env) * sizeof(char *);
 
   ptr_tbl = (char const **) malloc(ptr_bytes);
   if (NULL == ptr_tbl) {
