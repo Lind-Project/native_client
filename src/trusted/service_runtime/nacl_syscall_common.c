@@ -1497,31 +1497,37 @@ cleanup:
 }
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len) {
+                      char                 *buf,
+                      size_t               size) {
   struct NaClApp *nap = natp->nap;
+  uintptr_t      sysaddr;
   int32_t        retval = -NACL_ABI_EINVAL;
-  char           path[NACL_CONFIG_PATH_MAX];
+
+  NaClLog(2, "Cage %d Entered NaClSysGetcwd(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) buf, size);
 
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
   }
 
-  if (len >= NACL_CONFIG_PATH_MAX) {
-    len = NACL_CONFIG_PATH_MAX - 1;
+  if (size >= NACL_CONFIG_PATH_MAX) {
+    size = NACL_CONFIG_PATH_MAX - 1;
   }
 
-  retval = NaClHostDescGetcwd(path, len);
-  if (retval) {
-    goto cleanup;
-  }
-
-  if (!NaClCopyOutToUser(nap, buffer, &path, strlen(path) + 1)) {
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, size);
+  if (kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetcwd could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
     retval = -NACL_ABI_EFAULT;
+    return retval;
   }
+
+  retval = lind_getcwd(sysaddr, size, natp->nap->cage_id);
 
 cleanup:
+  NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
   return retval;
 }
 

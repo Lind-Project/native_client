@@ -68,6 +68,7 @@
 #define LIND_safe_net_setsockopt        44
 #define LIND_safe_net_shutdown          45
 #define LIND_safe_net_select            46
+#define LIND_safe_fs_getcwd             47
 #define LIND_safe_net_poll              48
 #define LIND_safe_net_socketpair        49
 #define LIND_safe_sys_getuid            50
@@ -165,6 +166,7 @@ int lind_epoll_create(int size, int cageid);
 int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);
 int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid);
 int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid);
+int lind_getcwd (char *buf, size_t size, int cageid);
 int lind_gethostname (char *name, size_t len, int cageid);
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
