@@ -4142,9 +4142,9 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
         break;
       }
       else {
-        new_envp[i] = malloc(NACL_ENV_PREFIX_LENGTH + strlen(env) + 1);
-        strcpy(new_envp[i], NACL_ENV_PREFIX);
-        strcat(new_envp[i], env);
+        int envsize = NACL_ENV_PREFIX_LENGTH + strlen(env) + 1;
+        new_envp[i] = calloc(envsize, sizeof(char);
+        snprintf(new_envp[i], envsize, "%s%s", NACL_ENV_PREFIX, env);
       } 
     
     }
