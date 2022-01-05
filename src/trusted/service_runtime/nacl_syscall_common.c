@@ -93,6 +93,8 @@
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
 
+extern char **environ;
+
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
@@ -4144,7 +4146,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   new_envp[new_envc] = 0;
   /* We've already cleaned the native environment, so just supply extra args from this syscall */
-  if (!NaClEnvCleanserInit(&env_cleanser, nap->clean_environ, (char const *const *)new_envp)) {
+  if (!NaClEnvCleanserInit(&env_cleanser, environ, (char const *const *)new_envp)) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to initialize environment cleanser");
     NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
