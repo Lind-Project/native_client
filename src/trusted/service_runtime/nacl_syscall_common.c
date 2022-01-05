@@ -4143,7 +4143,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
       }
       else {
         int envsize = NACL_ENV_PREFIX_LENGTH + strlen(env) + 1;
-        new_envp[i] = calloc(envsize, sizeof(char);
+        new_envp[i] = calloc(envsize, sizeof(char));
         snprintf(new_envp[i], envsize, "%s%s", NACL_ENV_PREFIX, env);
       } 
     
