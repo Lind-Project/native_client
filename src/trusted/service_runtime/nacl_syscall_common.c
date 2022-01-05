@@ -4118,13 +4118,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   /* set up environment, only do this if we initially were passed an environment*/
   NaClEnvCleanserCtor(&env_cleanser, 0);
   if (envp) {
-  
     /* Count amount of env from acquired NaCl pointer */
     uint32_t *envcountptr = sys_envp_ptr;
     while (envcountptr[new_envc] != NULL) {
       new_envc++;
     }
-
     new_envp = calloc(new_envc + 1, sizeof(*new_envp));
     if (!new_envp) {
       NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_envv");
@@ -4134,7 +4132,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     for (int i = 0; i < new_envc; i++) {
       char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
       env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
-
       if (!env) {
         new_envp[i] = 0;
         break;
@@ -4144,10 +4141,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
         new_envp[i] = calloc(envsize, sizeof(char));
         snprintf(new_envp[i], envsize, "%s%s", NACL_ENV_PREFIX, env);
       } 
-    
     }
   }
-
   new_envp[new_envc] = 0;
 
   /* We've already cleaned the native environment, so just supply extra args from this syscall */
@@ -4161,7 +4156,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   ret = NaClSysExecv(natp, path, argv);
 
 fail:
-
   return ret; 
 }
 
