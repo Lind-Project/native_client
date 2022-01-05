@@ -93,8 +93,6 @@
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
 
-extern char **environ;
-
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
