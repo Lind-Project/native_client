@@ -4156,6 +4156,11 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   ret = NaClSysExecv(natp, path, argv);
 
 fail:
+  for (char **pp = new_envp; pp && *pp; pp++) {
+    free(*pp);
+  }
+  free(new_envp);
+
   return ret; 
 }
 
