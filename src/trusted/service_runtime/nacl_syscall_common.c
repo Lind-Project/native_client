@@ -5041,6 +5041,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
     NaClLog(2, "NaClSysAccept was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    free(nd);
     return sockfd;
   }
 
@@ -5048,6 +5049,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
   if ((void*) kNaClBadAddress == syslenaddr) {
     NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    free(nd);
     return -NACL_ABI_EFAULT;
   }
 
@@ -5055,6 +5057,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
   if ((void*) kNaClBadAddress == sysvaladdr) {
     NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    free(nd);
     return -NACL_ABI_EFAULT;
   }
 
