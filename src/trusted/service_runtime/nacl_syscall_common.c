@@ -4564,9 +4564,9 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
           "%d)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
   
-  /*Convert user address to system address*/
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) name, len);
   if (kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGethostname could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     ret = -NACL_ABI_EFAULT;
     return ret;
   }
