@@ -2330,7 +2330,7 @@ def MakeUnixLikeEnv():
         ] + werror_flags,
     CXXFLAGS=['-std=c++98'],
     # NOTE: pthread is only neeeded for libppNaClPlugin.so and on arm
-    LIBS = ['pthread'],
+    LIBS = ['pthread', 'elf'],
     CPPDEFINES = [['__STDC_LIMIT_MACROS', '1'],
                   ['__STDC_FORMAT_MACROS', '1'],
                   ],

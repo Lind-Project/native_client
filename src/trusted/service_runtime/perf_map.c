@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>  
+#include <string.h>
 #include <libelf.h>
 #include <gelf.h>
 
