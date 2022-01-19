@@ -68,7 +68,7 @@ extern double time_counter;
 extern double time_start;
 extern double time_end;
 extern int cage;
-
+extern int perfmap;
 
 #if NACL_WINDOWS
 __declspec(dllexport)

@@ -75,6 +75,7 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
+int perfmap = 0;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -126,7 +127,7 @@ static void PrintUsage(void) {
           "Usage: sel_ldr [-h d:D] [-r d:D] [-w d:D] [-i d:D]\n"
           "               [-f nacl_file]\n"
           "               [-l log_file]\n"
-          "               [-X d] [-acFglQRsSQv]\n"
+          "               [-X d] [-acFglQRsSptQv]\n"
           "               -- [nacl_file] [args]\n"
           "\n");
   fprintf(stderr,
@@ -161,6 +162,7 @@ static void PrintUsage(void) {
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
           " -t toggle runtime statistics\n"
+          " -p enable perf mode"
           );  /* easier to add new flags/lines */
 }
 
@@ -180,7 +182,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
+  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStpvw:X:Z";
 #endif
 
 double LindGetTime(void) {
@@ -375,6 +377,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       case 'l':
         log_file = optarg;
+        break;
+      case 'l':
+        perfmap = 1;
         break;
       case 'Q':
         NaClLog(1, "%s\n",

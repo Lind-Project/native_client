@@ -28,8 +28,9 @@
 #include "perf_map.h"
 
 #define DEBUG_PATH "/home/lind/lind_project/lind/lindenv/debug"
+#define DEBUG_PATH_LEN 8
 
-void readelfandmap(char * elfname, uintptr_t mem_start, FILE *method_file)
+void readelfandmap(char * elfpath, uintptr_t mem_start, FILE *method_file)
 {
     Elf         *elf;
     Elf_Scn     *scn = NULL;
@@ -39,7 +40,7 @@ void readelfandmap(char * elfname, uintptr_t mem_start, FILE *method_file)
 
     elf_version(EV_CURRENT);
 
-    fd = open(elfname, O_RDONLY);
+    fd = open(elfpath, O_RDONLY);
     elf = elf_begin(fd, ELF_C_READ, NULL);
 
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
@@ -75,7 +76,11 @@ void create_perf_map(char * elfname, uintptr_t mem_start) {
     pid_t nacl_pid = getpid();
     FILE* method_file = perf_map_open(nacl_pid);
 
-    readelfandmap(elfname, mem_start, method_file);
+    int elfpathsize = DEBUG_PATH_LEN + strlen(elfname) + 1;
+    char* elfpath = calloc(elfpathsize, sizeof(char));
+    snprintf(elfpath, elfpathsize, "%s%s", DEBUG_PATH, elfname);
+
+    readelfandmap(elfpath, mem_start, method_file);
 
     perf_map_close(method_file);
 
