@@ -2636,6 +2636,7 @@ def MakeLinuxEnv():
           '-Wno-unused-const-variable',
           '-Wno-write-strings',
           '-O2',
+          '-lelf',
       ],
       CXXFLAGS=[
           '-fno-strict-aliasing',
