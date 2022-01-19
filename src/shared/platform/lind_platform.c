@@ -195,7 +195,7 @@ int lind_recvfrom (int sockfd, const void *buf, size_t len, int flags, struct so
 }
 
 int lind_accept(int sockfd, struct sockaddr *sockaddr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_recvfrom, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen);
+    DISPATCH_SYSCALL_3(LIND_safe_net_accept, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen);
 }
 
 int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid) {
@@ -229,11 +229,15 @@ int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cage
     DISPATCH_SYSCALL_4(LIND_safe_net_epoll_ctl, int, epfd, int, op, int, fd, epolleventstruct, event);
 }
 int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid) {
-    DISPATCH_SYSCALL_4(LIND_safe_net_epoll_ctl, int, epfd, epolleventstruct, events, int, maxevents, int, timeout);
+    DISPATCH_SYSCALL_4(LIND_safe_net_epoll_wait, int, epfd, epolleventstruct, events, int, maxevents, int, timeout);
 }
 
 int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid) {
     DISPATCH_SYSCALL_4(LIND_safe_net_socketpair, int, domain, int, type, int, protocol, pipearray, sv);
+}
+
+int lind_getcwd (char *buf, size_t size, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_getcwd, mutcbuf, buf, size_t, size);
 }
 
 int lind_gethostname (char *name, size_t len, int cageid) {
@@ -245,7 +249,7 @@ int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int
 }
 
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_listen, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
+    DISPATCH_SYSCALL_3(LIND_safe_net_getpeername, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
 }
 
 int lind_socket (int domain, int type, int protocol, int cageid) {

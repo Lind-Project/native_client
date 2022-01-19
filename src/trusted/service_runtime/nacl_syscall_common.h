@@ -156,8 +156,8 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname);
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len);
+                      char                 *buf,
+                      size_t               size);
 
 int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to);
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname);
@@ -353,9 +353,11 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type);
 
 int32_t NaClSysPipe(struct NaClAppThread *natp, uint32_t *pipedes);
 int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags);
+
 int32_t NaClSysFork(struct NaClAppThread *natp);
 int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, char *const *envp);
 int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv);
+
 int32_t NaClSysWaitpid(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options);
 int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc);
 int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage);

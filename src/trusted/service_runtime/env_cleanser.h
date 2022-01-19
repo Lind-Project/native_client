@@ -17,6 +17,13 @@
 
 EXTERN_C_BEGIN
 
+/*
+ * Everything that starts with this prefix is allowed (but the prefix is
+ * stripped away).
+*/
+#define NACL_ENV_PREFIX "NACLENV_"
+#define NACL_ENV_PREFIX_LENGTH 8
+
 struct NaClEnvCleanser {
   /* private */
   int with_whitelist;
