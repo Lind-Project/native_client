@@ -678,6 +678,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   if (perfmap) {
     create_perf_map(path, nap->mem_start);
+    perfmap = 0; // unset after first prog map
   }
   
   /*
