@@ -161,7 +161,7 @@ static void PrintUsage(void) {
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
           " -t toggle runtime statistics\n"
-          " -p enable perf mode"
+          " -p enable perf mode\n"
           );  /* easier to add new flags/lines */
 }
 
@@ -177,7 +177,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsStpvw:X:Z";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
