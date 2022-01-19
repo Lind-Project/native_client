@@ -33,7 +33,7 @@
 #include "perf_map.h"
 
 #define DEBUG_PATH "/home/lind/lind_project/lind/lindenv/debug"
-#define DEBUG_PATH_LEN 8
+#define DEBUG_PATH_LEN 42
 
 void readelfandmap(char * elfpath, uintptr_t mem_start, FILE *method_file)
 {
