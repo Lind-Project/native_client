@@ -64,7 +64,7 @@ void readelfandmap(char * elfpath, uintptr_t mem_start, FILE *method_file)
         GElf_Sym sym;
         gelf_getsym(data, ii, &sym);
 
-        perf_map_write_entry(method_file, (void*)mem_start + (void*)sym.st_value, (int)sym.st_size, elf_strptr(elf, shdr.sh_link, sym.st_name));
+        perf_map_write_entry(method_file, (mem_start + (uintptr_t)sym.st_value), (int)sym.st_size, elf_strptr(elf, shdr.sh_link, sym.st_name));
         printf("%d: ", ii);
         printf("name: %s   ", elf_strptr(elf, shdr.sh_link, sym.st_name));
         printf("addr: %x  ", sym.st_value);
