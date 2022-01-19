@@ -24,6 +24,10 @@
 #include <errno.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <fcntl.h>  
+#include <libelf.h>
+#include <gelf.h>
+
 
 #include "perf_map.h"
 
