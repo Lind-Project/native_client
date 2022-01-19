@@ -378,7 +378,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       case 'l':
         log_file = optarg;
         break;
-      case 'l':
+      case 'p':
         perfmap = 1;
         break;
       case 'Q':
