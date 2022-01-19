@@ -18,6 +18,9 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
+void readelfandmap(char * elfpath, uintptr_t mem_start, FILE *method_file);
+void create_perf_map(char * elfname, uintptr_t mem_start);
 FILE *perf_map_open(pid_t pid);
 int perf_map_close(FILE *fp);
 void perf_map_write_entry(FILE *method_file, const void* code_addr, unsigned int code_size, const char* entry);
