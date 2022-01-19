@@ -54,7 +54,7 @@ ldr_inputs = [
     'nacl_signal_common.c',
     'nacl_stack_safety.c',
     'nacl_syscall_common.c',
-    'perf_map.c',
+    'perf_map.c -lelf',
     GENERATED + '/nacl_syscall_handlers.c',
     'nacl_syscall_hook.c',
     'nacl_text.c',
