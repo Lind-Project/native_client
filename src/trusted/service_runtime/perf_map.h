@@ -1,3 +1,14 @@
+
+/*
+ * Copyright (c) 2012 The Native Client Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+
+#ifndef NATIVE_CLIENT_SRC_INCLUDE_PERF_MAP_H_
+#define NATIVE_CLIENT_SRC_INCLUDE_PERF_MAP_H_ 1
+
 /*
  *   libperfmap: a JVM agent to create perf-<pid>.map files for consumption
  *               with linux perf-tools
@@ -26,3 +37,4 @@ int perf_map_close(FILE *fp);
 void perf_map_write_entry(FILE *method_file, const void* code_addr, unsigned int code_size, const char* entry);
 
 
+#endif  /* NATIVE_CLIENT_SRC_INCLUDE_PERF_MAP_H_ */
