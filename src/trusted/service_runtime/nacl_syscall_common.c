@@ -674,6 +674,11 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t)pathname);
 
+
+  if (perfmap) {
+    create_perf_map(path, nap->mem_start);
+  }
+  
   /*
    * TODO:
    * find a cleaner method to prevent the

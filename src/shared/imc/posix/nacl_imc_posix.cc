@@ -125,23 +125,23 @@ static int TryShmOrTempOpen(size_t length, const char* prefix, bool use_temp) {
        */
       m = shm_open(name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR);
     }
-    if (0 <= m) {
-      if (use_temp) {
-        int rc = unlink(name);
-        DCHECK(rc == 0);
-      } else {
-        int rc = shm_unlink(name);
-        DCHECK(rc == 0);
-      }
-      if (ftruncate(m, length) == -1) {
-        close(m);
-        m = -1;
-      }
-      return m;
-    }
-    if (errno != EEXIST) {
-      return -1;
-    }
+    // if (0 <= m) {
+    //   if (use_temp) {
+    //     int rc = unlink(name);
+    //     DCHECK(rc == 0);
+    //   } else {
+    //     int rc = shm_unlink(name);
+    //     DCHECK(rc == 0);
+    //   }
+    //   if (ftruncate(m, length) == -1) {
+    //     close(m);
+    //     m = -1;
+    //   }
+    //   return m;
+    // }
+    // if (errno != EEXIST) {
+    //   return -1;
+    // }
     /* Retry only if we got EEXIST. */
   }
 }
