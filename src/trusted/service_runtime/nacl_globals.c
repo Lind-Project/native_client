@@ -34,6 +34,7 @@ int nacl_syscall_counter = 0;
 int nacl_syscall_trace_level_counter = 0;
 int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
+int perfmap = 0;
 
 void NaClGlobalModuleInit(void) {
   NaClInitGlobals();

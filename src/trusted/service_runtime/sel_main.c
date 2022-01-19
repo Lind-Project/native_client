@@ -75,7 +75,6 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
-int perfmap = 0;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
