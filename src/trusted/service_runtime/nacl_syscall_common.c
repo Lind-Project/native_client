@@ -1464,6 +1464,9 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
 
+  NaClLog(2, "Cage %d Entered NaClSysRmdir(0x%08"NACL_PRIxPTR", "
+          "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
+
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
@@ -1476,6 +1479,7 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
 
   retval = lind_rmdir(path, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysRmdir: returning %d\n", retval);
   return retval;
 }
 
@@ -1484,6 +1488,9 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
+
+  NaClLog(2, "Cage %d Entered NaClSysChdir(0x%08"NACL_PRIxPTR", "
+          "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
 
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
@@ -1497,6 +1504,7 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
 
   retval = lind_chdir(path, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysChdir: returning %d\n", retval);
   return retval;
 }
 
