@@ -1439,6 +1439,9 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
 
+  NaClLog(2, "Cage %d Entered NaClSysMkdir(0x%08"NACL_PRIxPTR", "
+          "%d, %d)\n", nap->cage_id, (uintptr_t) natp, pathname, mode);
+
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
@@ -1451,6 +1454,7 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
   return retval;
 }
 
