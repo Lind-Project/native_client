@@ -122,8 +122,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
 int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
-                     int                  request,
-                     void                 *arg);
+                     unsigned long        request,
+                     void                 *arg_ptr);
 
 int32_t NaClSysFstat(struct NaClAppThread *natp,
                      int                  d,
