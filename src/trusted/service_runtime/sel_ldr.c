@@ -587,6 +587,15 @@ struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
   return result;
 }
 
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                               int            d) {
+  struct NaClDesc *result;
+
+  result = (struct NaClDesc *) DynArrayGet(&nap->desc_tbl, d);
+
+  return result;
+}
+
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
                    struct NaClDesc  *ndp) {
@@ -625,9 +634,7 @@ struct NaClDesc *NaClGetDesc(struct NaClApp *nap,
                              int            d) {
   struct NaClDesc *res;
 
-  NaClFastMutexLock(&nap->desc_mu);
   res = NaClGetDescMu(nap, d);
-  NaClFastMutexUnlock(&nap->desc_mu);
   return res;
 }
 
@@ -1786,6 +1793,15 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 int NextFd(int cage_id){
 
   for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
+    if (fd_cage_table[cage_id][fd] == -1) return fd;
+  }
+
+  return -NACL_ABI_EBADF;
+}
+
+int NextFdBounded(int cage_id, int lowerbound){
+
+  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
     if (fd_cage_table[cage_id][fd] == -1) return fd;
   }
 

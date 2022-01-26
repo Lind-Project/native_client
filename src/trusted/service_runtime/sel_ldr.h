@@ -72,6 +72,8 @@ EXTERN_C_BEGIN
 
 #define NACL_BAD_FD                     -1
 
+#define INIT_PROCESS_NUM 1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;
@@ -114,12 +116,6 @@ struct NaClSpringboardInfo {
   /* These are addresses in untrusted address space (relative to mem_start). */
   uint32_t start_addr;
   uint32_t end_addr;
-};
-
-enum NaClThreadLaunchType {
-  THREAD_LAUNCH_MAIN,
-  THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
 };
 
 struct NaClApp {
@@ -639,8 +635,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  */
 
 
-int NaClCreateThread(enum NaClThreadLaunchType tl_type,
-                     struct NaClAppThread     *natp_parent,
+int NaClCreateThread(struct NaClAppThread     *natp_parent,
                      struct NaClApp           *nap_child,
                      int                      argc,
                      char                     **argv,
@@ -690,6 +685,9 @@ int32_t NaClSetAvail(struct NaClApp   *nap,
  */
 struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
                                int            d);
+
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                                    int            d);
 
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
@@ -859,6 +857,11 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
  * region..
  */
 
+/* Lind
+ * We're only using Linux so it's fine to disregard these operations which are
+ * Windows specific. 
+ * /
+
 /*
  * Some potentially blocking I/O operation is about to start.  Syscall
  * handlers implement DMA-style access where the host-OS syscalls
@@ -927,6 +930,7 @@ void InitializeCage(struct NaClApp *nap, int cage_id);
 
 /* Find the next usuable fd */
 int NextFd(int cage_id);
+int NextFdBounded(int cage_id, int lowerbound);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);

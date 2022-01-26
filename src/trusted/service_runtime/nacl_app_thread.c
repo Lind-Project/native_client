@@ -35,7 +35,6 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
-#define INIT_PROCESS_NUM 1
 
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
@@ -46,7 +45,7 @@ int cagecount;
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
   struct NaClApp *nap_parent = nap;
   NaClErrorCode *mod_status = NULL;
@@ -63,6 +62,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
   }
 
   mod_status = &nap_child->module_load_status;
+  nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
@@ -94,7 +94,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
   /*
    * increment fork generation count and generate child (holding parent mutex)
    */
-  InitializeCage(nap_child, INIT_PROCESS_NUM + ++fork_num);
+  InitializeCage(nap_child, child_cage_id);
   nap_parent->num_children++;
 
   if (nap_parent->num_children > CHILD_NUM_MAX) {
@@ -108,9 +108,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
   NaClXMutexUnlock(&nap_parent->children_mu);
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-  if(origin == NONFORK_CHILD) {
-    //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
-    //nap_child->main_exe_prevalidated = 1;
+  if(tl_type != THREAD_LAUNCH_FORK) {
     //exec not prevalidated
     if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
       NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
@@ -119,6 +117,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin) {
                          "or a corrupt nexe file may be responsible for this error.");
     }
   } else {
+    //we already know the fork child has an ok nexe, and we don't even need to load it
     nap_child->stack_size = nap_parent->stack_size;
     nap_child->static_text_end = nap_parent->static_text_end;
     nap_child->rodata_start = nap_parent->rodata_start;
@@ -526,8 +525,7 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
     base_ptr_offset = parent_ctx.rbp - (uintptr_t)stack_ptr_parent;
     /* copy parent page tables and execution context */
     NaClCopyExecutionContext(nap_parent, nap_child, parent_ctx.rsp);
-    NaClLog(1, "fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
-            fork_num,
+    NaClLog(1, "child cage_id: [%d], parent cage id: [%d]\n",
             nap_child->cage_id,
             nap_parent->cage_id);
     NaClLog(1, "%s\n", "Thread context of child before copy");

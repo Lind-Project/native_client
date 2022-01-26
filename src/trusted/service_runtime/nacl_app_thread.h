@@ -25,6 +25,13 @@ EXTERN_C_BEGIN
 struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
 
+enum NaClThreadLaunchType {
+  THREAD_LAUNCH_MAIN,
+  THREAD_LAUNCH_FORK,
+  THREAD_LAUNCH_EXEC
+};
+
+
 /*
  * The thread hosting the NaClAppThread may change suspend_state
  * between NACL_APP_THREAD_TRUSTED and NACL_APP_THREAD_UNTRUSTED using
@@ -150,11 +157,7 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 };
 
-enum ChildOrigin {
-  FORK_CHILD, NONFORK_CHILD
-};
-
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, enum ChildOrigin origin);
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
 
 void WINAPI NaClAppThreadLauncher(void *state);
 

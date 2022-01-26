@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -83,7 +84,6 @@
 #include "native_client/src/trusted/validator/ncvalidate.h"
 #include "native_client/src/trusted/validator/validation_metadata.h"
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
-#include "native_client/src/trusted/service_runtime/lind_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
 #include "native_client/src/trusted/service_runtime/nacl_app.h"
 #include "native_client/src/trusted/service_runtime/load_file.h"
@@ -290,17 +290,15 @@ int32_t NaClOpenAclCheck(struct NaClApp *nap,
    */
   NaClLog(1, "NaClOpenAclCheck(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o)\n",
           (uintptr_t) nap, path, flags, mode);
-  if (3 < NaClLogGetVerbosity()) {
-    NaClLog(0, "O_ACCMODE: 0%o\n", flags & NACL_ABI_O_ACCMODE);
-    NaClLog(0, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
-    NaClLog(0, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
-    NaClLog(0, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
+  NaClLog(4, "O_ACCMODE: 0%o\n", flags & NACL_ABI_O_ACCMODE);
+  NaClLog(4, "O_RDONLY = %d\n", NACL_ABI_O_RDONLY);
+  NaClLog(4, "O_WRONLY = %d\n", NACL_ABI_O_WRONLY);
+  NaClLog(4, "O_RDWR   = %d\n", NACL_ABI_O_RDWR);
 #define FLOG(VAR, BIT) NaClLog(1, "%s: %s\n", #BIT, ((VAR) & (BIT)) ? "yes" : "no")
     FLOG(flags, NACL_ABI_O_CREAT);
     FLOG(flags, NACL_ABI_O_TRUNC);
     FLOG(flags, NACL_ABI_O_APPEND);
 #undef FLOG
-  }
   if (NaClAclBypassChecks) {
     return 0;
   }
@@ -846,8 +844,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   NaClXMutexLock(&nap->mu);
 
   getdents_ret = lind_getdents(lind_fd,
-                              count,
                               (void *) sysaddr,
+                              count,
                               nap->cage_id);
   NaClXMutexUnlock(&nap->mu);
   /* drop addr space lock */
@@ -897,7 +895,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -906,7 +907,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -920,14 +920,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
-  NaClVmIoWillStart(nap,
-                    (uint32_t) (uintptr_t) buf,
-                    (uint32_t) (((uintptr_t) buf) + count - 1));
+
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
 
-  NaClVmIoHasEnded(nap,
-                    (uint32_t) (uintptr_t) buf,
-                    (uint32_t) (((uintptr_t) buf) + count - 1));
   if (read_result > 0) {
     NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
     log_bytes = (size_t) read_result;
@@ -935,22 +933,20 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "read result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
   } else {
     NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
   }
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1017,11 +1013,9 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
       log_bytes = INT32_MAX;
       ellipsis = "...";
     }
-    if (NaClLogGetVerbosity() < 10) {
-      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-        log_bytes = kdefault_io_buffer_bytes_to_log;
-        ellipsis = "...";
-      }
+    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+      log_bytes = kdefault_io_buffer_bytes_to_log;
+      ellipsis = "...";
     }
     NaClLog(8, "pread result: %.*s%s\n",
             (int) log_bytes, (char *) sysaddr, ellipsis);
@@ -1059,7 +1053,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  ndp = NaClGetDesc(nap, fd);
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+
+
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
     retval = -NACL_ABI_EBADF;
@@ -1068,7 +1066,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, count);
   if (kNaClBadAddress == sysaddr) {
-    NaClDescUnref(ndp);
     retval = -NACL_ABI_EFAULT;
     goto out;
   }
@@ -1084,7 +1081,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
@@ -1093,21 +1090,16 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-  NaClVmIoWillStart(nap,
-                    (uint32_t)(uintptr_t)buf,
-                    (uint32_t)(((uintptr_t)buf) + count - 1));
+  /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
+   * See note in sel_ldr.h
+   */
   write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
-
-  NaClVmIoHasEnded(nap,
-                   (uint32_t)(uintptr_t)buf,
-                   (uint32_t)(((uintptr_t)buf) + count - 1));
-
-  NaClDescUnref(ndp);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
 out:
+  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1160,7 +1152,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     ellipsis = "...";
   }
   UNREFERENCED_PARAMETER(ellipsis);
-  if (NaClLogGetVerbosity() < 10 && log_bytes > kdefault_io_buffer_bytes_to_log) {
+  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
      log_bytes = kdefault_io_buffer_bytes_to_log;
      ellipsis = "...";
   }
@@ -1447,6 +1439,9 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
 
+  NaClLog(2, "Cage %d Entered NaClSysMkdir(0x%08"NACL_PRIxPTR", "
+          "%d, %d)\n", nap->cage_id, (uintptr_t) natp, pathname, mode);
+
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
@@ -1457,8 +1452,9 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescMkdir(path, mode);
+  retval = lind_mkdir(path, mode, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
   return retval;
 }
 
@@ -1468,6 +1464,9 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
 
+  NaClLog(2, "Cage %d Entered NaClSysRmdir(0x%08"NACL_PRIxPTR", "
+          "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
+
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
@@ -1478,8 +1477,9 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescRmdir(path);
+  retval = lind_rmdir(path, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysRmdir: returning %d\n", retval);
   return retval;
 }
 
@@ -1489,6 +1489,9 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval = -NACL_ABI_EINVAL;
 
+  NaClLog(2, "Cage %d Entered NaClSysChdir(0x%08"NACL_PRIxPTR", "
+          "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
+
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
@@ -1499,59 +1502,72 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
     goto cleanup;
   }
 
-  retval = NaClHostDescChdir(path);
+  retval = lind_chdir(path, natp->nap->cage_id);
 cleanup:
+  NaClLog(2, "NaClSysChdir: returning %d\n", retval);
   return retval;
 }
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len) {
+                      char                 *buf,
+                      size_t               size) {
   struct NaClApp *nap = natp->nap;
+  uintptr_t      sysaddr;
   int32_t        retval = -NACL_ABI_EINVAL;
-  char           path[NACL_CONFIG_PATH_MAX];
+
+  NaClLog(2, "Cage %d Entered NaClSysGetcwd(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) buf, size);
 
   if (!NaClAclBypassChecks) {
     retval = -NACL_ABI_EACCES;
     goto cleanup;
   }
 
-  if (len >= NACL_CONFIG_PATH_MAX) {
-    len = NACL_CONFIG_PATH_MAX - 1;
+  if (size >= NACL_CONFIG_PATH_MAX) {
+    size = NACL_CONFIG_PATH_MAX - 1;
   }
 
-  retval = NaClHostDescGetcwd(path, len);
-  if (retval) {
-    goto cleanup;
-  }
-
-  if (!NaClCopyOutToUser(nap, buffer, &path, strlen(path) + 1)) {
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) buf, size);
+  if (kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetcwd could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
     retval = -NACL_ABI_EFAULT;
+    return retval;
   }
+
+  retval = lind_getcwd(sysaddr, size, natp->nap->cage_id);
 
 cleanup:
+  NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
   return retval;
 }
 
-int32_t NaClSysUnlink(struct NaClAppThread *natp,
-                      uint32_t             pathname) {
+int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
+  struct NaClApp *nap = natp->nap;
+  char           srcpath[NACL_CONFIG_PATH_MAX];
+  char           dstpath[NACL_CONFIG_PATH_MAX];
+  int32_t        retval;
+
+  if ((retval = CopyPathFromUser(nap, srcpath, sizeof(srcpath), (uintptr_t) from))) {
+    return retval;
+  }
+  if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) {
+    return retval;
+  }
+
+  return lind_link(srcpath, dstpath, nap->cage_id);
+}
+int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
-  if (!NaClAclBypassChecks) {
-    retval = -NACL_ABI_EACCES;
-    goto cleanup;
+  if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) {
+    return retval;
   }
 
-  retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) {
-    goto cleanup;
-  }
-
-  retval = NaClHostDescUnlink(path);
-cleanup:
-  return retval;
+  return lind_unlink(path, nap->cage_id);
 }
 
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
@@ -2665,66 +2681,6 @@ cleanup:
   return retval;
 }
 
-int32_t NaClSysImcAccept(struct NaClAppThread  *natp,
-                         int                   d) {
-  struct NaClApp  *nap = natp->nap;
-  struct NaClDesc *ndp;
-  struct NaClDesc *result_desc;
-  int32_t         retval;
-  int             fd;
-
-  NaClLog(1, "Entered NaClSysImcAccept(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
-
-  /* Check if fd is valid and if NaCl Desc exists */
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EINVAL;
-    goto out;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EINVAL;
-    goto out;
-  }
-  retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->AcceptConn(ndp, &result_desc);
-  if (!retval) {
-    retval = NaClSetAvail(nap, result_desc);
-  }
-  NaClDescUnref(ndp);
-
-out:
-  return retval;
-}
-
-int32_t NaClSysImcConnect(struct NaClAppThread *natp,
-                          int                  d) {
-  struct NaClApp  *nap = natp->nap;
-  struct NaClDesc *ndp;
-  struct NaClDesc *result;
-  int32_t         retval;
-  int             fd;
-
-  NaClLog(1, "Entered NaClSysImcConnectAddr(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, d);
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
-  retval = ((struct NaClDescVtbl const *)ndp->base.vtbl)->ConnectAddr(ndp, &result);
-  if (!retval) {
-    retval = NaClSetAvail(nap, result);
-  }
-  NaClDescUnref(ndp);
-
-out:
-  return retval;
-}
-
 /*
  * This function converts addresses from user addresses to system
  * addresses, copying into kernel space as needed to avoid TOCvTOU
@@ -3187,6 +3143,52 @@ int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
   retval = 0;
 
 cleanup:
+  return retval;
+}
+
+int32_t NaClSysSocketPair(struct NaClAppThread *natp,
+                          int                  domain,
+                          int                  type,
+                          int                  protocol,
+                          int                  *fds) {
+
+  struct NaClApp          *nap = natp->nap;
+  void                    *hd_struct = NULL;
+  struct NaClHostDesc     *hd;
+  int                     lind_fd;
+  int                     nacl_fd;
+  int                     user_fd;
+  int32_t                 retval;
+
+  NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
+           "%d, %d, %d, %lx)\n",
+           nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
+
+  hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
+  if (!hd_struct) {
+    retval = -NACL_ABI_ENOMEM;
+    return retval;
+  }
+
+  retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
+
+  for(int i=0; i<2; ++i) {
+    hd = &((struct NaClHostDesc*)hd_struct)[i];
+    lind_fd = ((int*)fds)[i];
+
+    //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
+    hd->d = lind_fd;
+    hd->flags = NACL_ABI_O_RDWR;
+
+    hd->cageid = nap->cage_id;
+    nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+    user_fd = NextFd(nap->cage_id);
+    fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
+    fds[i] = user_fd;
+  }
+
+  NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
+
   return retval;
 }
 
@@ -4086,24 +4088,26 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 
   /* set up new "child" NaClApp */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(natp->nap, FORK_CHILD);
+
+  /* get new id and setup new cage in safeposix */
+  NaClXMutexLock(&nap->mu); 
+  int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
+  lind_fork(child_cage_id, nap->cage_id); 
+  NaClXMutexUnlock(&nap->mu);
+
+  nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
-  ret = nap_child->cage_id;
-
-  NaClXMutexLock(&nap->mu); 
-  NaClXMutexLock(&nap_child->mu); 
-
-  lind_fork(ret, nap->cage_id);
-  
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap->mu);
+  ret = child_cage_id;
 
   /* start fork thread */
-  if (!NaClCreateThread(THREAD_LAUNCH_FORK, natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(1, "%s\n", "[NaClSysFork] forking program failed!");
     ret = -NACL_ABI_ENOMEM;
+
+    /* exit failed process in safeposix */
+    lind_exit(EXIT_FAILURE, child_cage_id);
     goto fail;
   }
 
@@ -4112,23 +4116,82 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClLog(1, "[fork_num = %u, child = %u, parent = %u]\n", fork_num, nap_child->cage_id, nap->cage_id);
 
 fail:
+
   return ret;
 }
 
 int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, char *const *envp) {
   struct NaClApp *nap = natp->nap;
-  struct NaClApp *nap_child = 0;
   struct NaClEnvCleanser env_cleanser = {0};
+  uint32_t *sys_envp_ptr = { NULL };
+  char **new_envp = 0;
+  int new_envc = 0;
+  int ret = -NACL_ABI_ENOMEM;
+
+  /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
+  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
+
+  NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
+
+  /* set up environment, only do this if we initially were passed an environment*/
+  NaClEnvCleanserCtor(&env_cleanser, 0);
+  if (envp) {
+    /* Count amount of env from acquired NaCl pointer */
+    uint32_t *envcountptr = sys_envp_ptr;
+    while (envcountptr[new_envc] != NULL) {
+      new_envc++;
+    }
+    new_envp = calloc(new_envc + 1, sizeof(*new_envp));
+    if (!new_envp) {
+      NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_envv");
+      NaClEnvCleanserDtor(&env_cleanser);
+      goto fail;
+    }
+    for (int i = 0; i < new_envc; i++) {
+      char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
+      env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
+      if (!env) {
+        new_envp[i] = NULL;
+        break;
+      }
+      else {
+        int envsize = NACL_ENV_PREFIX_LENGTH + strlen(env) + 1;
+        new_envp[i] = calloc(envsize, sizeof(char));
+        snprintf(new_envp[i], envsize, "%s%s", NACL_ENV_PREFIX, env);
+      } 
+    }
+  }
+  new_envp[new_envc] = NULL;
+
+  /* We've already cleaned the native environment, so just supply extra args from this syscall */
+  if (!NaClEnvCleanserInit(&env_cleanser, (char const *const *)new_envp, 0)) {
+    NaClLog(LOG_ERROR, "%s\n", "Failed to initialize environment cleanser");
+    NaClEnvCleanserDtor(&env_cleanser);
+    goto fail;
+  }
+
+  nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
+  ret = NaClSysExecv(natp, path, argv);
+
+fail:
+  for (char **pp = new_envp; pp && *pp; pp++) {
+    free(*pp);
+  }
+  free(new_envp);
+
+  return ret; 
+}
+
+int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
+  struct NaClApp *nap = natp->nap;
+  struct NaClApp *nap_child = 0;
   char *sys_pathname;
   uint32_t *sys_argv_ptr;
-  uint32_t *sys_envp_ptr = { NULL };
   char *binary; 
   char **child_argv = 0;
   char **new_argv = 0;
-  char **new_envp = 0;
   int child_argc = 0;
   int new_argc = 0;
-  int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
   void *dyncode_child;
   size_t dyncode_size;
@@ -4141,8 +4204,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   uintptr_t tramp_pnum;
 
   /* Convert pathname from user path, set binary */
-  sys_pathname = NaClUserToSysAddr(nap, (uintptr_t)path);
-  binary = sys_pathname ? strdup(sys_pathname) : 0;
+  sys_pathname = NaClUserToSysAddr(nap, path);
+  binary = sys_pathname ? strdup(sys_pathname) : NULL;
 
   /* 
     Convert to a Sys Pointer for argv** 
@@ -4151,49 +4214,9 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   */
   sys_argv_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)argv);
 
-  /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
-  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddr(nap, (uintptr_t)envp);
-
-
-  NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
-
-  /* set up environment, only do this if we initially were passed an environment*/
-  NaClEnvCleanserCtor(&env_cleanser, 0);
-  if (envp) {
-  
-    /* Count amount of env from acquired NaCl pointer */
-    uint32_t *envcountptr = sys_envp_ptr;
-    while (envcountptr[new_envc] != NULL) {
-      new_envc++;
-    }
-
-    new_envp = calloc(new_envc + 1, sizeof(*new_envp));
-    if (!new_envp) {
-      NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_envv");
-      NaClEnvCleanserDtor(&env_cleanser);
-      goto fail;
-    }
-    for (int i = 0; i < new_envc; i++) {
-      char *env = (void *)NaClUserToSysAddr(nap, (uintptr_t)sys_envp_ptr[i]);
-      env = (uintptr_t)env == kNaClBadAddress ? 0 : env;
-      new_envp[i] = env ? strdup(env) : 0;
-      if (!env) {
-        break;
-      }
-    }
-    new_envp[new_envc] = 0;
-    if (!NaClEnvCleanserInit(&env_cleanser, (char const *const *)new_envp, 0)) {
-      NaClLog(LOG_ERROR, "%s\n", "Failed to initialize environment cleanser");
-      NaClEnvCleanserDtor(&env_cleanser);
-      goto fail;
-    }
-    nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  }
-
   /* set up argv and argc */
   if (!sys_argv_ptr) {
     NaClLog(LOG_ERROR, "%s\n", "Passed a NULL pointer in argp");
-    NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
   
@@ -4206,7 +4229,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   new_argv = calloc(new_argc + 1, sizeof(*new_argv));
   if (!new_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate new_argv");
-    NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
   for (int i = 0; i < new_argc; i++) {
@@ -4224,16 +4246,15 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   child_argv = calloc(child_argc + 1, sizeof(*child_argv));
   if (!child_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
-    NaClEnvCleanserDtor(&env_cleanser);
     goto fail;
   }
   child_argv[0] = "NaClMain";
   child_argv[1] = "--library-path";
   child_argv[2] = "/lib/glibc";
   for (int i = 0; i < new_argc; i++) {
-    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : 0;
+    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
-  child_argv[child_argc] = 0;
+  child_argv[child_argc] = NULL;
   nap->argc = child_argc;
   nap->argv = child_argv;
   if (binary) {
@@ -4244,7 +4265,15 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
-  nap_child = NaClChildNapCtor(nap, NONFORK_CHILD);
+  int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
+
+  /* Copy fd table in SafePOSIX */
+  NaClXMutexLock(&nap->mu); 
+  NaClLog(2, "Copying fd table in SafePOSIX\n");
+  lind_exec(child_cage_id, nap->cage_id);
+  NaClXMutexUnlock(&nap->mu);
+
+  nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   nap_child->running = 0;
   nap_child->in_fork = 0;
 
@@ -4367,20 +4396,14 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   }
 
-  /* Copy fd table in SafePOSIX */
-  NaClXMutexLock(&nap->mu); 
-  NaClXMutexLock(&nap_child->mu); 
-  NaClLog(2, "Copying fd table in SafePOSIX\n");
-  lind_exec(nap_child->cage_id, nap->cage_id);
-  NaClXMutexUnlock(&nap_child->mu);
-  NaClXMutexUnlock(&nap->mu);
-
   /* execute new binary, we pass NULL as parent natp since we're not basing the new thread off of this one. */
   ret = -NACL_ABI_ENOEXEC;
   NaClLog(1, "binary = %s\n", nap->binary);
-  if (!NaClCreateThread(THREAD_LAUNCH_EXEC, NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
+  if (!NaClCreateThread(NULL, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "NaClCreateThread() failed");
-    NaClEnvCleanserDtor(&env_cleanser);
+    /* remove child cage */
+    lind_exit(EXIT_FAILURE, child_cage_id);
+
     goto fail;
   }
     
@@ -4388,29 +4411,21 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
-  free((void*) nap->clean_environ);
-  NaClEnvCleanserDtor(&env_cleanser);
 
   /* success */
   ret = 0;
 
 fail:
+  /*  Env Cleanser */
+  free((void *) nap->clean_environ);
+  nap->clean_environ = NULL;
 
-
-  for (char **pp = new_envp; pp && *pp; pp++) {
-    free(*pp);
-  }
   for (char **pp = new_argv; pp && *pp; pp++) {
     free(*pp);
   }
-  free(new_envp);
   free(new_argv);
   free(binary);
   return ret;
-}
-
-int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
-  return NaClSysExecve(natp, path, argv, NULL);
 }
 
 #define WAIT_ANY (-1)
@@ -4549,4 +4564,976 @@ int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set,
   UNREFERENCED_PARAMETER(set);
   UNREFERENCED_PARAMETER(oldset);
   return 0;
+}
+
+int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
+  int32_t ret;
+  uintptr_t sysaddr;
+  struct NaClApp *nap = natp->nap;
+  
+  NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
+  
+  sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) name, len);
+  if (kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGethostname could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    ret = -NACL_ABI_EFAULT;
+    return ret;
+  }
+  
+  ret = lind_gethostname (sysaddr, len, nap->cage_id);
+  
+  NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
+  
+  return ret;
+}
+
+int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
+  int32_t ret;
+
+  struct NaClApp *nap = natp->nap;
+  struct NaClHostDesc *hd;
+  int naclfd;
+  int userfd;
+
+  NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
+          "%d, %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, domain, type, protocol);
+   
+  hd = malloc(sizeof(struct NaClHostDesc));
+  if (!hd) {
+    ret = -NACL_ABI_ENOMEM;
+    return ret;
+  }
+  
+  ret = lind_socket (domain, type, protocol, nap->cage_id);
+   
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
+  
+  hd->cageid = nap->cage_id;
+  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  userfd = NextFd(nap->cage_id);
+  fd_cage_table[nap->cage_id][userfd] = naclfd;
+  
+  NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
+  
+  return userfd;
+}
+
+// Translate Host FD to Lind FD
+int descnum2Lindfd(struct NaClApp *nap, int fd) {
+  struct NaClDesc * ndp;
+  int naclfd = fd_cage_table[nap->cage_id][fd];
+  if (naclfd < 0) {
+    return -NACL_ABI_EBADF;
+  }
+  if (!(ndp = NaClGetDesc(nap, naclfd))) {
+    return -NACL_ABI_EBADF;
+  }
+  return ((struct NaClDescIoDesc *) ndp)->hd->d;
+}
+
+int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const void *sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysSend(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysSend could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSend was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_send(sockfd, sysbufaddr, len, flags, nap->cage_id);
+  NaClLog(2, "NaClSysSend: returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
+                         int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const void *sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysSendto(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) buf, len, flags, (uintptr_t) dest_addr, addrlen);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysSendto could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSendto was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_sendto(sockfd, dest_addr, len, flags, sysbufaddr, addrlen, nap->cage_id);
+  NaClLog(2, "NaClSysSendto: returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flags, void *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  NaClLog(2, "Cage %d Entered NaClSysRecv(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysRecv could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+      NaClLog(2, "NaClSysRecv was passed an unrecognized file descriptor, returning %d\n", sockfd);
+      return sockfd;
+  }
+
+  ret = lind_recv(sockfd, sysbufaddr, len, flags, nap->cage_id);
+  NaClLog(2, "NaClSysRecv: returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_t len, int flags,
+                           struct sockaddr *src_addr, socklen_t *addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  socklen_t *sysaddrlenaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+  struct sockaddr *sysaddraddr;
+  NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
+          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, buf, len, flags, (uintptr_t)src_addr, (uintptr_t)addrlen);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlenaddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate address length pointer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+  sysaddraddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, *sysaddrlenaddr);
+  if ((void*) kNaClBadAddress == sysaddraddr) {
+    NaClLog(2, "NaClSysRecvfrom could not translate address pointer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysRecvfrom was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_recvfrom(sockfd, sysbufaddr, len, flags, sysaddraddr, sysaddrlenaddr, nap->cage_id);
+  NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysShutdown(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, how);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysShutdown was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  
+  ret = lind_shutdown(sockfd, how, nap->cage_id);
+  NaClLog(2, "NaClSysShutdown returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysGetuid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getuid(nap->cage_id);
+  NaClLog(2, "NaClSysGetuid returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysGeteuid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_geteuid(nap->cage_id);
+  NaClLog(2, "NaClSysGeteuid returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysGetgid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getgid(nap->cage_id);
+  NaClLog(2, "NaClSysGetgid returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysGetegid(struct NaClAppThread *natp)
+{
+  struct NaClApp *nap = natp->nap;
+  int ret = lind_getegid(nap->cage_id);
+  NaClLog(2, "NaClSysGetegid returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
+{
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFlock(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, operation);
+  
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFlock was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  ret = lind_flock(fd, operation, nap->cage_id);
+  NaClLog(2, "NaClSysFlock returning %d\n", ret);
+  return ret;
+}
+
+int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  unsigned int *syslenaddr = (unsigned int*) NaClUserToSysAddr(nap, (uintptr_t) optlen);
+  void *sysvaladdr;
+
+  if ((void*) kNaClBadAddress == syslenaddr) {
+    NaClLog(2, "NaClSysGetsockopt could not translate optlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  sysvaladdr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, *syslenaddr);
+  NaClLog(2, "Cage %d Entered NaClSysGetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, (uintptr_t) optlen);
+  NaClLog(2, "NaClSysgetSockopt %d %p %p\n", *syslenaddr, syslenaddr, optlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysGetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetsockopt was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  ret = lind_getsockopt(sockfd, level, optname, sysvaladdr, syslenaddr, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const void *sysvaladdr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) optval, optlen);
+  NaClLog(2, "Cage %d Entered NaClSysSetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %u)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, optlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysSetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysSetsockopt was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+  ret = lind_setsockopt(sockfd, level, optname, sysvaladdr, optlen, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysFstatfs(struct NaClAppThread *natp,
+                       int                  d,
+                       struct lind_statfs   *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  struct lind_statfs *sysbufaddr = (struct lind_statfs*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct lind_statfs));
+  NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf);
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysFstatfs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if((d = descnum2Lindfd(nap, d)) < 0) {
+    NaClLog(2, "NaClSysFstatfs was passed an unrecognized file descriptor, returning %d\n", d);
+    return d;
+  }
+  ret = lind_fstatfs(d, sysbufaddr, nap->cage_id);
+
+  if(ret > 0) ret = 0;
+
+  return ret;
+}
+
+int32_t NaClSysStatfs(struct NaClAppThread *natp,
+                      const char           *pathname,
+                      struct lind_statfs   *buf) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  struct lind_statfs *sysbufaddr = (struct lind_statfs*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, sizeof(struct lind_statfs));
+  char           path[NACL_CONFIG_PATH_MAX];
+
+  ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
+
+  NaClLog(2, "Cage %d Entered NaClSysStatfs(0x%08"NACL_PRIxPTR", %s, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, path, (uintptr_t) buf);
+
+  if (ret) {
+    NaClLog(2, "NaClSysStatfs could not translate path address, returning %d\n", ret);
+    return ret;
+  }
+
+  if ((void*) kNaClBadAddress == sysbufaddr) {
+    NaClLog(2, "NaClSysStatfs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+
+  ret = lind_statfs(path, sysbufaddr, nap->cage_id);
+
+  if(ret > 0) ret = 0;
+
+  return ret;
+}
+
+int32_t NaClSysGetsockname(struct NaClAppThread *natp, 
+                        int sockfd, 
+                        struct sockaddr * addr,
+                        socklen_t * addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+
+  if ((void*) kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlen) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  NaClLog(2, "Cage %d Entered NaClSysGetsockname(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n", 
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetsockname was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_getsockname(sockfd, sysaddr, sysaddrlen, nap->cage_id);
+  NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
+  return ret; 
+}
+
+int32_t NaClSysGetpeername(struct NaClAppThread *natp, 
+                        int sockfd, 
+                        struct sockaddr * addr,
+                        socklen_t * addrlen) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr));
+  socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+
+  if ((void*) kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetpeername could not translate socket address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  if ((void*) kNaClBadAddress == sysaddrlen) {
+    NaClLog(2, "NaClSysGetpeername could not translate addrlen address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  NaClLog(2, "Cage %d Entered NaClSysGetpeername(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n", 
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysGetpeername was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_getpeername(sockfd, sysaddr, sysaddrlen, nap->cage_id);
+  NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
+  return ret; 
+}
+
+int32_t NaClSysAccess(struct NaClAppThread *natp,
+                      const char *file, int mode) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  char path[NACL_CONFIG_PATH_MAX];
+
+  ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) file);
+
+  NaClLog(2, "Cage %d Entered NaClSysAccess(0x%08"NACL_PRIxPTR", %s, %d)\n",
+          nap->cage_id, (uintptr_t) natp, path, mode);
+
+  if (ret) {
+    NaClLog(2, "NaClSysStatfs could not translate path address, returning %d\n", ret);
+    return ret;
+  }
+
+  ret = lind_access(path, mode, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysConnect(struct NaClAppThread *natp,
+                       int sockfd,
+                       const struct sockaddr *addr, 
+                       socklen_t addrlen) {
+  struct NaClApp *nap = natp->nap;
+  const struct sockaddr* sysvaladdr;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysConnect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, addrlen);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysConnect was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, addrlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysConnect could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  ret = lind_connect(sockfd, sysvaladdr, addrlen, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysAccept(struct NaClAppThread *natp,
+                      int sockfd, 
+                      struct sockaddr *addr, 
+                      socklen_t *addrlen) {
+  struct NaClApp *nap = natp->nap;
+  struct sockaddr* sysvaladdr;
+  const socklen_t* syslenaddr;
+  int32_t ret;
+  int userfd;
+  struct NaClHostDesc* nd;
+
+  NaClLog(2, "Cage %d Entered NaClSysAccept(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
+
+  nd = malloc(sizeof(struct NaClHostDesc));
+  if (!nd) {
+    NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
+    return -NACL_ABI_ENOMEM;
+  }
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysAccept was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    free(nd);
+    return sockfd;
+  }
+
+  syslenaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+ 
+  if ((void*) kNaClBadAddress == syslenaddr) {
+    NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    free(nd);
+    return -NACL_ABI_EFAULT;
+  }
+
+  sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, *syslenaddr);
+ 
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    free(nd);
+    return -NACL_ABI_EFAULT;
+  }
+
+  ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
+
+  nd->d = ret;
+  nd->flags = NACL_ABI_O_RDWR;
+  nd->cageid = nap->cage_id;
+
+  ret = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nd)));
+  userfd = NextFd(nap->cage_id);
+  fd_cage_table[nap->cage_id][userfd] = ret;
+
+  return userfd;
+}
+
+int32_t NaClSysBind(struct NaClAppThread *natp,
+                       int sockfd, 
+                       socklen_t addrlen, 
+                       const struct sockaddr *addr) {
+  
+  struct NaClApp *nap = natp->nap;
+  const struct sockaddr* sysvaladdr;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysBind(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, addrlen, (uintptr_t) addr);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysBind was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, addrlen);
+
+  if ((void*) kNaClBadAddress == sysvaladdr) {
+    NaClLog(2, "NaClSysBind could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  ret = lind_bind(sockfd, sysvaladdr, addrlen, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysListen(struct NaClAppThread *natp,
+                       int sockfd, 
+                       int backlog) {
+  
+  struct NaClApp *nap = natp->nap;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysListen(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, backlog);
+
+  if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
+    NaClLog(2, "NaClSysListen was passed an unrecognized file descriptor, returning %d\n", sockfd);
+    return sockfd;
+  }
+
+  ret = lind_listen(sockfd, backlog, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysFcntlGet (struct NaClAppThread *natp,
+                         int fd, int cmd) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  NaClLog(2, "Cage %d Entered NaClSysFcntlGet(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, cmd);
+
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFcntlGet was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  ret = lind_fcntl_get(fd, cmd, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
+                         int fd, int cmd, long set_op) {
+  int32_t ret;
+  int fdtrans;
+  struct NaClApp *nap = natp->nap;
+  NaClLog(2, "Cage %d Entered NaClSysFcntlSet(0x%08"NACL_PRIxPTR", %d, %d, %ld)\n",
+          nap->cage_id, (uintptr_t) natp, fd, cmd, set_op);
+
+  if((fdtrans = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+    struct NaClHostDesc *nhd = malloc(sizeof(struct NaClHostDesc));
+    int new_hostfd;
+    int newuser;
+    int old_hostfd;
+    struct NaClDesc *old_nd;
+    struct NaClDescIoDesc *old_self;
+    struct NaClHostDesc *old_hd;
+
+    if(nhd == NULL) {
+      ret = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+
+    old_hostfd = fd_cage_table[nap->cage_id][fd];
+
+    if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
+      ret = -NACL_ABI_EBADF;
+      goto cleanup;
+    }
+
+    old_self = (struct NaClDescIoDesc *) &old_nd->base;
+    old_hd = old_self->hd;
+
+    ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
+    if(ret < 0) {
+        goto cleanup;
+    }
+
+    newuser = NextFdBounded(nap->cage_id, set_op);
+    nhd->d = ret;
+    nhd->flags = old_hd->flags;
+    nhd->cageid = nap->cage_id;
+    nhd->userfd = newuser;
+
+    /* Set new nacl desc as available */
+    new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nhd)));
+    /* and add the new hostfd to the cage table */
+    fd_cage_table[nap->cage_id][newuser] = new_hostfd;
+  
+    /* We've got to put that old NaClDescriptor back in there... */
+    NaClSetDesc(nap, old_hostfd, old_nd);
+  
+    ret = newuser;
+  } else {
+    ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
+  }
+  
+cleanup:
+  NaClLog(2, "Exiting NaClSysFcntlSet\n");
+  return ret;
+}
+
+int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
+  struct NaClApp *nap = natp->nap;
+
+  int retval = 0;
+  struct pollfd *lind_fds;
+
+  lind_fds = malloc(sizeof(struct pollfd) * nfds);
+  if (!lind_fds) {
+    retval = -NACL_ABI_ENOMEM;
+    goto cleanup;
+  }
+
+  NaClFastMutexLock(&nap->desc_mu);
+  for(unsigned int i = 0; i < nfds; ++i) {
+      
+    if((lind_fds[i].fd = descnum2Lindfd(nap, fds[i].fd)) < 0) {
+      NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds[i].fd);
+      retval = fds[i].fd;
+      goto cleanup;
+    }
+    lind_fds[i].events = fds[i].events;
+    lind_fds[i].revents = lind_fds[i].revents;
+
+  }
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+
+
+  retval = lind_poll(lind_fds, nfds, timeout, nap->cage_id);
+
+  for(unsigned int i = 0; i < nfds; ++i) {
+    fds[i].revents = lind_fds[i].revents;
+  }
+    
+cleanup:
+  NaClLog(2, "Exiting NaClSysFcntlSet\n");
+  free(lind_fds);
+  return retval;
+}
+
+int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
+
+  struct NaClApp *nap = natp->nap;
+  struct NaClHostDesc  *hd;
+  int userfd;
+  int code = 0; //usage must be checked
+  int32_t ret;
+
+  
+  NaClLog(2, "Cage %d Entered NaClSysEpollCreate(0x%08"NACL_PRIxPTR", ""%d)\n",
+          nap->cage_id, (uintptr_t) natp, size);
+   
+  hd = malloc(sizeof(struct NaClHostDesc));
+  if (!hd) {
+    ret = -NACL_ABI_ENOMEM;
+    return ret;
+  }
+  
+  ret = lind_epoll_create(size, nap->cage_id);
+      
+  hd->d = ret; //old NaClHostDescCtor 
+  hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
+  
+  hd->cageid = nap->cage_id;
+  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  userfd = NextFd(nap->cage_id);
+  fd_cage_table[nap->cage_id][userfd] = code;
+  code = userfd;
+  
+  NaClLog(2, "NaClSysEpollCreate: returning %d\n", userfd);
+  
+  return userfd;
+}
+
+int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, struct epoll_event *event) {
+
+  struct NaClApp *nap = natp->nap;
+  struct epoll_event *eventsysaddr;
+  int32_t ret;
+
+  NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, epfd, op, fd, (uintptr_t) event);
+
+  if((epfd = descnum2Lindfd(nap, epfd)) < 0) {
+    NaClLog(2, "NaClSysEpollCtl was passed an unrecognized file descriptor, returning %d\n", epfd);
+    return epfd;
+  }
+
+  if((fd = descnum2Lindfd(nap, fd)) < 0) {
+    NaClLog(2, "NaClSysEpollCtl was passed an unrecognized file descriptor, returning %d\n", fd);
+    return fd;
+  }
+
+  eventsysaddr = (struct epoll_event*) NaClUserToSysAddrRange(nap, (uintptr_t) event, sizeof(eventsysaddr));
+
+  if ((void*) kNaClBadAddress == eventsysaddr) {
+    NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  ret = lind_epoll_ctl(epfd, op, fd, eventsysaddr, nap->cage_id);
+  return ret;
+}
+
+
+int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout) {
+
+  struct NaClApp *nap = natp->nap;
+  struct epoll_event *eventsysaddr;
+  int retval = 0;
+  int nfds;
+  int hfd;
+  struct epoll_event *pfds;
+  struct NaClDesc * ndp;
+
+  NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d,)\n",
+          nap->cage_id, (uintptr_t) natp, epfd, (uintptr_t) events, maxevents, timeout);
+
+  if((epfd = descnum2Lindfd(nap, epfd)) < 0) {
+    NaClLog(2, "NaClSysEpollCtl was passed an unrecognized file descriptor, returning %d\n", epfd);
+    return epfd;
+  }
+
+  pfds = (struct epoll_event*) NaClUserToSysAddrRange(nap, (uintptr_t) events, sizeof(eventsysaddr));
+
+  if ((void*) kNaClBadAddress == pfds) {
+    NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  nfds = lind_epoll_wait(epfd, pfds, maxevents, timeout, nap->cage_id);
+          
+  NaClFastMutexLock(&nap->desc_mu);
+
+  for(int i = 0; i < nfds; ++i) {
+      for(int j = 0; j < 1024; ++j) {
+          ndp = NaClGetDescMu(nap, j);
+          if(!ndp) {
+              NaClDescSafeUnref(ndp);
+              continue;
+          }
+          hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
+          if(pfds[i].data.fd == hfd) {
+              pfds[i].data.fd = j;
+          }
+          NaClDescUnref(ndp);
+      }
+  }
+  
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+
+  return retval;
+}
+
+char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd, int *nfd) {
+  //before this we must translate the ptr
+  int fds[FD_SETSIZE];
+  int fdsindex = 0;
+  int ourmax = 0;
+
+  for(int i = 0; i < maxfd; i++) {
+    if(FD_ISSET(i, fdset)) {
+      int translated_fd = fds[fdsindex++] = descnum2Lindfd(nap, i);
+      if(translated_fd < 0) {
+        return (char*) -NACL_ABI_EBADF;
+      }
+      if(translated_fd >= ourmax)
+        ourmax = translated_fd + 1;
+    }
+  }
+
+  char *newset = malloc((ourmax + 7) / 8); //bitfield which can contain our fds now
+  if(!newset)
+    return (char*) -NACL_ABI_ENOMEM;
+  for(int i = 0; i < fdsindex; i++) {
+    int bitposition = fds[i];
+    newset[bitposition / 8] |= 1 << (bitposition & 7); //sets the bit in the bitfield
+  }
+
+  if(ourmax > *nfd) {
+    *nfd = ourmax;
+  }
+
+  return newset;
+}
+
+void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
+  int fds[FD_SETSIZE];
+  int fdsindex = 0;
+
+  for(int i = 0; i < maxfd; i++) {
+    if(FD_ISSET(i, fdset)) {
+      int translated_fd = fds[fdsindex++] = descnum2Lindfd(nap, i);
+      NaClLog(LOG_FATAL, "User fd %d which was valid on entering select call invalid upon exit\n", i);
+      if(!(otherbitfield[translated_fd / 8] & 1 << (translated_fd & 7))) {
+        FD_CLR(i, fdset);
+      }
+    }
+  }
+}
+
+int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
+                       fd_set * writefds, fd_set * exceptfds, struct timeval *timeout) {
+  struct NaClApp *nap = natp->nap;
+  int retval;
+  int max_fd = 0;
+  fd_set *naclwritefds, *naclreadfds, *naclexceptfds;
+  struct timeval* nacltimeout = NULL;
+  char *safeposixreadfds, *safeposixwritefds, *safeposixexceptfds;
+  char *safeposixreadfds2 = NULL, *safeposixwritefds2 = NULL, *safeposixexceptfds2 = NULL;
+  NaClLog(2, "Cage %d Entered NaClSysSelect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, nfds, (uintptr_t) readfds, (uintptr_t) writefds, (uintptr_t) exceptfds, (uintptr_t) timeout);
+
+  if(readfds) {
+    naclreadfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) readfds, sizeof(fd_set));
+
+    if ((void*) kNaClBadAddress == naclreadfds) {
+      NaClLog(2, "NaClSysSelect could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+    safeposixreadfds = fd_set_fd_translator_tolind(nap, naclreadfds, nfds, &max_fd);
+
+    if ((long) safeposixreadfds < 0) {
+      NaClLog(2, "NaClSysSelect could not translate fds in readfds %d\n", -NACL_ABI_EFAULT);
+      return (long) safeposixreadfds;
+    }
+  }
+  
+  if(writefds) {
+    naclwritefds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) writefds, sizeof(fd_set));
+
+    if ((void*) kNaClBadAddress == naclwritefds) {
+      NaClLog(2, "NaClSysSelect could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
+      goto earlycleanup_write;
+    }
+
+    safeposixwritefds = fd_set_fd_translator_tolind(nap, naclwritefds, nfds, &max_fd);
+
+    if ((long) safeposixwritefds < 0) {
+      NaClLog(2, "NaClSysSelect could not translate fds in writefds %d\n", -NACL_ABI_EFAULT);
+      retval = (long) safeposixwritefds;
+      goto earlycleanup_write;
+    }
+  }
+
+  if(exceptfds) {
+    naclexceptfds = (fd_set*) NaClUserToSysAddrRange(nap, (uintptr_t) exceptfds, sizeof(fd_set));
+
+    if ((void*) kNaClBadAddress == naclexceptfds) {
+      NaClLog(2, "NaClSysSelect could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
+      goto earlycleanup_except;
+    }
+
+    safeposixexceptfds = fd_set_fd_translator_tolind(nap, naclexceptfds, nfds, &max_fd);
+
+    if ((long) safeposixexceptfds < 0) {
+      NaClLog(2, "NaClSysSelect could not translate fds in exceptfds %d\n", -NACL_ABI_EFAULT);
+      retval = (long) safeposixexceptfds;
+      goto earlycleanup_except;
+    }
+  }
+
+  if(timeout) {
+    nacltimeout = (struct timeval*) NaClUserToSysAddrRange(nap, (uintptr_t) timeout, sizeof(struct timeval));
+
+    if ((void*) kNaClBadAddress == nacltimeout) {
+      NaClLog(2, "NaClSysSelect could not translate timeout address, returning %d\n", -NACL_ABI_EFAULT);
+      goto earlycleanup_timeout;
+    }
+  }
+
+  if(readfds && safeposixreadfds) {
+    if(!(safeposixreadfds2 = realloc(safeposixreadfds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+  }
+
+  if(writefds && safeposixwritefds) {
+    if(!(safeposixwritefds2 = realloc(safeposixwritefds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+  }
+
+  if(exceptfds && safeposixexceptfds) {
+    if(!(safeposixexceptfds2 = realloc(safeposixexceptfds, (max_fd + 7)/8))) {
+      retval = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+  }
+
+  retval = lind_select(max_fd, safeposixreadfds2, safeposixwritefds2, safeposixexceptfds2, nacltimeout, nap->cage_id);
+  
+  if(safeposixreadfds2)
+    fd_set_fd_translator_fromlind(nap, naclreadfds, safeposixreadfds2, nfds);
+  if(safeposixwritefds2)
+    fd_set_fd_translator_fromlind(nap, naclwritefds, safeposixwritefds2, nfds);
+  if(safeposixexceptfds2)
+    fd_set_fd_translator_fromlind(nap, naclexceptfds, safeposixexceptfds2, nfds);
+
+cleanup:
+  if(safeposixreadfds2) 
+    free(safeposixreadfds);
+  if(safeposixwritefds2) 
+    free(safeposixwritefds);
+  if(safeposixexceptfds2)
+    free(safeposixexceptfds);
+
+  return retval;
+earlycleanup_timeout:
+  if(exceptfds)
+    free(safeposixexceptfds);
+earlycleanup_except:
+  if(writefds)
+    free(safeposixwritefds);
+earlycleanup_write:
+  if(readfds) 
+    free(safeposixreadfds);
+  return -NACL_ABI_EFAULT;
 }
