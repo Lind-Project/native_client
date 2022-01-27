@@ -1243,12 +1243,11 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp, //TODO:: IOCTL
   struct NaClApp  *nap = natp->nap;
   int             retval = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  struct NaClDesc *ndp;
   int             fd;
 
-  NaClLog(2, "Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
+  NaClLog(2, "Cage %d Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n",
-           (uintptr_t)natp, d, request,
+           nap->cage_id, (uintptr_t)natp, d, request,
            (uintptr_t)arg_ptr);
 
   sysaddr = NaClUserToSysAddr(nap, (uintptr_t) arg_ptr);
@@ -1258,28 +1257,19 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp, //TODO:: IOCTL
     return retval;
   }
 
-  fd = fd_cage_table[nap->cage_id][d];
-
-  /* check for closed fds */
-  if (fd < 0) {
+  if((fd = descnum2Lindfd(nap, d)) < 0) {
+    NaClLog(2, "NaClSysIoctl was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    NaClLog(2, "%s\n", "bad desc");
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
+    return retval;
   }
 
   // Further checks might be necessary for ioctl calls with structs
   // Those calls are not implemented for now
-  retval = lind_ioctl(fd ,request, arg_ptr);
+  
+  retval = lind_ioctl(fd ,request, arg_ptr, nap->cage_id);
 
-cleanup_unref:
-  NaClDescUnref(ndp);
 cleanup:
+  NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
   return retval;
 }
 
