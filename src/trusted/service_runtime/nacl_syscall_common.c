@@ -1236,7 +1236,7 @@ out:
   return retval;
 }
 
-int32_t NaClSysIoctl(struct NaClAppThread *natp, //TODO:: IOCTL
+int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
                      unsigned long        request,
                      void                 *arg_ptr) {
