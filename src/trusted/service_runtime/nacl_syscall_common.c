@@ -1266,7 +1266,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp, //TODO:: IOCTL
   // Further checks might be necessary for ioctl calls with structs
   // Those calls are not implemented for now
   
-  retval = lind_ioctl(fd ,request, arg_ptr, nap->cage_id);
+  retval = lind_ioctl(fd ,request, sysaddr, nap->cage_id);
 
 cleanup:
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
