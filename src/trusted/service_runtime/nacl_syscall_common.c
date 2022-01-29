@@ -3172,6 +3172,11 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
   retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
 
+  if (retval < 0) {
+    free(hd_struct);
+    return retval;
+  }
+
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
     lind_fd = ((int*)fds)[i];
@@ -4609,7 +4614,12 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   }
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
-   
+  
+  if (ret < 0) {
+    free(hd);
+    return ret;
+  }
+
   hd->d = ret; //old NaClHostDescCtor 
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
@@ -5274,6 +5284,11 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   }
   
   ret = lind_epoll_create(size, nap->cage_id);
+
+  if (ret < 0) {
+    free(hd);
+    return ret;
+  }
       
   hd->d = ret; //old NaClHostDescCtor 
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
