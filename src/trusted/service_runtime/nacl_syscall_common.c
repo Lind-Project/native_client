@@ -1263,7 +1263,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
     return retval;
   }
 
-  // Further checks might be necessary for ioctl calls with structs
+  // Further checks might be necessary for ioctl calls with structs or arrays
   // Those calls are not implemented for now
   
   retval = lind_ioctl(fd ,request, sysaddr, nap->cage_id);
