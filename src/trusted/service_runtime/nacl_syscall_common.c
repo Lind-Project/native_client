@@ -3157,7 +3157,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   struct NaClHostDesc     *hd;
   int                     lind_fds[2];
   int                     nacl_fd;
-  int                     user_fd;
+  int                     user_fds[2];
   int32_t                 retval;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
@@ -3186,10 +3186,15 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
     hd->cageid = nap->cage_id;
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-    user_fd = NextFd(nap->cage_id);
-    fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
-    fds[i] = user_fd;
+    user_fds[i] = NextFd(nap->cage_id);
+    fd_cage_table[nap->cage_id][user_fds[i]] = nacl_fd;
   }
+
+    /* copy out NaCl fds */
+  if (!NaClCopyOutToUser(nap, (uintptr_t)fds, user_fds, sizeof(user_fds))) {
+      retval = -NACL_ABI_EFAULT;
+  }
+
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
 
