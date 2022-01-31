@@ -3155,7 +3155,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   struct NaClApp          *nap = natp->nap;
   void                    *hd_struct = NULL;
   struct NaClHostDesc     *hd;
-  int                     lind_fd;
+  int                     lind_fds[2];
   int                     nacl_fd;
   int                     user_fd;
   int32_t                 retval;
@@ -3170,7 +3170,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     return retval;
   }
 
-  retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
+  retval = lind_socketpair (domain, type, protocol, lind_fds, nap->cage_id);
 
   if (retval < 0) {
     free(hd_struct);
@@ -3179,10 +3179,9 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
-    lind_fd = ((int*)fds)[i];
 
     //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
-    hd->d = lind_fd;
+    hd->d = lind_fds[i];
     hd->flags = NACL_ABI_O_RDWR;
 
     hd->cageid = nap->cage_id;
