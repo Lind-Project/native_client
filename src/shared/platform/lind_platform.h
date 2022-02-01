@@ -40,7 +40,7 @@
 #define LIND_safe_fs_read               12
 #define LIND_safe_fs_write              13
 #define LIND_safe_fs_lseek              14
-#define LIND_fs_ioctl                   15
+#define LIND_safe_fs_ioctl              15
 #define LIND_safe_fs_fxstat             17
 #define LIND_safe_fs_fstatfs            19
 #define LIND_safe_fs_mmap               21
@@ -150,6 +150,7 @@ int lind_dup2 (int oldfd, int newfd, int cageid);
 int lind_getdents (int fd, char *buf, size_t nbytes, int cageid);
 int lind_fcntl_get (int fd, int cmd, int cageid);
 int lind_fcntl_set (int fd, int cmd, long set_op, int cageid);
+int lind_ioctl (int fd, unsigned long request, void *arg_ptr, int cageid);
 int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid);
 int lind_send (int sockfd, const void *buf, size_t len, int flags, int cageid);
 int lind_recv (int sockfd, void *buf, size_t len, int flags, int cageid);

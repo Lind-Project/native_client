@@ -174,6 +174,10 @@ int lind_fcntl_set (int fd, int cmd, long set_op, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_fcntl, int, fd, int, cmd, long, set_op);
 }
 
+int lind_ioctl (int fd, unsigned long request, void *arg_ptr, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_ioctl, int, fd, ulong, request, mutcbuf, arg_ptr);
+}
+
 int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_net_bind, int, sockfd, constsockaddrstruct, addr, socklen_t, addrlen);
 }
