@@ -3155,9 +3155,9 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   struct NaClApp          *nap = natp->nap;
   void                    *hd_struct = NULL;
   struct NaClHostDesc     *hd;
-  int                     lind_fd;
+  int                     lind_fds[2];
   int                     nacl_fd;
-  int                     user_fd;
+  int                     user_fds[2];
   int32_t                 retval;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
@@ -3170,7 +3170,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     return retval;
   }
 
-  retval = lind_socketpair (domain, type, protocol, fds, nap->cage_id);
+  retval = lind_socketpair (domain, type, protocol, lind_fds, nap->cage_id);
 
   if (retval < 0) {
     free(hd_struct);
@@ -3179,18 +3179,24 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
-    lind_fd = ((int*)fds)[i];
 
     //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
-    hd->d = lind_fd;
+    hd->d = lind_fds[i];
     hd->flags = NACL_ABI_O_RDWR;
 
     hd->cageid = nap->cage_id;
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-    user_fd = NextFd(nap->cage_id);
-    fd_cage_table[nap->cage_id][user_fd] = nacl_fd;
-    fds[i] = user_fd;
+    user_fds[i] = NextFd(nap->cage_id);
+    fd_cage_table[nap->cage_id][user_fds[i]] = nacl_fd;
   }
+
+    /* copy out NaCl fds */
+  if (!NaClCopyOutToUser(nap, (uintptr_t)fds, user_fds, sizeof(user_fds))) {
+      lind_close(lind_fds[0], nap->cage_id);
+      lind_close(lind_fds[1], nap->cage_id);
+      retval = -NACL_ABI_EFAULT;
+  }
+
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
 
@@ -4070,6 +4076,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
+      lind_close(lind_fds[0], nap->cage_id);
+      lind_close(lind_fds[1], nap->cage_id);
       ret = -NACL_ABI_EFAULT;
   }
 
