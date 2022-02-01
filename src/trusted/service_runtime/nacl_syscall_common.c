@@ -3192,6 +3192,8 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
     /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, user_fds, sizeof(user_fds))) {
+      lind_close(lind_fds[0], nap->cage_id);
+      lind_close(lind_fds[1], nap->cage_id);
       retval = -NACL_ABI_EFAULT;
   }
 
@@ -4074,6 +4076,8 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
+      lind_close(lind_fds[0], nap->cage_id);
+      lind_close(lind_fds[1], nap->cage_id);
       ret = -NACL_ABI_EFAULT;
   }
 
