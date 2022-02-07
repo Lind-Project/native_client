@@ -39,6 +39,7 @@
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
 int cagecount;
+extern bool use_lkm;
 
 /*
  * dynamically allocate and initilize a copy
@@ -108,7 +109,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   NaClXMutexUnlock(&nap_parent->children_mu);
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-  if(tl_type != THREAD_LAUNCH_FORK) {
+  if(!use_lkm || tl_type != THREAD_LAUNCH_FORK) {
     //exec not prevalidated
     if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
       NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));

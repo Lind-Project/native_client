@@ -16,11 +16,13 @@
 
 #if NACL_LINUX
 #  include <getopt.h>
+#  include <sys/uio.h> //for process_vm_writev
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -75,6 +77,7 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
+extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -234,6 +237,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   double                        nacl_syscall_total_time;
   double                        lind_syscall_total_time;
   #endif
+  const struct iovec local_iov, remote_iov; //dummy unused memory for checking the lkm
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -569,6 +573,15 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
 #if NACL_LINUX
+
+  errno = 0;
+  //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
+  if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
+    CHECK(errno == -EINVAL);
+  } else {
+    use_lkm = true;
+  }
+
   NaClSignalHandlerInit();
 #endif
   /*
