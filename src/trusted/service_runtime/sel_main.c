@@ -578,6 +578,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
   if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
     CHECK(errno == -EINVAL);
+    puts("Not using the CoW Loadable kernel module!");
   } else {
     use_lkm = true;
   }
