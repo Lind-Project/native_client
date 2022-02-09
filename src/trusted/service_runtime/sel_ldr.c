@@ -89,6 +89,16 @@ static int ShouldEnableDynamicLoading(void) {
   return !IsEnvironmentVariableSet("NACL_DISABLE_DYNAMIC_LOADING");
 }
 
+void CheckForLkm(void) {
+  const struct iovec local_iov, remote_iov; //dummy unused memory for checking the lkm
+  errno = 0;
+  //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
+  if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
+    CHECK(errno == -EINVAL);
+    use_lkm = false;
+  }
+}
+
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
                                 struct NaClSyscallTableEntry *table) {
   struct NaClDescEffectorLdr  *effp = NULL;

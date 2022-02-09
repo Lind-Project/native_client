@@ -16,13 +16,11 @@
 
 #if NACL_LINUX
 #  include <getopt.h>
-#  include <sys/uio.h> //for process_vm_writev
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -140,6 +138,7 @@ static void PrintUsage(void) {
           "    respectively\n"
           " -i associates an IMC handle D with app desc d\n"
           " -f file to load; if omitted, 1st arg after \"--\" is loaded\n"
+          " -k forcibly disable the use of the CoW loadable kernel module\n"
           " -B additional ELF file to load as a blob library\n"
           " -v increases verbosity\n"
           " -X create a bound socket and export the address via an\n"
@@ -179,7 +178,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Z";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
@@ -237,7 +236,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   double                        nacl_syscall_total_time;
   double                        lind_syscall_total_time;
   #endif
-  const struct iovec local_iov, remote_iov; //dummy unused memory for checking the lkm
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -376,6 +374,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         entry->u.handle = (NaClHandle)strtol(rest + 1, NULL, 0);
         *redir_qend = entry;
         redir_qend = &entry->next;
+        break;
+      case 'k':
+        use_lkm = false;
         break;
       case 'l':
         log_file = optarg;
@@ -574,15 +575,11 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 #if NACL_LINUX
 
-  errno = 0;
-  //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
-  if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
-    CHECK(errno == -EINVAL);
+  if(use_lkm) //in case we haven't forced not using the lkm with -k
+    CheckForLkm();
+  if(!use_lkm) {
     puts("Not using the CoW Loadable kernel module!");
-  } else {
-    use_lkm = true;
   }
-
   NaClSignalHandlerInit();
 #endif
   /*
