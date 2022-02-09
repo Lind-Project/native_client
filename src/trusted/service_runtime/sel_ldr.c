@@ -94,7 +94,9 @@ void CheckForLkm(void) {
   errno = 0;
   //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
   if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
-    CHECK(errno == -EINVAL);
+    if(errno =! -EINVAL) {
+      NaClLog(LOG_FATAL, "LKM loaded but in corrupted state, failed on call guaranteed to succeed.\n");
+    }
     use_lkm = false;
   }
 }
