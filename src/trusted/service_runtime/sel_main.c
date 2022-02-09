@@ -578,7 +578,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if(use_lkm) //in case we haven't forced not using the lkm with -k
     CheckForLkm();
   if(!use_lkm) {
-    printf("Not using the CoW Loadable kernel module!\n");
+    fprintf(stderr, "Not using the CoW Loadable kernel module!\n");
   }
   NaClSignalHandlerInit();
 #endif
