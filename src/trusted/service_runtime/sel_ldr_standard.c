@@ -812,72 +812,74 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
     goto cleanup;
   }
 
-  /*
-   * Write strings and char * arrays to stack.
-   */
-  stack_ptr = NaClUserToSysAddrRange(nap_child,
-                                     NaClGetInitialStackTop(nap_child) - size,
-                                     size);
-  if (stack_ptr == kNaClBadAddress) {
-    NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
-    goto cleanup;
+  if(tl_type != THREAD_LAUNCH_FORK) {
+    /*
+     * Write strings and char * arrays to stack.
+     */
+    stack_ptr = NaClUserToSysAddrRange(nap_child,
+                                       NaClGetInitialStackTop(nap_child) - size,
+                                       size);
+    if (stack_ptr == kNaClBadAddress) {
+      NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
+      goto cleanup;
+    }
+
+    NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
+
+    VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
+           ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
+
+    p = (uint32_t *)stack_ptr;
+    strp = (char *)stack_ptr + ptr_tbl_size;
+
+    /*
+     * For x86-32, we push an initial argument that is the address of
+     * the main argument block.  For other machines, this is passed
+     * in a register and that's set in NaClStartThreadInApp.
+     */
+    if (NACL_STACK_GETS_ARG) {
+      uint32_t *argloc = p++;
+      *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
+    }
+
+    *p++ = 0;  /* Cleanup function pointer, always NULL.  */
+    *p++ = envc;
+    *p++ = argc;
+
+    for (i = 0; i < argc && argv && argv[i]; i++) {
+      *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+      NaClLog(1, "copying arg %d  %p -> %p\n",
+              i, (void *)argv[i], (void *)strp);
+      snprintf(strp, ARG_LIMIT, "%s", argv[i]);
+      strp += argv_len[i];
+    }
+    *p++ = 0;  /* argv[argc] is NULL.  */
+
+    for (i = 0; i < envc && envv && envv[i]; i++) {
+      *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+      NaClLog(1, "copying env %d  %p -> %p\n",
+              i, (void *)envv[i], (void *)strp);
+      snprintf(strp, ARG_LIMIT, "%s", envv[i]);
+      strp += envv_len[i];
+    }
+    *p++ = 0;  /* envp[envc] is NULL.  */
+
+    /* Push an auxv */
+    if (nap_child->user_entry_pt) {
+      *p++ = AT_ENTRY;
+      *p++ = (uint32_t)nap_child->user_entry_pt;
+    }
+    *p++ = AT_NULL;
+    *p++ = 0;
+
+    /* TODO: fix failing CHECK() -jp */
+    if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
+      NaClLog(1,
+              "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
+              (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
+    }
+    /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
   }
-
-  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
-
-  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
-         ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
-
-  p = (uint32_t *)stack_ptr;
-  strp = (char *)stack_ptr + ptr_tbl_size;
-
-  /*
-   * For x86-32, we push an initial argument that is the address of
-   * the main argument block.  For other machines, this is passed
-   * in a register and that's set in NaClStartThreadInApp.
-   */
-  if (NACL_STACK_GETS_ARG) {
-    uint32_t *argloc = p++;
-    *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
-  }
-
-  *p++ = 0;  /* Cleanup function pointer, always NULL.  */
-  *p++ = envc;
-  *p++ = argc;
-
-  for (i = 0; i < argc && argv && argv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(1, "copying arg %d  %p -> %p\n",
-            i, (void *)argv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", argv[i]);
-    strp += argv_len[i];
-  }
-  *p++ = 0;  /* argv[argc] is NULL.  */
-
-  for (i = 0; i < envc && envv && envv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(1, "copying env %d  %p -> %p\n",
-            i, (void *)envv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", envv[i]);
-    strp += envv_len[i];
-  }
-  *p++ = 0;  /* envp[envc] is NULL.  */
-
-  /* Push an auxv */
-  if (nap_child->user_entry_pt) {
-    *p++ = AT_ENTRY;
-    *p++ = (uint32_t)nap_child->user_entry_pt;
-  }
-  *p++ = AT_NULL;
-  *p++ = 0;
-
-  /* TODO: fix failing CHECK() -jp */
-  if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
-    NaClLog(1,
-            "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
-            (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
-  }
-  /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
 
   /* 
     now actually spawn the thread 
@@ -899,15 +901,15 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
    * We avoid the otherwise harmless call for the zero case because
    * _FORTIFY_SOURCE memset can warn about zero-length calls.
    */
-  if (NACL_STACK_PAD_BELOW_ALIGN) {
+  if (tl_type != THREAD_LAUNCH_FORK && NACL_STACK_PAD_BELOW_ALIGN) {
     stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
     memset((void *)stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
-  }
 
-  NaClLog(1, "   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
-  NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
-  NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
+    NaClLog(1, "   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+    NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
+    NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
+    NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
+  }
 
   if (tl_type != THREAD_LAUNCH_MAIN){
     /* TODO: figure out a better way to avoid extra instance spawns -jp */

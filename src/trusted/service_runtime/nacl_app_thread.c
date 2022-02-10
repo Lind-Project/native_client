@@ -39,6 +39,7 @@
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
 int cagecount;
+extern bool use_lkm;
 
 /*
  * dynamically allocate and initilize a copy
@@ -107,14 +108,30 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   NaClXMutexUnlock(&nap_parent->children_mu);
 
-  NaClLog(1, "child_cage_id = %d, cage_id = %d\n", child_cage_id, nap_child->cage_id);
-  //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
-  nap_child->main_exe_prevalidated = 1;
-  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-    NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-    NaClLog(LOG_FATAL, "%s\n%s\n",
-                       "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-                       "or a corrupt nexe file may be responsible for this error.");
+  NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  if(!use_lkm || tl_type != THREAD_LAUNCH_FORK) {
+    //exec not prevalidated
+    if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
+      NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+      NaClLog(LOG_FATAL, "%s\n%s\n",
+                         "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                         "or a corrupt nexe file may be responsible for this error.");
+    }
+  } else {
+    //we already know the fork child has an ok nexe, and we don't even need to load it
+    nap_child->stack_size = nap_parent->stack_size;
+    nap_child->static_text_end = nap_parent->static_text_end;
+    nap_child->rodata_start = nap_parent->rodata_start;
+    nap_child->data_start = nap_parent->data_start;
+    nap_child->break_addr = nap_parent->break_addr;
+    nap_child->data_end = nap_parent->data_end;
+    nap_child->bundle_size = NACL_INSTR_BLOCK_SIZE;
+    nap_child->initial_entry_pt = nap_parent->initial_entry_pt;
+    nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
+    nap_child->text_shm = nap_parent->text_shm;
+    NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    NaClInitSwitchToApp(nap_child); 
+    //NaClMemoryProtection(nap_child);
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {

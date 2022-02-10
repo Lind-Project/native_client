@@ -30,6 +30,7 @@
 
 #include <signal.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
@@ -470,6 +471,8 @@ struct NaClApp {
 };
 
 
+void CheckForLkm(void);
+
 
 void  NaClAppIncrVerbosity(void);
 
@@ -860,7 +863,7 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
 /* Lind
  * We're only using Linux so it's fine to disregard these operations which are
  * Windows specific. 
- * /
+ */
 
 /*
  * Some potentially blocking I/O operation is about to start.  Syscall

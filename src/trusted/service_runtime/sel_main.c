@@ -75,6 +75,7 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
+extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -137,6 +138,7 @@ static void PrintUsage(void) {
           "    respectively\n"
           " -i associates an IMC handle D with app desc d\n"
           " -f file to load; if omitted, 1st arg after \"--\" is loaded\n"
+          " -k forcibly disable the use of the CoW loadable kernel module\n"
           " -B additional ELF file to load as a blob library\n"
           " -v increases verbosity\n"
           " -X create a bound socket and export the address via an\n"
@@ -176,7 +178,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Z";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
@@ -372,6 +374,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         entry->u.handle = (NaClHandle)strtol(rest + 1, NULL, 0);
         *redir_qend = entry;
         redir_qend = &entry->next;
+        break;
+      case 'k':
+        use_lkm = false;
         break;
       case 'l':
         log_file = optarg;
@@ -569,6 +574,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
 #if NACL_LINUX
+
+  if(use_lkm) //in case we haven't forced not using the lkm with -k
+    CheckForLkm();
+  if(!use_lkm) {
+    fprintf(stderr, "Not using the CoW Loadable kernel module!\n");
+  }
   NaClSignalHandlerInit();
 #endif
   /*
