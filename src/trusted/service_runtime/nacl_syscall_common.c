@@ -5205,7 +5205,15 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   struct NaClApp *nap = natp->nap;
 
   int retval = 0;
-  struct pollfd *lind_fds;
+  struct pollfd *lind_fds, *fds_sysaddr;
+
+
+  fds_sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) fds, nfds * sizeof(struct pollfd));
+
+  if ((void*) kNaClBadAddress == fds_sysaddr) {
+    NaClLog(2, "NaClSysPoll could not translate fds array, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
 
   lind_fds = malloc(sizeof(struct pollfd) * nfds);
   if (!lind_fds) {
@@ -5216,12 +5224,12 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   NaClFastMutexLock(&nap->desc_mu);
   for(unsigned int i = 0; i < nfds; ++i) {
       
-    if((lind_fds[i].fd = descnum2Lindfd(nap, fds[i].fd)) < 0) {
-      NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds[i].fd);
-      retval = fds[i].fd;
+    if((lind_fds[i].fd = descnum2Lindfd(nap, fds_sysaddr[i].fd)) < 0) {
+      NaClLog(2, "NaClSysPoll was passed an unrecognized file descriptor, returning %d\n", fds_sysaddr[i].fd);
+      retval = fds_sysaddr[i].fd;
       goto cleanup;
     }
-    lind_fds[i].events = fds[i].events;
+    lind_fds[i].events = fds_sysaddr[i].events;
     lind_fds[i].revents = lind_fds[i].revents;
 
   }
@@ -5232,7 +5240,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   retval = lind_poll(lind_fds, nfds, timeout, nap->cage_id);
 
   for(unsigned int i = 0; i < nfds; ++i) {
-    fds[i].revents = lind_fds[i].revents;
+    fds_sysaddr[i].revents = lind_fds[i].revents;
   }
     
 cleanup:
