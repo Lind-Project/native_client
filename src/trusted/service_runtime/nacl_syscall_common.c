@@ -4650,6 +4650,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   const void *sysbufaddr = (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
+  const void *syssockaddraddr = dest_addr == NULL ? NULL : (const void*) NaClUserToSysAddrRange(nap, (uintptr_t) dest_addr, addrlen);
   NaClLog(2, "Cage %d Entered NaClSysSendto(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) buf, len, flags, (uintptr_t) dest_addr, addrlen);
@@ -4658,13 +4659,17 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
     NaClLog(2, "NaClSysSendto could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
+  if ((void*) kNaClBadAddress == syssockaddraddr) {
+    NaClLog(2, "NaClSysSendto could not translate sockaddr address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
     NaClLog(2, "NaClSysSendto was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return sockfd;
   }
 
-  ret = lind_sendto(sockfd, dest_addr, len, flags, sysbufaddr, addrlen, nap->cage_id);
+  ret = lind_sendto(sockfd, sysbufaddr, len, flags, syssockaddraddr, addrlen, nap->cage_id);
   NaClLog(2, "NaClSysSendto: returning %d\n", ret);
   return ret;
 }
@@ -4697,7 +4702,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   void *sysbufaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) buf, len);
-  socklen_t *sysaddrlenaddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+  socklen_t *sysaddrlenaddr = addrlen == NULL ? NULL : (void*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
   struct sockaddr *sysaddraddr;
   NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
@@ -4712,7 +4717,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
     NaClLog(2, "NaClSysRecvfrom could not translate address length pointer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
-  sysaddraddr = (void*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, *sysaddrlenaddr);
+  sysaddraddr = src_addr == NULL ? NULL : (void*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, *sysaddrlenaddr);
   if ((void*) kNaClBadAddress == sysaddraddr) {
     NaClLog(2, "NaClSysRecvfrom could not translate address pointer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
