@@ -21,6 +21,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -4712,15 +4714,25 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
     NaClLog(2, "NaClSysRecvfrom could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
-
   if ((void*) kNaClBadAddress == sysaddrlenaddr) {
     NaClLog(2, "NaClSysRecvfrom could not translate address length pointer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
-  sysaddraddr = src_addr == NULL ? NULL : (void*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, *sysaddrlenaddr);
-  if ((void*) kNaClBadAddress == sysaddraddr) {
-    NaClLog(2, "NaClSysRecvfrom could not translate address pointer address, returning %d\n", -NACL_ABI_EFAULT);
-    return -NACL_ABI_EFAULT;
+
+  if(sysaddrlenaddr != NULL) {
+    sysaddraddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) src_addr, sizeof(struct sockaddr_in6));//we use sockaddr_in6 to be conservative
+ 
+    if ((void*) kNaClBadAddress == sysaddraddr) {
+      NaClLog(2, "NaClSysRecvfrom could not translate socket address address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+  } else {
+    if(src_addr != NULL) {
+      NaClLog(2, "NaClSysRecvfrom had a 0 length specified but the address was not NULL, returning %d\n", -NACL_ABI_EINVAL);
+      return -NACL_ABI_EINVAL;
+    } else {
+      sysaddraddr = NULL;
+    }
   }
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
@@ -5048,7 +5060,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
     return sockfd;
   }
 
-  syslenaddr = (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
+  syslenaddr = addrlen == NULL ? NULL : (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
  
   if ((void*) kNaClBadAddress == syslenaddr) {
     NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
@@ -5056,12 +5068,22 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
     return -NACL_ABI_EFAULT;
   }
 
-  sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, *syslenaddr);
+  if(syslenaddr != NULL) {
+    sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, sizeof(struct sockaddr_in6));
  
-  if ((void*) kNaClBadAddress == sysvaladdr) {
-    NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-    free(nd);
-    return -NACL_ABI_EFAULT;
+    if ((void*) kNaClBadAddress == sysvaladdr) {
+      NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+      free(nd);
+      return -NACL_ABI_EFAULT;
+    }
+  } else {
+    if(addr != NULL) {
+      NaClLog(2, "NaClSysAccept had a 0 length specified but the address was not NULL, returning %d\n", -NACL_ABI_EINVAL);
+      free(nd);
+      return -NACL_ABI_EINVAL;
+    } else {
+      sysvaladdr = NULL;
+    }
   }
 
   ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
