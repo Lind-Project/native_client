@@ -5436,7 +5436,9 @@ void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* oth
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {
       int translated_fd = fds[fdsindex++] = descnum2Lindfd(nap, i);
-      NaClLog(LOG_FATAL, "User fd %d which was valid on entering select call invalid upon exit\n", i);
+      if(translated_fd == -1) {
+        NaClLog(LOG_FATAL, "User fd %d which was valid on entering select call invalid upon exit\n", i);
+      }
       if(!(otherbitfield[translated_fd / 8] & 1 << (translated_fd & 7))) {
         FD_CLR(i, fdset);
       }
