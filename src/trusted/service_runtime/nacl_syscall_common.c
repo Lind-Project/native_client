@@ -5124,6 +5124,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
   }
 
   ret = lind_bind(sockfd, sysvaladdr, addrlen, nap->cage_id);
+  NaClLog(2, "NaClSysBind returning %d\n", ret);
   return ret;
 }
 
