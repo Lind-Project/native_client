@@ -249,7 +249,7 @@ int lind_gethostname (char *name, size_t len, int cageid) {
 }
 
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_getsockname, int, sockfd, socklen_t_ptr, addrlen, sockaddrstruct, addr);
+    DISPATCH_SYSCALL_3(LIND_safe_net_getsockname, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
 }
 
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {

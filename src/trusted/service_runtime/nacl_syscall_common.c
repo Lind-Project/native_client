@@ -4707,7 +4707,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
   socklen_t *sysaddrlenaddr = addrlen == NULL ? NULL : (void*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
   struct sockaddr *sysaddraddr;
   NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
-          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, %d,  0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, buf, len, flags, (uintptr_t)src_addr, (uintptr_t)addrlen);
 
   if ((void*) kNaClBadAddress == sysbufaddr) {
@@ -5101,15 +5101,15 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
 
 int32_t NaClSysBind(struct NaClAppThread *natp,
                        int sockfd, 
-                       socklen_t addrlen, 
-                       const struct sockaddr *addr) {
+                       const struct sockaddr *addr,
+                       socklen_t addrlen) { 
   
   struct NaClApp *nap = natp->nap;
   const struct sockaddr* sysvaladdr;
   int32_t ret;
 
-  NaClLog(2, "Cage %d Entered NaClSysBind(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d)\n",
-          nap->cage_id, (uintptr_t) natp, sockfd, addrlen, (uintptr_t) addr);
+  NaClLog(2, "Cage %d Entered NaClSysBind(0x%08"NACL_PRIxPTR", %d, %d, 0x%08"NACL_PRIxPTR")\n",
+          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, addrlen);
 
   if((sockfd = descnum2Lindfd(nap, sockfd)) < 0) {
     NaClLog(2, "NaClSysBind was passed an unrecognized file descriptor, returning %d\n", sockfd);
@@ -5124,6 +5124,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
   }
 
   ret = lind_bind(sockfd, sysvaladdr, addrlen, nap->cage_id);
+  NaClLog(2, "NaClSysBind returning %d\n", ret);
   return ret;
 }
 
@@ -5435,7 +5436,9 @@ void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* oth
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {
       int translated_fd = fds[fdsindex++] = descnum2Lindfd(nap, i);
-      NaClLog(LOG_FATAL, "User fd %d which was valid on entering select call invalid upon exit\n", i);
+      if(translated_fd == -1) {
+        NaClLog(LOG_FATAL, "User fd %d which was valid on entering select call invalid upon exit\n", i);
+      }
       if(!(otherbitfield[translated_fd / 8] & 1 << (translated_fd & 7))) {
         FD_CLR(i, fdset);
       }
