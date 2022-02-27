@@ -129,7 +129,7 @@ static void GetCurrentThread(const struct NaClSignalContext *sig_ctx,
 /*
  * If |sig| had a handler that was expected to crash, exit.
  */
-static void NaClSignalHandleCustomCrashHandler(int sig) {
+static void NaClSignalHandleCustomCrashHandler(struct NaClAppThread  *natp, int sig) {
   /* Only SIGSYS is expected to have a custom crash handler. */
   if (sig == SIGSYS) {
     char tmp[128];
@@ -137,11 +137,11 @@ static void NaClSignalHandleCustomCrashHandler(int sig) {
         "\n** Signal %d has a custom crash handler but did not crash.\n",
         sig);
     NaClSignalErrorMessage(tmp);
-    NaClExit(-sig);
+    NaClSysExit(natp, -sig);
   }
 }
 
-static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
+static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *info, void *uc) {
   unsigned int a;
 
   /* If we need to keep searching, try the old signal handler. */
@@ -161,7 +161,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
         if (s_OldActions[a].sa_sigaction != NULL) {
           /* then call the old handler. */
           s_OldActions[a].sa_sigaction(sig, info, uc);
-          NaClSignalHandleCustomCrashHandler(sig);
+          NaClSignalHandleCustomCrashHandler(natp, sig);
           break;
         }
       } else {
@@ -170,7 +170,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
             (s_OldActions[a].sa_handler != SIG_IGN)) {
           /* and call the old signal. */
           s_OldActions[a].sa_handler(sig);
-          NaClSignalHandleCustomCrashHandler(sig);
+          NaClSignalHandleCustomCrashHandler(natp, sig);
           break;
         }
       }
@@ -179,7 +179,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
        * the default behavior which is to exit the app with the signal
        * number as the error code.
        */
-      NaClExit(-sig);
+      NaClSysExit(natp, -sig);
     }
   }
 }
@@ -353,9 +353,9 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     return;
   }
 
-  NaClSignalHandleUntrusted(sig, &sig_ctx, is_untrusted);
+  NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
-  FindAndRunHandler(sig, info, uc);
+  FindAndRunHandler(natp, sig, info, uc);
 }
 
 

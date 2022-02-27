@@ -122,7 +122,8 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
   return 1;
 }
 
-void NaClSignalHandleUntrusted(int signal,
+void NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
+                               int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted) {
   char tmp[128];
@@ -134,7 +135,7 @@ void NaClSignalHandleUntrusted(int signal,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    NaClExit((-signal) & 0xFF);
+    NaClSysExit(natp, (-signal) & 0xFF);
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);

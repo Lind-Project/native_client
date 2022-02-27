@@ -17,6 +17,8 @@
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/include/nacl/nacl_exception.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
+
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   #if NACL_BUILD_SUBARCH == 32
@@ -166,7 +168,8 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
  * a signal is encountered in the untrusted code, otherwise
  * the signal is passed to the next handler.
  */
-void NaClSignalHandleUntrusted(int signal_number,
+void NaClSignalHandleUntrusted(struct NaClAppThread *natp, 
+                               int signal_number,
                                const struct NaClSignalContext *regs,
                                int is_untrusted);
 
