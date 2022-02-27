@@ -17,7 +17,6 @@
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/include/nacl/nacl_exception.h"
-#include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
