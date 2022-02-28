@@ -698,7 +698,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   }
   free(natp->suspended_registers);
   NaClMutexDtor(&natp->suspend_mu);
-  // NaClSignalStackFree(natp->signal_stack);
+  NaClSignalStackFree(natp->signal_stack);
   natp->signal_stack = NULL;
   NaClTlsFree(natp);
   NaClMutexDtor(&natp->mu);
