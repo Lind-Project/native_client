@@ -357,11 +357,11 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   exit = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
-  if (exit) NaClSysExit(natp, (-sig) & 0xFF);
+  if (exit) return NaClSysExit(natp, (-sig) & 0xFF);
 
   exit = FindAndRunHandler(natp, sig, info, uc);
 
-  if (exit) NaClSysExit(natp, (-sig) & 0xFF);
+  if (exit) return NaClSysExit(natp, (-sig) & 0xFF);
 
 }
 
