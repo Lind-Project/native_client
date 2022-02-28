@@ -85,8 +85,6 @@ void NaClSignalStackRegister(void *stack) {
   }
 }
 
-#define SS_AUTODISARM	(1U << 31)	/* disable sas during sighandling */
-
 void NaClSignalStackUnregister(void) {
   /*
    * Unregister the signal stack in case a fault occurs between the
@@ -108,7 +106,7 @@ void NaClSignalStackUnregister(void) {
   st.ss_size = 0;
 #endif
   st.ss_sp = NULL;
-  st.ss_flags = SS_AUTODISARM;
+  st.ss_flags = SS_DISABLE;
   if (sigaltstack(&st, NULL) != 0) {
     NaClLog(LOG_FATAL, "Failed to unregister signal stack:\n\t%s\n",
             strerror(errno));
