@@ -136,11 +136,3 @@ void NaClThreadExit(void) {
 void NaClThreadYield(void) {
   sched_yield();
 }
-
-void NaClThreadRegisterCleanup(void *routine, void *arg) {
-  pthread_cleanup_push(routine, arg);
-}
-
-void NaClThreadCancelCleanup(void) {
-  pthread_cleanup_pop(0);
-}

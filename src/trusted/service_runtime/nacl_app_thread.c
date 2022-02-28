@@ -679,9 +679,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     return 0;
   }
 
-  // register crash handler
-  NaClThreadRegisterCleanup((void*) NaClHandlerCageExit, natp_child);
-
   return 1;
 
 already_running:
