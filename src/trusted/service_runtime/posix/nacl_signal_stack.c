@@ -106,7 +106,7 @@ void NaClSignalStackUnregister(void) {
   st.ss_size = 0;
 #endif
   st.ss_sp = NULL;
-  st.ss_flags = SS_DISABLE;
+  st.ss_flags = SS_AUTODISARM;
   if (sigaltstack(&st, NULL) != 0) {
     NaClLog(LOG_FATAL, "Failed to unregister signal stack:\n\t%s\n",
             strerror(errno));
