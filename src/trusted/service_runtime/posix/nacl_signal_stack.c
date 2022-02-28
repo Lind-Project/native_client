@@ -92,23 +92,23 @@ void NaClSignalStackUnregister(void) {
    * could be unsafe if the address space were reallocated before the
    * fault, although that is unlikely.
    */
-//   stack_t st;
-// #if NACL_OSX
-//   /*
-//    * This is a workaround for a bug in Mac OS X's libc, in which new
-//    * versions of the sigaltstack() wrapper return ENOMEM if ss_size is
-//    * less than MINSIGSTKSZ, even when ss_size should be ignored
-//    * because we are unregistering the signal stack.
-//    * See http://code.google.com/p/nativeclient/issues/detail?id=1053
-//    */
-//   st.ss_size = MINSIGSTKSZ;
-// #else
-//   st.ss_size = 0;
-// #endif
-//   st.ss_sp = NULL;
-//   st.ss_flags = SS_DISABLE;
-//   if (sigaltstack(&st, NULL) != 0) {
-//     NaClLog(LOG_FATAL, "Failed to unregister signal stack:\n\t%s\n",
-//             strerror(errno));
-//   }
+  stack_t st;
+#if NACL_OSX
+  /*
+   * This is a workaround for a bug in Mac OS X's libc, in which new
+   * versions of the sigaltstack() wrapper return ENOMEM if ss_size is
+   * less than MINSIGSTKSZ, even when ss_size should be ignored
+   * because we are unregistering the signal stack.
+   * See http://code.google.com/p/nativeclient/issues/detail?id=1053
+   */
+  st.ss_size = MINSIGSTKSZ;
+#else
+  st.ss_size = 0;
+#endif
+  st.ss_sp = NULL;
+  st.ss_flags = SS_DISABLE;
+  if (sigaltstack(&st, NULL) != 0) {
+    NaClLog(LOG_FATAL, "Failed to unregister signal stack:\n\t%s\n",
+            strerror(errno));
+  }
 }
