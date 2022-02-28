@@ -135,7 +135,8 @@ void NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    NaClSysExit(natp, (-signal) & 0xFF);
+    NaClThreadExit();
+    // NaClSysExit(natp, (-signal) & 0xFF);
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
