@@ -56,6 +56,8 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp);
 
 int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status);
+void NaClHandlerCageExit(struct NaClAppThread  *natp);
+
 
 int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
                           int32_t               *stack_flag);

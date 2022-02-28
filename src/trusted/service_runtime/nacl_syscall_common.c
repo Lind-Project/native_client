@@ -366,11 +366,26 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   lind_exit(status, nap->cage_id);
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+  NaClThreadCancelCleanup();
   NaClAppThreadTeardown(natp);
   free((void*) nap->clean_environ);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 
+}
+
+void NaClHandlerCageExit(struct NaClAppThread  *natp) {
+
+  struct NaClApp *nap = natp->nap;
+
+  int status = 128;
+  lind_exit(status, nap->cage_id);
+  NaClLog(1, "Exit syscall handler: %d\n", status);
+  (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+  NaClAppThreadTeardown(natp);
+  free((void*) nap->clean_environ);
+  /* NOTREACHED */
+  return;
 }
 
 int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
