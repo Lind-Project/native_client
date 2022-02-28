@@ -137,6 +137,7 @@ void NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
     NaClSignalErrorMessage(tmp);
     pthread_cleanup_push(NaClHandlerCageExit, natp);
     NaClThreadExit();
+    pthread_cleanup_pop(0);
     // NaClSysExit(natp, (-signal) & 0xFF);
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
