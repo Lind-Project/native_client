@@ -122,7 +122,7 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
   return 1;
 }
 
-int NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
+void NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
                                int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted) {
@@ -135,8 +135,7 @@ int NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    return 1;
-
+    NaClSysExit(natp, (-signal) & 0xFF);
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
@@ -145,7 +144,6 @@ int NaClSignalHandleUntrusted(struct NaClAppThread  *natp,
      * Continue the search for another handler so that trusted crashes
      * can be handled by the Breakpad crash reporter.
      */
-    return 0;
   }
 }
 
