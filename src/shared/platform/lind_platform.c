@@ -288,7 +288,6 @@ int lind_pipe(int* pipefds, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_pipe, pipearray, pipefds);
 }
 
-/* pipe2 currently unimplemented */
 int lind_pipe2(int* pipefds, int flags, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_pipe2, pipearray, pipefds, int, flags);
 }
