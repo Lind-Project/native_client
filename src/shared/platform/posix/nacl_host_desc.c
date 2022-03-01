@@ -50,7 +50,8 @@ static INLINE int NaClMapOpenFlags(int nacl_flags) {
   int host_os_flags;
 
   nacl_flags &= (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
-                 | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
+                 | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND 
+                 | NACL_ABI_O_CLOEXEC);
 
   host_os_flags = 0;
 #define C(H) case NACL_ABI_ ## H: \
@@ -70,6 +71,7 @@ static INLINE int NaClMapOpenFlags(int nacl_flags) {
   M(O_CREAT);
   M(O_TRUNC);
   M(O_APPEND);
+  M(O_CLOEXEC);
 #undef M
   return host_os_flags;
 }

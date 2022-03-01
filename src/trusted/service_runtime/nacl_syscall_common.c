@@ -697,7 +697,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
   allowed_flags = (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
-                   | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
+                   | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND | 
+                   NACL_ABI_O_CLOEXEC);
   if (flags & ~allowed_flags) {
     NaClLog(1, "Invalid open flags 0%o, ignoring extraneous bits\n", flags);
     flags &= allowed_flags;
