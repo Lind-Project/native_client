@@ -174,7 +174,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
     struct NaClHostDesc *parent_hd = self->hd;
 
-    if(parent_hd->flags = NACL_ABI_O_CLOEXEC) {
+    if(parent_hd->flags & NACL_ABI_O_CLOEXEC) {
       fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
       continue;
     }
