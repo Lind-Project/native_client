@@ -423,8 +423,10 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClXMutexUnlock(&natp->mu);
   NaClLog(3, " unlocking thread table\n");
   NaClXMutexUnlock(&nap->threads_mu);
-  NaClLog(3, " unregistering signal stack\n");
-  NaClSignalStackUnregister();
+  if (natp->teardown_handler) {
+    NaClLog(3, " unregistering signal stack\n");
+    NaClSignalStackUnregister();
+  }
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
   NaClLog(3, " NaClThreadExit\n");
@@ -500,6 +502,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->fault_signal = 0;
 
   natp->dynamic_delete_generation = 0;
+  natp->teardown_handler = 1;
   return natp;
 
  cleanup_mu:
@@ -703,8 +706,10 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   }
   free(natp->suspended_registers);
   NaClMutexDtor(&natp->suspend_mu);
-  NaClSignalStackFree(natp->signal_stack);
-  natp->signal_stack = NULL;
+  if (natp->teardown_handler) {
+    NaClSignalStackFree(natp->signal_stack);
+    natp->signal_stack = NULL;
+  }
   NaClTlsFree(natp);
   NaClMutexDtor(&natp->mu);
   NaClAlignedFree(natp);

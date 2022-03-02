@@ -155,6 +155,8 @@ struct NaClAppThread {
    * Protected by mu
    */
   int                       dynamic_delete_generation;
+
+  int                       teardown_handler;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);

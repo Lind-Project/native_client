@@ -166,7 +166,8 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
  * a signal is encountered in the untrusted code, otherwise
  * the signal is passed to the next handler.
  */
-void NaClSignalHandleUntrusted(int signal_number,
+void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
+                               int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted);
 

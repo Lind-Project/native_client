@@ -74,6 +74,10 @@
 
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
+extern struct DynArray hndlr_cleanup;
+extern struct NaClMutex clean_mutex;
+
+
 extern int cagecount;
 extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
@@ -263,7 +267,15 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
   if (!DynArrayCtor(&nap->children, 16)) {
-    NaClLog(1, "%s\n", "Failed to initialize children list");
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize children list");
+  }
+
+  if (!DynArrayCtor(&hndlr_cleanup, 16)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup list");
+  }
+
+  if (!NaClMutexCtor(&clean_mutex)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
 
   NaClAllModulesInit();
@@ -956,6 +968,9 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  DynArrayDtor(&hndlr_cleanup);
+  NaClMutexDtor(&clean_mutex);
+
   NaClExit(ret_code);
 
 done:
@@ -988,6 +1003,8 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  DynArrayDtor(&hndlr_cleanup);
+  NaClMutexDtor(&clean_mutex);
 
   NaClExit(ret_code);
 

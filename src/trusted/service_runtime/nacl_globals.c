@@ -7,7 +7,6 @@
 /*
  * NaCl Server Runtime global scoped objects for handling global resources.
  */
-#include <stdbool.h>
 
 #include "native_client/src/shared/platform/nacl_interruptible_mutex.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -29,6 +28,7 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
  * Hack for gdb.  This records xlate_base in a place where (1) gdb can find it,
  * and (2) gdb doesn't need debug info (it just needs symbol info).
  */
+
 uintptr_t                   nacl_global_xlate_base;
 int lind_syscall_counter = 0;
 int nacl_syscall_counter = 0;
@@ -36,6 +36,10 @@ int nacl_syscall_trace_level_counter = 0;
 int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 bool use_lkm = true;
+
+struct DynArray hndlr_cleanup_arr;
+bool cleaning_hndls = false;
+struct NaClMutex clean_mutex;
 
 void NaClGlobalModuleInit(void) {
   NaClInitGlobals();

@@ -18,6 +18,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/shared/platform/lind_platform.h"
+#include <stdbool.h>
+
 
 EXTERN_C_BEGIN
 /* snprintf length limit for each argv string */
@@ -68,6 +70,12 @@ extern double time_counter;
 extern double time_start;
 extern double time_end;
 extern int cage;
+
+extern struct DynArray hndlr_cleanup_arr;
+extern bool cleaning_hndls;
+extern struct NaClMutex clean_mutex;
+
+
 
 
 #if NACL_WINDOWS

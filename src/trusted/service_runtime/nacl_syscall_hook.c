@@ -31,7 +31,6 @@
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
 
-
 /*
  * HandleStackContext() fetches some of the inputs to the NaCl syscall
  * from the untrusted stack.  It updates NaClThreadContext so that the
@@ -154,6 +153,9 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
            " (0x%"NACL_PRIx32")\n"),
           sysnum, sysret, sysret);
   natp->user.sysret = sysret;
+
+  // lets take this moment to do some cleaning
+  CleanHandlers();
 
   /*
    * After this NaClAppThreadSetSuspendState() call, we should not

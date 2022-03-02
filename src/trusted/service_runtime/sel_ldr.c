@@ -67,6 +67,11 @@ double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;
 
+
+extern struct DynArray hndlr_cleanup_arr;
+extern bool cleaning_hndls;
+
+
 /*
  * `fd_cage_table[cage_id][fd] = real fd`
  *
@@ -725,6 +730,42 @@ void NaClRemoveThread(struct NaClApp  *nap,
 struct NaClAppThread *NaClGetThreadMu(struct NaClApp  *nap,
                                       int             thread_num) {
   return (struct NaClAppThread *) DynArrayGet(&nap->threads, thread_num);
+}
+
+void AddToHandleCleanup(void *signal_stack) {
+  NaClXMutexLock(&clean_mutex);
+  int pos;
+  pos = DynArrayFirstAvail(&hndlr_cleanup_arr);
+
+  if (pos > INT32_MAX) {
+    NaClLog(LOG_FATAL,
+            ("AddToHandleClean: DynArrayFirstAvail returned a value"
+             " that is greather than 2**31-1.\n"));
+  }
+
+  DynArraySet(&hndlr_cleanup_arr, pos, signal_stack);
+
+  NaClXMutexUnlock(&clean_mutex);
+}
+
+void CleanHandlers(void) {
+
+  if (hndlr_cleanup_arr.num_entries && !cleaning_hndls) {
+  NaClXMutexLock(&clean_mutex);
+  cleaning_hndls = true;
+
+  for(int i = 0; i < hndlr_cleanup_arr.num_entries; i++) {
+
+       void *signal_stack = (void *) DynArrayGet(&hndlr_cleanup_arr, i);
+       if (signal_stack) {
+             NaClSignalStackFree(signal_stack);
+             signal_stack = NULL;
+             DynArraySet(&hndlr_cleanup_arr, i, NULL);
+
+       }
+  }
+  NaClXMutexUnlock(&clean_mutex);
+  }
 }
 
 void NaClAddHostDescriptor(struct NaClApp *nap,

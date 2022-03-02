@@ -715,6 +715,10 @@ void NaClRemoveThreadMu(struct NaClApp  *nap,
 struct NaClAppThread *NaClGetThreadMu(struct NaClApp  *nap,
                                       int             thread_num);
 
+void AddToHandleCleanup(void *signal_stack);
+
+void CleanHandlers(void);
+
 void NaClAppInitialDescriptorHookup(struct NaClApp  *nap);
 
 void NaClCreateServiceSocket(struct NaClApp *nap);
