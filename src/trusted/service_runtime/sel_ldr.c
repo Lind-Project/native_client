@@ -736,6 +736,7 @@ struct NaClAppThread *NaClGetThreadMu(struct NaClApp  *nap,
 void HandlerCleanupInit(void) {
 
   hndlr_cleanup_arr = malloc(sizeof(struct DynArray));
+  clean_mutex = malloc(sizeof(struct NaClMutex));
   if (!DynArrayCtor(hndlr_cleanup_arr, 16)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup list");
   }
@@ -749,6 +750,7 @@ void HandlerCleanupTeardown(void) {
   DynArrayDtor(hndlr_cleanup_arr);
   free(hndlr_cleanup_arr);
   NaClMutexDtor(clean_mutex);
+  free(clean_mutex);
 }
 
 void AddToHandleCleanup(void *signal_stack) {
