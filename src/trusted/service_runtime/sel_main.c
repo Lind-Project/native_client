@@ -74,9 +74,6 @@
 
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
-extern struct DynArray hndlr_cleanup;
-extern struct NaClMutex clean_mutex;
-
 
 extern int cagecount;
 extern bool use_lkm;
@@ -270,13 +267,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize children list");
   }
 
-  if (!DynArrayCtor(&hndlr_cleanup, 16)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup list");
-  }
-
-  if (!NaClMutexCtor(&clean_mutex)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
-  }
+  HandlerCleanupInit();
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
@@ -968,8 +959,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
-  DynArrayDtor(&hndlr_cleanup);
-  NaClMutexDtor(&clean_mutex);
+  HandlerCleanupTeardown();
 
   NaClExit(ret_code);
 
@@ -1003,8 +993,7 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
-  DynArrayDtor(&hndlr_cleanup);
-  NaClMutexDtor(&clean_mutex);
+  HandlerCleanupTeardown();
 
   NaClExit(ret_code);
 

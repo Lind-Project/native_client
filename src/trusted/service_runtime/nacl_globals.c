@@ -37,10 +37,6 @@ int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 bool use_lkm = true;
 
-struct DynArray hndlr_cleanup_arr;
-bool cleaning_hndls = false;
-struct NaClMutex clean_mutex;
-
 void NaClGlobalModuleInit(void) {
   NaClInitGlobals();
 }

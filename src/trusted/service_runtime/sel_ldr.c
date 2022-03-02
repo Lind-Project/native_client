@@ -68,8 +68,9 @@ double time_start = 0.0;
 double time_end = 0.0;
 
 
-extern struct DynArray hndlr_cleanup_arr;
-extern bool cleaning_hndls;
+struct DynArray *hndlr_cleanup_arr;
+bool cleaning_hndls = false;
+struct NaClMutex *clean_mutex;
 
 
 /*
@@ -732,10 +733,25 @@ struct NaClAppThread *NaClGetThreadMu(struct NaClApp  *nap,
   return (struct NaClAppThread *) DynArrayGet(&nap->threads, thread_num);
 }
 
+void HandlerCleanupInit(void) {
+  if (!DynArrayCtor(hndlr_cleanup_arr, 16)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup list");
+  }
+
+  if (!NaClMutexCtor(clean_mutex)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
+  }
+}
+
+void HandlerCleanupTeardown(void) {
+  DynArrayDtor(hndlr_cleanup_arr);
+  NaClMutexDtor(clean_mutex);
+}
+
 void AddToHandleCleanup(void *signal_stack) {
-  NaClXMutexLock(&clean_mutex);
+  NaClXMutexLock(clean_mutex);
   int pos;
-  pos = DynArrayFirstAvail(&hndlr_cleanup_arr);
+  pos = DynArrayFirstAvail(hndlr_cleanup_arr);
 
   if (pos > INT32_MAX) {
     NaClLog(LOG_FATAL,
@@ -743,28 +759,29 @@ void AddToHandleCleanup(void *signal_stack) {
              " that is greather than 2**31-1.\n"));
   }
 
-  DynArraySet(&hndlr_cleanup_arr, pos, signal_stack);
+  DynArraySet(hndlr_cleanup_arr, pos, signal_stack);
 
-  NaClXMutexUnlock(&clean_mutex);
+  NaClXMutexUnlock(clean_mutex);
 }
 
 void CleanHandlers(void) {
 
-  if (hndlr_cleanup_arr.num_entries && !cleaning_hndls) {
-  NaClXMutexLock(&clean_mutex);
+  if (hndlr_cleanup_arr->num_entries && !cleaning_hndls) {
+  NaClXMutexLock(clean_mutex);
   cleaning_hndls = true;
 
-  for(int i = 0; i < hndlr_cleanup_arr.num_entries; i++) {
+  for(int i = 0; i < hndlr_cleanup_arr->num_entries; i++) {
 
-       void *signal_stack = (void *) DynArrayGet(&hndlr_cleanup_arr, i);
+       void *signal_stack = (void *) DynArrayGet(hndlr_cleanup_arr, i);
        if (signal_stack) {
              NaClSignalStackFree(signal_stack);
              signal_stack = NULL;
-             DynArraySet(&hndlr_cleanup_arr, i, NULL);
+             DynArraySet(hndlr_cleanup_arr, i, NULL);
 
        }
   }
-  NaClXMutexUnlock(&clean_mutex);
+  cleaning_hndls = false;
+  NaClXMutexUnlock(clean_mutex);
   }
 }
 

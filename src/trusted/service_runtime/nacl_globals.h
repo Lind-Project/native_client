@@ -71,12 +71,6 @@ extern double time_start;
 extern double time_end;
 extern int cage;
 
-extern struct DynArray hndlr_cleanup_arr;
-extern bool cleaning_hndls;
-extern struct NaClMutex clean_mutex;
-
-
-
 
 #if NACL_WINDOWS
 __declspec(dllexport)
