@@ -3979,16 +3979,17 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
   return NaClSysClockGetCommon(natp, clk_id, (uintptr_t) tsp, NaClClockGetTime);
 }
 
-int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
+int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) {
   struct NaClApp *nap = natp->nap;
   int32_t ret = 0;
+  int actualflags = flags & NACL_ABI_O_CLOEXEC;
   int lind_fds[2];
   int nacl_fds[2];
-  int flags;
+  int accflags;
 
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
   
-  ret = lind_pipe(lind_fds, nap->cage_id);
+  ret = lind_pipe2(lind_fds, actualflags, nap->cage_id);
   if (-1 == ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
@@ -4000,10 +4001,10 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
     /* set flags for the read and write ends of the pipe */
     switch (i) {
     case 0:
-      flags = NACL_ABI_O_RDONLY;
+      accflags = NACL_ABI_O_RDONLY;
       break;
     case 1:
-      flags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
+      accflags = NACL_ABI_O_WRONLY|NACL_ABI_O_APPEND;
       break;
     default:
       /* something went terribly wrong */
@@ -4023,9 +4024,9 @@ int32_t NaClSysPipe(struct NaClAppThread  *natp, uint32_t *pipedes) {
 
     /* Set up Host Descriptor via Pipe wrapper */
 
-    int retval = NaClHostDescPipe(hd, lind_fds[i], flags);
+    int retval = NaClHostDescPipe(hd, lind_fds[i], accflags | actualflags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
-            (uintptr_t) hd, flags, retval);
+            (uintptr_t) hd, accflags | actualflags, retval);
     /* Then let's make a NaCl descriptor and insert it into NaCls descriptor system */
     if (!retval) {
       retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
@@ -4056,9 +4057,8 @@ out:
   return ret;
 }
 
-int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags) {
-  UNREFERENCED_PARAMETER(flags);
-  return NaClSysPipe(natp, pipedes);
+int32_t NaClSysPipe(struct NaClAppThread *natp, uint32_t *pipedes) {
+  return NaClSysPipe2(natp, pipedes, 0);
 }
 
 int32_t NaClSysFork(struct NaClAppThread *natp) {
