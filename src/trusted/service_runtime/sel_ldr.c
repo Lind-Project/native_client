@@ -71,6 +71,7 @@ double time_end = 0.0;
 struct DynArray *hndlr_cleanup_arr;
 bool cleaning_hndls = false;
 struct NaClMutex *clean_mutex;
+int handles2clean = 0;
 
 
 /*
@@ -765,13 +766,14 @@ void AddToHandleCleanup(void *signal_stack) {
   }
 
   DynArraySet(hndlr_cleanup_arr, pos, signal_stack);
+  handles2clean++;
 
   NaClXMutexUnlock(clean_mutex);
 }
 
 void CleanHandlers(void) {
 
-  if (hndlr_cleanup_arr->num_entries && !cleaning_hndls) {
+  if (handles2clean && !cleaning_hndls) {
   NaClXMutexLock(clean_mutex);
   cleaning_hndls = true;
 
@@ -782,7 +784,7 @@ void CleanHandlers(void) {
              NaClSignalStackFree(signal_stack);
              signal_stack = NULL;
              DynArraySet(hndlr_cleanup_arr, i, NULL);
-
+             handles2clean--;
        }
   }
   cleaning_hndls = false;
