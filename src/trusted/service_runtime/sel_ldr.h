@@ -716,6 +716,10 @@ void NaClRemoveThreadMu(struct NaClApp  *nap,
 struct NaClAppThread *NaClGetThreadMu(struct NaClApp  *nap,
                                       int             thread_num);
 
+void HandlerCleanupInit(void);
+
+void HandlerCleanupTeardown(void);
+
 void AddToHandleCleanup(void *signal_stack);
 
 void CleanHandlers(void);
