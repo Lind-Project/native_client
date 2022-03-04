@@ -656,7 +656,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   /*
    * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  if (tl_type != THREAD_LAUNCH_MAIN) {
+  if (tl_type != (THREAD_LAUNCH_MAIN | THREAD_LAUNCH_THREAD)) {
     natp_child->user.tls_idx = nap_child->cage_id;
     if (nacl_user[natp_child->user.tls_idx]) {
       NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
