@@ -649,7 +649,8 @@ int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 /*
  * Used by syscall code.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      stack_ptr,
                                    uint32_t       user_tls1,

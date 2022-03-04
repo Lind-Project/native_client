@@ -135,9 +135,27 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    natp->teardown_handler = 0;
+    natp->teardown_handler = false;
     AddToHandleCleanup(natp->signal_stack);
-    NaClSysExit(natp, (-signal) & 0xFF);
+    if (natp->is_cage_parent) {
+      NaClXMutexLock(natp->child_lock);
+      for (int i = 0; i < natp->child_threads->num_entries; i++) {
+        struct NaClAppThread *cagechild = (struct NaClAppThread *)DynArrayGet(natp->child_threads, i);
+        if (cagechild != NULL) {
+          NaClThreadKill(cagechild);
+        }
+      }
+      NaClXMutexUnlock(natp->child_lock);
+
+      for (int children_exited = 0; children_exited < natp->total_children; children_exited++) {
+        NaClCondVarWait(natp->parent_wait_cv, natp->parent_wait_mu);
+      }
+      
+      NaClSysExit(natp, (-signal) & 0xFF);
+    } else {
+      NaClThreadKill(natp->cage_parent);
+      NaClAppThreadTeardown(natp);
+    }
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);

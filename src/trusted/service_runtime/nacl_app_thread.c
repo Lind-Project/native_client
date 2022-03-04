@@ -347,30 +347,39 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
-  /*
-   * mark this thread as dead; doesn't matter if some other thread is
-   * asking us to commit suicide.
-   */
-  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
-    /* remove self from parent's list of children */
-  if (nap_parent) {
-    NaClXMutexLock(&nap_parent->children_mu);
-    nap_parent->num_children--;
-    NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
-    if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
-      NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
-    }
-    else {
-      NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
-    }
-    NaClXCondVarBroadcast(&nap_parent->children_cv);
-    NaClXMutexUnlock(&nap_parent->children_mu);
+  if (natp->is_cage_parent){
+    DynArrayDtor(natp->child_threads);
+    NaClMutexDtor(natp->child_lock);
+    NaClCondVarDtor(natp->parent_wait_cv);
+    NaClMutexDtor(natp->parent_wait_mu);
+  
 
-    NaClXMutexLock(&ccmut);
-    cagecount--;
-    NaClCondVarBroadcast(&cccv);
-    NaClXMutexUnlock(&ccmut);
+    /*
+    * mark this thread as dead; doesn't matter if some other thread is
+    * asking us to commit suicide.
+    */
+    NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
+
+      /* remove self from parent's list of children */
+    if (nap_parent) {
+      NaClXMutexLock(&nap_parent->children_mu);
+      nap_parent->num_children--;
+      NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+      if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
+        NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
+      }
+      else {
+        NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
+      }
+      NaClXCondVarBroadcast(&nap_parent->children_cv);
+      NaClXMutexUnlock(&nap_parent->children_mu);
+
+      NaClXMutexLock(&ccmut);
+      cagecount--;
+      NaClCondVarBroadcast(&cccv);
+      NaClXMutexUnlock(&ccmut);
+    }
   }
 
   if (nap->debug_stub_callbacks) {
@@ -388,6 +397,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap->threads_mu);
   NaClLog(3, " getting thread lock\n");
   NaClXMutexLock(&natp->mu);
+
 
   /*
    * Remove ourselves from the ldt-indexed global tables.  The ldt
@@ -427,6 +437,8 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClLog(3, " unregistering signal stack\n");
     NaClSignalStackUnregister();
   }
+  // signal that thread is exiting
+  if (!natp->is_cage_parent) NaClCondVarBroadcast(natp->cage_parent->parent_wait_cv);
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
   NaClLog(3, " NaClThreadExit\n");
@@ -502,7 +514,12 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->fault_signal = 0;
 
   natp->dynamic_delete_generation = 0;
-  natp->teardown_handler = 1;
+  natp->teardown_handler = true;
+
+  natp->cage_parent = NULL;
+  natp->child_threads = NULL;
+  natp->child_lock = NULL;
+
   return natp;
 
  cleanup_mu:
@@ -654,6 +671,30 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nacl_user[natp_child->user.tls_idx] = &natp_child->user;
     NaClTlsSetTlsValue1(natp_child, user_tls1);
     NaClTlsSetTlsValue2(natp_child, user_tls2);
+  }
+
+  if (tl_type != THREAD_LAUNCH_THREAD) {
+    natp_child->is_cage_parent = true;
+    natp_child->total_children = 0;
+    DynArrayCtor(natp_child->child_threads, 16);
+    NaClMutexCtor(natp_child->child_lock);
+    NaClCondVarCtor(natp_child->parent_wait_cv);
+    NaClMutexCtor(natp_child->parent_wait_mu);
+  } 
+  else {
+    natp_child->is_cage_parent = false;
+    natp_child->cage_parent = natp_parent;
+    NaClMutexLock(natp_parent->child_threads);
+    natp_parent->total_children++;
+    int pos;
+    pos = DynArrayFirstAvail(natp_parent->child_threads);
+    if (pos > INT32_MAX) {
+      NaClLog(LOG_FATAL,
+              ("AddToHandleClean: DynArrayFirstAvail returned a value"
+              " that is greather than 2**31-1.\n"));
+    }
+    DynArraySet(natp_parent->child_threads, pos, natp_child);
+    NaClMutexUnlock(natp_parent->child_lock);
   }
 
   /*

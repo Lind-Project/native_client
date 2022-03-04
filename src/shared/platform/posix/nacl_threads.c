@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <limits.h>
+
 /*
  * PTHREAD_STACK_MIN should come from pthread.h as documented, but is
  * actually pulled in by limits.h.
@@ -135,4 +136,8 @@ void NaClThreadExit(void) {
 
 void NaClThreadYield(void) {
   sched_yield();
+}
+
+void NaClThreadKill(struct NaClThread *ntp) {
+  pthread_kill(ntp->tid, SIGKILL);
 }
