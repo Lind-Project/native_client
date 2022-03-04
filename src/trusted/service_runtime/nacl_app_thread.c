@@ -349,10 +349,10 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
 
 
   if (natp->is_cage_parent){
-    DynArrayDtor(natp->child_threads);
-    NaClMutexDtor(natp->child_lock);
-    NaClCondVarDtor(natp->parent_wait_cv);
-    NaClMutexDtor(natp->parent_wait_mu);
+    DynArrayDtor(&natp->child_threads);
+    NaClMutexDtor(&natp->child_lock);
+    NaClCondVarDtor(&natp->parent_wait_cv);
+    NaClMutexDtor(&natp->parent_wait_mu);
   
 
     /*
@@ -438,7 +438,7 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     NaClSignalStackUnregister();
   }
   // signal that thread is exiting
-  if (!natp->is_cage_parent) NaClCondVarBroadcast(natp->cage_parent->parent_wait_cv);
+  if (!natp->is_cage_parent) NaClCondVarBroadcast(&natp->cage_parent->parent_wait_cv);
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
   NaClLog(3, " NaClThreadExit\n");
@@ -515,10 +515,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 
   natp->dynamic_delete_generation = 0;
   natp->teardown_handler = true;
-
-  natp->cage_parent = NULL;
-  natp->child_threads = NULL;
-  natp->child_lock = NULL;
 
   return natp;
 
@@ -675,26 +671,27 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (tl_type != THREAD_LAUNCH_THREAD) {
     natp_child->is_cage_parent = true;
+    natp_child->cage_parent = NULL;
     natp_child->total_children = 0;
-    DynArrayCtor(natp_child->child_threads, 16);
-    NaClMutexCtor(natp_child->child_lock);
-    NaClCondVarCtor(natp_child->parent_wait_cv);
-    NaClMutexCtor(natp_child->parent_wait_mu);
+    DynArrayCtor(&natp_child->child_threads, 16);
+    NaClMutexCtor(&natp_child->child_lock);
+    NaClCondVarCtor(&natp_child->parent_wait_cv);
+    NaClMutexCtor(&natp_child->parent_wait_mu);
   } 
   else {
     natp_child->is_cage_parent = false;
     natp_child->cage_parent = natp_parent;
-    NaClMutexLock(natp_parent->child_threads);
+    NaClMutexLock(&natp_parent->child_threads);
     natp_parent->total_children++;
     int pos;
-    pos = DynArrayFirstAvail(natp_parent->child_threads);
+    pos = DynArrayFirstAvail(&natp_parent->child_threads);
     if (pos > INT32_MAX) {
       NaClLog(LOG_FATAL,
               ("AddToHandleClean: DynArrayFirstAvail returned a value"
               " that is greather than 2**31-1.\n"));
     }
-    DynArraySet(natp_parent->child_threads, pos, natp_child);
-    NaClMutexUnlock(natp_parent->child_lock);
+    DynArraySet(&natp_parent->child_threads, pos, natp_child);
+    NaClMutexUnlock(&natp_parent->child_lock);
   }
 
   /*

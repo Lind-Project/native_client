@@ -162,10 +162,10 @@ struct NaClAppThread {
   bool                       is_cage_parent;
 
   struct NaClAppThread              *cage_parent;
-  struct DynArray                   *child_threads;
-  struct NaClMutex                  *child_lock;
-  struct NaClMutex                  *parent_wait_mu;
-  struct NaClCondVar                *parent_wait_cv;
+  struct DynArray                   child_threads;
+  struct NaClMutex                  child_lock;
+  struct NaClMutex                  parent_wait_mu;
+  struct NaClCondVar                parent_wait_cv;
   int                               total_children;
 };
 

@@ -138,17 +138,17 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     natp->teardown_handler = false;
     AddToHandleCleanup(natp->signal_stack);
     if (natp->is_cage_parent) {
-      NaClXMutexLock(natp->child_lock);
-      for (int i = 0; i < natp->child_threads->num_entries; i++) {
-        struct NaClAppThread *cagechild = (struct NaClAppThread *)DynArrayGet(natp->child_threads, i);
+      NaClXMutexLock(&natp->child_lock);
+      for (int i = 0; i < (&natp->child_threads)->num_entries; i++) {
+        struct NaClAppThread *cagechild = (struct NaClAppThread *)DynArrayGet(&natp->child_threads, i);
         if (cagechild != NULL) {
           NaClThreadKill(cagechild);
         }
       }
-      NaClXMutexUnlock(natp->child_lock);
+      NaClXMutexUnlock(&natp->child_lock);
 
       for (int children_exited = 0; children_exited < natp->total_children; children_exited++) {
-        NaClCondVarWait(natp->parent_wait_cv, natp->parent_wait_mu);
+        NaClCondVarWait(&natp->parent_wait_cv, &natp->parent_wait_mu);
       }
       
       NaClSysExit(natp, (-signal) & 0xFF);
