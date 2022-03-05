@@ -353,9 +353,9 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     return;
   }
 
-  NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
+  int trusted_fault = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
-  FindAndRunHandler(sig, info, uc);
+  if (trusted_fault) FindAndRunHandler(sig, info, uc);
 }
 
 
