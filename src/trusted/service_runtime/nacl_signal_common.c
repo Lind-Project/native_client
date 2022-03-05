@@ -140,7 +140,7 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
 
     (void) NaClReportExitStatus(natp->nap, NACL_ABI_W_EXITCODE((-signal) & 0xFF, 0));
     AddToFaultTeardown(natp);
-    NaClUntrustedThreadsSuspendAll(natp->nap, /* save_registers= */ 0);
+    // NaClUntrustedThreadsSuspendAll(natp->nap, /* save_registers= */ 0);
 
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
