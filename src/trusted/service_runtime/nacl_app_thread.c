@@ -738,7 +738,7 @@ void FaultTeardown(void) {
     NaClXMutexLock(&teardown_mutex);
     in_teardown = true;
 
-    NaClThreadCancel(natp_to_teardown->host_thread);
+    NaClThreadCancel(natp_to_teardown.host_thread);
 
     in_teardown = false;
     NaClXMutexUnlock(&teardown_mutex);
