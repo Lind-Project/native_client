@@ -41,6 +41,10 @@ struct NaClCondVar cccv;
 int cagecount;
 extern bool use_lkm;
 
+struct NaClMutex teardown_mutex;
+bool in_teardown = false;
+struct NaClAppThread *natp_to_teardown = NULL;
+
 /*
  * dynamically allocate and initilize a copy
  * of the parents NaClApp structure which is
@@ -709,6 +713,39 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClMutexDtor(&natp->mu);
   NaClAlignedFree(natp);
 }
+
+
+void initFaultTeardown(void) {
+  if (!NaClMutexCtor(&teardown_mutex)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
+  }
+}
+
+void destroyFaultTeardown(void) {
+  NaClMutexDtor(&teardown_mutex);
+}
+
+
+void AddToFaultTeardown(struct NaClAppThread *natp) {
+    NaClXMutexLock(&teardown_mutex);
+    natp_to_teardown = natp;
+    NaClXMutexUnlock(&teardown_mutex);
+
+}
+
+void FaultTeardown(void) {
+  if ((natp_to_teardown != NULL) && !in_teardown) {
+    NaClXMutexLock(&teardown_mutex);
+    in_teardown = true;
+
+    NaClThreadCancel(natp_to_teardown->host_thread);
+
+    in_teardown = false;
+    NaClXMutexUnlock(&teardown_mutex);
+
+  }
+}
+
 
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadPrintInfo] "

@@ -215,6 +215,15 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   return (struct NaClAppThread *) ntcp;
 }
 
+
+void initFaultTeardown(void);
+
+void destroyFaultTeardown(void); 
+
+void AddToFaultTeardown(struct NaClAppThread *natp);
+
+void FaultTeardown(void);
+
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp);
 
 EXTERN_C_END
