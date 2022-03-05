@@ -139,8 +139,11 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     NaClSignalErrorMessage(tmp);
 
     // (void) NaClReportExitStatus(natp->nap, NACL_ABI_W_EXITCODE((-signal) & 0xFF, 0));
-
-    AddToFaultTeardown(natp);
+    if (natp->is_cage_parent) {
+      AddToFaultTeardown(natp);   
+    } else {
+      AddToFaultTeardown(natp->cage_parent);
+    }
     // NaClUntrustedThreadsSuspendAll(natp->nap, /* save_registers= */ 0);
 
     return 0;
