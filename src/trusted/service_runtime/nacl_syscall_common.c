@@ -3245,7 +3245,8 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
 
   NaClVmHoleWaitToStartThread(nap);
 
-  retval = NaClCreateAdditionalThread(nap,
+  retval = NaClCreateAdditionalThread(natp,
+                                      nap,
                                       (uintptr_t) prog_ctr,
                                       sys_stack,
                                       thread_ptr,

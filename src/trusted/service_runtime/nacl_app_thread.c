@@ -388,6 +388,12 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
+  if (natp->is_cage_parent) {
+    DynArrayDtor(&natp->child_threads);
+    NaClMutexDtor(&natp->child_lock);
+  }
+
+
   NaClLog(3, " getting thread table lock\n");
   NaClXMutexLock(&nap->threads_mu);
   NaClLog(3, " getting thread lock\n");
@@ -644,7 +650,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   /*
    * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  if (tl_type != THREAD_LAUNCH_MAIN) {
+  if (tl_type != (THREAD_LAUNCH_MAIN | THREAD_LAUNCH_THREAD)) {
     natp_child->user.tls_idx = nap_child->cage_id;
     if (nacl_user[natp_child->user.tls_idx]) {
       NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
@@ -655,6 +661,28 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nacl_user[natp_child->user.tls_idx] = &natp_child->user;
     NaClTlsSetTlsValue1(natp_child, user_tls1);
     NaClTlsSetTlsValue2(natp_child, user_tls2);
+  }
+
+
+  if (tl_type != THREAD_LAUNCH_THREAD) {
+    natp_child->is_cage_parent = true;
+    natp_child->cage_parent = NULL;
+    DynArrayCtor(&natp_child->child_threads, 16);
+    NaClMutexCtor(&natp_child->child_lock);
+  } 
+  else {
+    natp_child->is_cage_parent = false;
+    natp_child->cage_parent = natp_parent;
+    NaClMutexLock(&natp_parent->child_lock);
+    int pos;
+    pos = DynArrayFirstAvail(&natp_parent->child_threads);
+    if (pos > INT32_MAX) {
+      NaClLog(LOG_FATAL,
+              ("AddToHandleClean: DynArrayFirstAvail returned a value"
+              " that is greather than 2**31-1.\n"));
+    }
+    DynArraySet(&natp_parent->child_threads, pos, natp_child);
+    NaClMutexUnlock(&natp_parent->child_lock);
   }
 
   /*
@@ -737,6 +765,15 @@ void FaultTeardown(void) {
   if ((natp_to_teardown != NULL) && !in_teardown) {
     NaClXMutexLock(&teardown_mutex);
     in_teardown = true;
+
+    for(int i = 0; i < (&natp_to_teardown->child_threads)->num_entries; i++) {
+
+      struct NaClAppThread *natp_child = (struct NaClAppThread *) DynArrayGet(&natp_to_teardown->child_threads, i);
+      if (natp_child) {
+        NaClThreadCancel(&natp_child->host_thread);
+        DynArraySet(natp_to_teardown, i, NULL);
+      }
+    }
 
     NaClThreadCancel(&natp_to_teardown->host_thread);
 

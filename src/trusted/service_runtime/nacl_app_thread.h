@@ -12,6 +12,7 @@
 #define NATIVE_CLIENT_SERVICE_RUNTIME_NACL_APP_THREAD_H__ 1
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
@@ -28,7 +29,8 @@ struct NaClAppThreadSuspendedRegisters;
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
   THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
+  THREAD_LAUNCH_EXEC,
+  THREAD_LAUNCH_THREAD
 };
 
 
@@ -155,6 +157,11 @@ struct NaClAppThread {
    * Protected by mu
    */
   int                       dynamic_delete_generation;
+
+  bool                       is_cage_parent;
+  struct NaClAppThread              *cage_parent;
+  struct DynArray                   child_threads;
+  struct NaClMutex                  child_lock;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);

@@ -981,16 +981,17 @@ int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
 /*
  * stack_ptr is from syscall, so a 32-bit address.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      sys_stack_ptr,
                                    uint32_t       user_tls1,
                                    uint32_t       user_tls2) {
 
   /* We need to set the thread type for the thread mechanics */
-  nap->tl_type = THREAD_LAUNCH_MAIN;
+  nap->tl_type = THREAD_LAUNCH_THREAD;
 
-  if (!NaClAppThreadSpawn(NULL,
+  if (!NaClAppThreadSpawn(natp_parent,
                           nap,
                           prog_ctr,
                           sys_stack_ptr,
