@@ -122,7 +122,8 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
   return 1;
 }
 
-void NaClSignalHandleUntrusted(int signal,
+void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
+                               int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted) {
   char tmp[128];
