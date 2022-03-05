@@ -681,7 +681,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   else {
     natp_child->is_cage_parent = false;
     natp_child->cage_parent = natp_parent;
-    NaClMutexLock(&natp_parent->child_threads);
+    NaClMutexLock(&natp_parent->child_lock);
     natp_parent->total_children++;
     int pos;
     pos = DynArrayFirstAvail(&natp_parent->child_threads);
