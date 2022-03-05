@@ -266,6 +266,8 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
   }
 
+  initFaultTeardown();
+
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
   NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, &state);
@@ -956,6 +958,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  destroyFaultTeardown();
   NaClExit(ret_code);
 
 done:
@@ -988,6 +991,7 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  destroyFaultTeardown();
 
   NaClExit(ret_code);
 
