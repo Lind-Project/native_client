@@ -134,7 +134,9 @@ void NaClSignalHandleUntrusted(int signal,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    NaClExit((-signal) & 0xFF);
+
+    (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE((-signal) & 0xFF, 0));
+
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
