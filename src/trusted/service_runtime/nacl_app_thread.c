@@ -774,7 +774,7 @@ void FaultTeardown(void) {
         DynArraySet(natp_to_teardown, i, NULL);
       }
     }
-    (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(0, 0));
+    // (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(0, 0));
 
     NaClThreadCancel(&natp_to_teardown->host_thread);
 
