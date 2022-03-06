@@ -232,6 +232,12 @@ void AddToFaultTeardown(struct NaClAppThread *natp);
 
 void FaultTeardown(void);
 
+
+void SignalReaper(void);
+void Reaper(void);
+void LaunchReaper(void);
+void destroyReaper(void);
+
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp);
 
 EXTERN_C_END

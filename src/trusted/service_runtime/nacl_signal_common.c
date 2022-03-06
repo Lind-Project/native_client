@@ -144,6 +144,7 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     } else {
       AddToFaultTeardown(natp->cage_parent);
     }
+    SignalReaper();
     NaClUntrustedThreadsSuspendAll(natp->nap, /* save_registers= */ 0);
 
     return 0;

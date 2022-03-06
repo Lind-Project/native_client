@@ -156,8 +156,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   natp->user.sysret = sysret;
 
 
-  FaultTeardown();
-
   /*
    * After this NaClAppThreadSetSuspendState() call, we should not
    * claim any mutexes, otherwise we risk deadlock.  Note that if
