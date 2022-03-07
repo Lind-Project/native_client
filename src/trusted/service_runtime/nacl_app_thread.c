@@ -237,7 +237,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   thread_idx = NaClGetThreadIdx(natp);
   CHECK(thread_idx > 0 && thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
-  nacl_user[thread_idx] = &natp->user;
+  // nacl_user[thread_idx] = &natp->user;
   #if NACL_WINDOWS
     nacl_thread_ids[thread_idx] = GetCurrentThreadId();
   #elif NACL_OSX
@@ -389,8 +389,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
-  // handle children upon exit
-  NaClAppThreadTeardownChildren(natp);
+
 
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
@@ -404,6 +403,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   }
 
   if (natp->is_cage_parent) {
+    // handle children upon exit
+    NaClAppThreadTeardownChildren(natp);
     DynArrayDtor(&natp->child_threads);
     NaClMutexDtor(&natp->child_lock);
   }
@@ -675,7 +676,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   /*
    * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  if ((tl_type == THREAD_LAUNCH_FORK) || (tl_type == THREAD_LAUNCH_EXEC)) {
+  // if ((tl_type == THREAD_LAUNCH_FORK) || (tl_type == THREAD_LAUNCH_EXEC)) {
     // natp_child->user.tls_idx = nap_child->cage_id;
     if (nacl_user[natp_child->user.tls_idx]) {
       NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
@@ -686,7 +687,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nacl_user[natp_child->user.tls_idx] = &natp_child->user;
     NaClTlsSetTlsValue1(natp_child, user_tls1);
     NaClTlsSetTlsValue2(natp_child, user_tls2);
-  }
+  // }
 
 
   if (tl_type != THREAD_LAUNCH_THREAD) {
