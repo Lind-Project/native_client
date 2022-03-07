@@ -799,9 +799,6 @@ void FaultTeardown(void) {
   }
 }
 
-void SignalReaper(void) {
-}
-
 void Reaper(void) {
   while (true) {
     NaClCondVarWait(&reapercv, &reapermut);
