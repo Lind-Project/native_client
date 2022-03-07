@@ -785,7 +785,7 @@ void FaultTeardown(void) {
       struct NaClAppThread *natp_child = (struct NaClAppThread *) DynArrayGet(&natp_to_teardown->child_threads, i);
       if (natp_child) {
         NaClThreadCancel(&natp_child->host_thread);
-        DynArraySet(natp_to_teardown, i, NULL);
+        DynArraySet(&natp_to_teardown->child_threads, i, NULL);
       }
     }
     (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(0, 0));
