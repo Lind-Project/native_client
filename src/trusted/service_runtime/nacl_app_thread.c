@@ -347,6 +347,106 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   }
 }
 
+
+
+void NaClAppThreadTeardownInner(struct NaClAppThread *natp) {
+  struct NaClApp  *nap = natp->nap;
+  struct NaClApp  *nap_parent = nap->parent;
+  size_t          thread_idx;
+
+  /*
+   * mark this thread as dead; doesn't matter if some other thread is
+   * asking us to commit suicide.
+   */
+  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
+
+    /* remove self from parent's list of children */
+  if (nap_parent) {
+    NaClXMutexLock(&nap_parent->children_mu);
+    nap_parent->num_children--;
+    NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+    if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
+    }
+    else {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
+    }
+    NaClXCondVarBroadcast(&nap_parent->children_cv);
+    NaClXMutexUnlock(&nap_parent->children_mu);
+
+    NaClXMutexLock(&ccmut);
+    cagecount--;
+    NaClCondVarBroadcast(&cccv);
+    NaClXMutexUnlock(&ccmut);
+  }
+
+  if (nap->debug_stub_callbacks) {
+    NaClLog(3, " notifying the debug stub of the thread exit\n");
+    /*
+     * This must happen before deallocating the ID natp->thread_num.
+     * We have the invariant that debug stub lock should be acquired before
+     * nap->threads_mu lock. Hence we must not hold threads_mu lock while
+     * calling debug stub hooks.
+     */
+    nap->debug_stub_callbacks->thread_exit_hook(natp);
+  }
+
+  if (natp->is_cage_parent) {
+    DynArrayDtor(&natp->child_threads);
+    NaClMutexDtor(&natp->child_lock);
+  }
+
+
+  NaClLog(3, " getting thread table lock\n");
+  NaClXMutexLock(&nap->threads_mu);
+  NaClLog(3, " getting thread lock\n");
+  NaClXMutexLock(&natp->mu);
+
+  /*
+   * Remove ourselves from the ldt-indexed global tables.  The ldt
+   * entry is released as part of NaClAppThreadDelete(), and if
+   * another thread is immediately created (from some other running
+   * thread) we want to be sure that any ldt-based lookups will not
+   * reach this dying thread's data.
+   */
+  thread_idx = NaClGetThreadIdx(natp);
+
+  /*
+   * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+   * fault if another syscall is made with this thread_idx.  In
+   * particular, thread_idx 0 is never used.
+   */
+  nacl_user[thread_idx] = NULL;
+#if NACL_WINDOWS
+  nacl_thread_ids[thread_idx] = 0;
+#elif NACL_OSX
+  NaClClearMachThreadForThreadIndex(thread_idx);
+#endif
+  /*
+   * Unset the TLS variable so that if a crash occurs during thread
+   * teardown, the signal handler does not dereference a dangling
+   * NaClAppThread pointer.
+   */
+  NaClTlsSetCurrentThread(NULL);
+
+  NaClLog(3, " removing thread from thread table\n");
+  /* Deallocate the ID natp->thread_num. */
+  NaClRemoveThreadMu(nap, natp->thread_num);
+  NaClLog(3, " unlocking thread\n");
+  NaClXMutexUnlock(&natp->mu);
+  NaClLog(3, " unlocking thread table\n");
+  NaClXMutexUnlock(&nap->threads_mu);
+  NaClLog(3, " unregistering signal stack\n");
+  NaClSignalStackUnregister();
+  NaClLog(3, " freeing thread object\n");
+  NaClAppThreadDelete(natp);
+  NaClLog(3, " NaClThreadExit\n");
+
+  NaClThreadExit();
+  NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
+  /* NOTREACHED */
+}
+
 /*
  * preconditions:
  * * natp must be thread_self(), called while holding no locks.
