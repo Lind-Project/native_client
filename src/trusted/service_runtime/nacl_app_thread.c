@@ -687,7 +687,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nacl_user[natp_child->user.tls_idx] = &natp_child->user;
     NaClTlsSetTlsValue1(natp_child, user_tls1);
     NaClTlsSetTlsValue2(natp_child, user_tls2);
-  // }
+  }
 
 
   if (tl_type != THREAD_LAUNCH_THREAD) {
