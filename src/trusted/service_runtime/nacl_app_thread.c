@@ -776,6 +776,7 @@ void FaultTeardown(void) {
   if ((natp_to_teardown != NULL) && !in_teardown) {
     NaClXMutexLock(&teardown_mutex);
     in_teardown = true;
+    NaClUntrustedThreadsSuspendAll(natp_to_teardown->nap, /* save_registers= */ 0);
 
     for(int i = 0; i < (&natp_to_teardown->child_threads)->num_entries; i++) {
 
