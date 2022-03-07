@@ -816,7 +816,7 @@ void FaultTeardown(void) {
     (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(0, 0));
     thread = natp_to_teardown->host_thread;
     free((void*) natp_to_teardown->nap->clean_environ);
-    NaClAppThreadTeardownInner(&natp_to_teardown, false);
+    NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClThreadCancel(&thread);
 
     natp_to_teardown = NULL;
