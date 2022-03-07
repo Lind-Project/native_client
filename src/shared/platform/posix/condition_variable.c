@@ -24,6 +24,7 @@ int NaClCondVarCtor(struct NaClCondVar  *cvp) {
 }
 
 void NaClCondVarDtor(struct NaClCondVar *cvp) {
+  cvp->cv.__data.__wrefs = 0;
   pthread_cond_destroy(&cvp->cv);
 }
 
