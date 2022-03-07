@@ -144,7 +144,6 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     } else {
       AddToFaultTeardown(natp->cage_parent);
     }
-    SignalReaper();
 
     return 0;
 
