@@ -671,6 +671,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   if (tl_type != THREAD_LAUNCH_THREAD) {
     natp_child->is_cage_parent = true;
     natp_child->cage_parent = NULL;
+    natp_child->tearing_down = false;
     DynArrayCtor(&natp_child->child_threads, 16);
     NaClMutexCtor(&natp_child->child_lock);
   } 
@@ -770,6 +771,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp) {
     if (natp_to_teardown == natp) return;
     NaClXMutexLock(&teardown_mutex);
     natp_to_teardown = natp;
+    natp->tearing_down = true;
     NaClCondVarBroadcast(&reapercv);
     NaClXMutexUnlock(&teardown_mutex);
 }

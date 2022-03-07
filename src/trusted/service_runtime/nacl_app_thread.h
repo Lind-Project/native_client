@@ -159,7 +159,8 @@ struct NaClAppThread {
    */
   int                       dynamic_delete_generation;
 
-  bool                       is_cage_parent;
+  bool                              is_cage_parent;
+  bool                              tearing_down;
   struct NaClAppThread              *cage_parent;
   struct DynArray                   child_threads;
   struct NaClMutex                  child_lock;
