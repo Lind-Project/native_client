@@ -48,6 +48,7 @@ bool in_teardown = false;
 struct NaClAppThread *natp_to_teardown = NULL;
 struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
+bool reap = true;
 
 /*
  * dynamically allocate and initilize a copy
@@ -762,8 +763,8 @@ void initFaultTeardown(void) {
 
 void destroyFaultTeardown(void) {
   NaClMutexDtor(&teardown_mutex);
-  NaClMutexDtor(&reapermut);
   NaClCondVarDtor(&reapercv);
+  NaClMutexDtor(&reapermut);
 }
 
 
@@ -802,7 +803,7 @@ void FaultTeardown(void) {
 }
 
 void Reaper(void) {
-  while (true) {
+  while (reap) {
     NaClCondVarWait(&reapercv, &reapermut);
     FaultTeardown();
   }
@@ -816,6 +817,8 @@ void LaunchReaper(void) {
 }
 
 void destroyReaper(void) {
+  reap = false;
+  NaClCondVarBroadcast(&reapercv);
   destroyFaultTeardown();
   NaClThreadCancel(&reaper);
 }
