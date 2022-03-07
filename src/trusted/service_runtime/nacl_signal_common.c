@@ -139,7 +139,7 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
 
-    NaClTlsSetCurrentThread(NULL);
+    // NaClTlsSetCurrentThread(NULL);
 
     if (natp->is_cage_parent) {
       if (!natp->tearing_down) AddToFaultTeardown(natp);   
