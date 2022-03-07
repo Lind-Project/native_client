@@ -767,8 +767,10 @@ void destroyFaultTeardown(void) {
 
 
 void AddToFaultTeardown(struct NaClAppThread *natp) {
+    if (natp_to_teardown == natp) return;
     NaClXMutexLock(&teardown_mutex);
     natp_to_teardown = natp;
+    NaClCondVarBroadcast(&reapercv);
     NaClXMutexUnlock(&teardown_mutex);
 }
 
@@ -798,7 +800,6 @@ void FaultTeardown(void) {
 }
 
 void SignalReaper(void) {
-  NaClCondVarBroadcast(&reapercv);
 }
 
 void Reaper(void) {
