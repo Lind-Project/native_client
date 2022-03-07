@@ -439,7 +439,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    * teardown, the signal handler does not dereference a dangling
    * NaClAppThread pointer.
    */
-  NaClTlsSetCurrentThread(NULL);
+  if (active_thread) NaClTlsSetCurrentThread(NULL);
 
   NaClLog(3, " removing thread from thread table\n");
   /* Deallocate the ID natp->thread_num. */
@@ -464,7 +464,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
 }
 
 
-void NaClAppThreadTeardown(struct NaClAppThread *natp, bool active_thread) {
+void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClAppThreadTeardownInner(natp, true);
 }
 
