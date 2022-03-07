@@ -142,7 +142,8 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     // NaClTlsSetCurrentThread(NULL);
 
     if (natp->is_cage_parent) {
-      if (!natp->tearing_down) AddToFaultTeardown(natp);   
+      if (!natp->tearing_down) AddToFaultTeardown(natp);
+      NaClUntrustedThreadSuspend(natp, 0);   
     } else {
       if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
       NaClThreadExit();
