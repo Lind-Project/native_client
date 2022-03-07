@@ -808,7 +808,7 @@ void FaultTeardown(void) {
     for(int i = 0; i < (&natp_to_teardown->child_threads)->num_entries; i++) {
 
       struct NaClAppThread *natp_child = (struct NaClAppThread *) DynArrayGet(&natp_to_teardown->child_threads, i);
-      if (natp_child) {
+      if (natp_child && natp_child != natp_to_teardown) {
         NaClThreadCancel(&natp_child->host_thread);
         DynArraySet(&natp_to_teardown->child_threads, i, NULL);
       }
