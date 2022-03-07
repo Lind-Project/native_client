@@ -19,6 +19,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
+#include "native_client/src/trusted/service_runtime/nacl_tls.h"
 
 
 #if NACL_WINDOWS

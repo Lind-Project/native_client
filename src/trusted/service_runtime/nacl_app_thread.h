@@ -170,6 +170,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
 void WINAPI NaClAppThreadLauncher(void *state);
 
+void NaClAppThreadTeardownChildren(struct NaClAppThread *natp);
+void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread);
 void NaClAppThreadTeardown(struct NaClAppThread *natp);
 
 
