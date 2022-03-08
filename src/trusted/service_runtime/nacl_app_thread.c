@@ -401,8 +401,10 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  NaClLog(3, " getting thread table lock\n");
-  NaClXMutexLock(&nap->threads_mu);
+  if (active_thread) {
+    NaClLog(3, " getting thread table lock\n");
+    NaClXMutexLock(&nap->threads_mu);
+  }
   NaClLog(3, " getting thread lock\n");
   NaClXMutexLock(&natp->mu);
 
@@ -444,17 +446,19 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   NaClRemoveThreadMu(nap, natp->thread_num);
   NaClLog(3, " unlocking thread\n");
   NaClXMutexUnlock(&natp->mu);
-  NaClLog(3, " unlocking thread table\n");
-  NaClXMutexUnlock(&nap->threads_mu);
+
   if (active_thread) {
+    NaClLog(3, " unlocking thread table\n");
+    NaClXMutexUnlock(&nap->threads_mu);
     NaClLog(3, " unregistering signal stack\n");
     NaClSignalStackUnregister();
   }
+
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
-  NaClLog(3, " NaClThreadExit\n");
 
   if (active_thread) {
+    NaClLog(3, " NaClThreadExit\n");
     NaClThreadExit();
     NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
     /* NOTREACHED */
@@ -799,17 +803,20 @@ void FaultTeardown(void) {
 
       struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
       if (natp_child && natp_child != natp_to_teardown) {
-        NaClThreadCancel(&natp_child->host_thread);
+        struct NaClThread child_thread = &natp_child->host_thread;
+        NaClAppThreadTeardownInner(natp_child, false);
+        NaClThreadCancel(child_thread);
       }
     }
 
-    NaClXMutexUnlock(&nap->threads_mu);
     
     lind_exit(status, nap->cage_id);
     (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
     thread = natp_to_teardown->host_thread;
     free((void*) nap->clean_environ);
     NaClAppThreadTeardownInner(natp_to_teardown, false);
+    NaClXMutexUnlock(&nap->threads_mu);
+
     NaClThreadCancel(&thread);
 
     natp_to_teardown = NULL;
