@@ -256,7 +256,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   cagecount = 0;
 
-  struct NaClApp *nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
+  void *nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
