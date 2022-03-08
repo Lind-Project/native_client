@@ -111,7 +111,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->validation_cache = NULL;
 
   nap->validator = NaClCreateValidator();
-
+  nap->ready_to_exit = false;
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
   nap->cpu_features = malloc(nap->validator->CPUFeatureSize);

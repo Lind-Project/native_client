@@ -144,6 +144,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
+  bool                      ready_to_exit;
 
 
   /*
