@@ -819,7 +819,7 @@ void FaultTeardown(void) {
     NaClThreadCancel(thread);
     natp_to_teardown = NULL;
 
-    // NaClAppDtor(nap);
+    NaClAppDtor(nap);
 
     in_teardown = false;
     NaClXMutexUnlock(&teardown_mutex);
