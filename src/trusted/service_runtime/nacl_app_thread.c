@@ -454,6 +454,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClSignalStackUnregister();
   }
 
+  if (natp->is_cage_parent) NaClAppDtor(nap);
+
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
 
@@ -813,13 +815,11 @@ void FaultTeardown(void) {
     lind_exit(status, nap->cage_id);
     (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
     thread = &natp_to_teardown->host_thread;
-    free((void*) nap->clean_environ);
-    NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClXMutexUnlock(&nap->threads_mu);
+
+    NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClThreadCancel(thread);
     natp_to_teardown = NULL;
-
-    NaClAppDtor(nap);
 
     in_teardown = false;
     NaClXMutexUnlock(&teardown_mutex);
