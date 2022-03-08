@@ -348,6 +348,27 @@ int NaClAppCtor(struct NaClApp *nap) {
   return NaClAppWithSyscallTableCtor(nap, nacl_syscall);
 }
 
+
+void NaClAppDtor(struct NaClApp *nap) {
+  NaClFastMutexDtor(&nap->desc_mu);
+  NaClMutexDtor(&nap->threads_mu);
+  NaClDescUnref(nap->name_service_conn_cap);
+  NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
+  NaClCondVarDtor(&nap->cv);
+  NaClMutexDtor(&nap->mu);
+  NaClMutexDtor(&nap->children_mu);
+  NaClMutexDtor(&nap->dynamic_load_mutex);
+  free(nap->effp);
+  NaClIntervalMultisetDelete(nap->mem_io_regions);
+  nap->mem_io_regions = NULL;
+  NaClVmmapDtor(&nap->mem_map);
+  NaClAddrSpaceFree(nap);
+  DynArrayDtor(&nap->children);
+  DynArrayDtor(&nap->desc_tbl);
+  DynArrayDtor(&nap->threads);
+  free(nap->cpu_features);
+}
+
 /*
  * unaligned little-endian load.  precondition: nbytes should never be
  * more than 8.

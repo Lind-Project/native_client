@@ -809,7 +809,6 @@ void FaultTeardown(void) {
         NaClThreadCancel(child_thread);
       }
     }
-
     
     lind_exit(status, nap->cage_id);
     (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
@@ -817,10 +816,10 @@ void FaultTeardown(void) {
     free((void*) nap->clean_environ);
     NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClXMutexUnlock(&nap->threads_mu);
-
     NaClThreadCancel(thread);
-
     natp_to_teardown = NULL;
+
+    NaClAppDtor(nap);
 
     in_teardown = false;
     NaClXMutexUnlock(&teardown_mutex);
