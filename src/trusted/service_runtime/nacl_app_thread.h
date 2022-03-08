@@ -162,8 +162,6 @@ struct NaClAppThread {
   bool                              is_cage_parent;
   bool                              tearing_down;
   struct NaClAppThread              *cage_parent;
-  struct DynArray                   child_threads;
-  struct NaClMutex                  child_lock;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);

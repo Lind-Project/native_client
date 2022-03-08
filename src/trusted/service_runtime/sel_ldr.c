@@ -670,6 +670,10 @@ int32_t NaClSetAvail(struct NaClApp  *nap,
   return pos;
 }
 
+int NaClGetNumThreads(struct NaClApp        *nap) {
+  return (&nap->threads)->num_entries;
+}
+
 int NaClAddThreadMu(struct NaClApp        *nap,
                     struct NaClAppThread  *natp) {
   size_t pos;

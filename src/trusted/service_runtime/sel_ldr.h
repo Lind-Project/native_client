@@ -700,6 +700,7 @@ void NaClSetDescMu(struct NaClApp   *nap,
 int32_t NaClSetAvailMu(struct NaClApp   *nap,
                        struct NaClDesc  *ndp);
 
+int NaClGetNumThreads(struct NaClApp        *nap);
 
 int NaClAddThread(struct NaClApp        *nap,
                   struct NaClAppThread  *natp);

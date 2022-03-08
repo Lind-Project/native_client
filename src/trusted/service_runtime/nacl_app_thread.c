@@ -401,14 +401,6 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  if (natp->is_cage_parent) {
-    // handle children upon exit
-    NaClAppThreadTeardownChildren(natp);
-    DynArrayDtor(&natp->child_threads);
-    NaClMutexDtor(&natp->child_lock);
-  }
-
-
   NaClLog(3, " getting thread table lock\n");
   NaClXMutexLock(&nap->threads_mu);
   NaClLog(3, " getting thread lock\n");
@@ -423,17 +415,23 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   thread_idx = NaClGetThreadIdx(natp);
 
-  /*
-   * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-   * fault if another syscall is made with this thread_idx.  In
-   * particular, thread_idx 0 is never used.
-   */
-  nacl_user[thread_idx] = NULL;
-#if NACL_WINDOWS
-  nacl_thread_ids[thread_idx] = 0;
-#elif NACL_OSX
-  NaClClearMachThreadForThreadIndex(thread_idx);
-#endif
+
+  if (natp->is_cage_parent) {
+    // handle children upon exit
+    NaClAppThreadTeardownChildren(natp);
+
+    /*
+    * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+    * fault if another syscall is made with this thread_idx.  In
+    * particular, thread_idx 0 is never used.
+    */
+    nacl_user[thread_idx] = NULL;
+  #if NACL_WINDOWS
+    nacl_thread_ids[thread_idx] = 0;
+  #elif NACL_OSX
+    NaClClearMachThreadForThreadIndex(thread_idx);
+  #endif
+  }
   /*
    * Unset the TLS variable so that if a crash occurs during thread
    * teardown, the signal handler does not dereference a dangling
@@ -693,22 +691,10 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     natp_child->is_cage_parent = true;
     natp_child->cage_parent = NULL;
     natp_child->tearing_down = false;
-    DynArrayCtor(&natp_child->child_threads, 16);
-    NaClMutexCtor(&natp_child->child_lock);
   } 
   else {
     natp_child->is_cage_parent = false;
     natp_child->cage_parent = natp_parent;
-    NaClMutexLock(&natp_parent->child_lock);
-    int pos;
-    pos = DynArrayFirstAvail(&natp_parent->child_threads);
-    if (pos > INT32_MAX) {
-      NaClLog(LOG_FATAL,
-              ("AddToHandleClean: DynArrayFirstAvail returned a value"
-              " that is greather than 2**31-1.\n"));
-    }
-    DynArraySet(&natp_parent->child_threads, pos, natp_child);
-    NaClMutexUnlock(&natp_parent->child_lock);
   }
 
   /*
@@ -804,21 +790,25 @@ void FaultTeardown(void) {
   if ((natp_to_teardown != NULL) && !in_teardown) {
     NaClXMutexLock(&teardown_mutex);
     in_teardown = true;
-    // NaClUntrustedThreadsSuspendAll(natp_to_teardown->nap, /* save_registers= */ 0);
+    struct NaClApp *nap = natp_to_teardown->nap;
 
-    for(int i = 0; i < (&natp_to_teardown->child_threads)->num_entries; i++) {
+    NaClXMutexLock(&nap->threads_mu);
+    int num_threads = NaClGetNumThreads(nap);
 
-      struct NaClAppThread *natp_child = (struct NaClAppThread *) DynArrayGet(&natp_to_teardown->child_threads, i);
+    for(int i = 0; i < num_threads; i++) {
+
+      struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
       if (natp_child && natp_child != natp_to_teardown) {
         NaClThreadCancel(&natp_child->host_thread);
-        DynArraySet(&natp_to_teardown->child_threads, i, NULL);
       }
     }
+
+    NaClXMutexUnlock(&nap->threads_mu);
     
-    lind_exit(status, natp_to_teardown->nap->cage_id);
-    (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(status, 0));
+    lind_exit(status, nap->cage_id);
+    (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
     thread = natp_to_teardown->host_thread;
-    free((void*) natp_to_teardown->nap->clean_environ);
+    free((void*) nap->clean_environ);
     NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClThreadCancel(&thread);
 
