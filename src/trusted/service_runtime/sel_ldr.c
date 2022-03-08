@@ -367,6 +367,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   DynArrayDtor(&nap->desc_tbl);
   DynArrayDtor(&nap->threads);
   free(nap->cpu_features);
+  free(nap);
 }
 
 /*
