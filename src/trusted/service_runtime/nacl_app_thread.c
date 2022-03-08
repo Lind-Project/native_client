@@ -237,7 +237,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   thread_idx = NaClGetThreadIdx(natp);
   CHECK(thread_idx > 0 && thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
-  // nacl_user[thread_idx] = &natp->user;
   #if NACL_WINDOWS
     nacl_thread_ids[thread_idx] = GetCurrentThreadId();
   #elif NACL_OSX
@@ -800,6 +799,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp) {
 
 void FaultTeardown(void) {
   struct NaClThread thread;
+  int status = 137; // Fatal error signal SIGKILL
 
   if ((natp_to_teardown != NULL) && !in_teardown) {
     NaClXMutexLock(&teardown_mutex);
@@ -814,7 +814,9 @@ void FaultTeardown(void) {
         DynArraySet(&natp_to_teardown->child_threads, i, NULL);
       }
     }
-    (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(0, 0));
+    
+    lind_exit(status, natp_to_teardown->nap->cage_id);
+    (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(status, 0));
     thread = natp_to_teardown->host_thread;
     free((void*) natp_to_teardown->nap->clean_environ);
     NaClAppThreadTeardownInner(natp_to_teardown, false);
