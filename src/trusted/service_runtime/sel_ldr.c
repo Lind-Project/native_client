@@ -375,7 +375,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   free((void*) nap->clean_environ);
 
   NaClLog(3, "Freeing nap\n");
-  free(nap);
+  NaClAlignedFree(nap);
 }
 
 /*
