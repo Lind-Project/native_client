@@ -455,7 +455,6 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   }
   
   if (natp->is_cage_parent) {  
-    while (!natp->nap->ready_to_exit);
     NaClAppDtor(natp->nap);
   }
 

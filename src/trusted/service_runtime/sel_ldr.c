@@ -352,6 +352,8 @@ int NaClAppCtor(struct NaClApp *nap) {
 
 
 void NaClAppDtor(struct NaClApp *nap) {
+  // if we get here, wait until its ready
+  while (!nap->ready_to_exit);
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
   NaClAddrSpaceFree(nap);
