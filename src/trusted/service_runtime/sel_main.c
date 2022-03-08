@@ -202,8 +202,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct redir                  *entry;
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
-  struct NaClApp                state = {0};
-  struct NaClApp                *nap = &state;
+  struct NaClApp                *state = NaClAlignedMalloc(sizeof(*state), __alignof(struct NaClApp));
+  struct NaClApp                *nap = state;
   struct NaClDesc               *blob_file = NULL;
   struct GioFile                gout;
   struct DynArray               env_vars;
@@ -276,7 +276,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
-  NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, &state);
+  NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, state);
 
   verbosity = NaClLogGetVerbosity();
 
@@ -288,7 +288,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Could not create general standard output channel");
     exit(1);
   }
-  if (!NaClAppCtor(&state)) {
+  if (!NaClAppCtor(state)) {
     NaClLog(1, "%s\n", "NaClAppCtor() failed");
   }
   if (!DynArrayCtor(&env_vars, 0)) {
@@ -505,8 +505,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
-  state.ignore_validator_result = debug_mode_ignore_validator > 0;
-  state.skip_validator = debug_mode_ignore_validator > 1;
+  state->ignore_validator_result = debug_mode_ignore_validator > 0;
+  state->skip_validator = debug_mode_ignore_validator > 1;
 
 /*
  * `_HOST_OSX` is defined so that
@@ -522,15 +522,15 @@ int NaClSelLdrMain(int argc, char **argv) {
 # define _HOST_OSX 0
 #endif
   if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING")) {
-    state.enable_exception_handling = 1;
+    state->enable_exception_handling = 1;
   }
   /*
    * TODO(mseaborn): Always enable the Mach exception handler on Mac
    * OS X, and remove handle_signals and sel_ldr's "-S" option.
    */
-  if (state.enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
+  if (state->enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
 #if NACL_WINDOWS
-    state.attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
+    state->attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
 #elif NACL_LINUX
     /* NaCl's signal handler is always enabled on Linux. */
 #elif NACL_OSX
@@ -742,7 +742,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
 
     /* Give debuggers a well known point at which xlate_base is known.  */
-    NaClGdbHook(&state);
+    NaClGdbHook(state);
   }
 
 /*
