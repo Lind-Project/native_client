@@ -30,8 +30,9 @@ struct NaClAppThreadSuspendedRegisters;
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
   THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
-  };
+  THREAD_LAUNCH_EXEC,
+  THREAD_LAUNCH_THREAD
+};
 
 
 /*
@@ -205,8 +206,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                usr_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2,
-                       bool                     is_cage_thread) NACL_WUR;
+                       uint32_t                 user_tls2) NACL_WUR;
 
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
