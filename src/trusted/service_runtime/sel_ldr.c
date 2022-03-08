@@ -350,6 +350,7 @@ int NaClAppCtor(struct NaClApp *nap) {
 
 
 void NaClAppDtor(struct NaClApp *nap) {
+  NaClAddrSpaceFree(nap);
   NaClFastMutexDtor(&nap->desc_mu);
   NaClMutexDtor(&nap->threads_mu);
   NaClDescUnref(nap->name_service_conn_cap);
@@ -362,7 +363,6 @@ void NaClAppDtor(struct NaClApp *nap) {
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
   NaClVmmapExitDtor(&nap->mem_map);
-  NaClAddrSpaceFree(nap);
   DynArrayDtor(&nap->children);
   DynArrayDtor(&nap->desc_tbl);
   DynArrayDtor(&nap->threads);
