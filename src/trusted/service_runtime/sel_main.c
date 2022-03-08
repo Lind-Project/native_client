@@ -261,6 +261,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
 
+  if (!NaClMutexCtor(&ccmut)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cc mutex");
+  }
+    if (!NaClCondVarCtor(&cccv)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cc cv");
+  }
 
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
@@ -958,6 +964,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  NaClCondVarDtor(&cccv);
+  NaClMutexDtor(&ccmut);
   destroyReaper();
   NaClExit(ret_code);
 
@@ -991,6 +999,8 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  NaClCondVarDtor(&cccv);
+  NaClMutexDtor(&ccmut);
   destroyReaper();
 
   NaClExit(ret_code);
