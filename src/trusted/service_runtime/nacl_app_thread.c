@@ -803,7 +803,8 @@ void FaultTeardown(void) {
 
       struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
       if (natp_child && natp_child != natp_to_teardown) {
-        struct NaClThread child_thread = &natp_child->host_thread;
+        struct NaClThread child_thread;
+        child_thread = &natp_child->host_thread;
         NaClAppThreadTeardownInner(natp_child, false);
         NaClThreadCancel(child_thread);
       }
