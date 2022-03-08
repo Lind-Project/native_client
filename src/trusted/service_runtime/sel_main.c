@@ -202,8 +202,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   struct redir                  *entry;
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
-  struct NaClApp                *state = NaClAlignedMalloc(sizeof(*state), __alignof(struct NaClApp));
-  struct NaClApp                *nap = state;
   struct NaClDesc               *blob_file = NULL;
   struct GioFile                gout;
   struct DynArray               env_vars;
@@ -257,6 +255,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   nacl_main_begin = LindGetTime();
   
   cagecount = 0;
+
+  struct NaClApp *nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
+  struct NaClApp *state = &nap;
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
