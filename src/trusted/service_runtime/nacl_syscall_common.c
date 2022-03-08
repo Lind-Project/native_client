@@ -368,7 +368,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
   free((void*) nap->clean_environ);
-  NaClVmmapExitDtor(nap);
+  // NaClVmmapExitDtor(nap);
 
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
