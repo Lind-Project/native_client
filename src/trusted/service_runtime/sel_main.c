@@ -59,6 +59,7 @@
 #include "native_client/src/trusted/service_runtime/sel_qualify.h"
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
+#include "native_client/src/shared/platform/aligned_malloc.h"
 
 
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
@@ -256,7 +257,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   cagecount = 0;
 
-  struct NaClApp *nap = (struct NaClApp*)malloc(sizeof(struct NaClApp));
+  struct NaClApp *nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
