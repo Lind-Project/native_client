@@ -623,7 +623,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                sys_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2){
+                       uint32_t                 user_tls2,
+                       bool                     is_cage_thread){
 
 
   void *stack_ptr_parent;
@@ -689,7 +690,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   }
 
 
-  if (tl_type != THREAD_LAUNCH_THREAD) {
+  if (is_cage_thread) {
     natp_child->is_cage_parent = true;
     natp_child->cage_parent = NULL;
     natp_child->tearing_down = false;
@@ -814,7 +815,7 @@ void FaultTeardown(void) {
         DynArraySet(&natp_to_teardown->child_threads, i, NULL);
       }
     }
-    
+
     lind_exit(status, natp_to_teardown->nap->cage_id);
     (void) NaClReportExitStatus(natp_to_teardown->nap, NACL_ABI_W_EXITCODE(status, 0));
     thread = natp_to_teardown->host_thread;

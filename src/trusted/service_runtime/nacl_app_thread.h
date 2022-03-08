@@ -206,7 +206,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                usr_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2) NACL_WUR;
+                       uint32_t                 user_tls2,
+                       bool                     is_cage_thread) NACL_WUR;
 
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
