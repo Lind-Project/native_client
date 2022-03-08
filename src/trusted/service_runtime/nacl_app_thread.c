@@ -788,7 +788,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp) {
 }
 
 void FaultTeardown(void) {
-  struct NaClThread thread;
+  struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
 
   if ((natp_to_teardown != NULL) && !in_teardown) {
@@ -803,22 +803,22 @@ void FaultTeardown(void) {
 
       struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
       if (natp_child && natp_child != natp_to_teardown) {
-        struct NaClThread child_thread;
-        child_thread = natp_child->host_thread;
+        struct NaClThread *child_thread;
+        child_thread = &natp_child->host_thread;
         NaClAppThreadTeardownInner(natp_child, false);
-        NaClThreadCancel(&child_thread);
+        NaClThreadCancel(child_thread);
       }
     }
 
     
     lind_exit(status, nap->cage_id);
     (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-    thread = natp_to_teardown->host_thread;
+    thread = &natp_to_teardown->host_thread;
     free((void*) nap->clean_environ);
     NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClXMutexUnlock(&nap->threads_mu);
 
-    NaClThreadCancel(&thread);
+    NaClThreadCancel(thread);
 
     natp_to_teardown = NULL;
 
