@@ -13,6 +13,8 @@
 #include "native_client/src/include/portability_io.h"
 #include "native_client/src/include/portability_string.h"
 #include "native_client/src/include/nacl_macros.h"
+#include "native_client/src/shared/platform/aligned_malloc.h"
+
 
 #include "native_client/src/shared/gio/gio.h"
 #include "native_client/src/shared/platform/nacl_check.h"
