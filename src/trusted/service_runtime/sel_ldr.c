@@ -361,7 +361,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   free(nap->effp);
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
-  NaClVmmapDtor(&nap->mem_map);
+  NaClVmmapExitDtor(&nap->mem_map);
   NaClAddrSpaceFree(nap);
   DynArrayDtor(&nap->children);
   DynArrayDtor(&nap->desc_tbl);

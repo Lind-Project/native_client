@@ -140,6 +140,30 @@ void NaClVmmapDtor(struct NaClVmmap *self) {
   self->vmentry = 0;
 }
 
+
+void NaClVmmapExitDtor(struct NaClVmmap *self) {
+  size_t i;
+
+  for (i = 0; i < self->nvalid; ++i) {
+    struct NaClVmmapEntry *entry;
+    entry = self->vmentry[i];
+
+    if (entry->desc != NULL) {
+        struct NaClDesc *ndp = entry->desc;
+        if (NULL != ndp) {
+          struct NaClRefCount *nrcp = (struct NaClRefCount *)&ndp->base;
+          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) nrcp;
+          free(self->hd);
+          self->hd = NULL;
+          free(nrcp);
+        }
+    }
+    free(entry);
+  }
+  free(self->vmentry);
+  self->vmentry = 0;
+}
+
 /*
  * Comparison function for qsort.  Should never encounter a
  * removed/invalid entry.
