@@ -455,7 +455,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   }
   
   if (natp->is_cage_parent) {  
-    // NaClAppDtor(natp->nap);
+    NaClAppDtor(natp->nap);
   }
 
   NaClLog(3, " freeing thread object\n");
