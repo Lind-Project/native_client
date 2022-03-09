@@ -968,7 +968,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   lindrustfinalize();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
-  destroyReaper();
+  DestroyReaper();
   NaClExit(ret_code);
 
 done:
@@ -1003,7 +1003,7 @@ done:
   lindrustfinalize();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
-  destroyReaper();
+  DestroyReaper();
 
   NaClExit(ret_code);
 

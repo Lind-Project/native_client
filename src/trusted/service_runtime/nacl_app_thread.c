@@ -763,7 +763,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 }
 
 
-void initFaultTeardown(void) {
+void InitFaultTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
@@ -775,7 +775,7 @@ void initFaultTeardown(void) {
   }
 }
 
-void destroyFaultTeardown(void) {
+void DestroyFaultTeardown(void) {
   NaClMutexDtor(&teardown_mutex);
   NaClCondVarDtor(&reapercv);
   NaClMutexDtor(&reapermut);
@@ -828,7 +828,7 @@ void FaultTeardown(void) {
   }
 }
 
-void *Reaper(void) {
+void Reaper(void*) {
   while (reap) {
     NaClCondVarWait(&reapercv, &reapermut);
     FaultTeardown();
@@ -836,16 +836,16 @@ void *Reaper(void) {
 }
 
 void LaunchReaper(void) {
-  initFaultTeardown();
-  if (!NaClThreadCtor(&reaper, Reaper, NULL, NACL_KERN_STACK_SIZE)) {
+  InitFaultTeardown();
+  if (!NaClThreadCtor(&reaper, (void *)Reaper, NULL, NACL_KERN_STACK_SIZE)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper");
   }
 }
 
-void destroyReaper(void) {
+void DestroyReaper(void) {
   reap = false;
   NaClCondVarBroadcast(&reapercv);
-  destroyFaultTeardown();
+  DestroyFaultTeardown();
   NaClThreadCancel(&reaper);
 }
 

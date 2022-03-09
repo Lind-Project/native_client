@@ -226,18 +226,18 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
 }
 
 
-void initFaultTeardown(void);
+void InitFaultTeardown(void);
 
-void destroyFaultTeardown(void); 
+void DestroyFaultTeardown(void); 
 
 void AddToFaultTeardown(struct NaClAppThread *natp);
 
 void FaultTeardown(void);
 
 
-void *Reaper(void);
+void Reaper(void*);
 void LaunchReaper(void);
-void destroyReaper(void);
+void DestroyReaper(void);
 
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp);
 
