@@ -179,7 +179,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
        * the default behavior which is to exit the app with the signal
        * number as the error code.
        */
-      NaClExit(-sig);
+      // NaClExit(-sig);
 
       if (natp->is_cage_parent) {
         if (!natp->tearing_down) AddToFaultTeardown(natp);
