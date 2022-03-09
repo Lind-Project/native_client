@@ -200,6 +200,7 @@ double LindGetTime(void) {
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
+  struct NaClApp                *nap;
   struct redir                  *entry;
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
@@ -257,7 +258,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   cagecount = 0;
 
-  struct NaClApp *nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
+  nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
