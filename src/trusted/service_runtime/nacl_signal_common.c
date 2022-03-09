@@ -151,8 +151,9 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
       NaClUntrustedThreadSuspend(natp, 0);   
     } else {
       if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
-      NaClThreadExit();
     }
+
+    while (1);
 
     // we had an untrusted fault and can fall through
     return 0;
