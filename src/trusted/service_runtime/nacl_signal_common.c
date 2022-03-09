@@ -140,7 +140,6 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     NaClSignalErrorMessage(tmp);
 
     NaClTlsSetCurrentThread(NULL);
-
     if (natp->is_cage_parent) {
       if (!natp->tearing_down) AddToFaultTeardown(natp);
       NaClUntrustedThreadSuspend(natp, 0);   
@@ -149,6 +148,7 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
       NaClThreadExit();
     }
 
+    // we had an untrusted fault and can fall through
     return 0;
 
   } else {
@@ -159,7 +159,7 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
      * Continue the search for another handler so that trusted crashes
      * can be handled by the Breakpad crash reporter.
      */
-
+    // we had a trusted fault, continue to next handler
     return 1;
   }
 }
