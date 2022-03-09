@@ -505,7 +505,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
  */
 int NaClAppCtor(struct NaClApp  *nap) NACL_WUR;
 
-void NaClAppDtor(struct NaClApp *nap) NACL_WUR;
+void NaClAppDtor(struct NaClApp *nap);
 
 /*
  * Loads a NaCl ELF file into memory in preparation for running it.

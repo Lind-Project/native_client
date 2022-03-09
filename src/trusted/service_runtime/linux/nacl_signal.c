@@ -180,6 +180,11 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
        * number as the error code.
        */
 
+      /*
+      * Unset the TLS variable so that if a crash occurs during thread
+      * teardown, the signal handler does not dereference a dangling
+      * NaClAppThread pointer.
+      */
       NaClTlsSetCurrentThread(NULL);
       // We've logged its a trusted fault, lets cleanup
       if (natp->is_cage_parent) {
@@ -286,6 +291,8 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   struct NaClSignalContext sig_ctx;
   int is_untrusted;
   struct NaClAppThread *natp;
+  int trusted_fault;
+
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   /*
@@ -362,8 +369,8 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     g_handler_func(sig, &sig_ctx, is_untrusted);
     return;
   }
-
-  int trusted_fault = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
+    
+  trusted_fault = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
   if (trusted_fault) FindAndRunHandler(natp, sig, info, uc);
 }

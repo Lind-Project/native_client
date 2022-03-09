@@ -159,6 +159,7 @@ struct NaClAppThread {
    */
   int                       dynamic_delete_generation;
 
+  // We use these for the fault handler
   bool                              is_cage_parent;
   bool                              tearing_down;
   struct NaClAppThread              *cage_parent;
@@ -234,7 +235,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp);
 void FaultTeardown(void);
 
 
-void Reaper(void);
+void *Reaper(void);
 void LaunchReaper(void);
 void destroyReaper(void);
 

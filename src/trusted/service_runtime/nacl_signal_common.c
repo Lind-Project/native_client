@@ -139,7 +139,13 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
 
+    /*
+      * Unset the TLS variable so that if a crash occurs during thread
+      * teardown, the signal handler does not dereference a dangling
+      * NaClAppThread pointer.
+    */
     NaClTlsSetCurrentThread(NULL);
+    // signal for teardown
     if (natp->is_cage_parent) {
       if (!natp->tearing_down) AddToFaultTeardown(natp);
       NaClUntrustedThreadSuspend(natp, 0);   

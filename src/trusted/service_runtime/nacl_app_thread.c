@@ -352,13 +352,7 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
-  /*
-   * mark this thread as dead; doesn't matter if some other thread is
-   * asking us to commit suicide.
-   */
-  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
-
-    /* remove self from parent's list of children */
+  /* remove self from parent's list of children */
   if (nap_parent) {
     NaClXMutexLock(&nap_parent->children_mu);
     nap_parent->num_children--;
@@ -389,6 +383,11 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   size_t          thread_idx;
 
 
+  /*
+   * mark this thread as dead; doesn't matter if some other thread is
+   * asking us to commit suicide.
+   */
+  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
@@ -401,10 +400,12 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
+  // if were not active, were getting cleaned up so we lock outside for efficiency
   if (active_thread) {
     NaClLog(3, " getting thread table lock\n");
     NaClXMutexLock(&nap->threads_mu);
   }
+
   NaClLog(3, " getting thread lock\n");
   NaClXMutexLock(&natp->mu);
 
@@ -447,6 +448,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   NaClLog(3, " unlocking thread\n");
   NaClXMutexUnlock(&natp->mu);
 
+  // again we trigger the lock outside for non-active threads, we also cant unregister the sig stack
+  // here so lets destroy everything
   if (active_thread) {
     NaClLog(3, " unlocking thread table\n");
     NaClXMutexUnlock(&nap->threads_mu);
@@ -456,7 +459,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
 
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
-
+  
+  // if were handling threads, we'll call pthread_cancel from outside, otherwise lets leave
   if (active_thread) {
     NaClLog(3, " NaClThreadExit\n");
     NaClThreadExit();
@@ -824,7 +828,7 @@ void FaultTeardown(void) {
   }
 }
 
-void Reaper(void) {
+void *Reaper(void) {
   while (reap) {
     NaClCondVarWait(&reapercv, &reapermut);
     FaultTeardown();
