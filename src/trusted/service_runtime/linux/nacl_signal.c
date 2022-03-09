@@ -292,8 +292,6 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   struct NaClSignalContext sig_ctx;
   int is_untrusted;
   struct NaClAppThread *natp;
-  int trusted_fault;
-
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   /*
@@ -371,9 +369,9 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     return;
   }
     
-  trusted_fault = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
-
-  if (trusted_fault) FindAndRunHandler(natp, sig, info, uc);
+  NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
+ 
+  FindAndRunHandler(natp, sig, info, uc);
 }
 
 

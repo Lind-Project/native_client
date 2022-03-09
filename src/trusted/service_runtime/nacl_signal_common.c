@@ -125,7 +125,7 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
   return 1;
 }
 
-int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
+void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
                                int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted) {
@@ -152,11 +152,8 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     } else {
       if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
     }
-
+    // wait here while we get cleaned up
     while (1);
-
-    // we had an untrusted fault and can fall through
-    return 0;
 
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
@@ -167,7 +164,6 @@ int NaClSignalHandleUntrusted(struct NaClAppThread *natp,
      * can be handled by the Breakpad crash reporter.
      */
     // we had a trusted fault, continue to next handler
-    return 1;
   }
 }
 
