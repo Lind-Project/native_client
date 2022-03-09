@@ -111,7 +111,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->validation_cache = NULL;
 
   nap->validator = NaClCreateValidator();
-  nap->ready_to_exit = false;
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
   nap->cpu_features = malloc(nap->validator->CPUFeatureSize);
@@ -351,9 +350,10 @@ int NaClAppCtor(struct NaClApp *nap) {
 }
 
 
+// Dtor function for the nap structure
+// TODO: implement in system
 void NaClAppDtor(struct NaClApp *nap) {
-  // if we get here, wait until its ready
-  while (!nap->ready_to_exit);
+
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
   NaClAddrSpaceFree(nap);

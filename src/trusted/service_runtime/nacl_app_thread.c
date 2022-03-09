@@ -86,8 +86,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
 
-  // if (tl_type == THREAD_LAUNCH_FORK) nap_child->ready_to_exit = true;
-
   for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
     envc++;
   }
@@ -454,10 +452,6 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClXMutexUnlock(&nap->threads_mu);
     NaClLog(3, " unregistering signal stack\n");
     NaClSignalStackUnregister();
-  }
-  
-  if (natp->is_cage_parent) {  
-    NaClAppDtor(natp->nap);
   }
 
   NaClLog(3, " freeing thread object\n");
