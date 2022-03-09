@@ -235,7 +235,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp);
 void FaultTeardown(void);
 
 
-void Reaper(void*);
+void Reaper(void* arg);
 void LaunchReaper(void);
 void DestroyReaper(void);
 
