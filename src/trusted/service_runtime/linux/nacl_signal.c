@@ -141,7 +141,7 @@ static void NaClSignalHandleCustomCrashHandler(int sig) {
   }
 }
 
-static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
+static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *info, void *uc) {
   unsigned int a;
 
   /* If we need to keep searching, try the old signal handler. */
@@ -180,6 +180,14 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
        * number as the error code.
        */
       NaClExit(-sig);
+
+      if (natp->is_cage_parent) {
+        if (!natp->tearing_down) AddToFaultTeardown(natp);
+        NaClUntrustedThreadSuspend(natp, 0);   
+      } else {
+        if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
+        NaClThreadExit();
+      }
     }
   }
 }
@@ -355,7 +363,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   int trusted_fault = NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
-  if (trusted_fault) FindAndRunHandler(sig, info, uc);
+  if (trusted_fault) FindAndRunHandler(natp, sig, info, uc);
 }
 
 
