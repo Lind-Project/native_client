@@ -185,7 +185,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
       * teardown, the signal handler does not dereference a dangling
       * NaClAppThread pointer.
       */
-      NaClTlsSetCurrentThread(NULL);
+      // NaClTlsSetCurrentThread(NULL);
       // We've logged its a trusted fault, lets cleanup
       if (natp->is_cage_parent) {
         if (!natp->tearing_down) AddToFaultTeardown(natp);

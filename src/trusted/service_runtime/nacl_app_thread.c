@@ -763,6 +763,18 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 }
 
 
+/**
+ * The following functions are used to reap any faulting cages.
+ * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
+ * a faulted thread is caught in the signal handler (nacl_signal.c)
+ * 
+ * The fault teardown function will cycle through all child threads in cage,
+ * tear them down, and call pthread_cancle upon them
+ * 
+ * Finally it will exit the parent thread and signal that the cage has exited with SIGKILL
+ */
+
+
 void InitFaultTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
