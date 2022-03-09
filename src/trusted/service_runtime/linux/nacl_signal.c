@@ -183,7 +183,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
 
       if (natp->is_cage_parent) {
         if (!natp->tearing_down) AddToFaultTeardown(natp);
-        NaClUntrustedThreadSuspend(natp, 0);   
+        // NaClUntrustedThreadSuspend(natp, 0);   
       } else {
         if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
         NaClThreadExit();
