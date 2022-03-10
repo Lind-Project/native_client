@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/include/portability_io.h"
@@ -153,7 +154,7 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
       if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
     }
     // wait here while we get cleaned up
-    while (1);
+    nanosleep(NULL, NULL);
 
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
