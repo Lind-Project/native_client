@@ -264,17 +264,17 @@ int NaClSelLdrMain(int argc, char **argv) {
   InitializeCage(nap, 1);
 
   if (!NaClMutexCtor(&ccmut)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cc mutex");
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count mutex");
   }
     if (!NaClCondVarCtor(&cccv)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cc cv");
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count cv");
   }
 
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
   }
 
-  LaunchReaper();
+  LaunchThreadReaper();
 
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();

@@ -146,11 +146,11 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     */
     NaClTlsSetCurrentThread(NULL);
     // signal for teardown
-    if (natp->is_cage_parent) {
-      if (!natp->tearing_down) AddToFaultTeardown(natp);
+    if (natp->is_cage_mainthread) {
+      if (!natp->tearing_down) AddToFatalThreadTeardown(natp);
       NaClUntrustedThreadSuspend(natp, 0);   
     } else {
-      if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
+      if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
     }
     // wait here while we get cleaned up
     while (1);

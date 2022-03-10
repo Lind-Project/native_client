@@ -400,7 +400,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  // if were not active, were getting cleaned up so we lock outside for efficiency
+  // if we're not active, we're getting cleaned up so we lock outside for efficiency
   if (active_thread) {
     NaClLog(3, " getting thread table lock\n");
     NaClXMutexLock(&nap->threads_mu);
@@ -419,7 +419,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   thread_idx = NaClGetThreadIdx(natp);
 
 
-  if (natp->is_cage_parent) {
+  if (natp->is_cage_mainthread) {
     // handle children upon exit
     NaClAppThreadTeardownChildren(natp);
 
@@ -696,13 +696,13 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
 
   if (tl_type != THREAD_LAUNCH_THREAD) {
-    natp_child->is_cage_parent = true;
-    natp_child->cage_parent = NULL;
+    natp_child->is_cage_mainthread = true;
+    natp_child->cage_mainthread = NULL;
     natp_child->tearing_down = false;
   } 
   else {
-    natp_child->is_cage_parent = false;
-    natp_child->cage_parent = natp_parent;
+    natp_child->is_cage_mainthread = false;
+    natp_child->cage_mainthread = natp_parent;
   }
 
   /*
@@ -775,7 +775,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  */
 
 
-void InitFaultTeardown(void) {
+void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
@@ -787,14 +787,14 @@ void InitFaultTeardown(void) {
   }
 }
 
-void DestroyFaultTeardown(void) {
+void DestroyFatalThreadTeardown(void) {
   NaClMutexDtor(&teardown_mutex);
   NaClCondVarDtor(&reapercv);
   NaClMutexDtor(&reapermut);
 }
 
 
-void AddToFaultTeardown(struct NaClAppThread *natp) {
+void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     if (natp_to_teardown == natp) return;
     NaClXMutexLock(&teardown_mutex);
     natp_to_teardown = natp;
@@ -803,7 +803,7 @@ void AddToFaultTeardown(struct NaClAppThread *natp) {
     NaClXMutexUnlock(&teardown_mutex);
 }
 
-void FaultTeardown(void) {
+void FatalThreadTeardown(void) {
   struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
 
@@ -840,16 +840,16 @@ void FaultTeardown(void) {
   }
 }
 
-void Reaper(void* arg) {
+void ThreadReaper(void* arg) {
   while (reap) {
     NaClXCondVarWait(&reapercv, &reapermut);
-    FaultTeardown();
+    FatalThreadTeardown();
   }
 }
 
-void LaunchReaper(void) {
-  InitFaultTeardown();
-  if (!NaClThreadCtor(&reaper, Reaper, NULL, NACL_KERN_STACK_SIZE)) {
+void LaunchThreadReaper(void) {
+  InitFatalThreadTeardown();
+  if (!NaClThreadCtor(&reaper, ThreadReaper, NULL, NACL_KERN_STACK_SIZE)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper");
   }
 }
@@ -857,7 +857,7 @@ void LaunchReaper(void) {
 void DestroyReaper(void) {
   reap = false;
   NaClXCondVarBroadcast(&reapercv);
-  DestroyFaultTeardown();
+  DestroyFatalThreadTeardown();
   NaClThreadCancel(&reaper);
 }
 

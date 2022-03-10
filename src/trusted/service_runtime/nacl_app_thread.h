@@ -160,9 +160,9 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 
   // We use these for the fault handler
-  bool                              is_cage_parent;
+  bool                              is_cage_mainthread;
   bool                              tearing_down;
-  struct NaClAppThread              *cage_parent;
+  struct NaClAppThread              *cage_mainthread;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
@@ -226,17 +226,17 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
 }
 
 
-void InitFaultTeardown(void);
+void InitFatalThreadTeardown(void);
 
-void DestroyFaultTeardown(void); 
+void DestroyFatalThreadTeardown(void); 
 
-void AddToFaultTeardown(struct NaClAppThread *natp);
+void AddToFatalThreadTeardown(struct NaClAppThread *natp);
 
-void FaultTeardown(void);
+void FatalThreadTeardown(void);
 
 
-void Reaper(void* arg);
-void LaunchReaper(void);
+void ThreadReaper(void* arg);
+void LaunchThreadReaper(void);
 void DestroyReaper(void);
 
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp);

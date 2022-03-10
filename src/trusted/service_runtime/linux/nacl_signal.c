@@ -187,10 +187,10 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
       */
       NaClTlsSetCurrentThread(NULL);
       // We've logged its a trusted fault, lets cleanup
-      if (natp->is_cage_parent) {
-        if (!natp->tearing_down) AddToFaultTeardown(natp);
+      if (natp->is_cage_mainthread) {
+        if (!natp->tearing_down) AddToFatalThreadTeardown(natp);
       } else {
-        if (!natp->cage_parent->tearing_down) AddToFaultTeardown(natp->cage_parent);
+        if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
       }
       
       // just hang here while we cleanup
