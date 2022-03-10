@@ -98,6 +98,24 @@
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
+// Translate Host FD to Lind FD
+int descnum2Lindfd(struct NaClApp *nap, int fd) {
+
+  if (fd > FILE_DESC_MAX) {
+    return -NACL_ABI_EBADF;
+  }
+
+  struct NaClDesc * ndp;
+  int naclfd = fd_cage_table[nap->cage_id][fd];
+  if (naclfd < 0) {
+    return -NACL_ABI_EBADF;
+  }
+  if (!(ndp = NaClGetDesc(nap, naclfd))) {
+    return -NACL_ABI_EBADF;
+  }
+  return ((struct NaClDescIoDesc *) ndp)->hd->d;
+}
+
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   NaClCopyDropLock(natp->nap);
   return -NACL_ABI_ENOSYS;
@@ -461,6 +479,11 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
+  if (oldfd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   old_hostfd = fd_cage_table[nap->cage_id][oldfd];
 
   if (old_hostfd < 0) {
@@ -518,6 +541,16 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClLog(1, "[dup2] cage id = %d \n", nap->cage_id);
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
+
+  if (oldfd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  if (newfd > FILE_DESC_MAX) {
+    ret = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   if (oldfd == newfd) {
     ret = oldfd;
@@ -760,6 +793,10 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, d);
 
+  if (d > FILE_DESC_MAX) {
+    return -NACL_ABI_EBADF;
+  }
+
   /* there is no standard input to close, but return success anyway */
   if (!d) {
     return 0;
@@ -803,17 +840,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
           " %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  fd = fd_cage_table[nap->cage_id][d];
-  if (fd < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  ndp = NaClGetDesc(nap, fd);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+  int lind_fd = descnum2Lindfd(nap, d);
 
   /*
    * Generic NaClCopyOutToUser is not sufficient, since buffer size
@@ -823,8 +850,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) dirp, count);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, " illegal address for directory data\n");
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup_unref;
+    return -NACL_ABI_EFAULT;
   }
 
   /*
@@ -834,10 +860,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   if (count > INT32_MAX) {
     count = INT32_MAX;
   }
-
-
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) ndp;
-  int lind_fd = self->hd->d;
 
   /*
    * Grab addr space lock; getdents should not normally block, though
@@ -867,10 +889,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     NaClLog(4, "getdents returned %d\n", retval);
   }
 
-cleanup_unref:
-  NaClDescUnref(ndp);
-
-cleanup:
   return retval;
 }
 
@@ -891,6 +909,11 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   /* check for closed fds */
   if (fd < 0) {
@@ -972,6 +995,11 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   /* check for closed fds */
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -1051,6 +1079,12 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
+
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -1124,6 +1158,12 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
           "%d, 0x%08"NACL_PRIxPTR", "
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+
+   if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -1200,6 +1240,11 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
            " 0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
+
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
 
   fd = fd_cage_table[nap->cage_id][d];
 
@@ -1293,6 +1338,11 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
 
   NaClLog(2, "sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
           sizeof(*nasp), sizeof(*nasp));
+
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup;
+  }
 
   fd = fd_cage_table[nap->cage_id][d];
 
@@ -1708,6 +1758,10 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
      */
     ndp = NULL;
   } else {
+    if (d > FILE_DESC_MAX) {
+      map_result = -NACL_ABI_EBADF;
+      goto cleanup;
+    }
     fd = fd_cage_table[nap->cage_id][d];
     if (fd < 0) {
       map_result = -NACL_ABI_EBADF;
@@ -2731,6 +2785,11 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
     }
   }
 
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
+  }
+
   fd = fd_cage_table[nap->cage_id][d];
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -2919,6 +2978,11 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
       retval = -NACL_ABI_EFAULT;
       goto cleanup_leave;
     }
+  }
+
+  if (d > FILE_DESC_MAX) {
+    retval = -NACL_ABI_EBADF;
+    goto cleanup_leave;
   }
 
   fd = fd_cage_table[nap->cage_id][d];
@@ -4610,19 +4674,6 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
   
   return userfd;
-}
-
-// Translate Host FD to Lind FD
-int descnum2Lindfd(struct NaClApp *nap, int fd) {
-  struct NaClDesc * ndp;
-  int naclfd = fd_cage_table[nap->cage_id][fd];
-  if (naclfd < 0) {
-    return -NACL_ABI_EBADF;
-  }
-  if (!(ndp = NaClGetDesc(nap, naclfd))) {
-    return -NACL_ABI_EBADF;
-  }
-  return ((struct NaClDescIoDesc *) ndp)->hd->d;
 }
 
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf) {
