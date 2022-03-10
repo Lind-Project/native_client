@@ -195,7 +195,12 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
       }
       
       // just hang here while we cleanup
-      nanosleep(NULL, NULL);
+        
+      struct timespec tim;
+      tim.tv_sec = 2073600;
+      tim.tv_nsec = 0;
+
+      nanosleep(&tim, NULL);
 
     }
   }

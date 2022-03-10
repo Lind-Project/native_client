@@ -154,7 +154,12 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
       if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
     }
     // wait here while we get cleaned up
-    nanosleep(NULL, NULL);
+
+    struct timespec tim;
+    tim.tv_sec = 2073600;
+    tim.tv_nsec = 0;
+
+    nanosleep(&tim, NULL);
 
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
