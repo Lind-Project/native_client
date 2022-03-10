@@ -101,7 +101,7 @@ struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 // Translate Host FD to Lind FD
 int descnum2Lindfd(struct NaClApp *nap, int fd) {
 
-  if ((fd > FILE_DESC_MAX) || (fd < 0)) {
+  if ((fd >= FILE_DESC_MAX) || (fd < 0)) {
     return -NACL_ABI_EBADF;
   }
 
@@ -479,7 +479,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
 
-  if ((oldfd > FILE_DESC_MAX)  || (oldfd < 0)) {
+  if ((oldfd >= FILE_DESC_MAX)  || (oldfd < 0)) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
@@ -542,17 +542,17 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   NaClLog(1, "[dup2] oldfd = %d \n", oldfd);
   NaClLog(1, "[dup2] newfd = %d \n", newfd);
 
-  if ((oldfd > FILE_DESC_MAX)  || (oldfd < 0)) {
+  if ((oldfd >= FILE_DESC_MAX)  || (oldfd < 0)) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
 
-  if ((newfd > FILE_DESC_MAX)  || (newfd < 0)) {
+  if ((newfd >= FILE_DESC_MAX)  || (newfd < 0)) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
 
-  if (newfd > FILE_DESC_MAX) {
+  if (newfd >= FILE_DESC_MAX) {
     ret = -NACL_ABI_EBADF;
     goto out;
   }
@@ -798,7 +798,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, d);
 
-  if (d > FILE_DESC_MAX) {
+  if (d >= FILE_DESC_MAX) {
     return -NACL_ABI_EBADF;
   }
 
@@ -915,7 +915,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1000,7 +1000,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1085,7 +1085,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1165,7 +1165,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1246,7 +1246,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
            " 0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1344,7 +1344,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   NaClLog(2, "sizeof(struct nacl_abi_stat) = %"NACL_PRIdS" (0x%"NACL_PRIxS")\n",
           sizeof(*nasp), sizeof(*nasp));
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto cleanup;
   }
@@ -1763,7 +1763,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
      */
     ndp = NULL;
   } else {
-    if ((d > FILE_DESC_MAX)  || (d < 0)) {
+    if ((d >= FILE_DESC_MAX)  || (d < 0)) {
       map_result = -NACL_ABI_EBADF;
       goto cleanup;
     }
@@ -2790,7 +2790,7 @@ int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
     }
   }
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto cleanup_leave;
   }
@@ -2985,7 +2985,7 @@ int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
     }
   }
 
-  if ((d > FILE_DESC_MAX)  || (d < 0)) {
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto cleanup_leave;
   }
