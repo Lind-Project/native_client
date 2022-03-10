@@ -764,7 +764,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 
 
 /**
- * The following functions are used to reap any faulting cages.
+ * The following functions are used to reap any cages which have received a fatal signal.
  * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
  * a faulted thread is caught in the signal handler (nacl_signal.c)
  * 
@@ -772,6 +772,13 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  * tear them down, and call pthread_cancle upon them
  * 
  * Finally it will exit the parent thread and signal that the cage has exited with SIGKILL
+ * 
+ * Note: We implement it this way because
+ * 1. We can't fully teardown threads within the signal handler since
+ *  a. We can't unregister/unmap the handler while within itself
+ *  b. Most libc functions are invalid within the handler
+ * 2. We need to not only teardown the faulting thread itself, but any other threads that have been
+ *    launched wtihin that cage.
  */
 
 
