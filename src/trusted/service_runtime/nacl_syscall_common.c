@@ -592,7 +592,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     struct NaClHostDesc *new_hd = new_self->hd;
 
     new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
+    new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
     new_hd->cageid = nap->cage_id;
 
     /* Re-add the nacl desc to the nap */
