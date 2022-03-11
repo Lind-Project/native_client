@@ -5230,7 +5230,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
       struct NaClHostDesc *hostdesc;
       iodesc = (struct NaClDescIoDesc *) &ndp->base;
       hostdesc = iodesc->hd;
-      hostdesc->flags |= ~(set_op & NACL_ABI_O_CLOEXEC);
+      hostdesc->flags &= ~(set_op & NACL_ABI_O_CLOEXEC);
     }
 
     ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
