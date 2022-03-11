@@ -4041,6 +4041,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
       goto out;
     }
     hd->userfd = pipe_fd;
+    hd->flags = accflags | actualflags;
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
 
@@ -5230,7 +5231,11 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
       struct NaClHostDesc *hostdesc;
       iodesc = (struct NaClDescIoDesc *) &ndp->base;
       hostdesc = iodesc->hd;
-      hostdesc->flags |= ~(set_op & NACL_ABI_O_CLOEXEC);
+      if(set_op & NACL_ABI_O_CLOEXEC) {
+        hostdesc->flags |= NACL_ABI_O_CLOEXEC;
+      } else {
+        hostdesc->flags &= ~NACL_ABI_O_CLOEXEC;
+      }
     }
 
     ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
