@@ -369,7 +369,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     return;
   }
 
-  if (natp = NULL) {
+  if (natp == NULL) {
       char tmp[128];
     SNPRINTF(tmp, sizeof(tmp),
         "\n** User exited program with signal %d.\n",
