@@ -504,9 +504,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
  * nap is a pointer to the NaCl object that is being filled in.
  */
 int NaClAppCtor(struct NaClApp  *nap) NACL_WUR;
-
-void NaClAppDtor(struct NaClApp *nap);
-
 /*
  * Loads a NaCl ELF file into memory in preparation for running it.
  *

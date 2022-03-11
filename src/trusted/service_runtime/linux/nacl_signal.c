@@ -8,7 +8,6 @@
 #include <signal.h>
 #include <stddef.h>
 #include <string.h>
-#include <time.h>
 
 #include "native_client/src/include/nacl_macros.h"
 #include "native_client/src/include/portability_io.h"
@@ -195,12 +194,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
       }
       
       // just hang here while we cleanup
-        
-      struct timespec tim;
-      tim.tv_sec = 2073600;
-      tim.tv_nsec = 0;
-
-      nanosleep(&tim, NULL);
+      while (1);
 
     }
   }
