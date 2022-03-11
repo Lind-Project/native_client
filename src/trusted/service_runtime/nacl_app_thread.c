@@ -174,7 +174,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
     struct NaClHostDesc *parent_hd = self->hd;
 
-    if(parent_hd->flags & NACL_ABI_O_CLOEXEC) {
+    /* If we're creating an exec cage and we have CLOEXEC set, dont pass these on */
+    if ((tl_type == THREAD_LAUNCH_EXEC) && (parent_hd->flags & NACL_ABI_O_CLOEXEC)) {
       fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
       continue;
     }
