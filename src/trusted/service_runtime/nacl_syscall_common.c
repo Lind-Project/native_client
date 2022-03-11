@@ -485,7 +485,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   }
 
   new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-  new_hd->flags = old_hd->flags;
+  new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
   new_hd->cageid = nap->cage_id;
 
   /* Set new nacl desc as available */
@@ -566,7 +566,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     /* We have to use regular dup at this point because were creating a lind FD from scratch */
 
     new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
+    new_hd->flags = old_hd->flags & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
     new_hd->cageid = nap->cage_id;
     new_hd->userfd = newfd;
 
