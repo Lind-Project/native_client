@@ -508,7 +508,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   }
 
   new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-  new_hd->flags = old_hd->flags;
+  new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
   new_hd->cageid = nap->cage_id;
 
   /* Set new nacl desc as available */
@@ -604,7 +604,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     /* We have to use regular dup at this point because were creating a lind FD from scratch */
 
     new_hd->d = lind_dup(old_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
+    new_hd->flags = old_hd->flags & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
     new_hd->cageid = nap->cage_id;
     new_hd->userfd = newfd;
 
@@ -630,7 +630,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     struct NaClHostDesc *new_hd = new_self->hd;
 
     new_hd->d = lind_dup2(old_hd->d, new_hd->d, nap->cage_id);
-    new_hd->flags = old_hd->flags;
+    new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
     new_hd->cageid = nap->cage_id;
 
     /* Re-add the nacl desc to the nap */
@@ -4110,6 +4110,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
       goto out;
     }
     hd->userfd = pipe_fd;
+    hd->flags = accflags | actualflags;
     fd_cage_table[nap->cage_id][pipe_fd] = retval;
     nacl_fds[i] = pipe_fd;
 
@@ -5225,13 +5226,16 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
   int32_t ret;
   int fdtrans;
   struct NaClApp *nap = natp->nap;
+  struct NaClDesc *ndp;
   NaClLog(2, "Cage %d Entered NaClSysFcntlSet(0x%08"NACL_PRIxPTR", %d, %d, %ld)\n",
           nap->cage_id, (uintptr_t) natp, fd, cmd, set_op);
 
-  if((fdtrans = descnum2Lindfd(nap, fd)) < 0) {
-    NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", fd);
-    return fd;
+  int naclfd = fd_cage_table[nap->cage_id][fd];
+  if (naclfd < 0 || !(ndp = NaClGetDesc(nap, naclfd))) {
+    NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
+    return -NACL_ABI_EBADF;
   }
+  fdtrans = ((struct NaClDescIoDesc *) ndp)->hd->d;
 
   if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
     struct NaClHostDesc *nhd = malloc(sizeof(struct NaClHostDesc));
@@ -5278,6 +5282,18 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
   
     ret = newuser;
   } else {
+    if(cmd == F_SETFD) {
+      struct NaClDescIoDesc *iodesc;
+      struct NaClHostDesc *hostdesc;
+      iodesc = (struct NaClDescIoDesc *) &ndp->base;
+      hostdesc = iodesc->hd;
+      if(set_op & NACL_ABI_O_CLOEXEC) {
+        hostdesc->flags |= NACL_ABI_O_CLOEXEC;
+      } else {
+        hostdesc->flags &= ~NACL_ABI_O_CLOEXEC;
+      }
+    }
+
     ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
   }
   
@@ -5329,7 +5345,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   }
     
 cleanup:
-  NaClLog(2, "Exiting NaClSysFcntlSet\n");
+  NaClLog(2, "Exiting NaClSysPoll\n");
   free(lind_fds);
   return retval;
 }
