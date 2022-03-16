@@ -1326,7 +1326,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
     NaClLog(2, "NaClSysIoctl was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     return -NACL_ABI_EBADF;
   }
-  int fd = NaClDesc2Lindfd(ndp);
+  fd = NaClDesc2Lindfd(ndp);
 
   // Further checks might be necessary for ioctl calls with structs or arrays
   // Those calls are not implemented for now
@@ -4751,7 +4751,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
 
   ret = lind_sendto(sockfd, sysbufaddr, len, flags, syssockaddraddr, addrlen, nap->cage_id);
   NaClLog(2, "NaClSysSendto: returning %d\n", ret);
@@ -4780,7 +4780,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
 
   ret = lind_recv(sockfd, sysbufaddr, len, flags, nap->cage_id);
   NaClLog(2, "NaClSysRecv: returning %d\n", ret);
@@ -4832,7 +4832,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
     return -NACL_ABI_EBADF;
   }
 
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
 
   ret = lind_recvfrom(sockfd, sysbufaddr, len, flags, sysaddraddr, sysaddrlenaddr, nap->cage_id);
   NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
@@ -4855,7 +4855,7 @@ ndp = GetDescFromCagetable(nap, sockfd);
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   ret = lind_shutdown(sockfd, how, nap->cage_id);
   NaClLog(2, "NaClSysShutdown returning %d\n", ret);
@@ -4910,7 +4910,7 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
     return -NACL_ABI_EBADF;
   }
   
-  int fd = NaClDesc2Lindfd(ndp);
+  fd = NaClDesc2Lindfd(ndp);
 
   ret = lind_flock(fd, operation, nap->cage_id);
   NaClLog(2, "NaClSysFlock returning %d\n", ret);
@@ -4946,7 +4946,7 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   ret = lind_getsockopt(sockfd, level, optname, sysvaladdr, syslenaddr, nap->cage_id);
   NaClDescUnref(ndp);
@@ -4973,7 +4973,7 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   ret = lind_setsockopt(sockfd, level, optname, sysvaladdr, optlen, nap->cage_id);
   NaClDescUnref(ndp);
@@ -5001,7 +5001,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
 
-  int d = NaClDesc2Lindfd(ndp);
+  d = NaClDesc2Lindfd(ndp);
   ret = lind_fstatfs(d, sysbufaddr, nap->cage_id);
 
   if(ret > 0) ret = 0;
@@ -5069,7 +5069,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   ret = lind_getsockname(sockfd, sysaddr, sysaddrlen, nap->cage_id);
   NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
@@ -5106,7 +5106,7 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   ret = lind_getpeername(sockfd, sysaddr, sysaddrlen, nap->cage_id);
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
@@ -5153,7 +5153,7 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   
   sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, addrlen);
 
@@ -5197,7 +5197,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
   syslenaddr = addrlen == NULL ? NULL : (socklen_t*) NaClUserToSysAddrRange(nap, (uintptr_t) addrlen, sizeof(socklen_t));
  
   if ((void*) kNaClBadAddress == syslenaddr) {
@@ -5261,7 +5261,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
 
   sysvaladdr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) addr, addrlen);
 
@@ -5296,7 +5296,7 @@ int32_t NaClSysListen(struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp); 
+  sockfd = NaClDesc2Lindfd(ndp); 
   
   ret = lind_listen(sockfd, backlog, nap->cage_id);
   NaClDescUnref(ndp);
@@ -5317,7 +5317,7 @@ int32_t NaClSysFcntlGet (struct NaClAppThread *natp,
     return -NACL_ABI_EBADF;
   }
   
-  int fd = NaClDesc2Lindfd(ndp);
+  fd = NaClDesc2Lindfd(ndp);
   
   ret = lind_fcntl_get(fd, cmd, nap->cage_id);
   NaClDescUnref(ndp);
@@ -5522,14 +5522,14 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
     NaClLog(2, "NaClSysEpollCtl was passed an unrecognized file descriptor, returning %d\n", epfd);
     return -NACL_ABI_EBADF;
   }
-  int epfd = NaClDesc2Lindfd(ndpe);
+  epfd = NaClDesc2Lindfd(ndpe);
 
   ndp = GetDescFromCagetable(nap, fd);
   if (!ndp) {
     NaClLog(2, "NaClSysEpollCtl was passed an unrecognized file descriptor, returning %d\n", fd);
     return -NACL_ABI_EBADF;
   }
-  int fd = NaClDesc2Lindfd(ndp);
+  fd = NaClDesc2Lindfd(ndp);
 
   eventsysaddr = (struct epoll_event*) NaClUserToSysAddrRange(nap, (uintptr_t) event, sizeof(eventsysaddr));
 
@@ -5566,7 +5566,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
     return -NACL_ABI_EBADF;
   }
 
-  int epfd = NaClDesc2Lindfd(ndp);
+  epfd = NaClDesc2Lindfd(ndp);
 
   pfds = (struct epoll_event*) NaClUserToSysAddrRange(nap, (uintptr_t) events, sizeof(eventsysaddr));
 
