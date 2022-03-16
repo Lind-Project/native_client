@@ -5410,7 +5410,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
 
   int retval = 0;
   struct pollfd *lind_fds, *fds_sysaddr;
-  struct NaClDesc *ndps;
+  struct NaClDesc **ndps;
 
   fds_sysaddr = (struct sockaddr*) NaClUserToSysAddrRange(nap, (uintptr_t) fds, nfds * sizeof(struct pollfd));
 
