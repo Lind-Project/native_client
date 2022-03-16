@@ -98,21 +98,24 @@
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
-// Translate Host FD to Lind FD
-int descnum2Lindfd(struct NaClApp *nap, int fd) {
+// Translate Host FD to NaclDesc
+// if functions returns NULL, calling function should return -NACL_ABI_EBADF
+struct NaClDesc *GetDescFromCagetable(struct NaClApp *nap, int fd) {
 
   if ((fd >= FILE_DESC_MAX) || (fd < 0)) {
-    return -NACL_ABI_EBADF;
+    return NULL;
   }
 
-  struct NaClDesc * ndp;
   int naclfd = fd_cage_table[nap->cage_id][fd];
   if (naclfd < 0) {
-    return -NACL_ABI_EBADF;
+    return NULL;
   }
-  if (!(ndp = NaClGetDesc(nap, naclfd))) {
-    return -NACL_ABI_EBADF;
-  }
+  
+  return NaClGetDesc(nap, naclfd);
+}
+
+// extract lindfd from NaClDesc
+int NaClDesc2Lindfd(struct NaClDesc * ndp) {
   return ((struct NaClDescIoDesc *) ndp)->hd->d;
 }
 
@@ -845,7 +848,11 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
           " %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           (uintptr_t) natp, d, (uintptr_t) dirp, count, count);
 
-  int lind_fd = descnum2Lindfd(nap, d);
+  ndp = GetDescFromCagetable(nap, d);
+  if (!ndp) {
+    return - NACL_ABI_EBADF;
+  }
+  int lind_fd = NaClDesc2Lindfd(ndp);
 
   /*
    * Generic NaClCopyOutToUser is not sufficient, since buffer size
@@ -855,7 +862,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   sysaddr = NaClUserToSysAddrRange(nap, (uintptr_t) dirp, count);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, " illegal address for directory data\n");
-    return -NACL_ABI_EFAULT;
+    retval = -NACL_ABI_EFAULT;
+    goto cleanup;
   }
 
   /*
@@ -894,6 +902,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     NaClLog(4, "getdents returned %d\n", retval);
   }
 
+cleanup:
+  NaClDescUnref(ndp);
   return retval;
 }
 
