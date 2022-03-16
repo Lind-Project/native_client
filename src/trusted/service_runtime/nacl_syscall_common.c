@@ -4716,7 +4716,7 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
     return -NACL_ABI_EBADF;
   }
   
-  int sockfd = NaClDesc2Lindfd(ndp);
+  sockfd = NaClDesc2Lindfd(ndp);
 
   ret = lind_send(sockfd, sysbufaddr, len, flags, nap->cage_id);
   NaClLog(2, "NaClSysSend: returning %d\n", ret);
