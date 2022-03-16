@@ -5614,7 +5614,6 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
       ndp = GetDescFromCagetable(nap, i);
       int tempfd = NaClDesc2Lindfd(ndp);
       int translated_fd = fds[fdsindex++] = tempfd;
-      NaClDescUnref(ndp);
       if(translated_fd < 0) {
         return (char*) -NACL_ABI_EBADF;
       }
@@ -5641,6 +5640,7 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
 void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* otherbitfield, int maxfd) {
   int fds[FD_SETSIZE];
   int fdsindex = 0;
+  struct NaClDesc *ndp;
 
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {
