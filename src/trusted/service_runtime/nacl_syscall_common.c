@@ -1326,7 +1326,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
     NaClLog(2, "NaClSysIoctl was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     return -NACL_ABI_EBADF;
   }
-  int fd = NaClDesc2Lindfd(ndp);
+  int d = NaClDesc2Lindfd(ndp);
 
   // Further checks might be necessary for ioctl calls with structs or arrays
   // Those calls are not implemented for now
