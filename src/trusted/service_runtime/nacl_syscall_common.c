@@ -4520,6 +4520,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
   if (!nap->num_children || pid > pid_max) {
+    NaClLog(1, "%s\n", "[NaClSysWaitpid] no num child or pid> pidmax? ECHILD");
     ret = -NACL_ABI_ECHILD;
     goto out;
   }
