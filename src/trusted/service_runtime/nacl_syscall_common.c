@@ -2336,7 +2336,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   volatile uintptr_t sysaddr;
   nacl_abi_off_t     offset;
 
-  NaClLog(2, "Entered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
+  NaClLog(2, "ntered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,%d,0x%08"NACL_PRIxPTR")\n",
           (uintptr_t) start, length, prot, flags, d, (uintptr_t)offp);
 
@@ -4513,7 +4513,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   int ret = 0;
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
-  NaClLog(1, "Thread children count: %d pid %d pidmax %d\n", nap->num_children, pid, pid_max);
 
   CHECK(nap->num_children < NACL_THREAD_MAX);
   if (stat_loc_ptr) {
@@ -4521,7 +4520,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
   if (!nap->num_children || pid > pid_max) {
-    NaClLog(1, "%s\n", "[NaClSysWaitpid] no num child or pid> pidmax? ECHILD");
     ret = -NACL_ABI_ECHILD;
     goto out;
   }
@@ -4535,7 +4533,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
     if (!nap_child) {
-      NaClLog(1, "%s\n", "[NaClSysWaitpid] no nap child ECHILD");
       ret = -NACL_ABI_ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
