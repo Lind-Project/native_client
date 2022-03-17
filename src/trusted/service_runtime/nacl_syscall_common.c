@@ -5401,6 +5401,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
   }
   
 cleanup:
+  NaClDescUnref(ndp);
   NaClLog(2, "Exiting NaClSysFcntlSet\n");
   return ret;
 }
