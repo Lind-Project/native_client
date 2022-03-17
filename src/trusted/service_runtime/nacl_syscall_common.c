@@ -4513,6 +4513,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   int ret = 0;
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
+  NaClLog(1, "Thread children count: %d pid %d pidmax %d\n", nap->num_children, pid, pidmax);
 
   CHECK(nap->num_children < NACL_THREAD_MAX);
   if (stat_loc_ptr) {
