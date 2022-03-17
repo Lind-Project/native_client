@@ -104,7 +104,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child)) {
     NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_parent->cage_id, nap_child->cage_id);
   }
-  NaClLog(1, "[nap %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+  NaClLog(1, "[nap %d] child nap: %p new child count: %d\n", nap_parent->cage_id, nap_child, nap_parent->num_children);
 
   NaClXMutexUnlock(&nap_parent->children_mu);
 
