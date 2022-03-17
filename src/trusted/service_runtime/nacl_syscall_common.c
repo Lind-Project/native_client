@@ -4533,6 +4533,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
     if (!nap_child) {
+      NaClLog(1, "%s\n", "[NaClSysWaitpid] no nap child ECHILD");
       ret = -NACL_ABI_ECHILD;
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
