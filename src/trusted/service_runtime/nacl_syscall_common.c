@@ -939,6 +939,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
+  NaClFastMutexUnlock(&nap->desc_mu);
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
@@ -987,7 +988,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
-  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1108,6 +1108,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
+  NaClFastMutexUnlock(&nap->desc_mu);
 
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1151,7 +1152,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t)write_result;
 
 out:
-  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
