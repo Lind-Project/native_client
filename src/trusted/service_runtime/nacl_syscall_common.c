@@ -1306,7 +1306,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   struct NaClApp  *nap = natp->nap;
   int             retval = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  int             fd;
+  int             lindfd;
   struct NaClDesc *ndp;
 
   NaClLog(2, "Cage %d Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
@@ -1321,17 +1321,18 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
     return retval;
   }
 
-  ndp = GetDescFromCagetable(nap,fd);
+  ndp = GetDescFromCagetable(nap, d);
   if (!ndp) {
     NaClLog(2, "NaClSysIoctl was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     return -NACL_ABI_EBADF;
   }
-  fd = NaClDesc2Lindfd(ndp);
+  
+  lindfd = NaClDesc2Lindfd(ndp);
 
   // Further checks might be necessary for ioctl calls with structs or arrays
   // Those calls are not implemented for now
   
-  retval = lind_ioctl(fd ,request, sysaddr, nap->cage_id);
+  retval = lind_ioctl(lindfd ,request, sysaddr, nap->cage_id);
 
 cleanup:
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
