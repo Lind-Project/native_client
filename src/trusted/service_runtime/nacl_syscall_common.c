@@ -4746,7 +4746,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
     return -NACL_ABI_EFAULT;
   }
 
- ndp = GetDescFromCagetable(nap, sockfd);
+  ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysSendto was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return -NACL_ABI_EBADF;
@@ -4775,7 +4775,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
     return -NACL_ABI_EFAULT;
   }
 
- ndp = GetDescFromCagetable(nap, sockfd);
+  ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysRecv was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return -NACL_ABI_EBADF;
@@ -4850,7 +4850,7 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
   NaClLog(2, "Cage %d Entered NaClSysShutdown(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, sockfd, how);
 
-ndp = GetDescFromCagetable(nap, sockfd);
+  ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysShutdown was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return -NACL_ABI_EBADF;
@@ -4905,7 +4905,7 @@ int32_t NaClSysFlock(struct NaClAppThread *natp, int fd, int operation)
   NaClLog(2, "Cage %d Entered NaClSysFlock(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, fd, operation);
   
- ndp = GetDescFromCagetable(nap, fd);
+  ndp = GetDescFromCagetable(nap, fd);
   if (!ndp) {
     NaClLog(2, "NaClSysFlock was passed an unrecognized file descriptor, returning %d\n", fd);
     return -NACL_ABI_EBADF;
@@ -4941,7 +4941,7 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
     return -NACL_ABI_EFAULT;
   }
 
- ndp = GetDescFromCagetable(nap, sockfd);
+  ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
      NaClLog(2, "NaClSysGetsockopt was passed an unrecognized file descriptor, returning %d\n", sockfd);
     return -NACL_ABI_EBADF;
@@ -5616,6 +5616,7 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
       ndp = GetDescFromCagetable(nap, i);
       int tempfd = NaClDesc2Lindfd(ndp);
       int translated_fd = fds[fdsindex++] = tempfd;
+      NaClDescUnref(ndp);
       if(translated_fd < 0) {
         return (char*) -NACL_ABI_EBADF;
       }
