@@ -32,7 +32,8 @@ struct nacl_abi_stat;
 struct rusage;
 struct sockaddr;
 
-int descnum2Lindfd(struct NaClApp *nap, int fd);
+struct NaClDesc *GetDescFromCagetable(struct NaClApp *nap, int fd);
+int NaClDesc2Lindfd(struct NaClDesc * ndp);
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp);
 
