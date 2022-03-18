@@ -142,13 +142,13 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->initial_entry_pt = 0;
   nap->user_entry_pt = 0;
 
-  if (!DynArrayCtor(&nap->threads, 16)) {
+  if (!DynArrayCtor(&nap->threads, 2)) {
     goto cleanup_cpu_features;
   }
-  if (!DynArrayCtor(&nap->desc_tbl, 16)) {
+  if (!DynArrayCtor(&nap->desc_tbl, 2)) {
     goto cleanup_threads;
   }
-  if (!DynArrayCtor(&nap->children, 16)) {
+  if (!DynArrayCtor(&nap->children, 2)) {
     goto cleanup_desc_tbl;
   }
   if (!NaClVmmapCtor(&nap->mem_map)) {
