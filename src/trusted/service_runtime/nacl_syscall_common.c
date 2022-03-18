@@ -408,7 +408,7 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
    */
 
   if (stack_flag) {
-    NaClLog(2, "aClSysThreadExit: stack_flag is %"NACL_PRIxPTR"\n", (uintptr_t)stack_flag);
+    NaClLog(2, "NaClSysThreadExit: stack_flag is %"NACL_PRIxPTR"\n", (uintptr_t)stack_flag);
     if (!NaClCopyOutToUser(natp->nap, (uintptr_t) stack_flag, &zero, sizeof(zero))) {
       NaClLog(2, "NaClSysThreadExit: ignoring invalid"
                " stack_flag 0x%"NACL_PRIxPTR"\n",
@@ -2207,7 +2207,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
       sys_ret = munmap((void *) image_sys_addr, length);
 #endif
       if (sys_ret) {
-        NaClLog(1, "aClSysMmap: could not unmap text at 0x%"NACL_PRIxPTR","
+        NaClLog(1, "NaClSysMmap: could not unmap text at 0x%"NACL_PRIxPTR","
                 " length 0x%"NACL_PRIxS", NaCl errno %d\n",
                 image_sys_addr, length, -sys_ret);
       }
@@ -2337,7 +2337,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   volatile uintptr_t sysaddr;
   nacl_abi_off_t     offset;
 
-  NaClLog(2, "ntered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
+  NaClLog(2, "Entered NaClSysMmap(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS","
           "0x%x,0x%x,%d,0x%08"NACL_PRIxPTR")\n",
           (uintptr_t) start, length, prot, flags, d, (uintptr_t)offp);
 
@@ -2350,7 +2350,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
      * conversion works.
      */
 #ifdef  _DEBUG
-    NaClLog(1, "aClSysMmap: NULL pointer used"
+    NaClLog(1, "NaClSysMmap: NULL pointer used"
             " for offset in/out argument\n");
 #endif
     return -NACL_ABI_EINVAL;
