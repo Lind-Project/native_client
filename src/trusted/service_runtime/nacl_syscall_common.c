@@ -947,9 +947,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
 
 
-  NaClHostDescCheckValidity("NaClHostDescRead", hd);
-  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
-    NaClLog(3, "NaClHostDescRead: WRONLY file\n");
+  NaClHostDescCheckValidity("NaClSysRead", hd);
+  if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysRead: WRONLY file\n");
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1129,9 +1129,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  NaClHostDescCheckValidity("NaClHostDescWrite", hd);
-  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
-    NaClLog(3, "NaClHostDescWrite: RDONLY file\n");
+  NaClHostDescCheckValidity("NaClSysWrite", hd);
+  if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysWrite: RDONLY file\n");
     retval = -NACL_ABI_EBADF;
     goto out;
   }
