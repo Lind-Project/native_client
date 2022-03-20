@@ -5251,7 +5251,10 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   }
 
   ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
-  if (ret < 0) goto cleanup;
+  if (ret < 0) {
+    userfd = ret;
+    goto cleanup;
+  }
 
 
   nd = malloc(sizeof(struct NaClHostDesc));
