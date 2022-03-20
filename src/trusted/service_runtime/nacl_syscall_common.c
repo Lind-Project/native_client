@@ -5213,12 +5213,6 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   NaClLog(2, "Cage %d Entered NaClSysAccept(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
 
-  nd = malloc(sizeof(struct NaClHostDesc));
-  if (!nd) {
-    NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
-    return -NACL_ABI_ENOMEM;
-  }
-
   ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysAccept was passed an unrecognized file descriptor, returning %d\n", sockfd);
@@ -5257,6 +5251,14 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   }
 
   ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
+  if (ret < 0) goto cleanup;
+
+
+  nd = malloc(sizeof(struct NaClHostDesc));
+  if (!nd) {
+    NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
+    return -NACL_ABI_ENOMEM;
+  }
 
   nd->d = ret;
   nd->flags = NACL_ABI_O_RDWR;
