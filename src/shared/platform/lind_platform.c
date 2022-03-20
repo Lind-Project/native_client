@@ -199,7 +199,7 @@ int lind_recvfrom (int sockfd, const void *buf, size_t len, int flags, struct so
 }
 
 int lind_accept(int sockfd, struct sockaddr *sockaddr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_accept, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen);
+    DISPATCH_SYSCALL_3_inner(LIND_safe_net_accept, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen, 0);
 }
 
 int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid) {
