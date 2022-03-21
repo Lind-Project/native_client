@@ -5657,7 +5657,7 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
     }
   }
 
-  char *newset = malloc((ourmax + 7) / 8); //bitfield which can contain our fds now
+  char *newset = calloc((ourmax + 7) / 8, sizeof(char)); //bitfield which can contain our fds now
   if(!newset)
     return (char*) -NACL_ABI_ENOMEM;
   for(int i = 0; i < fdsindex; i++) {
