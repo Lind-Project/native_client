@@ -5216,7 +5216,6 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysAccept was passed an unrecognized file descriptor, returning %d\n", sockfd);
-    free(nd);
     return -NACL_ABI_EBADF;
   }
   
@@ -5225,7 +5224,6 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
   if ((void*) kNaClBadAddress == syslenaddr) {
     NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-    free(nd);
     userfd = -NACL_ABI_EFAULT; // As we return userfd instead of a retvalue, changed ret with userfd.
     goto cleanup;
   }
@@ -5235,14 +5233,12 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
     if ((void*) kNaClBadAddress == sysvaladdr) {
       NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-      free(nd);
       userfd = -NACL_ABI_EFAULT; // As we return userfd instead of a retvalue, changed ret with userfd.
       goto cleanup;
     }
   } else {
     if(addr != NULL) {
       NaClLog(2, "NaClSysAccept had a 0 length specified but the address was not NULL, returning %d\n", -NACL_ABI_EINVAL);
-      free(nd);
       userfd = -NACL_ABI_EINVAL;
       goto cleanup;
     } else {
