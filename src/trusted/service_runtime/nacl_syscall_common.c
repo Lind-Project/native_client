@@ -919,6 +919,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   struct NaClDesc *ndp;
   size_t          log_bytes;
   char const      *ellipsis = "";
+  int             lindfd;
 
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
@@ -939,6 +940,21 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
+
+  /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+  struct NaClHostDesc *hd = self->hd;
+
+
+
+  NaClHostDescCheckValidity("NaClSysRead", hd);
+  if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysRead: WRONLY file\n");
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+  lindfd = hd->d; // we can extract the lindfd here w/o worrying about it closing
+  NaClFastMutexUnlock(&nap->desc_mu);
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
   if (!ndp) {
@@ -965,7 +981,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
-  read_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Read(ndp, (void *)sysaddr, count);
+  read_result = lind_read(lindfd, (void *)sysaddr, count, nap->cage_id);
 
   if (read_result > 0) {
     NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
@@ -987,7 +1003,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
-  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -1088,6 +1103,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   char const      *ellipsis = "";
   struct NaClDesc *ndp;
   size_t          log_bytes;
+  int             lindfd;
 
   NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
           "%d, 0x%08"NACL_PRIxPTR", "
@@ -1108,6 +1124,19 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
+
+   /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+  struct NaClHostDesc *hd = self->hd;
+
+  NaClHostDescCheckValidity("NaClSysWrite", hd);
+  if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysWrite: RDONLY file\n");
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+  lindfd = hd->d; // extract fd from HostDesc, we can unlock now safely
+  NaClFastMutexUnlock(&nap->desc_mu);
 
 
   NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -1145,13 +1174,12 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
-  write_result = ((struct NaClDescVtbl const *)ndp->base.vtbl)->Write(ndp, (void *)sysaddr, count);
+  write_result = lind_write(lindfd, (void *)sysaddr, count, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
 out:
-  NaClFastMutexUnlock(&nap->desc_mu);
   return retval;
 }
 
@@ -5185,16 +5213,9 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   NaClLog(2, "Cage %d Entered NaClSysAccept(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, (uintptr_t) addrlen);
 
-  nd = malloc(sizeof(struct NaClHostDesc));
-  if (!nd) {
-    NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
-    return -NACL_ABI_ENOMEM;
-  }
-
   ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
     NaClLog(2, "NaClSysAccept was passed an unrecognized file descriptor, returning %d\n", sockfd);
-    free(nd);
     return -NACL_ABI_EBADF;
   }
   
@@ -5203,7 +5224,6 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
   if ((void*) kNaClBadAddress == syslenaddr) {
     NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-    free(nd);
     userfd = -NACL_ABI_EFAULT; // As we return userfd instead of a retvalue, changed ret with userfd.
     goto cleanup;
   }
@@ -5213,14 +5233,12 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
  
     if ((void*) kNaClBadAddress == sysvaladdr) {
       NaClLog(2, "NaClSysAccept could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-      free(nd);
       userfd = -NACL_ABI_EFAULT; // As we return userfd instead of a retvalue, changed ret with userfd.
       goto cleanup;
     }
   } else {
     if(addr != NULL) {
       NaClLog(2, "NaClSysAccept had a 0 length specified but the address was not NULL, returning %d\n", -NACL_ABI_EINVAL);
-      free(nd);
       userfd = -NACL_ABI_EINVAL;
       goto cleanup;
     } else {
@@ -5229,6 +5247,17 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   }
 
   ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
+  if (ret < 0) {
+    userfd = ret;
+    goto cleanup;
+  }
+
+
+  nd = malloc(sizeof(struct NaClHostDesc));
+  if (!nd) {
+    NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
+    return -NACL_ABI_ENOMEM;
+  }
 
   nd->d = ret;
   nd->flags = NACL_ABI_O_RDWR;
@@ -5624,7 +5653,7 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
     }
   }
 
-  char *newset = malloc((ourmax + 7) / 8); //bitfield which can contain our fds now
+  char *newset = calloc((ourmax + 7) / 8, sizeof(char)); //bitfield which can contain our fds now
   if(!newset)
     return (char*) -NACL_ABI_ENOMEM;
   for(int i = 0; i < fdsindex; i++) {
