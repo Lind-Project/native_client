@@ -201,6 +201,13 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    * start address.
    */
   mapbottom = lind_mmap(start_addr, len, tmp_prot, host_flags, desc, offset, whichcage);
+
+  if ((unsigned) mapbottom > (0xffffffffu - 256)) {
+    errno = mapbottom;
+    mapbottom = MAP_FAILED;
+
+  } 
+
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
    * return a long -1 as our return value. Otherwise, combine the 
    * top bits and bottom bits into our full return value.

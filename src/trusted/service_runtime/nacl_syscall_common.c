@@ -5608,7 +5608,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   }
 
   nfds = lind_epoll_wait(epfd, pfds, maxevents, timeout, nap->cage_id);
-          
+
   NaClFastMutexLock(&nap->desc_mu);
 
   for(int i = 0; i < nfds; ++i) {
@@ -5627,6 +5627,8 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   }
   
   NaClFastMutexUnlock(&nap->desc_mu);
+
+  retval = nfds;
 
 cleanup:
   NaClDescUnref(ndp);
