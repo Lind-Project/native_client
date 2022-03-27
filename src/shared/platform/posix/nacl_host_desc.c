@@ -202,10 +202,14 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    */
   mapbottom = lind_mmap(start_addr, len, tmp_prot, host_flags, desc, offset, whichcage);
 
+  /* If we return a value higher than 0xffffffffu - 256
+   * we know that this is in fact a negative integer (an errno)
+   * since due to alignment mmap cannot return an address in that range 
+   */
+
   if ((unsigned) mapbottom > (0xffffffffu - 256)) {
     errno = mapbottom;
     mapbottom = MAP_FAILED;
-
   } 
 
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
