@@ -526,6 +526,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
 
 out:
+  NaClDescUnref(old_nd);
   return ret;
 }
 
@@ -646,6 +647,8 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   ret = newfd;
 
 out:
+  NaClDescUnref(old_nd);
+  NaClDescUnref(new_nd);
   return ret;
 }
 

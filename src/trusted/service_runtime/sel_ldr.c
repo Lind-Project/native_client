@@ -873,6 +873,7 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
     if (!nd) {
       continue;
     }
+    NaClDescUnref(nd);
 
     /* Translate from NaCl Desc to Host Desc */
     self = (struct NaClDescIoDesc *) &nd->base;
@@ -1653,6 +1654,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         if(entry->desc) {
           struct NaClHostDesc* hd = ((struct NaClDescIoDesc*) desc)->hd;
           desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
+          NaClDescUnref(desc);
         }
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                   entry->page_num,
