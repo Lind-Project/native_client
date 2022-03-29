@@ -517,8 +517,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   /* Set new nacl desc as available */
   int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
 
-  /* We've got to put that old NaClDescriptor back in there... */
-  NaClSetDesc(nap, old_hostfd, old_nd);
+  NaClDescUnref(old_nd);
 
   ret = NextFd(nap->cage_id);
   new_hd->userfd = ret;
@@ -636,13 +635,10 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
     new_hd->cageid = nap->cage_id;
 
-    /* Re-add the nacl desc to the nap */
-    NaClSetDesc(nap, new_hostfd, new_nd);
+    NaClDescUnref(new_nd);
   }
   
-  /* We've got to put that old NaClDescriptor back in there... */
-  NaClSetDesc(nap, old_hostfd, old_nd);
-  
+  NaClDescUnref(old_nd);  
   ret = newfd;
 
 out:
@@ -5410,8 +5406,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
     /* and add the new hostfd to the cage table */
     fd_cage_table[nap->cage_id][newuser] = new_hostfd;
   
-    /* We've got to put that old NaClDescriptor back in there... */
-    NaClSetDesc(nap, old_hostfd, old_nd);
+    NaClDescUnref(old_nd);
   
     ret = newuser;
   } else {

@@ -195,8 +195,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     /* Create and set new NaClDesc from Child HD in Child nap */
     int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
 
-    /* We've got to put that parent NaClDescriptor back in there... */
-    NaClSetDesc(nap_parent, parent_host_fd, parent_nd);
+    NaClDescUnref(parent_nd);
 
     /* Set childs cage table with the current fd to the old parent host fd */
     fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
