@@ -1666,7 +1666,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
           }
         }
-      if(desc) NaClDescUnref(desc);
+        if(desc) NaClDescUnref(desc);
       } else {
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                   entry->page_num,

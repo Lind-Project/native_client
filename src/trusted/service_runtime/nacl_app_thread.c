@@ -169,7 +169,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     if (!parent_nd) {
       continue;
     }
-    
+
     /* Translate from NaCl Desc to Host Desc */
     struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
     struct NaClHostDesc *parent_hd = self->hd;
