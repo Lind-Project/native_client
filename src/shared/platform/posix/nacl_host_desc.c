@@ -327,7 +327,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
   host_desc = lind_open(path, posix_flags, mode, d->cageid);
   NaClLog(3, "NaClHostDescOpen: got descriptor %d\n", host_desc);
   if (host_desc < 0) {
-    NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", host_desc);
+    NaClLog(2, "NaClHostDescOpen: open returned errno: %d\n", host_desc);
     return host_desc;
   }
  
