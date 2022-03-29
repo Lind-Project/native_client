@@ -1649,8 +1649,9 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
         if(entry->desc) {
-          struct NaClHostDesc* hd = ((struct NaClDescIoDesc*) desc)->hd;
-          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);          
+          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
+          struct NaClHostDesc *hd = self->hd;
+          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
         }
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                   entry->page_num,
@@ -1665,9 +1666,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
           }
         }
-      /* Needs restructure:
-      if(entry->desc) NaClDescUnref(desc);
-      */
+      if(desc) NaClDescUnref(desc);
       } else {
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                   entry->page_num,
