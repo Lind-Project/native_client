@@ -640,7 +640,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   
   NaClDescUnref(old_nd);  
   ret = newfd;
-  
+
 out:
   return ret;
 }
