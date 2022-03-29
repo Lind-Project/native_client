@@ -769,7 +769,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   
   if (retval < 0) {
     NaClLog(1, "Open returned error %d\n", retval);
-    return -NACL_ABI_EPERM;
+    return retval;
   }
   
   fd_retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
