@@ -26,64 +26,56 @@
     arg3.dispatch_ulong = 0; \
     arg4.dispatch_ulong = 0; \
     arg5.dispatch_ulong = 0; \
-    arg6.dispatch_ulong = 0//no semicolon here to force macro caller to place one for neatness
+    arg6.dispatch_ulong = 0 //no semicolon here to force macro caller to place one for neatness
 
-#define GENERIC_ERROR_HANDLER   (retval < 0)
-#define MMAP_ERROR_HANDLER      ((unsigned) retval > (0xffffffffu - 256))
-
-#define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
-    retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
-    if (errhandler) { \
-        errno = -retval; \
-        retval = -1; \
-    }  \
-    return retval //no semicolon here to force macro caller to place one for neatness
-#define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, errhandler) \
+#define DISPATCH_SYSCALL_0_inner(callnum) \
+    return dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6) //no semicolon here to force macro caller to place one for neatness
+#define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val) \
     arg1.dispatch_ ## arg1type = arg1val; \
-    DISPATCH_SYSCALL_0_inner(callnum, errhandler)
-#define DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, errhandler) \
+    DISPATCH_SYSCALL_0_inner(callnum)
+#define DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val) \
     arg2.dispatch_ ## arg2type = arg2val; \
-    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, errhandler)
-#define DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, errhandler) \
+    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val)
+#define DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val) \
     arg3.dispatch_ ## arg3type = arg3val; \
-    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, errhandler)
+    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val)
 #define DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, errhandler) \
+                                 arg4type, arg4val) \
     arg4.dispatch_ ## arg4type = arg4val; \
-    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, errhandler)
+    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val)
 #define DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, arg5type, arg5val, errhandler) \
+                                 arg4type, arg4val, arg5type, arg5val) \
     arg5.dispatch_ ## arg5type = arg5val; \
-    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, errhandler)
+    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val)
 #define DISPATCH_SYSCALL_6_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, arg5type, arg5val, arg6type, arg6val, errhandler) \
+                                 arg4type, arg4val, arg5type, arg5val, arg6type, arg6val) \
     arg6.dispatch_ ## arg6type = arg6val; \
-    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val, errhandler)
+    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val)
 
 
 #define DISPATCH_SYSCALL_6(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
                            arg4type, arg4val, arg5type, arg5val, arg6type, arg6val) \
     BLANKARGS; \
     DISPATCH_SYSCALL_6_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                             arg4type, arg4val, arg5type, arg5val, arg6type, arg6val, GENERIC_ERROR_HANDLER)
+                             arg4type, arg4val, arg5type, arg5val, arg6type, arg6val)
 #define DISPATCH_SYSCALL_5(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val)
 #define DISPATCH_SYSCALL_4(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val)
 #define DISPATCH_SYSCALL_3(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val)
 #define DISPATCH_SYSCALL_2(callnum, arg1type, arg1val, arg2type, arg2val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val)
 #define DISPATCH_SYSCALL_1(callnum, arg1type, arg1val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val)
 #define DISPATCH_SYSCALL_0(callnum) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_0_inner(callnum, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_0_inner(callnum)
 
 
 int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid) {
@@ -297,8 +289,7 @@ int lind_fork(int newcageid, int cageid) {
 }
 
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid) {
-    BLANKARGS;
-    DISPATCH_SYSCALL_6_inner(LIND_safe_fs_mmap, cbuf, addr, size_t, length, int, prot, int, flags, int, fd, off_t, offset, MMAP_ERROR_HANDLER);
+    DISPATCH_SYSCALL_6(LIND_safe_fs_mmap, cbuf, addr, size_t, length, int, prot, int, flags, int, fd, off_t, offset);
 }
 
 int lind_munmap(void *addr, size_t length, int cageid) {

@@ -887,9 +887,7 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
     hd->d = fd;
     hd->userfd = fd;
 
-    /* We've got to put that  NaClDescriptor back in there... */
-    NaClSetDesc(nap, host_fd, nd);
-
+    NaClDescUnref(nd);
   }
 }
 
@@ -1656,7 +1654,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
         if(entry->desc) {
-          struct NaClHostDesc* hd = ((struct NaClDescIoDesc*) desc)->hd;
+          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
+          struct NaClHostDesc *hd = self->hd;
           desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
         }
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
@@ -1672,6 +1671,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
           }
         }
+        if(desc) NaClDescUnref(desc);
       } else {
         NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                                   entry->page_num,
