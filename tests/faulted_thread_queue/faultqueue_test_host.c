@@ -104,8 +104,9 @@ struct NaClSignalContext *StartGuestWithSharedMemory(
   expected_regs = (struct NaClSignalContext *) NaClUserToSys(nap, mmap_addr);
 
   WaitForThreadToExitFully(nap);
+  nap->tl_type = THREAD_LAUNCH_MAIN;
 
-  CHECK(NaClCreateMainThread(nap, NACL_ARRAY_SIZE(args), args, NULL));
+  CHECK(NaClCreateThread(NULL, nap, NACL_ARRAY_SIZE(args), args, NULL));
   return expected_regs;
 }
 

@@ -194,9 +194,10 @@ int main(int argc, char **argv) {
   g_nap = &app;
   g_expected_desc = MakeExampleDesc();
   NaClSetDesc(&app, 10, g_expected_desc);
+  app.tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateMainThread(&app, 0, NULL, NULL));
+  CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
   CHECK(NaClWaitForMainThreadToExit(&app) == 0);
 
   /* Check for leaks. */

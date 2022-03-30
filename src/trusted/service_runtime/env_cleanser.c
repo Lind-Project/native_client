@@ -14,12 +14,6 @@
 #include "native_client/src/trusted/service_runtime/env_cleanser.h"
 #include "native_client/src/trusted/service_runtime/env_cleanser_test.h"
 
-/*
- * Everything that starts with this prefix is allowed (but the prefix is
- * stripped away).
-*/
-#define NACL_ENV_PREFIX "NACLENV_"
-#define NACL_ENV_PREFIX_LENGTH 8
 
 void NaClEnvCleanserCtor(struct NaClEnvCleanser *self, int with_whitelist) {
   self->with_whitelist = with_whitelist;
@@ -175,7 +169,18 @@ int NaClEnvCleanserInit(struct NaClEnvCleanser *self, char const *const *envp,
 }
 
 char const *const *NaClEnvCleanserEnvironment(struct NaClEnvCleanser *self) {
-  return (char const *const *) self->cleansed_environ;
+  int envc = 0;
+  char const **childe;
+  char const **rete;
+  for(char const *const *ce = self->cleansed_environ; ce && *ce; ++ce) {
+    envc++;
+  }
+  rete = childe = malloc((envc + 1) * sizeof(char*));
+  for(char const *const *ce = self->cleansed_environ; ce && *ce; ++ce) {
+     *childe++ = *ce;
+  }
+  *childe++ = NULL;
+  return (char const *const *) rete;
 }
 
 void NaClEnvCleanserDtor(struct NaClEnvCleanser *self) {

@@ -104,6 +104,7 @@ platform_inputs += [
     'platform_init.c',
     'refcount_base.cc',
     'lind_platform.c',
+    '/home/lind/lind_project/lind/lindenv/librustposix.so',
     ]
 
 env.DualLibrary('platform', platform_inputs)

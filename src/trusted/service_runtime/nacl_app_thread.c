@@ -36,27 +36,23 @@
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 
 
-/*
- * always points at original program context
- *
- * -jp
- */
-struct NaClThreadContext *master_ctx;
-
+struct NaClMutex ccmut;
+struct NaClCondVar cccv;
+int cagecount;
+extern bool use_lkm;
 
 /*
  * dynamically allocate and initilize a copy
  * of the parents NaClApp structure which is
  * used in NaClSysFork()
  */
-struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
+struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type) {
   struct NaClApp *nap_child = NaClAlignedMalloc(sizeof(*nap_child), __alignof(struct NaClApp));
-  struct NaClApp *nap_master = ((struct NaClAppThread *)master_ctx)->nap;
   struct NaClApp *nap_parent = nap;
-  struct NaClApp *nap_arr[] = {nap_master, nap_parent};
   NaClErrorCode *mod_status = NULL;
+  int envc = 0;
+  char const **childe;
 
-  CHECK(nap_master);
   CHECK(nap_parent);
   CHECK(nap_child);
 
@@ -65,11 +61,12 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   if (!NaClAppCtor(nap_child)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize fork child nap");
   }
+
   mod_status = &nap_child->module_load_status;
+  nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
-  nap_child->clean_environ = nap->clean_environ;
   nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
@@ -78,52 +75,63 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   nap_child->user_entry_pt = nap_parent->user_entry_pt;
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
-  nap_child->master = nap_master;
   nap_child->in_fork = 0;
 
-  /* avoid incrementing child count twice */
-  if (nap_master == nap_parent) {
-    nap_arr[0] = NULL;
+  for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
+    envc++;
   }
+  childe = malloc((envc + 1) * sizeof(char*));
+  nap_child->clean_environ = (const char *const *)childe;
+  for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
+     *childe++ = *ce;
+  }
+  *childe++ = NULL;
 
-  /* don't lock master twice */
-  NaClXMutexLock(&nap_master->children_mu);
-  if (nap_parent != nap_master) {
-    NaClXMutexLock(&nap_parent->children_mu);
-  }
+  NaClXMutexLock(&ccmut);
+  cagecount++;
+  NaClXMutexUnlock(&ccmut);
+
+  NaClXMutexLock(&nap_parent->children_mu);
   /*
-   * increment fork generation count and generate child
-   * cage_id (both master and parent mutexes need to be held
+   * increment fork generation count and generate child (holding parent mutex)
    */
-  InitializeCage(nap_child, nap_master->cage_id + ++fork_num);
-  /* store cage_ids in both master and parent to provide redundancy and avoid orphans */
-  for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
-    if (!nap_arr[i]) {
-      continue;
-    }
-    NaClLog(1, "[nap %d] incrementing num_children\n", nap_arr[i]->cage_id);
-    nap_arr[i]->children_ids[nap_arr[i]->num_children++] = nap_child->cage_id;
-    if (nap_arr[i]->num_children > CHILD_NUM_MAX) {
-      NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_arr[i]->cage_id, CHILD_NUM_MAX);
-    }
-    if (!DynArraySet(&nap_arr[i]->children, nap_child->cage_id, nap_child)) {
-      NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_arr[i]->cage_id, nap_child->cage_id);
-    }
-    NaClLog(1, "[nap %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
-  }
-  /* don't unlock master twice */
-  NaClXMutexUnlock(&nap_master->children_mu);
-  if (nap_parent != nap_master) {
-    NaClXMutexUnlock(&nap_parent->children_mu);
-  }
+  InitializeCage(nap_child, child_cage_id);
+  nap_parent->num_children++;
 
-  NaClAppInitialDescriptorHookup(nap_child);
+  if (nap_parent->num_children > CHILD_NUM_MAX) {
+    NaClLog(LOG_FATAL, "[nap %u] child_idx > %d\n", nap_parent->cage_id, CHILD_NUM_MAX);
+  }
+  if (!DynArraySet(&nap_parent->children, nap_child->cage_id, nap_child)) {
+    NaClLog(LOG_FATAL, "[nap %u] failed to add cage_id %d\n", nap_parent->cage_id, nap_child->cage_id);
+  }
+  NaClLog(1, "[nap %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+
+  NaClXMutexUnlock(&nap_parent->children_mu);
+
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-    NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-    NaClLog(LOG_FATAL, "%s\n%s\n",
-                       "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-                       "or a corrupt nexe file may be responsible for this error.");
+  if(!use_lkm || tl_type != THREAD_LAUNCH_FORK) {
+    //exec not prevalidated
+    if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
+      NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+      NaClLog(LOG_FATAL, "%s\n%s\n",
+                         "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                         "or a corrupt nexe file may be responsible for this error.");
+    }
+  } else {
+    //we already know the fork child has an ok nexe, and we don't even need to load it
+    nap_child->stack_size = nap_parent->stack_size;
+    nap_child->static_text_end = nap_parent->static_text_end;
+    nap_child->rodata_start = nap_parent->rodata_start;
+    nap_child->data_start = nap_parent->data_start;
+    nap_child->break_addr = nap_parent->break_addr;
+    nap_child->data_end = nap_parent->data_end;
+    nap_child->bundle_size = NACL_INSTR_BLOCK_SIZE;
+    nap_child->initial_entry_pt = nap_parent->initial_entry_pt;
+    nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
+    nap_child->text_shm = nap_parent->text_shm;
+    NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    NaClInitSwitchToApp(nap_child); 
+    //NaClMemoryProtection(nap_child);
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
@@ -146,12 +154,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
   NaClXMutexLock(&nap_parent->mu);
-  for (int parent_fd = nap_child->fd; parent_fd <= nap_parent->fd; parent_fd++) {
+
+  for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
-    int parent_host_fd = fd_cage_table[nap_parent->cage_id][parent_fd];
-    if (parent_host_fd == 0) {
-      fd_cage_table[nap_child->cage_id][nap_child->fd++] = 0;
+    int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
+    if (parent_host_fd == NACL_BAD_FD) {
+      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
       continue;
     }
     /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */
@@ -165,6 +174,12 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
     struct NaClHostDesc *parent_hd = self->hd;
 
+    /* If we're creating an exec cage and we have CLOEXEC set, dont pass these on */
+    if ((tl_type == THREAD_LAUNCH_EXEC) && (parent_hd->flags & NACL_ABI_O_CLOEXEC)) {
+      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
+      continue;
+    }
+
     /* Create and set vars for child hd */
     struct NaClHostDesc *child_hd;
     child_hd = malloc(sizeof(*child_hd));
@@ -175,28 +190,30 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap) {
     child_hd->d = parent_hd->d;
     child_hd->flags = parent_hd->flags;
     child_hd->cageid = nap_child->cage_id;
+    child_hd->userfd = parent_hd->userfd;
 
     /* Create and set new NaClDesc from Child HD in Child nap */
     int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
 
-    /* We've got to put that parent NaClDescriptor back in there... */
-    NaClSetDesc(nap_parent, parent_host_fd, parent_nd);
+    NaClDescUnref(parent_nd);
 
     /* Set childs cage table with the current fd to the old parent host fd */
-    fd_cage_table[nap_child->cage_id][nap_child->fd++] = child_host_fd;
+    fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
 
 
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", parent_fd, nap_child->fd - 1);
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
   }
   NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
 
-void WINAPI NaClAppForkThreadLauncher(void *state) {
+void WINAPI NaClAppThreadLauncher(void *state) {
   struct NaClAppThread *natp = (struct NaClAppThread *) state;
   struct NaClApp *nap = natp->nap;
   struct NaClThreadContext *context = &natp->user;
+  enum NaClThreadLaunchType tl_type = nap->tl_type;
+
   uint32_t thread_idx;
   nacl_reg_t secure_stack_ptr;
 
@@ -212,153 +229,113 @@ void WINAPI NaClAppForkThreadLauncher(void *state) {
   CHECK(thread_idx > 0 && thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
   nacl_user[thread_idx] = &natp->user;
-#if NACL_WINDOWS
-  nacl_thread_ids[thread_idx] = GetCurrentThreadId();
-#elif NACL_OSX
-  NaClSetCurrentMachThreadForThreadIndex(thread_idx);
-#endif
+  #if NACL_WINDOWS
+    nacl_thread_ids[thread_idx] = GetCurrentThreadId();
+  #elif NACL_OSX
+    NaClSetCurrentMachThreadForThreadIndex(thread_idx);
+  #endif
 
-  /*
-   * We have to hold the threads_mu and children_mu locks until
-   * after thread_num field in this thread has been initialized.
-   * All other threads can only find and examine this natp through
-   * the threads table, so the fact that natp is not consistent (no
-   * thread_num) will not be visible.
-   */
-  NaClXMutexLock(&nap->threads_mu);
-  NaClXMutexLock(&nap->children_mu);
-  nap->num_threads = thread_idx + 1;
-  natp->thread_num = thread_idx + 1;
-  if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
-    NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
+  if (tl_type == THREAD_LAUNCH_FORK){
+      /*
+    * We have to hold the threads_mu and children_mu locks until
+    * after thread_num field in this thread has been initialized.
+    * All other threads can only find and examine this natp through
+    * the threads table, so the fact that natp is not consistent (no
+    * thread_num) will not be visible.
+    */
+    NaClXMutexLock(&nap->threads_mu);
+    NaClXMutexLock(&nap->children_mu);
+    nap->num_threads = thread_idx + 1;
+    natp->thread_num = thread_idx + 1;
+    if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
+      NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
+    }
+    NaClXMutexUnlock(&nap->threads_mu);
+    NaClXMutexUnlock(&nap->children_mu);
+
+    NaClVmHoleThreadStackIsSafe(natp->nap);
+
+    NaClStackSafetyNowOnUntrustedStack();
   }
-  NaClXMutexUnlock(&nap->threads_mu);
-  NaClXMutexUnlock(&nap->children_mu);
+  else {
+      /*
+    * We have to hold the threads_mu lock until after thread_num field
+    * in this thread has been initialized.  All other threads can only
+    * find and examine this natp through the threads table, so the fact
+    * that natp is not consistent (no thread_num) will not be visible.
+    */
+    NaClXMutexLock(&natp->nap->threads_mu);
+    natp->thread_num = NaClAddThreadMu(natp->nap, natp);
+    NaClXMutexUnlock(&natp->nap->threads_mu);
 
-  NaClVmHoleThreadStackIsSafe(natp->nap);
+    NaClVmHoleThreadStackIsSafe(natp->nap);
 
-  NaClStackSafetyNowOnUntrustedStack();
+    NaClStackSafetyNowOnUntrustedStack();
 
+  }
   /*
-   * Notify the debug stub, that a new thread is availible.
-   */
+    * Notify the debug stub, that a new thread is availible.
+    */
   if (natp->nap->debug_stub_callbacks) {
     natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-#if !NACL_WINDOWS
-  /*
-   * Ensure stack alignment.  Stack pointer must be -8 mod 16 when no
-   * __m256 objects are passed (8 mod 32 if __m256), after the call.
-   * Note the current doc (as of 2009-12-09) at
-   *
-   *   https://github.com/Lind-Project/native_client/raw/fork_implementation/documentation/x86-64_ABI.pdf
-   *
-   * is wrong since it claims (%rsp-8) should be 0 mod 16 or mod 32
-   * after the call, and it should be (%rsp+8) == 0 mod 16 or 32.
-   * Clearly it makes no difference since -8 and 8 are the same mod
-   * 16, but there is a difference when mod 32.
-   *
-   * This is not suitable for Windows because we do not reserve 32
-   * bytes for the shadow space.
-   */
-  secure_stack_ptr = NaClGetStackPtr();
-  NaClLog(1, "NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",
-          secure_stack_ptr);
-  secure_stack_ptr = secure_stack_ptr & ~0x1f;
-  NaClLog(1, "NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
-          secure_stack_ptr);
-  natp->user.trusted_stack_ptr = secure_stack_ptr;
-#endif
+  if (tl_type == THREAD_LAUNCH_FORK) {
+    #if !NACL_WINDOWS
+      /*
+      * Ensure stack alignment.  Stack pointer must be -8 mod 16 when no
+      * __m256 objects are passed (8 mod 32 if __m256), after the call.
+      * Note the current doc (as of 2009-12-09) at
+      *
+      *   https://github.com/Lind-Project/native_client/raw/fork_implementation/documentation/x86-64_ABI.pdf
+      *
+      * is wrong since it claims (%rsp-8) should be 0 mod 16 or mod 32
+      * after the call, and it should be (%rsp+8) == 0 mod 16 or 32.
+      * Clearly it makes no difference since -8 and 8 are the same mod
+      * 16, but there is a difference when mod 32.
+      *
+      * This is not suitable for Windows because we do not reserve 32
+      * bytes for the shadow space.
+      */
+      secure_stack_ptr = NaClGetStackPtr();
+      NaClLog(1, "NaClStartThreadInApp: secure stack:   0x%"NACL_PRIxNACL_REG"\n",
+              secure_stack_ptr);
+      secure_stack_ptr = secure_stack_ptr & ~0x1f;
+      NaClLog(1, "NaClStartThreadInApp: adjusted stack: 0x%"NACL_PRIxNACL_REG"\n",
+              secure_stack_ptr);
+      natp->user.trusted_stack_ptr = secure_stack_ptr;
+    #endif
 
-  NaClLog(1, "NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
-          NaClGetThreadCtxSp(context));
-  NaClLog(1, "%s\n", "NaClStartThreadInApp: switching to untrusted code");
+    NaClLog(1, "NaClStackThreadInApp: user stack: 0x%"NACL_PRIxPTR"\n",
+            NaClGetThreadCtxSp(context));
+    NaClLog(1, "%s\n", "NaClStartThreadInApp: switching to untrusted code");
 
-  NaClLog(1, "[NaClAppThreadLauncher] Nap %d is ready to launch! child registers: \n", nap->cage_id);
-  NaClLogThreadContext(natp);
-  NaClAppThreadPrintInfo(natp);
-  CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
+    NaClLog(1, "[NaClAppThreadLauncher] Nap %d is ready to launch! child registers: \n", nap->cage_id);
+    NaClLogThreadContext(natp);
+    NaClAppThreadPrintInfo(natp);
+    CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
 
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
-
-#if NACL_WINDOWS
-  /* This sets up a stack containing a return address that has unwind info. */
-  NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitchToApp);
-#else
-  NaClSwitchToApp(natp);
-#endif
-}
-
-void WINAPI NaClAppThreadLauncher(void *state) {
-  struct NaClAppThread *natp = (struct NaClAppThread *) state;
-  uint32_t thread_idx;
-  NaClLog(4, "NaClAppThreadLauncher: entered\n");
-
-  NaClSignalStackRegister(natp->signal_stack);
-
-  NaClLog(4, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
-  NaClLog(4, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
-  NaClLog(4, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n",
-          NaClGetThreadCtxSp(&natp->user));
-
-  thread_idx = NaClGetThreadIdx(natp);
-  CHECK(0 < thread_idx);
-  CHECK(thread_idx < NACL_THREAD_MAX);
-  NaClTlsSetCurrentThread(natp);
-  nacl_user[thread_idx] = &natp->user;
-#if NACL_WINDOWS
-  nacl_thread_ids[thread_idx] = GetCurrentThreadId();
-#elif NACL_OSX
-  NaClSetCurrentMachThreadForThreadIndex(thread_idx);
-#endif
-
-  /*
-   * We have to hold the threads_mu lock until after thread_num field
-   * in this thread has been initialized.  All other threads can only
-   * find and examine this natp through the threads table, so the fact
-   * that natp is not consistent (no thread_num) will not be visible.
-   */
-  NaClXMutexLock(&natp->nap->threads_mu);
-  natp->thread_num = NaClAddThreadMu(natp->nap, natp);
-  NaClXMutexUnlock(&natp->nap->threads_mu);
-
-  NaClVmHoleThreadStackIsSafe(natp->nap);
-
-  NaClStackSafetyNowOnUntrustedStack();
-
-  /*
-   * Notify the debug stub, that a new thread is availible.
-   */
-  if (NULL != natp->nap->debug_stub_callbacks) {
-    natp->nap->debug_stub_callbacks->thread_create_hook(natp);
   }
 
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.
-   */
-  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
-                               NACL_APP_THREAD_UNTRUSTED);
+    /*
+    * After this NaClAppThreadSetSuspendState() call, we should not
+    * claim any mutexes, otherwise we risk deadlock.
+    */
+    NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
-  NaClLog(1, "%s\n", "[NaCl Main Loader] User program about to start running inside the cage!");
-  NaClStartThreadInApp(natp, natp->user.prog_ctr);
-}
-
-static INLINE int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, int cage_id) {
-  int ret;
-  /* return the index if match found */
-  for (ret = 0; ret < nmemb; ret++) {
-    if (cage_id == id_list[ret]) {
-      return ret;
-    }
+  /* Not exactly sure what hole exec falls into */
+  if (tl_type == THREAD_LAUNCH_FORK) {
+    #if NACL_WINDOWS
+      /* This sets up a stack containing a return address that has unwind info. */
+      NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitchToApp);
+    #else
+      NaClSwitchToApp(natp);
+    #endif
   }
-  /* otherwise return an error value */
-  return -1;
+  else {
+    NaClLog(1, "%s\n", "[NaCl Main Loader] User program about to start running inside the cage!");
+    NaClStartThreadInApp(natp, natp->user.prog_ctr);
+  }
 }
 
 /*
@@ -367,14 +344,8 @@ static INLINE int GetChildIdx(const volatile sig_atomic_t *id_list, int nmemb, i
  */
 void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClApp  *nap_master = NULL;
   struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
-  int             list_idx;
-
-  if (master_ctx) {
-    nap_master = ((struct NaClAppThread *)master_ctx)->nap;
-  }
 
   /*
    * mark this thread as dead; doesn't matter if some other thread is
@@ -383,52 +354,23 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
     /* remove self from parent's list of children */
-  if (nap_master && nap_parent) {
-    struct NaClApp *nap_arr[] = {nap_master, nap_parent};
-    /* avoid incrementing child count twice */
-    if (nap_master == nap_parent) {
-      nap_arr[0] = NULL;
+  if (nap_parent) {
+    NaClXMutexLock(&nap_parent->children_mu);
+    nap_parent->num_children--;
+    NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
+    if (!DynArraySet(&nap_parent->children, nap->cage_id, NULL)) {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] did not find cage to remove: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    /* don't lock master twice */
-    NaClXMutexLock(&nap_master->children_mu);
-    if (nap_parent != nap_master) {
-      NaClXMutexLock(&nap_parent->children_mu);
+    else {
+      NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    for (size_t i = 0; i < sizeof(nap_arr) / sizeof(*nap_arr); i++) {
-      if (!nap_arr[i]) {
-        continue;
-      }
-      list_idx = GetChildIdx(nap_arr[i]->children_ids, nap_arr[i]->num_children, nap->cage_id);
-      switch (list_idx) {
-      case -1:
-        NaClLog(1, "[parent %d] not found in id list: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-        break;
-      default:
-        nap_arr[i]->num_children--;
-        nap_arr[i]->children_ids[list_idx] = 0;
-        NaClLog(1, "[parent %d] new child count: %d\n", nap_arr[i]->cage_id, nap_arr[i]->num_children);
-        if (!DynArraySet(&nap_arr[i]->children, nap->cage_id, NULL)) {
-          NaClLog(1, "[parent %d] list removal failed: cage_id = %d\n", nap_arr[i]->cage_id, nap->cage_id);
-        }
-      }
-      NaClXCondVarBroadcast(&nap_arr[i]->children_cv);
-    }
-    /* don't unlock master twice */
-    NaClXMutexUnlock(&nap_master->children_mu);
-    if (nap_parent != nap_master) {
-      NaClXMutexUnlock(&nap_parent->children_mu);
-    }
-  }
+    NaClXCondVarBroadcast(&nap_parent->children_cv);
+    NaClXMutexUnlock(&nap_parent->children_mu);
 
-  /* wait for master thread */
-  if (nap_master && nap != nap_master) {
-    NaClXMutexLock(&nap_master->children_mu);
-    NaClLog(1, "Master children count: %d\n", nap_master->num_children);
-    while (nap_master->num_children > 0) {
-      NaClXCondVarWait(&nap_master->children_cv, &nap_master->children_mu);
-    }
-    NaClXCondVarBroadcast(&nap_master->children_cv);
-    NaClXMutexUnlock(&nap_master->children_mu);
+    NaClXMutexLock(&ccmut);
+    cagecount--;
+    NaClCondVarBroadcast(&cccv);
+    NaClXMutexUnlock(&ccmut);
   }
 
   if (nap->debug_stub_callbacks) {
@@ -571,121 +513,145 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   return NULL;
 }
 
-int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
-                           struct NaClAppThread     *natp_parent,
-                           struct NaClApp           *nap_child,
-                           uintptr_t                usr_entry,
-                           uintptr_t                usr_stack_ptr,
-                           uint32_t                 user_tls1,
-                           uint32_t                 user_tls2) {
+void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
+                              struct NaClAppThread     *natp_child,
+                              void *stack_ptr_parent,
+                              void *stack_ptr_child) {
+
+    size_t stack_ptr_offset;
+    size_t base_ptr_offset;
+    struct NaClApp *nap_parent = natp_parent->nap;
+    struct NaClApp *nap_child = natp_child->nap;
+    /* make a copy of parent and child thread context */
+
+    struct NaClThreadContext parent_ctx = natp_parent->user;  
+    struct NaClThreadContext child_ctx = natp_child->user;
+
+    stack_ptr_offset = parent_ctx.rsp - (uintptr_t)stack_ptr_parent;
+    base_ptr_offset = parent_ctx.rbp - (uintptr_t)stack_ptr_parent;
+    /* copy parent page tables and execution context */
+    NaClCopyExecutionContext(nap_parent, nap_child, parent_ctx.rsp);
+    NaClLog(1, "child cage_id: [%d], parent cage id: [%d]\n",
+            nap_child->cage_id,
+            nap_parent->cage_id);
+    NaClLog(1, "%s\n", "Thread context of child before copy");
+    NaClLogThreadContext(natp_child);
+    natp_child->user = natp_parent->user;
+    NaClLog(1, "%s\n", "Thread context of child after copy");
+    NaClLogThreadContext(natp_child);
+
+    /*
+    * adjust trampolines and %rip
+    */
+    nap_child->mem_start = child_ctx.r15;
+    natp_child->user.r15 = nap_child->mem_start;
+    natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
+    natp_child->user.rbp = (uintptr_t)stack_ptr_child + base_ptr_offset;
+    natp_child->user.sysret = 0;
+
+  /* examine arbitrary stack values */
+  #if defined(_DEBUG)
+  # define NUM_STACK_VALS 16
+  # define OUTPUT_FMT "0x%016lx"
+  # define TYPE_TO_EXAMINE uintptr_t
+  # define EXAMINE_ADDR(TYPE, FMT, ADDR)                                                             \
+          do {                                                                                       \
+            unsigned char *addr = (unsigned char *)(ADDR);                                           \
+            UNREFERENCED_PARAMETER(addr);                                                            \
+            NaClLog(2, "[Memory] Memory addr:                   %p\n", (void *)addr);                \
+            NaClLog(2, "[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
+            NaClLog(2, "[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
+          } while (0)
+    for (size_t i = 0; i < NUM_STACK_VALS; i++) {
+      NaClLog(2, "child_stack[%zu]:\n", i);
+      EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, (TYPE_TO_EXAMINE *)stack_ptr_child + i);
+      NaClLog(2, "parent_stack[%zu]:\n", i);
+      EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, (TYPE_TO_EXAMINE *)stack_ptr_parent + i);
+    }
+    for (size_t i = 0; i < NUM_STACK_VALS; i++) {
+      uintptr_t child_addr = (uintptr_t)((TYPE_TO_EXAMINE *)natp_child->user.rsp + i);
+      uintptr_t parent_addr = (uintptr_t)((TYPE_TO_EXAMINE *)parent_ctx.rsp + i);
+      NaClLog(2, "child_rsp[%zu]:\n", i);
+      EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, child_addr);
+      NaClLog(2, "parent_rsp[%zu]:\n", i);
+      EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, parent_addr);
+    }
+  # undef NUM_STACK_VALS
+  # undef OUTPUT_FMT
+  # undef TYPE_TO_EXAMINE
+  # undef EXAMINE_ADDR
+  #endif /* defined(_DEBUG) */
+}
+
+int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
+                       struct NaClApp           *nap_child,
+                       uintptr_t                usr_entry,
+                       uintptr_t                sys_stack_ptr,
+                       uint32_t                 user_tls1,
+                       uint32_t                 user_tls2){
+
+
   void *stack_ptr_parent;
   void *stack_ptr_child;
-  size_t stack_ptr_offset;
-  size_t base_ptr_offset;
+  uintptr_t usr_stack_ptr;
+
   struct NaClAppThread *natp_child;
-  struct NaClThreadContext child_ctx;
-  struct NaClThreadContext parent_ctx;
+  struct NaClApp *nap_parent;
   static THREAD int ignored_ret;
+  enum NaClThreadLaunchType tl_type = nap_child->tl_type;
 
-  if (!nap_parent->running) {
-    return 0;
-  }
 
-  NaClXMutexLock(&nap_parent->mu);
-  NaClXMutexLock(&nap_child->mu);
 
-  /* guard against extra spawned instances */
-  if (nap_child->in_fork) {
+  if (tl_type == THREAD_LAUNCH_FORK) {
+    nap_parent = natp_parent->nap;
+    if (!nap_parent->running) return 0;
+
+    NaClXMutexLock(&nap_parent->mu);
+    NaClXMutexLock(&nap_child->mu);
+
+    /* guard against extra spawned instances */
+    if (nap_child->in_fork) {
     goto already_running;
+    }
+    nap_child->in_fork = 1;
+  
+
+    nap_child->stack_size = nap_parent->stack_size;
+    stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
+    stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
+    
+    usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
   }
-  nap_child->in_fork = 1;
+  else usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)sys_stack_ptr);
 
-  /* make a copy of parent thread context */
-  parent_ctx = natp_parent->user;
-
-  /*
-   * make space to copy the parent stack
-   */
-  nap_child->stack_size = nap_parent->stack_size;
-  stack_ptr_parent = (void *)NaClUserToSysAddr(nap_parent, NaClGetInitialStackTop(nap_parent));
-  stack_ptr_child = (void *)NaClUserToSysAddr(nap_child, NaClGetInitialStackTop(nap_child));
-  stack_ptr_offset = parent_ctx.rsp - (uintptr_t)stack_ptr_parent;
-  base_ptr_offset = parent_ctx.rbp - (uintptr_t)stack_ptr_parent;
-  usr_stack_ptr = NaClSysToUserStackAddr(nap_child, (uintptr_t)stack_ptr_child);
+  /* Make new/child thread natp */
   natp_child = NaClAppThreadMake(nap_child, usr_entry, usr_stack_ptr, user_tls1, user_tls2);
 
-  if (!natp_child) {
-    return 0;
-  }
+  if (!natp_child) return 0;
 
-  /* copy parent page tables and execution context */
-  child_ctx = natp_child->user;
-  NaClCopyExecutionContext(nap_parent, nap_child);
-  NaClLog(1, "fork_num: [%d], child cage_id: [%d], parent cage id: [%d]\n",
-          fork_num,
-          nap_child->cage_id,
-          nap_parent->cage_id);
-  NaClLog(1, "%s\n", "Thread context of child before copy");
-  NaClLogThreadContext(natp_child);
-  natp_child->user = natp_parent->user;
-  NaClLog(1, "%s\n", "Thread context of child after copy");
-  NaClLogThreadContext(natp_child);
+  if (tl_type == THREAD_LAUNCH_MAIN){
+    nap_child->parent = NULL;
+  }
+  else if (tl_type == THREAD_LAUNCH_FORK) {
+    NaClForkThreadContextSetup(natp_parent, natp_child, stack_ptr_parent, stack_ptr_child);
+  }
+ 
 
   /*
-   * adjust trampolines and %rip
+   * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  nap_child->mem_start = child_ctx.r15;
-  natp_child->user.r15 = nap_child->mem_start;
-  natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
-  natp_child->user.rbp = (uintptr_t)stack_ptr_child + base_ptr_offset;
-  natp_child->user.sysret = 0;
-
-/* examine arbitrary stack values */
-#if defined(_DEBUG)
-# define NUM_STACK_VALS 16
-# define OUTPUT_FMT "0x%016lx"
-# define TYPE_TO_EXAMINE uintptr_t
-# define EXAMINE_ADDR(TYPE, FMT, ADDR)                                                             \
-        do {                                                                                       \
-          unsigned char *addr = (unsigned char *)(ADDR);                                           \
-          UNREFERENCED_PARAMETER(addr);                                                            \
-          NaClLog(2, "[Memory] Memory addr:                   %p\n", (void *)addr);                \
-          NaClLog(2, "[Memory] Memory content (byte-swapped): " FMT "\n", (TYPE)OBJ_REP_64(addr)); \
-          NaClLog(2, "[Memory] Memory content (raw):          " FMT "\n", *(TYPE *)addr);          \
-        } while (0)
-  for (size_t i = 0; i < NUM_STACK_VALS; i++) {
-    NaClLog(2, "child_stack[%zu]:\n", i);
-    EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, (TYPE_TO_EXAMINE *)stack_ptr_child + i);
-    NaClLog(2, "parent_stack[%zu]:\n", i);
-    EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, (TYPE_TO_EXAMINE *)stack_ptr_parent + i);
+  if (tl_type != THREAD_LAUNCH_MAIN) {
+    natp_child->user.tls_idx = nap_child->cage_id;
+    if (nacl_user[natp_child->user.tls_idx]) {
+      NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
+              natp_child->user.tls_idx,
+              (void *)nacl_user[natp_child->user.tls_idx]);
+      goto already_running;
+    }
+    nacl_user[natp_child->user.tls_idx] = &natp_child->user;
+    NaClTlsSetTlsValue1(natp_child, user_tls1);
+    NaClTlsSetTlsValue2(natp_child, user_tls2);
   }
-  for (size_t i = 0; i < NUM_STACK_VALS; i++) {
-    uintptr_t child_addr = (uintptr_t)((TYPE_TO_EXAMINE *)natp_child->user.rsp + i);
-    uintptr_t parent_addr = (uintptr_t)((TYPE_TO_EXAMINE *)parent_ctx.rsp + i);
-    NaClLog(2, "child_rsp[%zu]:\n", i);
-    EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, child_addr);
-    NaClLog(2, "parent_rsp[%zu]:\n", i);
-    EXAMINE_ADDR(TYPE_TO_EXAMINE, OUTPUT_FMT, parent_addr);
-  }
-# undef NUM_STACK_VALS
-# undef OUTPUT_FMT
-# undef TYPE_TO_EXAMINE
-# undef EXAMINE_ADDR
-#endif /* defined(_DEBUG) */
-
-  /*
-   * setup TLS slot in the global nacl_user array
-   */
-  natp_child->user.tls_idx = nap_child->cage_id;
-  if (nacl_user[natp_child->user.tls_idx]) {
-    NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
-            natp_child->user.tls_idx,
-            (void *)nacl_user[natp_child->user.tls_idx]);
-    goto already_running;
-  }
-  nacl_user[natp_child->user.tls_idx] = &natp_child->user;
-  NaClTlsSetTlsValue1(natp_child, user_tls1);
-  NaClTlsSetTlsValue2(natp_child, user_tls2);
 
   /*
    * We set host_thread_is_defined assuming, for now, that
@@ -693,17 +659,21 @@ int NaClAppForkThreadSpawn(struct NaClApp           *nap_parent,
    */
   natp_child->host_thread_is_defined = 1;
 
-  NaClXCondVarBroadcast(&nap_parent->cv);
-  NaClXMutexUnlock(&nap_parent->mu);
-  NaClXMutexUnlock(&nap_child->mu);
+  if (tl_type == THREAD_LAUNCH_FORK){
+    NaClXCondVarBroadcast(&nap_parent->cv);
+    NaClXMutexUnlock(&nap_parent->mu);
+    NaClXMutexUnlock(&nap_child->mu);
 
-  /* TODO: figure out a better way to avoid extra instance spawns -jp */
-  NaClThreadYield();
-  NaClXMutexLock(&nap_child->mu);
-  nap_child->in_fork = 0;
-  NaClXMutexUnlock(&nap_child->mu);
+    /* TODO: figure out a better way to avoid extra instance spawns -jp */
+    NaClThreadYield();
+    NaClXMutexLock(&nap_child->mu);
+    nap_child->in_fork = 0;
+    NaClXMutexUnlock(&nap_child->mu);
+  }
 
-  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppForkThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
+
+
+  if (!NaClThreadCtor(&natp_child->host_thread, NaClAppThreadLauncher, natp_child, NACL_KERN_STACK_SIZE)) {
     /*
     * No other thread saw the NaClAppThread, so it is OK that
     * host_thread was not initialized despite host_thread_is_defined
@@ -721,46 +691,6 @@ already_running:
     NaClXMutexUnlock(&nap_parent->mu);
     NaClXMutexUnlock(&nap_child->mu);
     pthread_exit(&ignored_ret);
-}
-
-int NaClAppThreadSpawn(struct NaClApp *nap,
-                       uintptr_t      usr_entry,
-                       uintptr_t      usr_stack_ptr,
-                       uint32_t       user_tls1,
-                       uint32_t       user_tls2) {
-  struct NaClAppThread *natp = NaClAppThreadMake(nap, usr_entry, usr_stack_ptr,
-                                                 user_tls1, user_tls2);
-
-  if (!natp) {
-    return 0;
-  }
-
-  /*
-   * save master thread context pointer
-   */
-  if (nap->cage_id == 1 || !master_ctx) {
-    master_ctx = &natp->user;
-  }
-  nap->parent = NULL;
-  nap->master = ((struct NaClAppThread *)master_ctx)->nap;
-
-  /*
-   * We set host_thread_is_defined assuming, for now, that
-   * NaClThreadCtor() will succeed.
-   */
-  natp->host_thread_is_defined = 1;
-  if (!NaClThreadCtor(&natp->host_thread, NaClAppThreadLauncher, (void *) natp,
-                      NACL_KERN_STACK_SIZE)) {
-    /*
-     * No other thread saw the NaClAppThread, so it is OK that
-     * host_thread was not initialized despite host_thread_is_defined
-     * being set.
-     */
-    natp->host_thread_is_defined = 0;
-    NaClAppThreadDelete(natp);
-    return 0;
-  }
-  return 1;
 }
 
 /*

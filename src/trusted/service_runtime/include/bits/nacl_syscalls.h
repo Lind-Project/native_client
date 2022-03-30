@@ -19,6 +19,8 @@
 
 #define NACL_sys_null                    1
 #define NACL_sys_nameservice             2
+#define NACL_sys_unlink                  4
+#define NACL_sys_link                    5
 
 #define NACL_sys_dup                     8
 #define NACL_sys_dup2                    9
@@ -48,20 +50,27 @@
 #define NACL_sys_getpid                 31
 #define NACL_sys_sched_yield            32
 #define NACL_sys_sysconf                33
+#define NACL_sys_send                   34
+#define NACL_sys_sendto                 35
+#define NACL_sys_recv                   36
+#define NACL_sys_recvfrom               37
 
 #define NACL_sys_gettimeofday           40
 #define NACL_sys_clock                  41
 #define NACL_sys_nanosleep              42
 #define NACL_sys_clock_getres           43
 #define NACL_sys_clock_gettime          44
+#define NACL_sys_shutdown               45
 
-#define NACL_sys_mkdir                  45
-#define NACL_sys_rmdir                  46
-#define NACL_sys_chdir                  47
-#define NACL_sys_getcwd                 48
-#define NACL_sys_unlink                 49
-
-/* 50-58 previously used for multimedia syscalls */
+#define NACL_sys_select                 46
+#define NACL_sys_getcwd                 47
+#define NACL_sys_poll                   48
+#define NACL_sys_socketpair             49
+#define NACL_sys_getuid                 50
+#define NACL_sys_geteuid                51
+#define NACL_sys_getgid                 52
+#define NACL_sys_getegid                53
+#define NACL_sys_flock                  54
 
 #define NACL_sys_imc_makeboundsock      60
 #define NACL_sys_imc_accept             61
@@ -110,7 +119,6 @@
  */
 #define NACL_sys_test_syscall_1         111
 #define NACL_sys_test_syscall_2         112
-#define NACL_sys_lind_syscall           113
 
 #define NACL_sys_pipe                   114
 #define NACL_sys_pipe2                  115
@@ -123,6 +131,36 @@
 #define NACL_sys_wait4                  122
 #define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
+
+#define NACL_sys_gethostname            125
+
+#define NACL_sys_pread                  126
+#define NACL_sys_pwrite                 127
+
+#define NACL_sys_fcntl_get              128
+#define NACL_sys_fcntl_set              129
+
+#define NACL_sys_chdir                  130
+#define NACL_sys_mkdir                  131
+#define NACL_sys_rmdir                  132
+#define NACL_sys_statfs                 133
+#define NACL_sys_fstatfs                134
+
+#define NACL_sys_socket                 136
+#define NACL_sys_getsockopt             137
+#define NACL_sys_setsockopt             138
+
+
+#define NACL_sys_access                 139
+#define NACL_sys_accept                 140
+#define NACL_sys_connect                141
+#define NACL_sys_bind                   142
+#define NACL_sys_listen                 143
+#define NACL_sys_getsockname            144
+#define NACL_sys_getpeername            145
+#define NACL_sys_epoll_create           157
+#define NACL_sys_epoll_ctl              158
+#define NACL_sys_epoll_wait             159
 
 #define NACL_MAX_SYSCALLS               256
 

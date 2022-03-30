@@ -1,4 +1,4 @@
-# Lind
+# Lind  [![Build Status](https://github.com/Lind-Project/native_client/actions/workflows/lind-selfhost.yml/badge.svg?branch=develop)](https://github.com/Lind-Project/native_client/actions/workflows/lind-selfhost.yml)
 
 Lind is a single-process sandbox that provides an option to safely execute
 programs and control its resource (network, file, memory, cpu, etc.) usage
@@ -53,7 +53,6 @@ The default environment of `./mklind -e` consists of
 export LIND_PREFIX="$HOME"
 export LIND_BASE="$LIND_PREFIX/lind_project"
 export LIND_SRC="$LIND_PREFIX/lind_project/lind"
-export LIND_MONITOR="$LIND_PREFIX/lind_project/reference_monitor"
 export NACL_SDK_ROOT="$LIND_PREFIX/lind_project/lind/repy/sdk"
 export REPY_PATH="$LIND_PREFIX/lind_project/lind/repy"
 export PYTHON="python2"

@@ -30,6 +30,7 @@
 
 #include <signal.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
@@ -69,6 +70,10 @@ EXTERN_C_BEGIN
 #define NACL_SERVICE_ADDRESS_DESCRIPTOR 4
 
 #define NACL_DEFAULT_STACK_MAX  (16u << 20)  /* main thread stack */
+
+#define NACL_BAD_FD                     -1
+
+#define INIT_PROCESS_NUM 1
 
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
@@ -126,14 +131,11 @@ struct NaClApp {
   struct NaClCondVar        children_cv;
   struct DynArray           children;
   struct NaClApp            *parent;
-  struct NaClApp            *master;
-  /* mappings of `int fd` numbers to `NaClDesc *` */
-  struct NaClDesc           *fd_maps[FILE_DESC_MAX];
-  volatile sig_atomic_t     children_ids[CHILD_NUM_MAX];
+
   volatile sig_atomic_t     num_children;
   volatile sig_atomic_t     cage_id;
-  volatile sig_atomic_t     num_lib;
   volatile sig_atomic_t     parent_id;
+  enum NaClThreadLaunchType tl_type;
 
   /* yiwen: store the path of the execuable running inside this cage(as the main thread) */
   int                       argc;
@@ -142,8 +144,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
-  /* set to the next unused (available for dup() etc.) file descriptor */
-  int                       fd;
+
 
   /*
    * public, user settable prior to app start.
@@ -470,6 +471,8 @@ struct NaClApp {
 };
 
 
+void CheckForLkm(void);
+
 
 void  NaClAppIncrVerbosity(void);
 
@@ -633,16 +636,13 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * alternative design, NaClWaitForMainThreadToExit will become a
  * no-op.
  */
-int NaClCreateMainThread(struct NaClApp     *nap,
-                         int                argc,
-                         char               **argv,
-                         char const *const  *envv) NACL_WUR;
 
-int NaClCreateMainForkThread(struct NaClAppThread     *natp_parent,
-                             struct NaClApp           *nap_child,
-                             int                      argc,
-                             char                     **argv,
-                             char const *const        *envv) NACL_WUR;
+
+int NaClCreateThread(struct NaClAppThread     *natp_parent,
+                     struct NaClApp           *nap_child,
+                     int                      argc,
+                     char                     **argv,
+                     char const *const        *envv) NACL_WUR;
 
 int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
 
@@ -688,6 +688,9 @@ int32_t NaClSetAvail(struct NaClApp   *nap,
  */
 struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
                                int            d);
+
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                                    int            d);
 
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
@@ -857,6 +860,11 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
  * region..
  */
 
+/* Lind
+ * We're only using Linux so it's fine to disregard these operations which are
+ * Windows specific. 
+ */
+
 /*
  * Some potentially blocking I/O operation is about to start.  Syscall
  * handlers implement DMA-style access where the host-OS syscalls
@@ -902,12 +910,13 @@ static INLINE void NaClHandleBootstrapArgs(int *argc_p, char ***argv_p) {
 
 /*
  * Copy the entire dynamic text section in an NaClApp to a child process.
+ * Also copy all the virtual memory in a NaClApp to a child process and populate its vmmap.
  *
  * preconditions:
  * * `nap_parent` and `nap_child` must both be pointers to valid, initialized NaClApps
  * * Caller must hold both the nap_parent->mu and the nap_child->mu mutexes
  */
-void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /*
  * Copy the entire address execution context of an NaClApp to a child
@@ -917,10 +926,14 @@ void NaClCopyDynamicText(struct NaClApp *nap_parent, struct NaClApp *nap_child);
  * * `child` must be a pointer to a valid, initialized NaClApp
  * * Caller must hold both the nap->mu and the child->mu mutexes
  */
-void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_child, uintptr_t parent_stack_addr);
 
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
+
+/* Find the next usuable fd */
+int NextFd(int cage_id);
+int NextFdBounded(int cage_id, int lowerbound);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);

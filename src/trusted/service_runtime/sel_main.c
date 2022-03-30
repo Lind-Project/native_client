@@ -71,6 +71,11 @@
 # define NaClEnableOuterSandbox NULL
 #endif
 
+
+extern struct NaClMutex ccmut;
+extern struct NaClCondVar cccv;
+extern int cagecount;
+extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -133,6 +138,7 @@ static void PrintUsage(void) {
           "    respectively\n"
           " -i associates an IMC handle D with app desc d\n"
           " -f file to load; if omitted, 1st arg after \"--\" is loaded\n"
+          " -k forcibly disable the use of the CoW loadable kernel module\n"
           " -B additional ELF file to load as a blob library\n"
           " -v increases verbosity\n"
           " -X create a bound socket and export the address via an\n"
@@ -156,6 +162,7 @@ static void PrintUsage(void) {
           " -S enable signal handling.  Not supported on Windows.\n"
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
+          " -t toggle runtime statistics\n"
           );  /* easier to add new flags/lines */
 }
 
@@ -171,12 +178,23 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Z";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsSvw:X:Z";
+  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
+
+double LindGetTime(void) {
+  struct timespec tp;
+
+  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
+    perror( "clock gettime" );
+    exit( EXIT_FAILURE );
+  }
+
+  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
+}
 
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
@@ -205,14 +223,15 @@ int NaClSelLdrMain(int argc, char **argv) {
   char                          *blob_library_file = NULL;
   char                          *log_file = NULL;
   const char                    **envp;
-  clock_t                       nacl_main_begin;
-  clock_t                       nacl_main_finish;
-  clock_t                       nacl_initialization_finish;
+  double                        nacl_main_begin;
+  double                        nacl_main_finish;
+  double                        nacl_initialization_finish;
   double                        nacl_main_spent;
   double                        nacl_initialization_spent;
-  clock_t                       nacl_user_program_begin;
-  clock_t                       nacl_user_program_finish;
+  double                        nacl_user_program_begin;
+  double                        nacl_user_program_finish;
   double                        nacl_user_program_spent;
+  int                           toggle_time_info = 0;
   #ifdef SYSCALL_TIMING
   double                        nacl_syscall_total_time;
   double                        lind_syscall_total_time;
@@ -235,7 +254,13 @@ int NaClSelLdrMain(int argc, char **argv) {
   redir_queue = NULL;
   redir_qend = &redir_queue;
 
-  nacl_main_begin = clock();
+  nacl_main_begin = LindGetTime();
+  
+  cagecount = 0;
+
+  /* Initialize cage early on to avoid Cage 0 */
+  InitializeCage(nap, 1);
+
 
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
@@ -350,6 +375,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         *redir_qend = entry;
         redir_qend = &entry->next;
         break;
+      case 'k':
+        use_lkm = false;
+        break;
       case 'l':
         log_file = optarg;
         break;
@@ -372,6 +400,9 @@ int NaClSelLdrMain(int argc, char **argv) {
         break;
       case 'S':
         handle_signals = 1;
+        break;
+      case 't':
+        toggle_time_info = 1;
         break;
       case 'v':
         ++verbosity;
@@ -405,10 +436,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  if (!LindPythonInit()) {
-      fflush(NULL);
-      exit(EXIT_FAILURE);
-  }
+  lindrustinit(verbosity);
 
   if (debug_mode_ignore_validator == 1) {
     NaClLog(1, "%s\n", "DEBUG MODE ENABLED (ignore validator)");
@@ -546,6 +574,12 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
 #if NACL_LINUX
+
+  if(use_lkm) //in case we haven't forced not using the lkm with -k
+    CheckForLkm();
+  if(!use_lkm) {
+    fprintf(stderr, "Not using the CoW Loadable kernel module!\n");
+  }
   NaClSignalHandlerInit();
 #endif
   /*
@@ -829,7 +863,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  InitializeCage(nap, 1);
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
@@ -840,27 +873,36 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  nacl_initialization_finish = clock();
-  if (!NaClCreateMainThread(nap,
-                            argc - optind,
-                            argv + optind,
-                            nap->clean_environ)) {
+  nacl_initialization_finish = LindGetTime();
+  nap->tl_type = THREAD_LAUNCH_MAIN; //set main thread
+  if (!NaClCreateThread(NULL,
+                        nap,
+                        argc - optind,
+                        argv + optind,
+                        nap->clean_environ)) {
     NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
     goto done;
   }
-  nacl_user_program_begin = clock();
+  nacl_user_program_begin = LindGetTime();
 
   // ***********************************************************************
   // yiwen: cleanup and exit
   // ***********************************************************************
-  NaClEnvCleanserDtor(&env_cleanser);
+  //NaClEnvCleanserDtor(&env_cleanser);
+  //JS: Fix!!! do reference counter or something?
   NaClPerfCounterMark(&time_all_main, "CreateMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   DynArrayDtor(&env_vars);
 
   /* yiwen: waiting for running cages to exit */
   ret_code = NaClWaitForMainThreadToExit(nap);
-  nacl_user_program_finish = clock();
+
+  NaClXMutexLock(&ccmut);
+  while(cagecount > 0) {
+    NaClXCondVarWait(&cccv, &ccmut);
+  }
+  NaClXMutexUnlock(&ccmut);
+  nacl_user_program_finish = LindGetTime();
   NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
   NaClPerfCounterIntervalLast(&time_all_main);
   NaClPerfCounterMark(&time_all_main, "SelMainEnd");
@@ -874,15 +916,20 @@ int NaClSelLdrMain(int argc, char **argv) {
    * before we clean up the address space.
    */
 
-  nacl_main_finish = clock();
-
+  nacl_main_finish = LindGetTime();
   NaClLog(1, "%s\n", "[NaClMain] End of the program! \n");
-  nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl main program time spent = %f \n", nacl_main_spent);
-  nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl initialization time spent = %f \n", nacl_initialization_spent);
-  nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin) / CLOCKS_PER_SEC;
-  NaClLog(1, "[NaClMain] NaCl user program time spent = %f \n", nacl_user_program_spent);
+
+
+  if (toggle_time_info)
+  {
+    nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin);
+    fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
+    nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin);
+    fprintf(stderr, "[TimeInfo] NaCl initialization time spent = %f \n", nacl_initialization_spent);
+    nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin);
+    fprintf(stderr, "[TimeInfo] NaCl user program time spent = %f \n", nacl_user_program_spent);
+  }
+
 
 #ifdef SYSCALL_TIMING
   NaClLog(1, "%s\n", "[NaClMain] NaCl system call timing enabled! ");
@@ -908,8 +955,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
 #endif
 
-  NaClLog(1, "[Performance results] LindPythonInit(): %f \n", time_counter);
-  LindPythonFinalize();
+  lindrustfinalize();
   NaClExit(ret_code);
 
 done:
@@ -941,10 +987,7 @@ done:
 #endif
   NaClAllModulesFini();
 
-  if(!LindPythonFinalize()) {
-      fflush(NULL);
-      exit(EXIT_SUCCESS);
-  }
+  lindrustfinalize();
 
   NaClExit(ret_code);
 
