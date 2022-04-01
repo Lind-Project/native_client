@@ -188,8 +188,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
      * break to the page containing new_break.
      */
 
-    sys_break = NaClUserToSysProt(nap, nap->break_addr, NACL_ABI_PROT_READ |
-                                                        NACL_ABI_PROT_WRITE);
+    sys_break = NaClUserToSys(nap, nap->break_addr);
 
     usr_last_data_page = (nap->break_addr - 1) >> NACL_PAGESHIFT;
 
