@@ -5386,7 +5386,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd, cmd, set_op);
 
   ndp = GetDescFromCagetable(nap, fd);
-  if (ndp) {
+  if (!ndp) {
     NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     return -NACL_ABI_EBADF;
   }
