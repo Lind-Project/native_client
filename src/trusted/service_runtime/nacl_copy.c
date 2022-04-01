@@ -68,7 +68,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
   // }
 
   NaClCopyTakeLock(nap);
-  strncpy(dst_buffer, (char *) src_sys_addr, copy_bytes);
+  strncpy(dst_buffer, (char *) src_sys_addr, dst_buffer_bytes);
   NaClCopyDropLock(nap);
 
   /* POSIX strncpy pads with NUL characters */
