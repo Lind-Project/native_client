@@ -158,7 +158,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   NaClLog(3, "Entered NaClSysBrk(new_break 0x%08"NACL_PRIxPTR")\n",
           new_break);
 
-  sys_new_break = NaClUserToSysAddrProt(nap, new_break, NACL_ABI_PROT_READ |
+  sys_new_break = NaClUserToSysAddr(nap, new_break, NACL_ABI_PROT_READ |
                                                         NACL_ABI_PROT_WRITE);
   NaClLog(3, "sys_new_break 0x%08"NACL_PRIxPTR"\n", sys_new_break);
 
