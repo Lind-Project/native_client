@@ -593,6 +593,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
 
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
+      self->cached_entry = ent;
       return 0 == (prot & (~flags));
     } else if (ent->page_num <= page_num && page_num < ent_end_page) {
       /* The mapping overlaps the entry. */
