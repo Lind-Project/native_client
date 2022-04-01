@@ -53,6 +53,7 @@ struct NaClVmmap {
   struct NaClVmmapEntry **vmentry;       /* must not overlap */
   size_t                nvalid, size;
   int                   is_sorted;
+  struct NaClVmmapEntry *cached_entry;
 };
 
 void NaClVmmapDebug(struct NaClVmmap  *self,
