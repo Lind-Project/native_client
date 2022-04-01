@@ -11,6 +11,8 @@
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_sync_checked.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
+#include "native_client/src/trusted/service_runtime/include/bits/mman.h"
+
 
 int NaClCopyInFromUser(struct NaClApp *nap,
                        void           *dst_sys_ptr,
@@ -18,7 +20,7 @@ int NaClCopyInFromUser(struct NaClApp *nap,
                        size_t         num_bytes) {
   uintptr_t src_sys_addr;
 
-  src_sys_addr = NaClUserToSysAddrRange(nap, src_usr_addr, num_bytes);
+  src_sys_addr = NaClUserToSysAddrRangeProt(nap, src_usr_addr, num_bytes, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == src_sys_addr) {
     return 0;
   }
@@ -35,7 +37,7 @@ int NaClCopyInFromUserAndDropLock(struct NaClApp *nap,
                                   size_t         num_bytes) {
   uintptr_t src_sys_addr;
 
-  src_sys_addr = NaClUserToSysAddrRange(nap, src_usr_addr, num_bytes);
+  src_sys_addr = NaClUserToSysAddrRangeProt(nap, src_usr_addr, num_bytes, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == src_sys_addr) {
     return 0;
   }
@@ -53,7 +55,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
   uintptr_t src_sys_addr;
 
   CHECK(dst_buffer_bytes > 0);
-  src_sys_addr = NaClUserToSysAddr(nap, src_usr_addr);
+  src_sys_addr = NaClUserToSysAddr(nap, src_usr_addr, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == src_sys_addr) {
     dst_buffer[0] = '\0';
     return 0;
@@ -77,7 +79,7 @@ int NaClCopyOutToUser(struct NaClApp  *nap,
                       size_t          num_bytes) {
   uintptr_t dst_sys_addr;
 
-  dst_sys_addr = NaClUserToSysAddrRange(nap, dst_usr_addr, num_bytes);
+  dst_sys_addr = NaClUserToSysAddrRangeProt(nap, dst_usr_addr, num_bytes, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == dst_sys_addr) {
     return 0;
   }
