@@ -5385,12 +5385,12 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
   NaClLog(2, "Cage %d Entered NaClSysFcntlSet(0x%08"NACL_PRIxPTR", %d, %d, %ld)\n",
           nap->cage_id, (uintptr_t) natp, fd, cmd, set_op);
 
-  int naclfd = fd_cage_table[nap->cage_id][fd];
-  if (naclfd < 0 || !(ndp = NaClGetDesc(nap, naclfd))) {
+  ndp = GetDescFromCagetable(nap, fd);
+  if (ndp) {
     NaClLog(2, "NaClSysFcntlSet was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
     return -NACL_ABI_EBADF;
   }
-  fdtrans = ((struct NaClDescIoDesc *) ndp)->hd->d;
+  fdtrans = NaClDesc2Lindfd(ndp);
 
   if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
     struct NaClHostDesc *nhd = malloc(sizeof(struct NaClHostDesc));
