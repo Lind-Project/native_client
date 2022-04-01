@@ -60,12 +60,12 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
     dst_buffer[0] = '\0';
     return 0;
   }
-  
-  copy_bytes = strnlen(src_sys_addr, dst_buffer_bytes);
-  if (copy_bytes == dst_buffer_bytes) {
-    dst_buffer[0] = '\0';
-    return 0;
-  }
+
+  // copy_bytes = strnlen(src_sys_addr, dst_buffer_bytes);
+  // if (copy_bytes == dst_buffer_bytes) {
+  //   dst_buffer[0] = '\0';
+  //   return 0;
+  // }
 
   NaClCopyTakeLock(nap);
   strncpy(dst_buffer, (char *) src_sys_addr, copy_bytes);
