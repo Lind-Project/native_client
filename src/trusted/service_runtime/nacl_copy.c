@@ -55,7 +55,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
   uintptr_t src_sys_addr;
 
   CHECK(dst_buffer_bytes > 0);
-  src_sys_addr = NaClUserToSysAddr(nap, src_usr_addr, NACL_ABI_PROT_READ);
+  src_sys_addr = NaClUserToSysAddrProt(nap, src_usr_addr, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == src_sys_addr) {
     dst_buffer[0] = '\0';
     return 0;
