@@ -427,7 +427,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
    * NaClVmmapChangeProt proceeds to ensure that valid mapping exists
    * as modifications cannot be rolled back.
    */
-  if (!NaClVmmapCheckExistingMapping(self, page_num, npages, prot)) {
+  if (!NaClVmmapCheckExistingMapping(self, page_num, npages, prot, true)) {
     return 0;
   }
 
@@ -544,7 +544,8 @@ int NaClVmmapEntryMaxProt(struct NaClVmmapEntry *entry) {
 int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
                                   uintptr_t         page_num,
                                   size_t            npages,
-                                  int               prot) {
+                                  int               prot,
+                                  bool              mprotect) {
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
@@ -562,7 +563,9 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   if (self->cached_entry) {
     struct NaClVmmapEntry   *ent = self->cached_entry;
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
-    int                     flags = NaClVmmapEntryMaxProt(ent);
+    int                     flags = ent->prot;
+
+    if (mprotect) flags = NaClVmmapEntryMaxProt(ent);
    
     //If the page does not not have PROT_NONE, force the PROT_READ flag
     //This behavior is unspeicified by POSIX, but Linux acts in this way
@@ -582,7 +585,9 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   for (i = 0; i < self->nvalid; ++i) {
     struct NaClVmmapEntry   *ent = self->vmentry[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
-    int                     flags = NaClVmmapEntryMaxProt(ent);
+    int                     flags = ent->prot;
+    
+    if (mprotect) flags = NaClVmmapEntryMaxProt(ent);
 
     //If the page does not not have PROT_NONE, force the PROT_READ flag
     //This behavior is unspeicified by POSIX, but Linux acts in this way

@@ -16,6 +16,8 @@
 
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 
+#include <stdbool.h>
+
 EXTERN_C_BEGIN
 
 struct NaClDesc;
@@ -126,7 +128,8 @@ int NaClVmmapChangeProt(struct NaClVmmap  *self,
 int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
                                   uintptr_t         page_num,
                                   size_t            npages,
-                                  int               prot);
+                                  int               prot,
+                                  bool              mprotect);
 
 /*
  * NaClVmmapFindPage and NaClVmmapFindPageIter only works if pnum is

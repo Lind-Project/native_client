@@ -113,8 +113,7 @@ static INLINE uintptr_t NaClUserToSysAddrNullOkayProt(struct NaClApp  *nap,
   if (((uintptr_t) 1U << nap->addr_bits <= uaddr)) {
     return kNaClBadAddress;
   }
-  if(uaddr != 0 && !NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT,
-              1, prot)){
+  if(uaddr != 0 && !NaClVmmapCheckExistingMapping(&nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
@@ -126,8 +125,7 @@ static INLINE uintptr_t NaClUserToSysAddrProt(struct NaClApp  *nap,
   if (0 == uaddr || ((uintptr_t) 1U << nap->addr_bits) <= uaddr) {
     return kNaClBadAddress;
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT,
-              1, prot)){
+  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
@@ -150,8 +148,7 @@ static INLINE uintptr_t NaClUserToSysAddrRangeProt(struct NaClApp  *nap,
   if (((uintptr_t) 1U << nap->addr_bits) < end_addr) {
     return kNaClBadAddress;
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT,
-              count >> NACL_PAGESHIFT, prot)){
+  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, count >> NACL_PAGESHIFT, prot, false)){
     return kNaClBadAddress;
   }
 
@@ -167,8 +164,7 @@ static INLINE uintptr_t NaClUserToSysProt(struct NaClApp  *nap,
             "addr space %" NACL_PRId8 " bits\n",
             uaddr, nap->addr_bits);
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT,
-              1, prot)){
+  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
