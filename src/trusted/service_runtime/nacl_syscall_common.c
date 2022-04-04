@@ -4245,6 +4245,9 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   int new_envc = 0;
   int ret = -NACL_ABI_ENOMEM;
 
+  NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
+
+
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
   if (envp) {
     sys_envp_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)envp, NACL_ABI_PROT_READ);
@@ -4255,9 +4258,6 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
     }
   }
   
-  }
-  NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
-
   /* set up environment, only do this if we initially were passed an environment*/
   NaClEnvCleanserCtor(&env_cleanser, 0);
   if (envp) {
