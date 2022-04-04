@@ -4246,8 +4246,16 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   int ret = -NACL_ABI_ENOMEM;
 
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
-  if (envp) sys_envp_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)envp, NACL_ABI_PROT_READ);
-
+  if (envp) {
+    sys_envp_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)envp, NACL_ABI_PROT_READ);
+    if (kNaClBadAddress == sys_envp_ptr) {
+      NaClLog(2, "NaClSysExecve could not translate environment address, returning %d\n", -NACL_ABI_EFAULT);
+      ret = -NACL_ABI_EFAULT;
+      return ret;
+    }
+  }
+  
+  }
   NaClLog(1, "%s\n", "[NaClSysExecve] NaCl execve() starts!");
 
   /* set up environment, only do this if we initially were passed an environment*/
