@@ -4400,7 +4400,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   
   /* calculate page addresses and sizes */
   //I'm not 100% sure of the necessary prot here, TODO: ensure this
-  dyncode_child = (void *)NaClUserToSysProt(nap_child, nap_child->dynamic_text_start, NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE);
+  dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
   dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
   tramp_size = NaClRoundPage(nap->static_text_end - NACL_SYSCALL_START_ADDR);
