@@ -76,6 +76,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
     bytes_copied = bytes_copied + copy_bytes;
     if (strnlen(src_sys_addr, copy_bytes) < copy_bytes) break;
     if (bytes_copied == dst_buffer_bytes) break;
+    check_addr = (page_end + 1) << NACL_PAGESHIFT;
   }
   NaClCopyDropLock(nap);
 
