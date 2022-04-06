@@ -67,7 +67,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
 
   NaClCopyTakeLock(nap);
   while (1) {
-    unitptr_t page_end = NaClVmmapCheckAddrMapping( &nap->mem_map, check_addr >> NACL_PAGESHIFT, 1, NACL_ABI_PROT_READ);
+    unintptr_t page_end = NaClVmmapCheckAddrMapping( &nap->mem_map, check_addr >> NACL_PAGESHIFT, 1, NACL_ABI_PROT_READ);
     if (!page_end) break;
     int page_room = ((page_end << NACL_PAGESHIFT) & 0xfff) - check_addr;
     int dst_bytes_remaining = dst_buffer_bytes - bytes_copied;
