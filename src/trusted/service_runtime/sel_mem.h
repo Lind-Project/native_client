@@ -131,6 +131,14 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
                                   int               prot);
 
 /*
+ * NaClVmmapCheckAddrMapping checks whether pages are mapped for an address
+ */
+int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot);
+
+/*
  * NaClVmmapFindPage and NaClVmmapFindPageIter only works if pnum is
  * in the NaClVmmap.  If not, NULL and an AtEnd iterator is returned.
  */
