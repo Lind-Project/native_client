@@ -53,24 +53,32 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
                            size_t         dst_buffer_bytes,
                            uintptr_t      src_usr_addr) {
   uintptr_t src_sys_addr;
-  int copy_bytes;
   CHECK(dst_buffer_bytes > 0);
-  src_sys_addr = NaClUserToSysAddrProt(nap, src_usr_addr, NACL_ABI_PROT_READ);
+
+
+  src_sys_addr = NaClUserToSysAddr(nap, src_usr_addr);
   if (kNaClBadAddress == src_sys_addr) {
     dst_buffer[0] = '\0';
     return 0;
   }
 
-  copy_bytes = strnlen(src_sys_addr, dst_buffer_bytes);
-  if (copy_bytes == dst_buffer_bytes) {
-    dst_buffer[0] = '\0';
-    return 0;
-  }
+  uintptr_t check_addr = src_usr_addr;
+  int bytes_copied = 0;
 
   NaClCopyTakeLock(nap);
-  strncpy(dst_buffer, (char *) src_sys_addr, copy_bytes);
-  dst_buffer[copy_bytes] = '\0';
+  while (1) {
+    unitptr_t page_end = NaClVmmapCheckAddrMapping( &nap->mem_map, check_addr >> NACL_PAGESHIFT, 1, NACL_ABI_PROT_READ);
+    if (!page_end) break;
+    int page_room = ((page_end << NACL_PAGESHIFT) & 0xfff) - check_addr;
+    int dst_bytes_remaining = dst_buffer_bytes - bytes_copied;
+    int copy_bytes = page_room < dst_bytes_remaining ? page_room : dst_bytes_remaining;
+    strncpy(dst_buffer + bytes_copied, (char *) src_sys_addr + bytes_copied, copy_bytes);
+    bytes_copied = bytes_copied + copy_bytes;
+    if (strnlen(src_sys_addr, copy_bytes) < copy_bytes) break;
+    if (bytes_copied == dst_buffer_bytes) break;
+  }
   NaClCopyDropLock(nap);
+
 
   /* POSIX strncpy pads with NUL characters */
   if (dst_buffer[dst_buffer_bytes - 1] != '\0') {

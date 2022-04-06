@@ -427,7 +427,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
    * NaClVmmapChangeProt proceeds to ensure that valid mapping exists
    * as modifications cannot be rolled back.
    */
-  if (!NaClVmmapCheckExistingMapping(self, page_num, npages, prot, true)) {
+  if (!NaClVmmapCheckExistingMapping(self, page_num, npages, prot)) {
     return 0;
   }
 
@@ -542,10 +542,49 @@ int NaClVmmapEntryMaxProt(struct NaClVmmapEntry *entry) {
 }
 
 int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
-                                  uintptr_t         page_num,
-                                  size_t            npages,
-                                  int               prot,
-                                  bool              mprotect) {
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot) {
+  size_t      i;
+  uintptr_t   region_end_page = page_num + npages;
+
+  NaClLog(2,
+          ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
+           ", 0x%"NACL_PRIxS", 0x%x)\n"),
+          (uintptr_t) self, page_num, npages, prot);
+
+  if (0 == self->nvalid) {
+    return 0;
+  }
+  NaClVmmapMakeSorted(self);
+
+  for (i = 0; i < self->nvalid; ++i) {
+    struct NaClVmmapEntry   *ent = self->vmentry[i];
+    uintptr_t               ent_end_page = ent->page_num + ent->npages;
+    int                     flags = NaClVmmapEntryMaxProt(ent);
+
+    if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
+      /* The mapping is inside existing entry. */
+      return 0 == (prot & (~flags));
+    } else if (ent->page_num <= page_num && page_num < ent_end_page) {
+      /* The mapping overlaps the entry. */
+      if (0 != (prot & (~flags))) {
+        return 0;
+      }
+      page_num = ent_end_page;
+      npages = region_end_page - ent_end_page;
+    } else if (page_num < ent->page_num) {
+      /* The mapping without backing store. */
+      return 0;
+    }
+  }
+  return 0;
+}
+
+int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot) {
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
@@ -564,8 +603,6 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
     struct NaClVmmapEntry   *ent = self->cached_entry;
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
     int                     flags = ent->prot;
-
-    if (mprotect) flags = NaClVmmapEntryMaxProt(ent);
    
     //If the page does not not have PROT_NONE, force the PROT_READ flag
     //This behavior is unspeicified by POSIX, but Linux acts in this way
@@ -576,7 +613,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
 
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
-      return 0 == (prot & (~flags));
+      if (!(prot & (~flags))) return ent_end_page;
     }
   }
 
@@ -587,8 +624,6 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
     int                     flags = ent->prot;
     
-    if (mprotect) flags = NaClVmmapEntryMaxProt(ent);
-
     //If the page does not not have PROT_NONE, force the PROT_READ flag
     //This behavior is unspeicified by POSIX, but Linux acts in this way
     if((flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
@@ -599,7 +634,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
       self->cached_entry = ent;
-      return 0 == (prot & (~flags));
+      if (!(prot & (~flags))) return ent_end_page;
     } else if (ent->page_num <= page_num && page_num < ent_end_page) {
       /* The mapping overlaps the entry. */
       if (0 != (prot & (~flags))) {

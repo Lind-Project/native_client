@@ -51,6 +51,23 @@
 
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
 
+static INLINE int NaClAddrCheckDynText(struct NaClApp  *nap,
+                                       uintptr_t       uaddr) {
+  if ((uaddr >= nap->dynamic_text_start) || uaddr <= nap->dynamic_text_end) return 0;
+  return 1;                                               
+}
+
+
+static INLINE int NaClAddrCheckDynTextRange(struct NaClApp  *nap,
+                                               uintptr_t       uaddr,
+                                               size_t          count) {
+  uintptr_t region_end = uaddr + count;
+  if ((uaddr >= nap->dynamic_text_start) || uaddr <= nap->dynamic_text_end) return 0;
+  if ((region_end >= nap->dynamic_text_start) || region_end <= nap->dynamic_text_end) return 0;
+
+  return 1;                                                                   
+}
+
 static INLINE uintptr_t NaClUserToSysAddrNullOkay(struct NaClApp  *nap,
                                                   uintptr_t       uaddr) {
   if (((uintptr_t) 1U << nap->addr_bits <= uaddr)) {
@@ -113,7 +130,7 @@ static INLINE uintptr_t NaClUserToSysAddrNullOkayProt(struct NaClApp  *nap,
   if (((uintptr_t) 1U << nap->addr_bits <= uaddr)) {
     return kNaClBadAddress;
   }
-  if(uaddr != 0 && !NaClVmmapCheckExistingMapping(&nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
+  if(uaddr != 0 && !NaClVmmapCheckAddrMapping(&nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
@@ -125,7 +142,7 @@ static INLINE uintptr_t NaClUserToSysAddrProt(struct NaClApp  *nap,
   if (0 == uaddr || ((uintptr_t) 1U << nap->addr_bits) <= uaddr) {
     return kNaClBadAddress;
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
+  if(!NaClVmmapCheckAddrMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
@@ -148,7 +165,7 @@ static INLINE uintptr_t NaClUserToSysAddrRangeProt(struct NaClApp  *nap,
   if (((uintptr_t) 1U << nap->addr_bits) < end_addr) {
     return kNaClBadAddress;
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, count >> NACL_PAGESHIFT, prot, false)){
+  if(!NaClVmmapCheckAddrMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, count >> NACL_PAGESHIFT, prot)){
     return kNaClBadAddress;
   }
 
@@ -164,11 +181,12 @@ static INLINE uintptr_t NaClUserToSysProt(struct NaClApp  *nap,
             "addr space %" NACL_PRId8 " bits\n",
             uaddr, nap->addr_bits);
   }
-  if(!NaClVmmapCheckExistingMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot, false)){
+  if(!NaClVmmapCheckAddrMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot)){
     return kNaClBadAddress;
   }
   return uaddr + nap->mem_start;
 }
+
 
 static INLINE uintptr_t NaClSysToUser(struct NaClApp  *nap,
                                       uintptr_t       sysaddr) {

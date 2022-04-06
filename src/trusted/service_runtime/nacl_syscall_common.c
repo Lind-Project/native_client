@@ -2667,7 +2667,7 @@ int32_t NaClSysMprotectInternal(struct NaClApp  *nap,
 
   if (!NaClVmmapCheckExistingMapping(
            &nap->mem_map, NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
-           length >> NACL_PAGESHIFT, prot, true)) {
+           length >> NACL_PAGESHIFT, prot)) {
     NaClLog(4, "mprotect: no such region\n");
     retval = -NACL_ABI_EACCES;
     goto cleanup;

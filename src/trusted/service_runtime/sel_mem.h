@@ -128,8 +128,7 @@ int NaClVmmapChangeProt(struct NaClVmmap  *self,
 int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
                                   uintptr_t         page_num,
                                   size_t            npages,
-                                  int               prot,
-                                  bool              mprotect);
+                                  int               prot);
 
 /*
  * NaClVmmapFindPage and NaClVmmapFindPageIter only works if pnum is
