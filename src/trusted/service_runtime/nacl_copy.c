@@ -13,7 +13,6 @@
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 
-
 int NaClCopyInFromUser(struct NaClApp *nap,
                        void           *dst_sys_ptr,
                        uintptr_t      src_usr_addr,
