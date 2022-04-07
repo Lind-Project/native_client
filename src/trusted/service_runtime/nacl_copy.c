@@ -65,6 +65,14 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
   uintptr_t check_addr = src_usr_addr;
   int bytes_copied = 0;
 
+  /*
+   * We need to handle NULL terminated strings that possibly could overlap VMMap entries,
+   * are not actually NULL terminated, or are longer than the destination buffer.
+   * To do this we check the mapping of the starting address, and copy what we can from that page.
+   * If it overlaps we continue on to check the next page.
+   * Exit conditions are: 1) page is non-valid, 2) we've found a NULL character, 3) we've copied up to the destination length
+   */
+
   NaClCopyTakeLock(nap);
   while (1) {
     uintptr_t page_end = NaClVmmapCheckAddrMapping( &nap->mem_map, check_addr >> NACL_PAGESHIFT, 1, NACL_ABI_PROT_READ);
