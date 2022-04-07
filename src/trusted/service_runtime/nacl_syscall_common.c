@@ -1345,10 +1345,12 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
    *
    * Furthermore, some requests take no arguments, so sysaddr might
    * end up being kNaClBadAddress and that is perfectly okay.
+   * 
+   * NR - currentl we only handle FIONBIO and FIOASYNC where arg_ptr is just an int*
    */
   // TODO: check every IOCTL request type to figure out needed prot
 
-  sysaddr = NaClUserToSysAddr(nap, (uintptr_t) arg_ptr);
+  sysaddr = NaClUserToSysAddrProt(nap, (uintptr_t) arg_ptr, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysIoctl could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
     retval = -NACL_ABI_EFAULT;

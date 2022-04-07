@@ -176,12 +176,16 @@ NaClErrorCode NaClMemoryProtection(struct NaClApp *nap) {
      * mappings, but the record is not actually used.  Overmapping is
      * prevented by a separate range check, which is done by
      * NaClSysCommonAddrRangeContainsExecutablePages_mu().
+     * 
+     * Note (NR): We're going to add this as PROT_NONE in the vmmap, 
+     * which is how its mapped in nacl_text.c, though the text_shm
+     * desc has protections of O_RDWR. This should still reflect the same capabilities
+     * for mprotect while disallowing reading from the dynamic text region.
      */
     NaClVmmapAddWithOverwrite(&nap->mem_map,
                  NaClSysToUser(nap, start_addr) >> NACL_PAGESHIFT,
                  region_size >> NACL_PAGESHIFT,
                  NACL_ABI_PROT_NONE,
-                //  NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC,
                  NACL_ABI_MAP_PRIVATE,
                  nap->text_shm,
                  0,
