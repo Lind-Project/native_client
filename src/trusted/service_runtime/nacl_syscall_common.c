@@ -4251,7 +4251,8 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   /* Make sys_envp_ptr a NULL array if we were passed NULL by EXECV */
   if (envp) {
     sys_envp_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)envp, NACL_ABI_PROT_READ);
-    if (kNaClBadAddress == sys_envp_ptr) {
+    int not_byte_aligned = sys_envp_ptr % 8;
+    if (not_byte_aligned || (kNaClBadAddress == sys_envp_ptr)) {
       NaClLog(2, "NaClSysExecve could not translate environment address, returning %d\n", -NACL_ABI_EFAULT);
       ret = -NACL_ABI_EFAULT;
       return ret;
@@ -4338,6 +4339,13 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     We'll convert to a char** later.
   */
   sys_argv_ptr = (uint32_t*)NaClUserToSysAddrProt(nap, (uintptr_t)argv, NACL_ABI_PROT_READ);
+
+  int not_byte_aligned = sys_argv_ptr % 8;
+  if (not_byte_aligned || (kNaClBadAddress == sys_argv_ptr)) {
+    NaClLog(2, "NaClSysExecv could not translate argv address, returning %d\n", -NACL_ABI_EFAULT);
+    ret = -NACL_ABI_EFAULT;
+    return ret;
+  }
 
   /* set up argv and argc */
   if (!sys_argv_ptr) {
