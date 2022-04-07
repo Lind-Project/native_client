@@ -51,23 +51,6 @@
 
 #include "native_client/src/trusted/service_runtime/arch/sel_ldr_arch.h"
 
-static INLINE int NaClAddrCheckDynText(struct NaClApp  *nap,
-                                       uintptr_t       uaddr) {
-  if ((uaddr >= nap->dynamic_text_start) || uaddr <= nap->dynamic_text_end) return 0;
-  return 1;                                               
-}
-
-
-static INLINE int NaClAddrCheckDynTextRange(struct NaClApp  *nap,
-                                               uintptr_t       uaddr,
-                                               size_t          count) {
-  uintptr_t region_end = uaddr + count;
-  if ((uaddr >= nap->dynamic_text_start) || uaddr <= nap->dynamic_text_end) return 0;
-  if ((region_end >= nap->dynamic_text_start) || region_end <= nap->dynamic_text_end) return 0;
-
-  return 1;                                                                   
-}
-
 static INLINE uintptr_t NaClUserToSysAddrNullOkay(struct NaClApp  *nap,
                                                   uintptr_t       uaddr) {
   if (((uintptr_t) 1U << nap->addr_bits <= uaddr)) {
