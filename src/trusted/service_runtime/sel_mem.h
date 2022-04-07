@@ -16,8 +16,6 @@
 
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 
-#include <stdbool.h>
-
 EXTERN_C_BEGIN
 
 struct NaClDesc;
