@@ -388,7 +388,8 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
 
-  NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
+  if ((nap->tl_type == THREAD_LAUNCH_MAIN) || (nap->tl_type == THREAD_LAUNCH_EXEC)) 
+    NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
 
   NaClAppThreadTeardown(natp);
 

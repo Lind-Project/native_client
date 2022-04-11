@@ -941,7 +941,7 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
     user_tls2 = (uint32_t)natp_parent->user.tls_value2;
   }
 
-  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2);
+  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2, false);
 
 
 cleanup:
@@ -992,15 +992,14 @@ int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
                                    uint32_t       user_tls1,
                                    uint32_t       user_tls2) {
 
-  /* We need to set the thread type for the thread mechanics */
-  nap->tl_type = THREAD_LAUNCH_THREAD;
 
   if (!NaClAppThreadSpawn(natp_parent,
                           nap,
                           prog_ctr,
                           sys_stack_ptr,
                           user_tls1,
-                          user_tls2)) {
+                          user_tls2,
+                          true)) {
     NaClLog(LOG_WARNING,
             ("NaClCreateAdditionalThread: could not allocate thread."
              "  Returning EAGAIN per POSIX specs.\n"));

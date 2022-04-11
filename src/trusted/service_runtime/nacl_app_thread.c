@@ -629,7 +629,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                sys_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2){
+                       uint32_t                 user_tls2,
+                       bool                     cage_thread){
 
 
   void *stack_ptr_parent;
@@ -670,7 +671,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (!natp_child) return 0;
 
-  if (tl_type == THREAD_LAUNCH_MAIN){
+  if (cage_thread){
     nap_child->parent = NULL;
   }
   else if (tl_type == THREAD_LAUNCH_FORK) {
