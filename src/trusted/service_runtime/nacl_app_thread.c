@@ -457,6 +457,9 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClSignalStackUnregister();
   }
 
+
+  if (natp->is_cage_mainthread) NaClAppDtor(nap);
+  
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
   
