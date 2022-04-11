@@ -4507,6 +4507,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
+  NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
   NaClAppThreadTeardown(natp);
 
   /* success */
