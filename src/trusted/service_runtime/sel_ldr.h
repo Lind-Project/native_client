@@ -277,6 +277,9 @@ struct NaClApp {
   struct NaClMutex          mu;
   struct NaClCondVar        cv;
 
+  struct NaClMutex          exit_mu;
+  struct NaClCondVar        exit_cv;
+
 #if NACL_WINDOWS
   /*
    * invariant: !(vm_hole_may_exist && threads_launching != 0).

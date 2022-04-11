@@ -218,6 +218,14 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_mu;
   }
 
+  if (!NaClMutexCtor(&nap->exit_mu)) {
+    goto cleanup_children_mutex;
+  }
+  if (!NaClCondVarCtor(&nap->exit_cv)) {
+    goto cleanup_mu;
+  }
+
+
 #if NACL_WINDOWS
   nap->vm_hole_may_exist = 0;
   nap->threads_launching = 0;

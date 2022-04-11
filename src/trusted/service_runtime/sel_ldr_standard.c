@@ -974,8 +974,12 @@ int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
   if (NULL != nap->debug_stub_callbacks) {
     nap->debug_stub_callbacks->process_exit_hook();
   }
+  
+  int exit_status = nap->exit_status;
+  NaClXCondVarSignal(&nap->exit_cv);
 
-  return NACL_ABI_WEXITSTATUS(nap->exit_status);
+
+  return NACL_ABI_WEXITSTATUS(exit_status);
 }
 
 /*
