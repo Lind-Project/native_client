@@ -349,6 +349,38 @@ int NaClAppCtor(struct NaClApp *nap) {
   return NaClAppWithSyscallTableCtor(nap, nacl_syscall);
 }
 
+// Dtor function for the nap structure
+// TODO: implement in system
+void NaClAppDtor(struct NaClApp *nap) {
+
+  NaClLog(3, "Deconstructing nap\n");
+  NaClLog(3, "Freeing Address Space\n");
+  // NaClAddrSpaceFree(nap);
+  NaClLog(3, "Tearing down mutexes\n");
+  // NaClFastMutexDtor(&nap->desc_mu);
+  // NaClMutexDtor(&nap->threads_mu);
+  // NaClDescUnref(nap->name_service_conn_cap);
+  // NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
+  // NaClCondVarDtor(&nap->cv);
+  // NaClMutexDtor(&nap->mu);
+  // NaClMutexDtor(&nap->children_mu);
+  // NaClMutexDtor(&nap->dynamic_load_mutex);
+  // free(nap->effp);
+  // NaClLog(3, "Deleting io regions\n");
+  // NaClIntervalMultisetDelete(nap->mem_io_regions);
+  // nap->mem_io_regions = NULL;
+  // NaClVmmapExitDtor(&nap->mem_map);
+  NaClLog(3, "Tearing down dyn arrays\n");
+  // DynArrayDtor(&nap->children);
+  // DynArrayDtor(&nap->desc_tbl);
+  // DynArrayDtor(&nap->threads);
+  // free(nap->cpu_features);
+  // free((void*) nap->clean_environ);
+
+  NaClLog(3, "Freeing nap\n");
+  NaClAlignedFree(nap);
+}
+
 /*
  * unaligned little-endian load.  precondition: nbytes should never be
  * more than 8.
