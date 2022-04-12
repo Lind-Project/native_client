@@ -366,6 +366,8 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
     NaClXCondVarBroadcast(&nap_parent->children_cv);
     NaClXMutexUnlock(&nap_parent->children_mu);
 
+    for (int i = 0; i < (&nap->children)->ptr_array_space; i++) (&nap->children)->ptr_array[i]->parent = NULL;
+
     NaClXMutexLock(&ccmut);
     cagecount--;
     NaClXCondVarBroadcast(&cccv);
