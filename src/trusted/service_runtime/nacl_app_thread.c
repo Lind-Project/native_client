@@ -459,8 +459,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
 
 
   if (natp->is_cage_mainthread) {
-    if (nap->tl_type==THREAD_LAUNCH_FORK)
-      NaClXCondVarSignal(&nap->exit_cv);
+    if (nap->tl_type==THREAD_LAUNCH_FORK) NaClXCondVarSignal(&nap->exit_cv);
     NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
   }
