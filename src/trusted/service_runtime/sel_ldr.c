@@ -379,10 +379,10 @@ void NaClAppDtor(struct NaClApp *nap) {
   // nap->mem_io_regions = NULL;
   // NaClVmmapExitDtor(&nap->mem_map);
   NaClLog(3, "Tearing down dyn arrays\n");
-  // DynArrayDtor(&nap->children);
-  // DynArrayDtor(&nap->desc_tbl);
-  // DynArrayDtor(&nap->threads);
-  // free(nap->cpu_features);
+  DynArrayDtor(&nap->children);
+  DynArrayDtor(&nap->desc_tbl);
+  DynArrayDtor(&nap->threads);
+  free(nap->cpu_features);
   free((void*) nap->clean_environ);
 
   NaClLog(3, "Freeing nap\n");
