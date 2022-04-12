@@ -218,7 +218,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 }
 
 void NaClAppCloseFDs(struct NaClApp *nap) {
-  NaClFastMutexLock(&nap->desc_mu);
   int i; 
   struct NaClDesc *ndp = NULL;
   int             fd = 0;
