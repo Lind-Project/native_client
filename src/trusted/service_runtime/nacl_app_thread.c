@@ -349,11 +349,12 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
 void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
   /* remove self from parent's list of children */
-  if (nap_parent) {
+  if (nap->parent) {
+    struct NaClApp  *nap_parent = nap->parent;
+
     NaClXMutexLock(&nap_parent->children_mu);
     nap_parent->num_children--;
     NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
@@ -363,7 +364,7 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
     else {
       NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    
+
     NaClXMutexLock(&nap->children_mu);
     for (int i = 0; i < (&nap->children)->ptr_array_space; i++) {
       struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
