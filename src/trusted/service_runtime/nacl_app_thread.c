@@ -473,6 +473,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   if (natp->is_cage_mainthread) {
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
+    natp->nap = NULL;
   }
 
   NaClLog(3, " freeing thread object\n");
