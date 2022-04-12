@@ -218,14 +218,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 }
 
 void NaClAppCloseFDs(struct NaClApp *nap) {
-  int i; 
   struct NaClDesc *ndp = NULL;
   int             fd = 0;
+  int             i;
   
   NaClFastMutexLock(&nap->desc_mu);
 
-  // We don't need to close stdin, so like Brian McKnight we'll start at one
-  for (i = 1; i < FILE_DESC_MAX; i++) {
+  for (i = 0; i < FILE_DESC_MAX; i++) {
     /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
     fd = fd_cage_table[nap->cage_id][i];
 

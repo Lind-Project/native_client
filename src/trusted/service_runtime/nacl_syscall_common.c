@@ -802,11 +802,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return -NACL_ABI_EBADF;
   }
 
-  /* there is no standard input to close, but return success anyway */
-  // if (!d) {
-  //   return 0;
-  // }
-
   NaClFastMutexLock(&nap->desc_mu);
 
   /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
