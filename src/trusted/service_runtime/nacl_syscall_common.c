@@ -4514,9 +4514,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   ret = 0;
 
 fail:
-  /*  Env Cleanser */
-  free((void *) nap->clean_environ);
-  nap->clean_environ = NULL;
+  // /*  Env Cleanser */
+  // free((void *) nap->clean_environ);
+  // nap->clean_environ = NULL;
 
   for (char **pp = new_argv; pp && *pp; pp++) {
     free(*pp);
