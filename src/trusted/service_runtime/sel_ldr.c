@@ -382,7 +382,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   // DynArrayDtor(&nap->children);
   // DynArrayDtor(&nap->desc_tbl);
   // DynArrayDtor(&nap->threads);
-  free(nap->cpu_features);
+  // free(nap->cpu_features);
   free((void*) nap->clean_environ);
 
   NaClLog(3, "Freeing nap\n");
