@@ -803,9 +803,9 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   }
 
   /* there is no standard input to close, but return success anyway */
-  if (!d) {
-    return 0;
-  }
+  // if (!d) {
+  //   return 0;
+  // }
 
   NaClFastMutexLock(&nap->desc_mu);
 
