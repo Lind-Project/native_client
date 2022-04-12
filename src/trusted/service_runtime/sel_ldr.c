@@ -363,7 +363,7 @@ void NaClAppDtor(struct NaClApp *nap) {
 
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
-  NaClAddrSpaceFree(nap);
+  // NaClAddrSpaceFree(nap);
   NaClLog(3, "Tearing down mutexes\n");
   // NaClFastMutexDtor(&nap->desc_mu);
   // NaClMutexDtor(&nap->threads_mu);
@@ -383,7 +383,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   // DynArrayDtor(&nap->desc_tbl);
   // DynArrayDtor(&nap->threads);
   // free(nap->cpu_features);
-  free((void*) nap->clean_environ);
+  // free((void*) nap->clean_environ);
 
   NaClLog(3, "Freeing nap\n");
   NaClAlignedFree(nap);
