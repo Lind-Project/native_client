@@ -363,13 +363,14 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
     else {
       NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
-    NaClXCondVarBroadcast(&nap_parent->children_cv);
-    NaClXMutexUnlock(&nap_parent->children_mu);
 
     for (int i = 0; i < (&nap->children)->ptr_array_space; i++) {
-        struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
-        if (nap_child) nap_child->parent = NULL;
+      struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
+      if (nap_child) nap_child->parent = NULL;
     }
+
+    NaClXCondVarBroadcast(&nap_parent->children_cv);
+    NaClXMutexUnlock(&nap_parent->children_mu);
 
 
     NaClXMutexLock(&ccmut);
