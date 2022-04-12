@@ -223,21 +223,25 @@ void NaClAppCloseFDs(struct NaClApp *nap) {
   struct NaClDesc *ndp = NULL;
   int             fd = 0;
   
+  NaClFastMutexLock(&nap->desc_mu);
+
   // We don't need to close stdin, so like Brian McKnight we'll start at one
   for (i = 1; i < FILE_DESC_MAX; i++) {
     /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
-    fd = fd_cage_table[nap->cage_id][d];
-    ndp = NaClGetDescMu(nap, fd);
+    fd = fd_cage_table[nap->cage_id][i];
 
     /* If we have an fd and nacl descriptor, lets close it */
-    if (fd >= 0 && ndp){
-      NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-      NaClSetDescMu(nap, fd, NULL);
-      NaClDescUnref(ndp);
+    if (fd >= 0) {
+      ndp = NaClGetDescMu(nap, fd);
+      if (ndp) {
+        NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+        NaClSetDescMu(nap, fd, NULL);
+        NaClDescUnref(ndp);
+      }
     }
 
     /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-    fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
+    fd_cage_table[nap->cage_id][i] = NACL_BAD_FD;
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
