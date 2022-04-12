@@ -225,7 +225,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_exit_cv;
   }
 
-
 #if NACL_WINDOWS
   nap->vm_hole_may_exist = 0;
   nap->threads_launching = 0;

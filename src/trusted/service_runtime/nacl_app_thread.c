@@ -349,12 +349,11 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
 void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
+  struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
   /* remove self from parent's list of children */
   if (nap->parent) {
-    struct NaClApp  *nap_parent = nap->parent;
-
     NaClXMutexLock(&nap_parent->children_mu);
     nap_parent->num_children--;
     NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
@@ -369,7 +368,9 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
     NaClXMutexUnlock(&nap_parent->children_mu);
   }
 
-  // Sadly we've created orphans :'(
+  /* Sadly we've created orphans :'(
+   * Remove parent from any children, and hope they don't become the Batman
+   */
   NaClXMutexLock(&nap->children_mu);
   for (int i = 0; i < (&nap->children)->ptr_array_space; i++) {
     struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
@@ -377,6 +378,7 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   }
   NaClXMutexUnlock(&nap->children_mu);
 
+  // decrease our counter for additional cages
   if (nap->tl_type != THREAD_LAUNCH_MAIN) {
     NaClXMutexLock(&ccmut);
     cagecount--;
@@ -471,6 +473,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
 
 
   if (natp->is_cage_mainthread) {
+    // we have to wait for NaClWaitForMainThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
     natp->nap = NULL;
@@ -690,9 +693,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (!natp_child) return 0;
 
-  if (cage_thread){
-    nap_child->parent = NULL;
-  }
+  if (tl_type == THREAD_LAUNCH_MAIN) nap_child->parent = NULL;
+
   else if (tl_type == THREAD_LAUNCH_FORK) {
     NaClForkThreadContextSetup(natp_parent, natp_child, stack_ptr_parent, stack_ptr_child);
   }
@@ -715,7 +717,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   }
 
 
-  if (tl_type != THREAD_LAUNCH_THREAD) {
+  if (!cage_thread) {
     natp_child->is_cage_mainthread = true;
     natp_child->cage_mainthread = NULL;
     natp_child->tearing_down = false;

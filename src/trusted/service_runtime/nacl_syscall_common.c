@@ -387,7 +387,6 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   lind_exit(status, nap->cage_id);
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-
   NaClAppThreadTeardown(natp);
 
   /* NOTREACHED */
@@ -4503,7 +4502,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
-
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
 
@@ -4511,9 +4509,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   ret = 0;
 
 fail:
-  // /*  Env Cleanser */
-  // free((void *) nap->clean_environ);
-  // nap->clean_environ = NULL;
 
   for (char **pp = new_argv; pp && *pp; pp++) {
     free(*pp);
