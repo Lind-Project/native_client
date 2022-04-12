@@ -215,14 +215,14 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_children_mutex;
   }
   if (!NaClCondVarCtor(&nap->cv)) {
-    goto cleanup_mu;
+    goto cleanup_cv;
   }
 
   if (!NaClMutexCtor(&nap->exit_mu)) {
-    goto cleanup_children_mutex;
+    goto cleanup_exit_mutex;
   }
   if (!NaClCondVarCtor(&nap->exit_cv)) {
-    goto cleanup_mu;
+    goto cleanup_exit_cv;
   }
 
 
@@ -319,37 +319,41 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   return 1;
 
- cleanup_desc_mu:
+  cleanup_desc_mu:
   NaClFastMutexDtor(&nap->desc_mu);
- cleanup_threads_mu:
+  cleanup_threads_mu:
   NaClMutexDtor(&nap->threads_mu);
- cleanup_name_service:
+  cleanup_name_service:
   NaClDescUnref(nap->name_service_conn_cap);
   NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
- cleanup_cv:
+  cleanup_exit_cv:
+  NaClCondVarDtor(&nap->exit_cv);
+  cleanup_exit_mutex:
+  NaClMutexDtor(&nap->exit_mu);
+  cleanup_cv:
   NaClCondVarDtor(&nap->cv);
- cleanup_mu:
+  cleanup_mu:
   NaClMutexDtor(&nap->mu);
- cleanup_children_mutex:
+  cleanup_children_mutex:
   NaClMutexDtor(&nap->children_mu);
- cleanup_dynamic_load_mutex:
+  cleanup_dynamic_load_mutex:
   NaClMutexDtor(&nap->dynamic_load_mutex);
- cleanup_effp_free:
+  cleanup_effp_free:
   free(nap->effp);
- cleanup_mem_io_regions:
+  cleanup_mem_io_regions:
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
- cleanup_mem_map:
+  cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
- cleanup_children:
+  cleanup_children:
   DynArrayDtor(&nap->children);
- cleanup_desc_tbl:
+  cleanup_desc_tbl:
   DynArrayDtor(&nap->desc_tbl);
- cleanup_threads:
+  cleanup_threads:
   DynArrayDtor(&nap->threads);
- cleanup_cpu_features:
+  cleanup_cpu_features:
   free(nap->cpu_features);
- cleanup_none:
+  cleanup_none:
   return 0;
 }
 
@@ -364,20 +368,26 @@ void NaClAppDtor(struct NaClApp *nap) {
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
   NaClAddrSpaceFree(nap);
+
+  NaClDescUnref(nap->name_service_conn_cap);
+  NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
+
   NaClLog(3, "Tearing down mutexes\n");
   NaClFastMutexDtor(&nap->desc_mu);
   NaClMutexDtor(&nap->threads_mu);
-  NaClDescUnref(nap->name_service_conn_cap);
-  NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
   NaClCondVarDtor(&nap->cv);
   NaClMutexDtor(&nap->mu);
   NaClMutexDtor(&nap->children_mu);
   NaClMutexDtor(&nap->dynamic_load_mutex);
+  NaClMutexDtor(&nap->exit_mu);
+  NaClCondVarDtor(&nap->exit_cv);
   free(nap->effp);
+
   NaClLog(3, "Deleting io regions\n");
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
   // NaClVmmapExitDtor(&nap->mem_map);
+
   NaClLog(3, "Tearing down dyn arrays\n");
   DynArrayDtor(&nap->children);
   DynArrayDtor(&nap->desc_tbl);
