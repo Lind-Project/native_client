@@ -365,10 +365,10 @@ void NaClAppDtor(struct NaClApp *nap) {
   NaClLog(3, "Freeing Address Space\n");
   NaClAddrSpaceFree(nap);
   NaClLog(3, "Tearing down mutexes\n");
-  // NaClFastMutexDtor(&nap->desc_mu);
-  // NaClMutexDtor(&nap->threads_mu);
-  // NaClDescUnref(nap->name_service_conn_cap);
-  // NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
+  NaClFastMutexDtor(&nap->desc_mu);
+  NaClMutexDtor(&nap->threads_mu);
+  NaClDescUnref(nap->name_service_conn_cap);
+  NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
   // NaClCondVarDtor(&nap->cv);
   // NaClMutexDtor(&nap->mu);
   // NaClMutexDtor(&nap->children_mu);
