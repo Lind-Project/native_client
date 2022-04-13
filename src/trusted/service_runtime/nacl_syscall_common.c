@@ -4774,11 +4774,15 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   
   hd->cageid = nap->cage_id;
-  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+
   userfd = NextFd(nap->cage_id);
   if (userfd < 0) {
-      return -NACL_ABI_ENFILE;
+    free(hd);
+    return -NACL_ABI_ENFILE;
   }
+
+  naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+
   
   fd_cage_table[nap->cage_id][userfd] = naclfd;
   
@@ -5326,12 +5330,15 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   nd->flags = NACL_ABI_O_RDWR;
   nd->cageid = nap->cage_id;
 
-  ret = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nd)));
   userfd = NextFd(nap->cage_id);
   if (userfd < 0) {
+    free(nd);
     userfd = -NACL_ABI_ENFILE;
     goto cleanup;
   }
+
+  ret = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nd)));
+
 
   fd_cage_table[nap->cage_id][userfd] = ret;
 
@@ -5598,13 +5605,16 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
       
   hd->d = ret; //old NaClHostDescCtor 
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
-  
   hd->cageid = nap->cage_id;
-  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+
   userfd = NextFd(nap->cage_id);
   if (userfd < 0) {
+    free(hd);
     return -NACL_ABI_ENFILE;
   }
+
+  code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+
 
   fd_cage_table[nap->cage_id][userfd] = code;
   code = userfd;
