@@ -4171,7 +4171,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
 
     /* Generate user fd, if we fail on the second remove the first */
     user_fds[i] = NextFd(nap->cage_id);
-    if (pipe_fd < 0) {
+    if (user_fds[i] < 0) {
       free(hd);
       if (i == 1) {
         int fd = fd_cage_table[nap->cage_id][user_fds[0]];
