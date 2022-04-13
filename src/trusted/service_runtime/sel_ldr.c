@@ -1821,9 +1821,20 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 /* Find next available fd in cagetable */
 
-#define RESERVE_FD 7777
+int CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
+  struct NaClDesc *       faildesc;
 
-int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd){
+  for (int i = 0; i < iterations; i++) {
+    int naclfd = fd_cage_table[nap->cage_id][userfds[i]];
+    faildesc = NaClGetDesc(nap, naclfd);
+    NaClSetDesc(nap, NULL, faildesc);
+    NaClDescUnref(faildesc);
+    fd_cage_table[nap->cage_id][userfds[i]] = -1;
+  }
+
+}
+
+int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd) {
 
   int userfd = -NACL_ABI_EBADF;
 
@@ -1844,7 +1855,7 @@ int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd){
   return userfd;
 }
 
-int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd){
+int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd) {
 
   int userfd = -NACL_ABI_EBADF;
 

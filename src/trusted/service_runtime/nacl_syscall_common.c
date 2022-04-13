@@ -4137,20 +4137,13 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) {
   struct NaClApp *nap = natp->nap;
   int32_t ret = 0;
-  struct NaClHostDesc     *hd;
-  void                    *hd_struct = NULL;
   int actualflags = flags & NACL_ABI_O_CLOEXEC;
   int lind_fds[2];
   int user_fds[2];
+  struct NaClHostDesc* hds[2];
   int accflags;
   struct NaClDesc *       faildesc;
-
-
-  hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
-  if (!hd_struct) {
-    ret = -NACL_ABI_ENOMEM;
-    return ret;
-  }
+  int i;
 
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
   
@@ -4161,8 +4154,14 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   }
 
    /* Sync NaCl fds with Lind ufds*/
-  for (int i = 0; i < 2; i++) {
-    
+  for (i = 0; i < 2; i++) {
+
+    hds[i] = malloc(sizeof(struct NaClHostDesc));
+    if (!hds[i]) {
+      ret = -NACL_ABI_ENOMEM;
+      goto fail;
+    }
+
     /* set flags for the read and write ends of the pipe */
     switch (i) {
     case 0:
@@ -4174,48 +4173,38 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     default:
       /* something went terribly wrong */
       ret = -NACL_ABI_EFAULT;
-      if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
-      goto fail1;   
+      goto fail;   
     }
 
-    hd = &((struct NaClHostDesc*)hd_struct)[i];
-
-    hd->cageid = nap->cage_id;
-
+    hds[i]->cageid = nap->cage_id;
     /* Set up Host Descriptor via Pipe wrapper */
 
-    int retval = NaClHostDescPipe(hd, lind_fds[i], accflags | actualflags);
+    int retval = NaClHostDescPipe(hds[i], lind_fds[i], accflags | actualflags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
-            (uintptr_t) hd, accflags | actualflags, retval);
+            (uintptr_t) hds[i], accflags | actualflags, retval);
 
-    user_fds[i] = AllocNextFd(nap, hd);
+    hds[i]->flags = accflags | actualflags;
+
+  }
+
+  for (i = 0; i < 2; i++) {
+    user_fds[i] = AllocNextFd(nap, hds);
     if (user_fds[i] < 0) {
-      retval = -NACL_ABI_ENFILE;
-      if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
-      goto fail1;
+      CancelFds(nap, user_fds, i);
+      ret = -NACL_ABI_ENFILE;
+      goto fail;
     }
-    
-    hd->flags = accflags | actualflags;
   }
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, user_fds, sizeof(user_fds))) {
       ret = -NACL_ABI_EFAULT;
-      goto fail2;
+      CancelFds(nap, user_fds, 2);
+      goto fail;
   }
 
   return ret;
 
-fail2:
-  faildesc = NaClGetDesc(nap, user_fds[1]);
-  NaClSetDesc(nap, NULL, faildesc);
-  NaClDescUnref(faildesc);
-
-fail1:
-  faildesc = NaClGetDesc(nap, user_fds[0]);
-  NaClSetDesc(nap, NULL, faildesc);
-  NaClDescUnref(faildesc);
-  free(hd_struct);
 fail:
   lind_close(lind_fds[0], nap->cage_id);
   lind_close(lind_fds[1], nap->cage_id);
