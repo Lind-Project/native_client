@@ -789,7 +789,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   fd_cage_table[nap->cage_id][userfd] = fd_retval;
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", userfd, path);
 
-  return retval;
+  return userfd;
 }
 
 int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
