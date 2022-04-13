@@ -3251,73 +3251,60 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  *fds) {
 
   struct NaClApp          *nap = natp->nap;
-  void                    *hd_struct = NULL;
-  struct NaClHostDesc     *hd;
+  struct NaClHostDesc*    hds[2];
   int                     lind_fds[2];
   int                     user_fds[2];
   int32_t                 retval;
   struct NaClDesc *       faildesc;
+  int                     i;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
            "%d, %d, %d, %lx)\n",
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
 
-  for (int i = 0; i < 2; i++) {
-    /* Generate user fds first */
-
-  }
-
-  hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
-  if (!hd_struct) {
-    retval = -NACL_ABI_ENOMEM;
-    return retval;
+  /* Create hds */
+  for (i = 0; i < 2; i++) {
+    hds[i] = malloc(sizeof(struct NaClHostDesc));
+    if (!hds[i]) {
+      if (i == 1) free(hds[0]);
+      return -NACL_ABI_ENOMEM;
+    }
   }
 
   retval = lind_socketpair (domain, type, protocol, lind_fds, nap->cage_id);
 
   if (retval < 0) {
-    free(hd_struct);
-    goto fail;
+    for (i = 0; i < 2; i++) free(hds[i]);
+    return retval;
   }
 
   for(int i=0; i<2; ++i) {
-    hd = &((struct NaClHostDesc*)hd_struct)[i];
+    hds[i]->d = lind_fds[i];
+    hds[i]->flags = NACL_ABI_O_RDWR;
+    hds[i]->cageid = nap->cage_id;
 
-    //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
-    hd->d = lind_fds[i];
-    hd->flags = NACL_ABI_O_RDWR;
-    hd->cageid = nap->cage_id;
-
-    user_fds[i] = AllocNextFd(nap, hd);
+    user_fds[i] = AllocNextFd(nap, hds[i]);
     if (user_fds[i] < 0) {
+      CancelFds(nap, user_fds, i);
       retval = -NACL_ABI_ENFILE;
-      if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
-      goto fail1;
+      goto fail;
     }
   }
 
     /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, user_fds, sizeof(user_fds))) {
       retval = -NACL_ABI_EFAULT;
-      goto fail2;
+      CancelFds(nap, user_fds, 2);
+      goto fail;
   }
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
 
   return retval;
 
-fail2:
-  faildesc = NaClGetDesc(nap, user_fds[1]);
-  NaClSetDesc(nap, NULL, faildesc);
-  NaClDescUnref(faildesc);
-
-fail1:
-  faildesc = NaClGetDesc(nap, user_fds[0]);
-  NaClSetDesc(nap, NULL, faildesc);
-  NaClDescUnref(faildesc);
-  free(hd_struct);
 fail:
+  for (i = 0; i < 2; i++) free(hds[i]);
   lind_close(lind_fds[0], nap->cage_id);
   lind_close(lind_fds[1], nap->cage_id);
 
@@ -4142,7 +4129,6 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   int user_fds[2];
   struct NaClHostDesc* hds[2];
   int accflags;
-  struct NaClDesc *       faildesc;
   int i;
 
   /* Create hds */
@@ -4158,6 +4144,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   ret = lind_pipe2(lind_fds, actualflags, nap->cage_id);
   if (-1 == ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
+    for (i = 0; i < 2; i++) free(hds[i]);
     return -NaClXlateErrno(errno);
   }
 
@@ -4179,13 +4166,9 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
 
     hds[i]->cageid = nap->cage_id;
     /* Set up Host Descriptor via Pipe wrapper */
-
     int retval = NaClHostDescPipe(hds[i], lind_fds[i], accflags | actualflags);
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
             (uintptr_t) hds[i], accflags | actualflags, retval);
-
-    hds[i]->flags = accflags | actualflags;
-
   }
 
   for (i = 0; i < 2; i++) {
