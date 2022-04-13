@@ -1823,46 +1823,43 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 #define RESERVE_FD 7777
 
-int NextFd(struct NaClApp *nap){
+int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd){
 
-  int retfd = -NACL_ABI_EBADF;
+  int userfd = -NACL_ABI_EBADF;
 
   NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
     if (fd_cage_table[nap->cage_id][fd] == -1) {
-      retfd = fd;
+      userfd = fd;
+      hd->userfd = userfd;
+      int naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      fd_cage_table[nap->cage_id][userfd] = naclfd;
       break;
     }
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
 
-  if (retfd > 0){
-    fd_cage_table[nap->cage_id][retfd] = RESERVE_FD;
-  }
-
-  return retfd;
+  return userfd;
 }
 
-int NextFdBounded(struct NaClApp *nap, int lowerbound){
+int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd){
 
-  int retfd = -NACL_ABI_EBADF;
+  int userfd = -NACL_ABI_EBADF;
 
   NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
     if (fd_cage_table[nap->cage_id][fd] == -1) {
-      retfd = fd;
+      userfd = fd;
+      int naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      fd_cage_table[nap->cage_id][userfd] = naclfd;
       break;
     }
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
 
-  if (retfd > 0){
-    fd_cage_table[nap->cage_id][retfd] = RESERVE_FD;
-  }
-
-  return retfd;
+  return userfd;
 }

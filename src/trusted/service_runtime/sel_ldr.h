@@ -932,8 +932,8 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 void InitializeCage(struct NaClApp *nap, int cage_id);
 
 /* Find the next usuable fd */
-int NextFd(struct NaClApp *nap);
-int NextFdBounded(struct NaClApp *nap, int lowerbound);
+int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
+int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);
