@@ -511,21 +511,23 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
       NaClLog(LOG_FATAL, "NaClSysDup: Error initializing new descriptor\n");
   }
 
+  ret = NextFd(nap->cage_id);
+  if (ret < 0) {
+    ret = -NACL_ABI_EMFILE;
+    goto out;
+  }
+
   new_hd->d = lind_dup(old_hd->d, nap->cage_id);
   new_hd->flags = old_hd->flags  & ~NACL_ABI_O_CLOEXEC; // dup does not pass on CLOEXEC flag
   new_hd->cageid = nap->cage_id;
 
   /* Set new nacl desc as available */
   int new_hostfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(new_hd)));
-
-  NaClDescUnref(old_nd);
-
-  ret = NextFd(nap->cage_id);
   new_hd->userfd = ret;
   fd_cage_table[nap->cage_id][ret] = new_hostfd;
 
-
 out:
+  NaClDescUnref(old_nd);
   return ret;
 }
 
@@ -780,6 +782,10 @@ cleanup:
   */
   
   retval = NextFd(nap->cage_id);
+  if (retval < 0) {
+    return -NACL_ABI_EMFILE;
+  }
+
   if(hd) {
     hd->userfd = retval;
   }
@@ -798,7 +804,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   NaClLog(1, "Cage %d Entered NaClSysClose(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, d);
 
-  if (d >= FILE_DESC_MAX) {
+  if ((d >= FILE_DESC_MAX) || (d < 0)) {
     return -NACL_ABI_EBADF;
   }
 
@@ -909,7 +915,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
+  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -928,6 +934,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
+  fd = fd_cage_table[nap->cage_id][d];
   /* check for closed fds */
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -1009,7 +1016,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
                      size_t                count,
                      off_t                 offset) { 
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
+  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -1027,6 +1034,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
     goto out;
   }
 
+  fd = fd_cage_table[nap->cage_id][d];
   /* check for closed fds */
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
@@ -1093,7 +1101,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      void                 *buf,
                      size_t               count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
+  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -1113,6 +1121,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
+  fd = fd_cage_table[nap->cage_id][d];
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -1186,7 +1195,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       size_t                count,
                       off_t                 offset) {
   struct NaClApp  *nap = natp->nap;
-  int             fd = fd_cage_table[nap->cage_id][d];
+  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -1205,6 +1214,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     goto out;
   }
 
+  fd = fd_cage_table[nap->cage_id][d];
   if (fd < 0) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -3287,6 +3297,10 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     hd->cageid = nap->cage_id;
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
     user_fds[i] = NextFd(nap->cage_id);
+    if (user_fds[i] < 0) {
+      return -NACL_ABI_EMFILE;
+    }
+
     fd_cage_table[nap->cage_id][user_fds[i]] = nacl_fd;
   }
 
@@ -4171,7 +4185,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     /* Update cage table with our lind fds */
     int pipe_fd = NextFd(nap->cage_id);
     if (pipe_fd < 0) {
-      ret = -NACL_ABI_EBADF;
+      ret = -NACL_ABI_EMFILE;
       goto out;
     }
     hd->userfd = pipe_fd;
@@ -4757,6 +4771,10 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   hd->cageid = nap->cage_id;
   naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   userfd = NextFd(nap->cage_id);
+  if (userfd < 0) {
+      return -NACL_ABI_EMFILE;
+  }
+  
   fd_cage_table[nap->cage_id][userfd] = naclfd;
   
   NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
@@ -5305,6 +5323,11 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
 
   ret = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(nd)));
   userfd = NextFd(nap->cage_id);
+  if (userfd < 0) {
+    userfd = -NACL_ABI_EMFILE;
+    goto cleanup;
+  }
+
   fd_cage_table[nap->cage_id][userfd] = ret;
 
 cleanup:
@@ -5440,6 +5463,11 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
     }
 
     newuser = NextFdBounded(nap->cage_id, set_op);
+    if (newuser < 0) {
+      newuser = -NACL_ABI_EMFILE;
+      goto cleanup;
+    }
+
     nhd->d = ret;
     nhd->flags = old_hd->flags;
     nhd->cageid = nap->cage_id;
@@ -5569,6 +5597,10 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   hd->cageid = nap->cage_id;
   code = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
   userfd = NextFd(nap->cage_id);
+  if (userfd < 0) {
+    return -NACL_ABI_EMFILE;
+  }
+
   fd_cage_table[nap->cage_id][userfd] = code;
   code = userfd;
   
