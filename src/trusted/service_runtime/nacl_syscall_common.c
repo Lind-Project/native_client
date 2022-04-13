@@ -4189,7 +4189,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   }
 
   for (i = 0; i < 2; i++) {
-    user_fds[i] = AllocNextFd(nap, hds);
+    user_fds[i] = AllocNextFd(nap, hds[i]);
     if (user_fds[i] < 0) {
       CancelFds(nap, user_fds, i);
       ret = -NACL_ABI_ENFILE;
