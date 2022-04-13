@@ -3290,13 +3290,15 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     //NaClHostDescCtor(hd, lind_fd, NACL_ABI_O_RDWR):
     hd->d = lind_fds[i];
     hd->flags = NACL_ABI_O_RDWR;
-
     hd->cageid = nap->cage_id;
-    nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+
     user_fds[i] = NextFd(nap->cage_id);
     if (user_fds[i] < 0) {
+      free(hd_struct);
       return -NACL_ABI_EMFILE;
     }
+
+    nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
 
     fd_cage_table[nap->cage_id][user_fds[i]] = nacl_fd;
   }
@@ -4129,7 +4131,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   int32_t ret = 0;
   int actualflags = flags & NACL_ABI_O_CLOEXEC;
   int lind_fds[2];
-  int nacl_fds[2];
+  int user_fds[2];
   int accflags;
 
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
@@ -4138,6 +4140,15 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   if (-1 == ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
+  }
+  
+  /* Generate userfds first in case we reach EMFILE */
+  for (int i = 0; i < 2; i++) {
+    user_fds[i] = NextFd(nap->cage_id);
+    if (user_fds[i] < 0) {
+      ret = -NACL_ABI_EMFILE;
+      goto out;
+    }
   }
 
    /* Sync NaCl fds with Lind ufds*/
@@ -4180,20 +4191,14 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     
 
     /* Update cage table with our lind fds */
-    int pipe_fd = NextFd(nap->cage_id);
-    if (pipe_fd < 0) {
-      ret = -NACL_ABI_EMFILE;
-      goto out;
-    }
-    hd->userfd = pipe_fd;
-    hd->flags = accflags | actualflags;
-    fd_cage_table[nap->cage_id][pipe_fd] = retval;
-    nacl_fds[i] = pipe_fd;
 
+    hd->userfd = user_fds[i];
+    hd->flags = accflags | actualflags;
+    fd_cage_table[nap->cage_id][user_fds[i]] = retval;
   }
 
   /* copy out NaCl fds */
-  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, nacl_fds, sizeof(nacl_fds))) {
+  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, user_fds, sizeof(userf_fds))) {
       lind_close(lind_fds[0], nap->cage_id);
       lind_close(lind_fds[1], nap->cage_id);
       ret = -NACL_ABI_EFAULT;
