@@ -4145,8 +4145,16 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   struct NaClDesc *       faildesc;
   int i;
 
+  /* Create hds */
+  for (i = 0; i < 2; i++) {
+    hds[i] = malloc(sizeof(struct NaClHostDesc));
+    if (!hds[i]) {
+      if (i == 1) free(hds[0]);
+      return -NACL_ABI_ENOMEM;
+    }
+  }
+
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
-  
   ret = lind_pipe2(lind_fds, actualflags, nap->cage_id);
   if (-1 == ret) {
     NaClLog(2, "NaClSysPipe: pipe returned -1, errno %d\n", errno);
@@ -4155,13 +4163,6 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
 
    /* Sync NaCl fds with Lind ufds*/
   for (i = 0; i < 2; i++) {
-
-    hds[i] = malloc(sizeof(struct NaClHostDesc));
-    if (!hds[i]) {
-      ret = -NACL_ABI_ENOMEM;
-      goto fail;
-    }
-
     /* set flags for the read and write ends of the pipe */
     switch (i) {
     case 0:
@@ -4206,6 +4207,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   return ret;
 
 fail:
+  for (i = 0; i < 2; i++) free(hds[i]);
   lind_close(lind_fds[0], nap->cage_id);
   lind_close(lind_fds[1], nap->cage_id);
 
