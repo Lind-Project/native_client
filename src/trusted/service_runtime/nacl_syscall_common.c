@@ -733,7 +733,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
   if (retval) {
-    goto cleanup;
+    return retval;
   }
 
   allowed_flags = (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
@@ -751,7 +751,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   retval = NaClOpenAclCheck(nap, path, flags, mode);
   if (retval) {
     NaClLog(2, "Open ACL check rejected \"%s\".\n", path);
-    goto cleanup;
+    return retval;
   }
 
   userfd = NextFd(nap->cage_id);
@@ -761,9 +761,9 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   hd = malloc(sizeof(*hd));
   if (!hd) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
+    return -NACL_ABI_ENOMEM;
   }
+
   /* Assign CageID to Host Descriptor */
   hd->cageid = nap->cage_id;
   hd->userfd = userfd;
@@ -787,9 +787,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   NaClLog(1, "Entered into open file table at %d\n", retval);
 
   fd_cage_table[nap->cage_id][userfd] = fd_retval;
-  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
+  NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", userfd, path);
 
-cleanup:
   return retval;
 }
 
