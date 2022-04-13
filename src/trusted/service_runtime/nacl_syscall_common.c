@@ -871,6 +871,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * if the directory is on a networked filesystem this could, and
    * cause mmap to be slower on Windows.
    */
+
+  *(int*)0 = 0;
   NaClXMutexLock(&nap->mu);
 
   getdents_ret = lind_getdents(lind_fd,
