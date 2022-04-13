@@ -4175,7 +4175,8 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
       /* something went terribly wrong */
       ret = -NACL_ABI_EFAULT;
       if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
-      goto fail1;    }
+      goto fail1;   
+    }
 
     hd = &((struct NaClHostDesc*)hd_struct)[i];
 

@@ -1833,7 +1833,7 @@ int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd){
     if (fd_cage_table[nap->cage_id][fd] == -1) {
       userfd = fd;
       hd->userfd = userfd;
-      int naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       fd_cage_table[nap->cage_id][userfd] = naclfd;
       break;
     }
@@ -1853,7 +1853,7 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
   for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
     if (fd_cage_table[nap->cage_id][fd] == -1) {
       userfd = fd;
-      int naclfd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
       fd_cage_table[nap->cage_id][userfd] = naclfd;
       break;
     }
