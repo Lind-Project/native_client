@@ -3271,6 +3271,15 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
            "%d, %d, %d, %lx)\n",
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
+
+  for (int i = 0; i < 2; i++) {
+    /* Generate user fds first */
+    user_fds[i] = NextFd(nap);
+    if (user_fds[i] < 0) {
+      return -NACL_ABI_ENFILE;
+    }
+  }
+
   hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
   if (!hd_struct) {
     retval = -NACL_ABI_ENOMEM;
@@ -3284,6 +3293,8 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     return retval;
   }
 
+
+
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
 
@@ -3291,12 +3302,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     hd->d = lind_fds[i];
     hd->flags = NACL_ABI_O_RDWR;
     hd->cageid = nap->cage_id;
-
-    user_fds[i] = NextFd(nap);
-    if (user_fds[i] < 0) {
-      free(hd_struct);
-      return -NACL_ABI_ENFILE;
-    }
 
     nacl_fd = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
 
@@ -4142,6 +4147,15 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     return -NaClXlateErrno(errno);
   }
 
+  for (int i = 0; i < 2; i++) {
+    /* Generate user fds first */
+    user_fds[i] = NextFd(nap);
+    if (user_fds[i] < 0) {
+      ret = -NACL_ABI_ENFILE;
+      goto out;
+    }
+  }
+
    /* Sync NaCl fds with Lind ufds*/
   for (int i = 0; i < 2; i++) {
     
@@ -4168,18 +4182,6 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
       goto out;
     }
     hd->cageid = nap->cage_id;
-
-    /* Generate user fd, if we fail on the second remove the first */
-    user_fds[i] = NextFd(nap);
-    if (user_fds[i] < 0) {
-      free(hd);
-      if (i == 1) {
-        int fd = fd_cage_table[nap->cage_id][user_fds[0]];
-        NaClSetDescMu(nap, fd, NULL);
-      }
-      ret = -NACL_ABI_ENFILE;
-      goto out;
-    }
 
     /* Set up Host Descriptor via Pipe wrapper */
 
