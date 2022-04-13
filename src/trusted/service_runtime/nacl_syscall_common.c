@@ -755,7 +755,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
 
   userfd = NextFd(nap->cage_id);
-  if (usefd < 0) {
+  if (userfd < 0) {
     return -NACL_ABI_EMFILE;
   }
 
@@ -788,7 +788,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   fd_cage_table[nap->cage_id][userfd] = fd_retval;
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
-  
+
 cleanup:
   return retval;
 }
