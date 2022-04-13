@@ -1821,7 +1821,7 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 /* Find next available fd in cagetable */
 
-#define RESERVE_FD -2
+#define RESERVE_FD 7777
 
 int NextFd(struct NaClApp *nap){
 

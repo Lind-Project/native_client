@@ -3293,8 +3293,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     return retval;
   }
 
-
-
   for(int i=0; i<2; ++i) {
     hd = &((struct NaClHostDesc*)hd_struct)[i];
 
@@ -3314,7 +3312,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
       lind_close(lind_fds[1], nap->cage_id);
       retval = -NACL_ABI_EFAULT;
   }
-
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
 
