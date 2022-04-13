@@ -1830,8 +1830,10 @@ int NextFd(struct NaClApp *nap){
   NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) retfd = fd;
-    break;
+    if (fd_cage_table[nap->cage_id][fd] == -1) {
+      retfd = fd;
+      break;
+    }
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
@@ -1850,8 +1852,10 @@ int NextFdBounded(struct NaClApp *nap, int lowerbound){
   NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) retfd = fd;
-    break;
+    if (fd_cage_table[nap->cage_id][fd] == -1) {
+      retfd = fd;
+      break;
+    }
   }
 
   NaClFastMutexUnlock(&nap->desc_mu);
