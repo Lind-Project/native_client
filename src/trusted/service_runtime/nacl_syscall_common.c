@@ -4198,7 +4198,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   }
 
   /* copy out NaCl fds */
-  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, user_fds, sizeof(userf_fds))) {
+  if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, user_fds, sizeof(user_fds))) {
       lind_close(lind_fds[0], nap->cage_id);
       lind_close(lind_fds[1], nap->cage_id);
       ret = -NACL_ABI_EFAULT;
