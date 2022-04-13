@@ -511,7 +511,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
       NaClLog(LOG_FATAL, "NaClSysDup: Error initializing new descriptor\n");
   }
 
-  ret = NextFd(nap->cage_id);
+  ret = NextFd(nap);
   if (ret < 0) {
     ret = -NACL_ABI_ENFILE;
     goto out;
@@ -754,7 +754,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     return retval;
   }
 
-  userfd = NextFd(nap->cage_id);
+  userfd = NextFd(nap);
   if (userfd < 0) {
     return -NACL_ABI_ENFILE;
   }
@@ -3292,7 +3292,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     hd->flags = NACL_ABI_O_RDWR;
     hd->cageid = nap->cage_id;
 
-    user_fds[i] = NextFd(nap->cage_id);
+    user_fds[i] = NextFd(nap);
     if (user_fds[i] < 0) {
       free(hd_struct);
       return -NACL_ABI_ENFILE;
@@ -4170,7 +4170,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     hd->cageid = nap->cage_id;
 
     /* Generate user fd, if we fail on the second remove the first */
-    user_fds[i] = NextFd(nap->cage_id);
+    user_fds[i] = NextFd(nap);
     if (user_fds[i] < 0) {
       free(hd);
       if (i == 1) {
@@ -4775,7 +4775,7 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   
   hd->cageid = nap->cage_id;
 
-  userfd = NextFd(nap->cage_id);
+  userfd = NextFd(nap);
   if (userfd < 0) {
     free(hd);
     return -NACL_ABI_ENFILE;
@@ -5330,7 +5330,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   nd->flags = NACL_ABI_O_RDWR;
   nd->cageid = nap->cage_id;
 
-  userfd = NextFd(nap->cage_id);
+  userfd = NextFd(nap);
   if (userfd < 0) {
     free(nd);
     userfd = -NACL_ABI_ENFILE;
@@ -5474,7 +5474,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
         goto cleanup;
     }
 
-    newuser = NextFdBounded(nap->cage_id, set_op);
+    newuser = NextFdBounded(nap, set_op);
     if (newuser < 0) {
       newuser = -NACL_ABI_ENFILE;
       goto cleanup;
@@ -5607,7 +5607,7 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   hd->flags = NACL_ABI_O_RDWR; //old NaClHostDescCtor 
   hd->cageid = nap->cage_id;
 
-  userfd = NextFd(nap->cage_id);
+  userfd = NextFd(nap);
   if (userfd < 0) {
     free(hd);
     return -NACL_ABI_ENFILE;

@@ -1821,20 +1821,42 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 /* Find next available fd in cagetable */
 
-int NextFd(int cage_id){
+#define RESERVE_FD -2
+
+int NextFd(struct NaClApp *nap){
+
+  int retfd = -NACL_ABI_EBADF;
+
+  NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[cage_id][fd] == -1) return fd;
+    if (fd_cage_table[nap->cage_id][fd] == -1) retfd = fd;
+    break;
   }
 
-  return -NACL_ABI_EBADF;
+  if (retfd > 0){
+    fd_cage_table[nap->cage_id][retfd] = RESERVE_FD;
+  }
+
+  return retfd;
 }
 
-int NextFdBounded(int cage_id, int lowerbound){
+int NextFdBounded(struct NaClApp *nap, int lowerbound){
+
+  int retfd = -NACL_ABI_EBADF;
+
+  NaClFastMutexLock(&nap->desc_mu);
 
   for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[cage_id][fd] == -1) return fd;
+    if (fd_cage_table[nap->cage_id][fd] == -1) retfd = fd;
+    break;
   }
 
-  return -NACL_ABI_EBADF;
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+  if (retfd > 0){
+    fd_cage_table[nap->cage_id][retfd] = RESERVE_FD;
+  }
+
+  return retfd;
 }
