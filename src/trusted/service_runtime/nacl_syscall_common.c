@@ -705,7 +705,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
   const size_t         tls_end_idx = strlen(tls_prefix);
-
+  int                  userfd;
   /* this is the virtual fd returned to the cage */
   struct NaClHostDesc  *hd = NULL;
 
@@ -754,6 +754,11 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
+  userfd = NextFd(nap->cage_id);
+  if (usefd < 0) {
+    return -NACL_ABI_EMFILE;
+  }
+
   hd = malloc(sizeof(*hd));
   if (!hd) {
     retval = -NACL_ABI_ENOMEM;
@@ -761,6 +766,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   }
   /* Assign CageID to Host Descriptor */
   hd->cageid = nap->cage_id;
+  hd->userfd = userfd;
 
   retval = NaClHostDescOpen(hd, path, flags, mode);
   NaClLog(1, "Cage %d NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0%o, 0%o) returned %d\n",
@@ -768,30 +774,22 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   
   if (retval < 0) {
     NaClLog(1, "Open returned error %d\n", retval);
+    free(hd);
     return retval;
   }
-  
-  fd_retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-  NaClLog(1, "Entered into open file table at %d\n", retval);
 
-
-cleanup:
   /*
     Now translate the real fds to virtual fds and return them to the cage 
     Get next available, and set cagetable there to nacl retval
   */
-  
-  retval = NextFd(nap->cage_id);
-  if (retval < 0) {
-    return -NACL_ABI_EMFILE;
-  }
 
-  if(hd) {
-    hd->userfd = retval;
-  }
-  fd_cage_table[nap->cage_id][retval] = fd_retval;
+  fd_retval = NaClSetAvail(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+  NaClLog(1, "Entered into open file table at %d\n", retval);
+
+  fd_cage_table[nap->cage_id][userfd] = fd_retval;
   NaClLog(1, "[NaClSysOpen] fd = %d, filepath = %s \n", retval, path);
-
+  
+cleanup:
   return retval;
 }
 
