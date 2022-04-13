@@ -3256,6 +3256,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   int                     lind_fds[2];
   int                     user_fds[2];
   int32_t                 retval;
+  struct NaClDesc *       faildesc;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
            "%d, %d, %d, %lx)\n",
@@ -3288,7 +3289,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
     hd->flags = NACL_ABI_O_RDWR;
     hd->cageid = nap->cage_id;
 
-    user_fds[i] = AllocateNextFd(nap, hd);
+    user_fds[i] = AllocNextFd(nap, hd);
     if (user_fds[i] < 0) {
       retval = -NACL_ABI_ENFILE;
       if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
@@ -3307,14 +3308,14 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   return retval;
 
 fail2:
-  struct NaClDesc * desc2 = NaClGetDesc(nap, user_fds[1]);
-  NaClSetDesc(nap, NULL, desc2);
-  NaClDescUnref(desc2);
+  faildesc = NaClGetDesc(nap, user_fds[1]);
+  NaClSetDesc(nap, NULL, faildesc);
+  NaClDescUnref(faildesc);
 
 fail1:
-  struct NaClDesc * desc1 = NaClGetDesc(nap, user_fds[0]);
-  NaClSetDesc(nap, NULL, desc1);
-  NaClDescUnref(desc1);
+  faildesc = NaClGetDesc(nap, user_fds[0]);
+  NaClSetDesc(nap, NULL, faildesc);
+  NaClDescUnref(faildesc);
   free(hd_struct);
 fail:
   lind_close(lind_fds[0], nap->cage_id);
@@ -4142,6 +4143,8 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   int lind_fds[2];
   int user_fds[2];
   int accflags;
+  struct NaClDesc *       faildesc;
+
 
   hd_struct = malloc(sizeof(struct NaClHostDesc)*2);
   if (!hd_struct) {
@@ -4184,7 +4187,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
     NaClLog(1, "NaClSysPipeCtor(0x%08"NACL_PRIxPTR", 0%o) returned %d\n",
             (uintptr_t) hd, accflags | actualflags, retval);
 
-    user_fds[i] = AllocateNextFd(nap, hd);
+    user_fds[i] = AllocNextFd(nap, hd);
     if (user_fds[i] < 0) {
       retval = -NACL_ABI_ENFILE;
       if (i == 0) goto fail; // sd only need to remove the first descriptor on the 2nd iteration
@@ -4203,14 +4206,14 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   return ret;
 
 fail2:
-  struct NaClDesc * desc2 = NaClGetDesc(nap, user_fds[1]);
-  NaClSetDesc(nap, NULL, desc2);
-  NaClDescUnref(desc2);
+  faildesc = NaClGetDesc(nap, user_fds[1]);
+  NaClSetDesc(nap, NULL, faildesc);
+  NaClDescUnref(faildesc);
 
 fail1:
-  struct NaClDesc * desc1 = NaClGetDesc(nap, user_fds[0]);
-  NaClSetDesc(nap, NULL, desc1);
-  NaClDescUnref(desc1);
+  faildesc = NaClGetDesc(nap, user_fds[0]);
+  NaClSetDesc(nap, NULL, faildesc);
+  NaClDescUnref(faildesc);
   free(hd_struct);
 fail:
   lind_close(lind_fds[0], nap->cage_id);
@@ -5334,7 +5337,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
 
   userfd = AllocNextFd(nap, hd);
   if (userfd < 0) {
-    free(nd);
+    free(hd);
     userfd = -NACL_ABI_ENFILE;
   }
 
