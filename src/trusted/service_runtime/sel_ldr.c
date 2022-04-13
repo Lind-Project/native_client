@@ -1834,6 +1834,8 @@ int NextFd(struct NaClApp *nap){
     break;
   }
 
+  NaClFastMutexUnlock(&nap->desc_mu);
+
   if (retfd > 0){
     fd_cage_table[nap->cage_id][retfd] = RESERVE_FD;
   }
