@@ -5449,11 +5449,6 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
     struct NaClDescIoDesc *old_self;
     struct NaClHostDesc *old_hd;
 
-    if(nhd == NULL) {
-      ret = -NACL_ABI_ENOMEM;
-      goto cleanup;
-    }
-
     old_hostfd = fd_cage_table[nap->cage_id][fd];
 
     if (!(old_nd = NaClGetDesc(nap, old_hostfd))) {
