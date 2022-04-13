@@ -873,8 +873,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    */
 
   NaClXMutexLock(&nap->mu);
-  *(int*)0 = 0;
-
   getdents_ret = lind_getdents(lind_fd,
                               (void *) sysaddr,
                               count,
