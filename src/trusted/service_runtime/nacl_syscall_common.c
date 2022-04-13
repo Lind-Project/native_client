@@ -872,8 +872,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * cause mmap to be slower on Windows.
    */
 
-  *(int*)0 = 0;
   NaClXMutexLock(&nap->mu);
+  *(int*)0 = 0;
 
   getdents_ret = lind_getdents(lind_fd,
                               (void *) sysaddr,
