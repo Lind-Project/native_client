@@ -244,7 +244,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
       ent->npages = (last_internal_page - ent->page_num + 1);
       region_size = (((last_internal_page + 1) << NACL_PAGESHIFT)
                      - start_new_region);
-      //Not sure whether this prot is quite right
+
       if (NaClMprotect((void *) NaClUserToSys(nap, start_new_region),
                             region_size,
                             PROT_READ | PROT_WRITE)) {
@@ -267,8 +267,6 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
     ASSERT(sys_new_break > sys_break);
     memset((void *) sys_break, 0, sys_new_break - sys_break);
   }
-
-
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
@@ -1336,18 +1334,8 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n",
            nap->cage_id, (uintptr_t)natp, d, request,
            (uintptr_t)arg_ptr);
-  /*
-   * Note that NaClUserToSysAddrRange is not feasible right now, since
-   * the size of the arg argument depends on the request.  We do not
-   * have an enumeration of allowed ioctl requests yet.
-   *
-   * Furthermore, some requests take no arguments, so sysaddr might
-   * end up being kNaClBadAddress and that is perfectly okay.
-   * 
-   * NR - currentl we only handle FIONBIO and FIOASYNC where arg_ptr is just an int*
-   */
-  // TODO: check every IOCTL request type to figure out needed prot
-
+  
+  /* NR - currently we only handle FIONBIO and FIOASYNC where arg_ptr is just an int*   */
   sysaddr = NaClUserToSysAddrProt(nap, (uintptr_t) arg_ptr, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysIoctl could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
@@ -2050,7 +2038,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
   }
-
 
   //We don't check prot in mmap
   sysaddr = NaClUserToSys(nap, usraddr);
@@ -4422,7 +4409,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   nap_child->main_exe_prevalidated = 1;
   
   /* calculate page addresses and sizes */
-  //I'm not 100% sure of the necessary prot here, TODO: ensure this
   dyncode_child = (void *)NaClUserToSys(nap_child, nap_child->dynamic_text_start);
   dyncode_size = NaClRoundPage(nap_child->dynamic_text_end - nap->dynamic_text_start);
   dyncode_npages = dyncode_size >> NACL_PAGESHIFT;
