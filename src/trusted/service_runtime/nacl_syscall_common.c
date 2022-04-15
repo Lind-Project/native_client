@@ -3294,9 +3294,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
 fail:
   for (i = 0; i < 2; i++) free(hds[i]);
-  lind_close(lind_fds[0], nap->cage_id);
-  lind_close(lind_fds[1], nap->cage_id);
-
   return retval;
 }
 
@@ -4180,9 +4177,6 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
 
 fail:
   for (i = 0; i < 2; i++) free(hds[i]);
-  lind_close(lind_fds[0], nap->cage_id);
-  lind_close(lind_fds[1], nap->cage_id);
-
   return ret;
 }
 
