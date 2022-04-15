@@ -39,6 +39,8 @@ int NaClCopyInFromUserAndDropLock(struct NaClApp *nap,
   /* 
    * This is used to copy in syscall arguments from the stack,
    * so we only need to check the addr range and not protections.
+   * At this point, we have been able to write to the stack in lind_glibc which 
+   * is in userspace so that it must be readable
    */
   src_sys_addr = NaClUserToSysAddrRange(nap, src_usr_addr, num_bytes);
   if (kNaClBadAddress == src_sys_addr) {
