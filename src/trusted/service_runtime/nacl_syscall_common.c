@@ -515,6 +515,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
   ret = AllocNextFd(nap, new_hd);
   if (ret < 0) {
+    lind_close(new_hd->d, nap->cage_id);
     ret = -NACL_ABI_ENFILE;
     free(new_hd);
     goto out;
@@ -772,6 +773,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
   userfd = AllocNextFd(nap, hd);
   if (userfd < 0) {
+    lind_close(hd->d, nap->cage_id);
     free(hd);
     return -NACL_ABI_ENFILE;
   }
@@ -4748,6 +4750,7 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
 
   userfd = AllocNextFd(nap, hd);
   if (userfd < 0) {
+    lind_close(hd->d, nap->cage_id);
     free(hd);
     return -NACL_ABI_ENFILE;
   }
@@ -5289,7 +5292,9 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   hd = malloc(sizeof(struct NaClHostDesc));
   if (!hd) {
     NaClLog(2, "NaClSysAccept could not allocate room for returning NaCl desc\n");
-    return -NACL_ABI_ENOMEM;
+    lind_close(ret, nap->cage_id);
+    userfd = -NACL_ABI_ENOMEM;
+    goto cleanup;
   }
 
   hd->d = ret;
@@ -5298,6 +5303,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
 
   userfd = AllocNextFd(nap, hd);
   if (userfd < 0) {
+    lind_close(hd->d, nap->cage_id);
     free(hd);
     userfd = -NACL_ABI_ENFILE;
   }
@@ -5431,6 +5437,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
     struct NaClHostDesc *nhd = malloc(sizeof(struct NaClHostDesc));
     if (!nhd) {
       NaClLog(2, "NaClSysFcntlSet could not allocate room for returning NaCl desc\n");
+      lind_close(ret, nap->cage_id);
       ret = -NACL_ABI_ENOMEM;
       goto cleanup;
     }
@@ -5442,6 +5449,7 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
 
     newuser = AllocNextFdBounded(nap, set_op, nhd);
     if (newuser < 0) {
+      lind_close(ret, nap->cage_id);
       free(nhd);
       newuser = -NACL_ABI_ENFILE;
       goto cleanup;
@@ -5565,6 +5573,7 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
 
   userfd = AllocNextFd(nap, hd);
   if (userfd < 0) {
+    lind_close(ret, nap->cage_id);
     free(hd);
     return -NACL_ABI_ENFILE;
   }

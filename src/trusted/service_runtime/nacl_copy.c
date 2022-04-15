@@ -36,8 +36,9 @@ int NaClCopyInFromUserAndDropLock(struct NaClApp *nap,
                                   size_t         num_bytes) {
   uintptr_t src_sys_addr;
 
-  /* We don't need to check protections here
-   * this is used by nacl_syscall_handlers, and we can check the actual args later
+  /* 
+   * This is used to copy in syscall arguments from the stack,
+   * so we only need to check the addr range and not protections.
    */
   src_sys_addr = NaClUserToSysAddrRange(nap, src_usr_addr, num_bytes);
   if (kNaClBadAddress == src_sys_addr) {

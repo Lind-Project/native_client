@@ -542,9 +542,9 @@ int NaClVmmapEntryMaxProt(struct NaClVmmapEntry *entry) {
 }
 
 int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
-                              uintptr_t         page_num,
-                              size_t            npages,
-                              int               prot) {
+                                  uintptr_t         page_num,
+                                  size_t            npages,
+                                  int               prot) {
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
