@@ -1821,20 +1821,53 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 /* Find next available fd in cagetable */
 
-int NextFd(int cage_id){
+int CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
 
-  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[cage_id][fd] == -1) return fd;
+  for (int i = 0; i < iterations; i++) {
+    int naclfd = fd_cage_table[nap->cage_id][userfds[i]];
+    NaClSetDesc(nap, naclfd, NULL);
+    fd_cage_table[nap->cage_id][userfds[i]] = -1;
   }
 
-  return -NACL_ABI_EBADF;
 }
 
-int NextFdBounded(int cage_id, int lowerbound){
+int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd) {
 
-  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[cage_id][fd] == -1) return fd;
+  int userfd = -NACL_ABI_EBADF;
+
+  NaClFastMutexLock(&nap->desc_mu);
+
+  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
+    if (fd_cage_table[nap->cage_id][fd] == -1) {
+      userfd = fd;
+      hd->userfd = userfd;
+      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      fd_cage_table[nap->cage_id][userfd] = naclfd;
+      break;
+    }
   }
 
-  return -NACL_ABI_EBADF;
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+  return userfd;
+}
+
+int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd) {
+
+  int userfd = -NACL_ABI_EBADF;
+
+  NaClFastMutexLock(&nap->desc_mu);
+
+  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
+    if (fd_cage_table[nap->cage_id][fd] == -1) {
+      userfd = fd;
+      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
+      fd_cage_table[nap->cage_id][userfd] = naclfd;
+      break;
+    }
+  }
+
+  NaClFastMutexUnlock(&nap->desc_mu);
+
+  return userfd;
 }
