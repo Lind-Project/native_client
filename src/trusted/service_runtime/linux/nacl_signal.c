@@ -180,21 +180,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
        * number as the error code.
        */
 
-      /*
-      * Unset the TLS variable so that if a crash occurs during thread
-      * teardown, the signal handler does not dereference a dangling
-      * NaClAppThread pointer.
-      */
-      NaClTlsSetCurrentThread(NULL);
-      // We've logged its a trusted fault, lets cleanup
-      if (natp->is_cage_mainthread) {
-        if (!natp->tearing_down) AddToFatalThreadTeardown(natp);
-      } else {
-        if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
-      }
-      
-      // just hang here while we cleanup
-      while (1);
+      NaClExit(-sig);
 
     }
   }
