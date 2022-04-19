@@ -75,7 +75,6 @@ void                  NaClVmmapIterErase(struct NaClVmmapIter *nvip);
 int   NaClVmmapCtor(struct NaClVmmap  *self) NACL_WUR;
 
 void  NaClVmmapDtor(struct NaClVmmap  *self);
-void NaClVmmapExitDtor(struct NaClVmmap *self);
 
 /*
  * NaClVmmapAdd does not check whether the newly mapped region overlaps
