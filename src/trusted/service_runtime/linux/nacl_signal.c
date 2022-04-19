@@ -364,7 +364,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
-  FindAndRunHandler(natp, sig, info, uc);
+  FindAndRunHandler(sig, info, uc);
 }
 
 
