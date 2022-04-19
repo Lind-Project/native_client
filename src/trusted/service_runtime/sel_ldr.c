@@ -383,7 +383,6 @@ void NaClAppDtor(struct NaClApp *nap) {
   NaClLog(3, "Deleting io regions\n");
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
-  // NaClVmmapDtor(&nap->mem_map);
 
   NaClLog(3, "Tearing down dyn arrays\n");
   DynArrayDtor(&nap->children);

@@ -383,11 +383,13 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
 
-  int cageid = nap->cage_id;
-  NaClVmmapDtor(&nap->mem_map);
+  /* to close a cage we need to unref the vmmap before fofficially
+   * closing all the fds in the cage. Then we can exit in rustposix
+   */
 
+  NaClVmmapDtor(&nap->mem_map);
   NaClAppCloseFDs(nap);
-    lind_exit(status, cageid);
+  lind_exit(status, nap->cage_id);
 
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
@@ -4530,7 +4532,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
 
     goto fail;
   }
-    
+
   /* wait for child to finish before cleaning up */
   NaClWaitForMainThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);

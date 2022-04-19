@@ -141,7 +141,7 @@ static void NaClSignalHandleCustomCrashHandler(int sig) {
   }
 }
 
-static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *info, void *uc) {
+static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
   unsigned int a;
 
   /* If we need to keep searching, try the old signal handler. */
@@ -179,9 +179,7 @@ static void FindAndRunHandler(struct NaClAppThread *natp, int sig, siginfo_t *in
        * the default behavior which is to exit the app with the signal
        * number as the error code.
        */
-
       NaClExit(-sig);
-
     }
   }
 }
