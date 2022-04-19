@@ -840,8 +840,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     return - NACL_ABI_EBADF;
   }
   int lind_fd = NaClDesc2Lindfd(ndp);
-  *(int*)0 = 0;
-
+  
   /*
    * Generic NaClCopyOutToUser is not sufficient, since buffer size
    * |count| is arbitrary and we wouldn't want to have to allocate
