@@ -30,8 +30,7 @@ struct NaClAppThreadSuspendedRegisters;
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
   THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC,
-  THREAD_LAUNCH_THREAD
+  THREAD_LAUNCH_EXEC
 };
 
 
