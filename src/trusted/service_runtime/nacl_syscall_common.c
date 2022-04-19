@@ -384,9 +384,9 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   struct NaClApp *nap = natp->nap;
 
   NaClAppCloseFDs(nap);
-  lind_exit(status, nap->cage_id);
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+  lind_exit(status, nap->cage_id);
   NaClAppThreadTeardown(natp);
 
   /* NOTREACHED */
@@ -840,7 +840,7 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     return - NACL_ABI_EBADF;
   }
   int lind_fd = NaClDesc2Lindfd(ndp);
-  
+
   /*
    * Generic NaClCopyOutToUser is not sufficient, since buffer size
    * |count| is arbitrary and we wouldn't want to have to allocate
