@@ -386,9 +386,9 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   int cageid = nap->cage_id;
 
   // NaClAppCloseFDs(nap);
+  lind_exit(status, cageid);
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-  lind_exit(status, cageid);
   NaClAppThreadTeardown(natp);
 
 
