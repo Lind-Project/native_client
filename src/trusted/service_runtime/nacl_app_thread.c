@@ -218,18 +218,16 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 }
 
 void NaClAppCloseFDs(struct NaClApp *nap) {
-  struct NaClDesc *ndp = NULL;
-  int             fd = 0;
-  int             i;
   
   NaClFastMutexLock(&nap->desc_mu);
 
-  for (i = 0; i < FILE_DESC_MAX; i++) {
+  for (int i = 0; i < FILE_DESC_MAX; i++) {
     /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
-    fd = fd_cage_table[nap->cage_id][i];
+    int fd = fd_cage_table[nap->cage_id][i];
 
     /* If we have an fd and nacl descriptor, lets close it */
     if (fd >= 0) {
+      struct NaClDesc *ndp = NULL;
       ndp = NaClGetDescMu(nap, fd);
       if (ndp) {
         NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
@@ -819,7 +817,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  * a faulted thread is caught in the signal handler (nacl_signal.c)
  * 
  * The fault teardown function will cycle through all child threads in cage,
- * tear them down, and call pthread_cancle upon them
+ * tear them down, and call pthread_cancel upon them
  * 
  * Finally it will exit the parent thread and signal that the cage has exited with SIGKILL
  * 

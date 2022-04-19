@@ -15,7 +15,6 @@
 #include "native_client/src/include/nacl_macros.h"
 #include "native_client/src/shared/platform/aligned_malloc.h"
 
-
 #include "native_client/src/shared/gio/gio.h"
 #include "native_client/src/shared/platform/nacl_check.h"
 #include "native_client/src/shared/platform/nacl_exit.h"
