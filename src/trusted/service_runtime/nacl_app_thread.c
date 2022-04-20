@@ -889,13 +889,14 @@ void FatalThreadTeardown(void) {
 }
 
 void ThreadReaper(void* arg) {
-  NaClXMutexLock(&teardown_mutex);
   while (reap) {
+    NaClXMutexLock(&teardown_mutex);
+
     NaClXCondVarWait(&reapercv, &teardown_mutex);
     FatalThreadTeardown();
-  }
-  NaClXMutexLock(&teardown_mutex);
 
+    NaClXMutexLock(&teardown_mutex);
+  }
 }
 
 void LaunchThreadReaper(void) {
