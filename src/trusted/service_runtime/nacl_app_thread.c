@@ -886,8 +886,6 @@ void FatalThreadTeardown(void) {
     NaClAppThreadTeardownInner(natp_to_teardown, false);
     NaClThreadCancel(thread);
     natp_to_teardown = NULL;
-
-  }
 }
 
 void ThreadReaper(void* arg) {
