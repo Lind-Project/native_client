@@ -398,7 +398,7 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
    * Remove parent from any children, and hope they don't become the Batman
    */
   NaClXMutexLock(&nap->children_mu);
-  for (int i = 0; i < (&nap->children)->ptr_array_space; i++) {
+  for (int i = 0; i < (&nap->children)->num_entries; i++) {
     struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
     if (nap_child) nap_child->parent = NULL;
   }
