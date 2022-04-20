@@ -850,7 +850,7 @@ void DestroyFatalThreadTeardown(void) {
 
 
 void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
-    if (natp_to_teardown == natp) return;
+    if (natp_to_teardown) return;
     NaClXMutexLock(&teardown_mutex);
     natp_to_teardown = natp;
     natp->tearing_down = true;
