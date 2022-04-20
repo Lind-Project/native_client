@@ -745,12 +745,12 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (!cage_thread) {
     natp_child->is_cage_mainthread = true;
-    natp_child->cage_mainthread = NULL;
+    natp_child->cage_mainthread = natp_child;
     natp_child->tearing_down = false;
   } 
   else {
     natp_child->is_cage_mainthread = false;
-    natp_child->cage_mainthread = natp_parent;
+    natp_child->cage_mainthread = natp_parent->cage_mainthread;
   }
 
   /*
