@@ -44,9 +44,7 @@ extern bool use_lkm;
 struct NaClThread reaper;
 
 struct NaClMutex teardown_mutex;
-bool in_teardown = false;
 struct NaClAppThread *natp_to_teardown = NULL;
-struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
 
@@ -834,9 +832,6 @@ void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
-    if (!NaClMutexCtor(&reapermut)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper mutex");
-  }
     if (!NaClCondVarCtor(&reapercv)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper cv");
   }
@@ -845,7 +840,6 @@ void InitFatalThreadTeardown(void) {
 void DestroyFatalThreadTeardown(void) {
   NaClMutexDtor(&teardown_mutex);
   NaClCondVarDtor(&reapercv);
-  NaClMutexDtor(&reapermut);
 }
 
 
