@@ -850,7 +850,7 @@ void DestroyFatalThreadTeardown(void) {
 
 
 void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
-    if (natp_to_teardown) return;
+    if (natp_to_teardown == natp) return;
     NaClXMutexLock(&teardown_mutex);
     natp_to_teardown = natp;
     natp->tearing_down = true;
@@ -862,9 +862,6 @@ void FatalThreadTeardown(void) {
   struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
 
-  if ((natp_to_teardown != NULL) && !in_teardown) {
-    NaClXMutexLock(&teardown_mutex);
-    in_teardown = true;
     struct NaClApp *nap = natp_to_teardown->nap;
 
     NaClXMutexLock(&nap->threads_mu);
@@ -890,15 +887,18 @@ void FatalThreadTeardown(void) {
     NaClThreadCancel(thread);
     natp_to_teardown = NULL;
 
-    in_teardown = false;
-    NaClXMutexUnlock(&teardown_mutex);
   }
 }
 
 void ThreadReaper(void* arg) {
   while (reap) {
-    NaClXCondVarWait(&reapercv, &reapermut);
+    NaClXMutexLock(&teardown_mutex);
+
+    NaClXCondVarWait(&reapercv, &teardown_mutex);
     FatalThreadTeardown();
+
+    NaClXMutexLock(&teardown_mutex);
+
   }
 }
 
