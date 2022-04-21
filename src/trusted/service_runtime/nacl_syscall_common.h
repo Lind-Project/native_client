@@ -213,6 +213,25 @@ int32_t NaClSysMunmap(struct NaClAppThread  *natp,
                       void                  *start,
                       size_t                length);
 
+
+int32_t NaClSysShmget(struct NaClAppThread  *natp,
+                      int                   key,
+                      size_t                size,
+                      int                   shmflgs);
+
+int32_t NaClSysShmat(struct NaClAppThread  *natp,
+                     int                   shmid,
+                     void                  *shmaddr,
+                     int                   shmflg);
+
+int32_t NaClSysShmdt(struct NaClAppThread  *natp,
+                     void                  *shmaddr);
+
+int32_t NaClSysShmctl(struct NaClAppThread  *natp,
+                      int                   shmid,
+                      int                   cmd,
+                      int                   shmflg);
+
 int32_t NaClSysGetdents(struct NaClAppThread  *natp,
                         int                   d,
                         void                  *dirp,

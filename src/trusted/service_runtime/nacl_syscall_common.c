@@ -1674,6 +1674,8 @@ int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
           usr_region_end <= nap->dynamic_text_end);
 }
 
+
+
 static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t length) {
 #if NACL_WINDOWS
   uintptr_t addr;
@@ -2753,6 +2755,40 @@ int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
 
 cleanup:
   return retval;
+}
+
+int32_t NaClSysShmget(struct NaClAppThread  *natp,
+                      int                   key,
+                      size_t                size,
+                      int                   shmflgs) {
+
+printf("shmget\n");
+
+}
+
+int32_t NaClSysShmat(struct NaClAppThread  *natp,
+                      int                   shmid,
+                      void                  *shmaddr,
+                      int                   shmflg) {
+
+printf("shmat\n");
+           
+}
+
+int32_t NaClSysShmdt(struct NaClAppThread  *natp,
+                     void                  *shmaddr) {
+                    
+printf("shmdt\n");
+
+}
+
+int32_t NaClSysShmctl(struct NaClAppThread  *natp,
+                      int                   shmid,
+                      int                   cmd,
+                      int                   shmflg) {
+
+printf("shmctl\n");
+                    
 }
 
 /*

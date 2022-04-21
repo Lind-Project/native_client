@@ -72,6 +72,11 @@
 #define NACL_sys_getegid                53
 #define NACL_sys_flock                  54
 
+#define NACL_sys_shmget                 56
+#define NACL_sys_shmat                  57
+#define NACL_sys_shmdt                  58
+#define NACL_sys_shmctl                 59
+
 #define NACL_sys_imc_makeboundsock      60
 #define NACL_sys_imc_accept             61
 #define NACL_sys_imc_connect            62
