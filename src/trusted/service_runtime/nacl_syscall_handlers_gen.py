@@ -296,8 +296,8 @@ SYSCALL_LIST = [
     ('NACL_sys_epoll_wait', 'NaClSysEpollWait', ['int epfd', 'struct epoll_event *events', 'int maxevents', 'int timeout']),
     ('NACL_sys_select', 'NaClSysSelect', ['int nfds', 'fd_set *readfds', 'fd_set *writefds', 'fd_set *exceptfds', 'struct timeval *timeout']),
     ('NACL_sys_shmget', 'NaClSysShmget', ['int key', 'size_t size', 'int shmflg']),
-    ('NACL_sys_shmget', 'NaClSysShmget', ['int shmid', 'void *shmaddr', 'int shmflg']),
-    ('NACL_sys_shmget', 'NaClSysShmget', ['void *shmaddr']),
+    ('NACL_sys_shmat', 'NaClSysShmat', ['int shmid', 'void *shmaddr', 'int shmflg']),
+    ('NACL_sys_shmdt', 'NaClSysShmdt', ['void *shmaddr']),
     ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct shmid_ds *buf']),
     ]
 
