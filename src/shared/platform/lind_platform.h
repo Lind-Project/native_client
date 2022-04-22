@@ -19,6 +19,7 @@
 #include <sys/select.h>
 #include <sys/poll.h>
 #include <sys/epoll.h>
+#include <sys/shm.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -81,6 +82,11 @@
 #define LIND_safe_net_epoll_ctl         57
 #define LIND_safe_net_epoll_wait        58
 
+#define LIND_safe_fs_shmget             62
+#define LIND_safe_fs_shmat              63
+#define LIND_safe_fs_shmdt              64
+#define LIND_safe_fs_shmctl             65
+
 #define LIND_safe_fs_pipe               66
 #define LIND_safe_fs_pipe2              67
 #define LIND_safe_fs_fork               68
@@ -120,6 +126,7 @@ union RustArg {
     struct sockaddr *dispatch_sockaddrstruct;
     struct epoll_event *dispatch_epolleventstruct;
     const struct sockaddr *dispatch_constsockaddrstruct;
+    struct shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
 };
 
@@ -184,6 +191,10 @@ int lind_pipe2(int* pipefds, int flags, int cageid);
 int lind_fork(int newcageid, int cageid);
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid);
 int lind_munmap(void *addr, size_t length, int cageid);
+int lind_shmget(key_t key, size_t size, int shmflg, int cageid);
+int lind_shmat(int shmid, void *shmaddr, int shmflg, int cageid);
+int lind_shmdt(void *shmaddr, int cageid);
+int lind_shmctl(int shmid, int cmd, struct shmid_ds *buf, int cageid);
 int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);

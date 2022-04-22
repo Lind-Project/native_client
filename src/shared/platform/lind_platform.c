@@ -296,6 +296,22 @@ int lind_munmap(void *addr, size_t length, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_munmap, cbuf, addr, size_t, length);
 }
 
+int lind_shmget(int key, size_t size, int shmflg, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmget, int, key, size_t, size, int, shmflg);
+}
+
+int lind_shmat(int shmid, void *shmaddr, int shmflg, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmat, int, shmid, cbuf, shmaddr, int, shmflg);
+}
+
+int lind_shmdt(void *shmaddr, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_shmdt, cbuf, shmaddr);
+}
+
+int lind_shmctl(int shmid, int cmd, struct shmid_ds *buf, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmat, int, shmid, int, cmd, shmidstruct, buf);
+}
+
 int lind_getpid(int cageid) {
     DISPATCH_SYSCALL_0(LIND_safe_sys_getpid);
 }
