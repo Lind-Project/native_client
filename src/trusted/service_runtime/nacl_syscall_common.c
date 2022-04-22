@@ -2760,10 +2760,13 @@ cleanup:
 int32_t NaClSysShmget(struct NaClAppThread  *natp,
                       int                   key,
                       size_t                size,
-                      int                   shmflgs) {
+                      int                   shmflg) {
+  int32_t                       retval;
 
-printf("shmget\n");
+  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+           (uintptr_t)natp, key, size, shmflg);
 
+  return retval;
 }
 
 int32_t NaClSysShmat(struct NaClAppThread  *natp,
@@ -2771,15 +2774,25 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
                       void                  *shmaddr,
                       int                   shmflg) {
 
-printf("shmat\n");
-           
+  int32_t                       retval;
+
+
+  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+           (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);      
+
+  return retval;     
 }
 
 int32_t NaClSysShmdt(struct NaClAppThread  *natp,
                      void                  *shmaddr) {
-                    
-printf("shmdt\n");
+  
+  int32_t                       retval;
 
+                    
+  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" ,""0x%08"NACL_PRIxPTR")\n",
+           (uintptr_t)natp, (uintptr_t)shmaddr); 
+
+  return retval;
 }
 
 int32_t NaClSysShmctl(struct NaClAppThread  *natp,
@@ -2787,8 +2800,13 @@ int32_t NaClSysShmctl(struct NaClAppThread  *natp,
                       int                   cmd,
                       int                   shmflg) {
 
-printf("shmctl\n");
-                    
+  int32_t                       retval;
+
+
+  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+           (uintptr_t)natp, shmid, cmd, shmflg);
+
+  return retval;
 }
 
 /*
