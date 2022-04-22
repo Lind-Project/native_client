@@ -2761,50 +2761,290 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
                       int                   key,
                       size_t                size,
                       int                   shmflg) {
+  struct NaClApp                *nap = natp->nap;
   int32_t                       retval;
+  size_t                        alloc_rounded_size;
+
 
   NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
            (uintptr_t)natp, key, size, shmflg);
+
+
+  alloc_rounded_size = NaClRoundAllocPage(size);
+  if (alloc_rounded_size != size) {
+    NaClLog(1, "NaClSysShmget: rounded size to 0x%"NACL_PRIxS"\n",
+            alloc_rounded_size);
+  }
+
+  retval = lind_shmget(key, alloc_rounded_size, shmflg, nap->cage_id);
+
+  if ((retval > 0) && (shmflg & IPC_CREAT)) {
+    shmtable[retval].size = alloc_rounded_size;
+    shmtable[retval].rmid = false;
+  }
 
   return retval;
 }
 
 int32_t NaClSysShmat(struct NaClAppThread  *natp,
-                      int                   shmid,
-                      void                  *shmaddr,
-                      int                   shmflg) {
+                     int                   shmid,
+                     void                  *shmaddr,
+                     int                   shmflg) {
+  struct NaClApp                *nap = natp->nap;
+  int32_t                       map_result;
+  uintptr_t                     usraddr;
+  uintptr_t                     usrpage;
+  uintptr_t                     sysaddr;
+  uintptr_t                     endaddr;
+  int                           length;
+  int                           prot;
 
-  int32_t                       retval;
+  NaClLog(2, "Entered NaClSysShmat(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+           (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);
+
+  length = shmtable[shmid].size;
+  if (!length) return -NACL_ABI_EINVAL;
 
 
-  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
-           (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);      
+  usraddr = (uintptr_t) shmaddr;
 
-  return retval;     
+   /*
+   * Starting address must be aligned to worst-case allocation
+   * granularity. 
+   */
+  if (!NaClIsAllocPageMultiple(usraddr)) {
+    NaClLog(2, "NaClSysShmat: address not allocation granularity aligned\n");
+    return -NACL_ABI_EINVAL;
+  }
+
+  /* Lock the addr space. */
+  NaClXMutexLock(&nap->mu);
+
+
+
+  /* Address space calculations */
+  if (!usraddr) {
+    /*
+      * Pick a hole in addr space of appropriate size, anywhere.
+      * We pick one that's best for the system.
+      */
+    usrpage = NaClVmmapFindMapSpace(&nap->mem_map,
+                                    length >> NACL_PAGESHIFT);
+    NaClLog(2, "NaClSysShmat: FindMapSpace: page 0x%05"NACL_PRIxPTR"\n",
+            usrpage);
+    if (!usrpage) {
+      map_result = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+    usraddr = usrpage << NACL_PAGESHIFT;
+    NaClLog(2, "NaClSysShmat: new starting addr: 0x%08"NACL_PRIxPTR
+            "\n", usraddr);
+  } else {
+    /*
+      * user supplied an addr, but it's to be treated as a hint; we
+      * find a hole of the right size in the app's address space,
+      * according to the usual mmap semantics.
+      */
+    usrpage = NaClVmmapFindMapSpaceAboveHint(&nap->mem_map,
+                                              usraddr,
+                                              (length
+                                              >> NACL_PAGESHIFT));
+    NaClLog(2, "NaClSysShmat: FindSpaceAboveHint: page 0x%05"NACL_PRIxPTR"\n",
+            usrpage);
+    if (!usrpage) {
+      NaClLog(2, "%s\n", "NaClSysShmat: hint failed, doing generic allocation");
+      usrpage = NaClVmmapFindMapSpace(&nap->mem_map,
+                                      length >> NACL_PAGESHIFT);
+    }
+    if (!usrpage) {
+      map_result = -NACL_ABI_ENOMEM;
+      goto cleanup;
+    }
+    usraddr = usrpage << NACL_PAGESHIFT;
+    NaClLog(2, "NaClSysShmat: new starting addr: 0x%08"NACL_PRIxPTR"\n",
+            usraddr);
+  }
+
+  /* Validate [usraddr, endaddr) is okay. */
+  if (usraddr >= ((uintptr_t) 1 << nap->addr_bits)) {
+    NaClLog(2,
+            ("NaClSysShmat: start address (0x%08"NACL_PRIxPTR") outside address"
+             " space\n"),
+            usraddr);
+    map_result = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+  endaddr = usraddr + length;
+  if (endaddr < usraddr) {
+    NaClLog(0,
+            ("NaClSysShmat: integer overflow -- "
+             "NaClSysShmat(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS",%d\n"),
+            usraddr, length, shmid);
+    map_result = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+  /*
+   * NB: we use > instead of >= here.
+   *
+   * endaddr is the address of the first byte beyond the target region
+   * and it can equal the address space limit.  (of course, normally
+   * the main thread's stack is there.)
+   */
+  if (endaddr > ((uintptr_t) 1 << nap->addr_bits)) {
+    NaClLog(2,
+            ("NaClSysShmat: end address (0x%08"NACL_PRIxPTR") is beyond"
+             " the end of the address space\n"),
+            endaddr);
+    map_result = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+
+  if (NaClSysCommonAddrRangeContainsExecutablePages(nap, usraddr, length)) {
+    NaClLog(2, "NaClSysShmat: region contains executable pages\n");
+    map_result = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+
+  // translate to sysaddr
+  sysaddr = NaClUserToSys(nap, usraddr);
+
+  NaClLog(4, ("NaClSysShmat: (,,0x%08"NACL_PRIxPTR","
+               "0x%08"NACL_PRIxS",%d\n"), sysaddr, length, shmid);
+
+  /* finally lets create the segment */
+
+  map_result = lind_shmat(shmid, sysaddr, shmflg, nap->cage_id);
+
+  if (shmflg & SHM_RDONLY) prot = NACL_ABI_O_RDONLY;
+  else prot = NACL_ABI_O_RDWR;
+
+  if (length > 0) {
+    NaClVmmapAddWithOverwrite(&nap->mem_map,
+                              NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
+                              length >> NACL_PAGESHIFT,
+                              prot,
+                              NACL_ABI_MAP_SHARED,
+                              NULL,
+                              0,
+                              length);
+
+    shmtable[shmid].count++;
+  }
+
+  map_result = usraddr;
+
+
+cleanup:
+  NaClXMutexUnlock(&nap->mu);
+
+  /*
+   * Check to ensure that map_result will fit into a 32-bit value. This is
+   * a bit tricky because there are two valid ranges: one is the range from
+   * 0 to (almost) 2^32, the other is from -1 to -4096 (our error range).
+   * For a 32-bit value these ranges would overlap, but if the value is 64-bit
+   * they will be disjoint.
+   */
+  if (map_result > UINT32_MAX
+      && !NaClPtrIsNegErrno(&map_result)) {
+    NaClLog(LOG_FATAL, "Overflow in NaClSysShmat: return address is "
+                       "0x%"NACL_PRIxPTR"\n", map_result);
+  }
+  NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
+
+
+  return map_result;     
 }
 
 int32_t NaClSysShmdt(struct NaClAppThread  *natp,
                      void                  *shmaddr) {
-  
-  int32_t                       retval;
+  struct NaClApp                *nap = natp->nap;
+  int                           retval;
+  int                           shmid;
+  uintptr_t                     sysaddr;
+  int                           length;
 
                     
-  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" ,""0x%08"NACL_PRIxPTR")\n",
+  NaClLog(2, "Entered NaClSysShmdt(0x%08"NACL_PRIxPTR" ,""0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, (uintptr_t)shmaddr); 
 
+  if (!NaClIsAllocPageMultiple((uintptr_t) shmaddr)) {
+    NaClLog(2, "%s\n", "start addr not allocation multiple");
+    retval = -NACL_ABI_EINVAL;
+    return retval;
+  }
+
+  //Prot is explicit in munmap/shmdt
+  sysaddr = NaClUserToSysAddr(nap, (uintptr_t) shmaddr);
+  if (kNaClBadAddress == sysaddr) {
+    NaClLog(4, "shmdt: region not user addresses\n");
+    retval = -NACL_ABI_EFAULT;
+    return retval;
+  }
+
+  NaClXMutexLock(&nap->mu);
+
+  /*
+   * User should be unable to unmap any executable pages.  We check here.
+   */
+  if (NaClSysCommonAddrRangeContainsExecutablePages(nap,
+                                                    (uintptr_t) shmaddr,
+                                                    1)) {
+    NaClLog(2, "NaClSysMunmap: region contains executable pages\n");
+    retval = -NACL_ABI_EINVAL;
+    goto cleanup;
+  }
+
+  shmid = lind_shmdt((void *) sysaddr, nap->cage_id);
+  if (retval < 0) {
+    retval = -shmid;
+    NaClLog(2, "shmdt failed, errno = %d\n", retval);
+    goto cleanup;
+  }
+
+  shmtable[shmid].count--;
+  length = shmtable->size;
+  if ((shmtable[shmid].rmid) && (!shmtable[shmid].count)) {
+    clear_shmentry(shmid);
+  }
+
+  NaClVmmapRemove(&nap->mem_map,
+                  NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
+                  length >> NACL_PAGESHIFT);
+
+cleanup:
+  NaClXMutexUnlock(&nap->mu);
+
   return retval;
+
 }
 
 int32_t NaClSysShmctl(struct NaClAppThread  *natp,
                       int                   shmid,
                       int                   cmd,
-                      int                   shmflg) {
-
+                      struct shmid_ds       *buf) {
+  struct NaClApp                *nap = natp->nap;
   int32_t                       retval;
+  struct shmid_ds               *bufsysaddr;
 
+  NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""0x%08"NACL_PRIxPTR")\n",
+           (uintptr_t)natp, shmid, cmd, buf);
 
-  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
-           (uintptr_t)natp, shmid, cmd, shmflg);
+  bufsysaddr = (struct shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
+
+  if ((void*) kNaClBadAddress == bufsysaddr) {
+    NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    return -NACL_ABI_EFAULT;
+  }
+
+  retval = lind_shmctl(shmid, cmd, bufsysaddr, nap->cage_id);
+
+  if (retval < 0) {
+    return retval;
+  }
+
+  if (cmd == IPC_RMID) {
+    shmtable[shmid].rmid = true;
+  }
 
   return retval;
 }

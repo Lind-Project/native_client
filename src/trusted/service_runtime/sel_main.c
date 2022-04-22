@@ -258,6 +258,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   
   cagecount = 0;
 
+  InitializeShmtable();
+
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
 

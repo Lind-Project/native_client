@@ -76,6 +76,7 @@ double time_end = 0.0;
  */
 volatile sig_atomic_t fork_num;
 int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
+struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
   return !!getenv(env_name);
@@ -99,6 +100,16 @@ void CheckForLkm(void) {
     }
     use_lkm = false;
   }
+}
+
+void InitializeShmtable(void) {
+  for (int i = 0; i < FILE_DESC_MAX; i++) clear_shmentry(i);
+}
+
+void clear_shmentry(int shmid) {
+  shmtable[shmid].size = -1;
+  shmtable[shmid].count = 0;
+  shmtable[shmid].rmid = false;
 }
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
