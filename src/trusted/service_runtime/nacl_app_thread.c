@@ -161,7 +161,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  NaClXMutexLock(&nap_parent->mu);
+  // NaClXMutexLock(&nap_parent->mu);
 
   for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
 
@@ -211,7 +211,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
   }
-  NaClXMutexUnlock(&nap_parent->mu);
+  // NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
