@@ -75,7 +75,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   nap_child->argc = nap_parent->argc;
   nap_child->argv = nap_parent->argv;
   nap_child->binary = nap_parent->binary;
-  nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
+  nap_child->nacl_file = LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
   nap_child->ignore_validator_result = nap_parent->ignore_validator_result;
