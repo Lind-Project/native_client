@@ -4397,11 +4397,12 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   NaClXMutexLock(&nap->mu); 
   NaClLog(2, "Copying fd table in SafePOSIX\n");
   lind_exec(child_cage_id, nap->cage_id);
-  NaClXMutexUnlock(&nap->mu);
 
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   nap_child->running = 0;
   nap_child->in_fork = 0;
+
+  NaClXMutexUnlock(&nap->mu);
 
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
