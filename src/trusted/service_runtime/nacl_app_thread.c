@@ -73,8 +73,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
-  nap_child->argv = nap_parent->argv;
-  nap_child->binary = nap_parent->binary;
+  strcpy(nap_child->argv, nap_parent->argv);
+  strcpy(nap_child->binary, nap_parent->binary);
   nap_child->nacl_file = LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
@@ -161,8 +161,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  // NaClXMutexLock(&nap_parent->mu);
-
   for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
@@ -211,7 +209,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
   }
-  // NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
