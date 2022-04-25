@@ -73,6 +73,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
+  nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
   for (int i = 0; i < nap_child->argc; i++) strcpy(nap_child->argv[i], nap_parent->argv[i]);
   strcpy(nap_child->binary, nap_parent->binary);
   nap_child->nacl_file = LD_FILE;
