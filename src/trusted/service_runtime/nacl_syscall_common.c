@@ -4203,13 +4203,13 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap->mu); 
   int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
   lind_fork(child_cage_id, nap->cage_id); 
-  NaClXMutexUnlock(&nap->mu);
 
   nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
   ret = child_cage_id;
+  NaClXMutexUnlock(&nap->mu);
 
   /* start fork thread */
   if (!NaClCreateThread(natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
