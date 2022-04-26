@@ -144,7 +144,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     nap_child->text_shm = nap_parent->text_shm;
     NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
     NaClInitSwitchToApp(nap_child); 
-    //NaClMemoryProtection(nap_child);
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
@@ -160,14 +159,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
   }
-  // if (!NaClAppLaunchServiceThreads(nap_child)) {
-  //   NaClLog(LOG_FATAL, "Launch service threads failed\n");
-  // }
-
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  // NaClXMutexLock(&nap_parent->mu);
-
   for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
@@ -216,7 +209,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
   }
-  // NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
 }
