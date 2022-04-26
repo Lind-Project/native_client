@@ -73,7 +73,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
-  
+
   if (tl_type == THREAD_LAUNCH_FORK) {
     nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
     for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
@@ -160,9 +160,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
   }
-  if (!NaClAppLaunchServiceThreads(nap_child)) {
-    NaClLog(LOG_FATAL, "Launch service threads failed\n");
-  }
+  // if (!NaClAppLaunchServiceThreads(nap_child)) {
+  //   NaClLog(LOG_FATAL, "Launch service threads failed\n");
+  // }
 
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
