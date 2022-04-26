@@ -878,8 +878,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
   nap->argc = argc - optind;
-  nap->argv = argv + optind;
-  nap->binary = argv[optind + 3];
+  nap->argv = calloc((argc + 1), sizeof(char*));
+  for (int i = 0; i < argc; i++) nap->argv[i] = strdup((argv + optind)[i]);
+  nap->binary = strdup(argv[optind + 3]);
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
