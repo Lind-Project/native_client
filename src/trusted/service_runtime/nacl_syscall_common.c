@@ -4387,7 +4387,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     free(nap->argv[3]);
     nap->argv[3] = strdup(binary);
   }
-  nap->binary = child_argv[3];
+  nap->binary = strdup(child_argv[3]);
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
