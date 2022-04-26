@@ -862,10 +862,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Failed to initialise env cleanser");
   }
 
-  if (!NaClAppLaunchServiceThreads(nap)) {
-    NaClLog(1, "%s\n", "Launch service threads failed");
-    goto done;
-  }
+  // if (!NaClAppLaunchServiceThreads(nap)) {
+  //   NaClLog(1, "%s\n", "Launch service threads failed");
+  //   goto done;
+  // }
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
