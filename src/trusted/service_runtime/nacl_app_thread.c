@@ -73,9 +73,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
   nap_child->argc = nap_parent->argc;
-  nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
-  for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
-  nap_child->binary = strdup(nap_parent->binary);
+  
+  if (tl_type == THREAD_LAUNCH_FORK) {
+    nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
+    for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
+    nap_child->binary = strdup(nap_parent->binary);
+  }
+
   nap_child->nacl_file = LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
