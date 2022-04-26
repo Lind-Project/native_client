@@ -383,7 +383,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
 
-  /* to close a cage we need to unref the vmmap before fofficially
+  /* to close a cage we need to unref the vmmap before officially
    * closing all the fds in the cage. Then we can exit in rustposix
    */
 

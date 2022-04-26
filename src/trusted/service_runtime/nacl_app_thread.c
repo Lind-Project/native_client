@@ -72,14 +72,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
-  nap_child->argc = nap_parent->argc;
-
-  if (tl_type == THREAD_LAUNCH_FORK) {
-    nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
-    for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
-    nap_child->binary = strdup(nap_parent->binary);
-  }
-
   nap_child->nacl_file = LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
@@ -89,6 +81,14 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   nap_child->parent_id = nap_parent->cage_id;
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
+
+  nap_child->argc = nap_parent->argc;
+  if (tl_type == THREAD_LAUNCH_FORK) {
+    nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
+    for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
+    nap_child->binary = strdup(nap_parent->binary);
+  }
+
 
   for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
     envc++;
@@ -484,15 +484,14 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   NaClLog(3, " unlocking thread\n");
   NaClXMutexUnlock(&natp->mu);
 
-  // again we trigger the lock outside for non-active threads, we also cant unregister the sig stack
-  // here so lets destroy everything
+  // we can only unregister the sig stack if a thread is actively
+  // shutting itself down
   if (active_thread) {
     NaClLog(3, " unlocking thread table\n");
     NaClXMutexUnlock(&nap->threads_mu);
     NaClLog(3, " unregistering signal stack\n");
     NaClSignalStackUnregister();
   }
-
 
   if (natp->is_cage_mainthread) {
     // we have to wait for NaClWaitForMainThreadToExit on Main/Exec
@@ -509,7 +508,6 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClLog(3, " NaClThreadExit\n");
     NaClThreadExit();
     NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
-    /* NOTREACHED */
   }
 }
 
@@ -851,7 +849,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
     natp->tearing_down = true;
-    NaClXCondVarBroadcast(&reapercv);
+    NaClXCondVarSignal(&reapercv);
     NaClXMutexUnlock(&reapermut);
 
 }
@@ -860,43 +858,44 @@ void FatalThreadTeardown(void) {
   struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
 
-    struct NaClApp *nap = natp_to_teardown->nap;
+  struct NaClApp *nap = natp_to_teardown->nap;
 
-    NaClXMutexLock(&nap->threads_mu);
-    int num_threads = NaClGetNumThreads(nap);
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
 
-    for(int i = 0; i < num_threads; i++) {
+  for(int i = 0; i < num_threads; i++) {
 
-      struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
-      if (natp_child && natp_child != natp_to_teardown) {
-        struct NaClThread *child_thread;
-        child_thread = &natp_child->host_thread;
-        NaClAppThreadTeardownInner(natp_child, false);
-        NaClThreadCancel(child_thread);
-      }
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp_to_teardown) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+      NaClAppThreadTeardownInner(natp_child, false);
+      NaClThreadCancel(child_thread);
     }
-    
-    lind_exit(status, nap->cage_id);
-    (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-    thread = &natp_to_teardown->host_thread;
-    NaClXMutexUnlock(&nap->threads_mu);
+  }
+  
+  lind_exit(status, nap->cage_id);
+  (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+  thread = &natp_to_teardown->host_thread;
+  NaClXMutexUnlock(&nap->threads_mu);
 
-    NaClAppThreadTeardownInner(natp_to_teardown, false);
-    NaClThreadCancel(thread);
-    natp_to_teardown = NULL;
-    NaClXMutexUnlock(&teardown_mutex);
+  NaClAppThreadTeardownInner(natp_to_teardown, false);
+  NaClThreadCancel(thread);
+  natp_to_teardown = NULL;
+  NaClXMutexUnlock(&teardown_mutex);
 
 }
 
 void ThreadReaper(void* arg) {
+  NaClXMutexLock(&reapermut);
   while (reap) {
-    NaClXMutexLock(&reapermut);
 
     NaClXCondVarWait(&reapercv, &reapermut);
     if (reap) FatalThreadTeardown();
 
-    NaClXMutexUnlock(&reapermut);
   }
+  NaClXMutexUnlock(&reapermut);
+
 }
 
 void LaunchThreadReaper(void) {
@@ -908,7 +907,7 @@ void LaunchThreadReaper(void) {
 
 void DestroyReaper(void) {
   reap = false;
-  NaClXCondVarBroadcast(&reapercv);
+  NaClXCondVarSignal(&reapercv);
   DestroyFatalThreadTeardown();
   NaClThreadCancel(&reaper);
 }
