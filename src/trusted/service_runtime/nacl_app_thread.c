@@ -44,6 +44,7 @@ extern bool use_lkm;
 struct NaClThread reaper;
 
 struct NaClMutex teardown_mutex;
+struct NaClCondVar teardown_cv;
 struct NaClAppThread *natp_to_teardown = NULL;
 struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
@@ -820,6 +821,9 @@ void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
+  if (!NaClCondVarCtor(&teardown_cv)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper cv");
+  }
   if (!NaClMutexCtor(&reapermut)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
   }
@@ -830,6 +834,7 @@ void InitFatalThreadTeardown(void) {
 
 void DestroyFatalThreadTeardown(void) {
   NaClMutexDtor(&teardown_mutex);
+  NaClCondVarDtor(&teardown_cv);
   NaClMutexDtor(&reapermut);
   NaClCondVarDtor(&reapercv);
 }
@@ -837,7 +842,13 @@ void DestroyFatalThreadTeardown(void) {
 
 void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     if (natp_to_teardown == natp) return;
+
     NaClXMutexLock(&teardown_mutex);
+    while (natp_to_teardown) {
+      NaClXCondVarWait(&teardown_cv, &teardown_mutex);
+    }
+    NaClXMutexUnlock(&teardown_mutex);
+
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
     natp->tearing_down = true;
@@ -874,20 +885,16 @@ void FatalThreadTeardown(void) {
   NaClAppThreadTeardownInner(natp_to_teardown, false);
   NaClThreadCancel(thread);
   natp_to_teardown = NULL;
-  NaClXMutexUnlock(&teardown_mutex);
-
+  NaClXCondVarSignal(&teardown_cv);
 }
 
 void ThreadReaper(void* arg) {
   NaClXMutexLock(&reapermut);
   while (reap) {
-
     NaClXCondVarWait(&reapercv, &reapermut);
     if (reap) FatalThreadTeardown();
-
   }
   NaClXMutexUnlock(&reapermut);
-
 }
 
 void LaunchThreadReaper(void) {
