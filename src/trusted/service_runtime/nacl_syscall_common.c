@@ -4324,12 +4324,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
 
   /* Convert pathname from user path, set binary */
   sys_pathname = NaClUserToSysAddrProt(nap, path, NACL_ABI_PROT_READ);
-  if (sys_pathname == kNaClBadAddress) {
-      NaClLog(2, "NaClSysExecv could not translate pathname, returning %d\n", -NACL_ABI_EFAULT);
-      ret = -NACL_ABI_EFAULT;
-      return ret;
-  }
-  binary = strdup(sys_pathname);
+  binary = sys_pathname ? strdup(sys_pathname) : NULL;
 
   /* 
     Convert to a Sys Pointer for argv** 
@@ -4382,14 +4377,17 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   child_argv[0] = strdup("NaClMain");
   child_argv[1] = strdup("--library-path");
   child_argv[2] = strdup("/lib/glibc");
-  child_argv[3] = strdup(binary);
   for (int i = 0; i < new_argc; i++) {
-    child_argv[i + 4] = new_argv[i] ? strdup(new_argv[i]) : NULL;
+    child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
   child_argv[child_argc] = NULL;
   nap->argc = child_argc;
   nap->argv = child_argv;
-  nap->binary = binary;
+  if (binary) {
+    free(nap->argv[3]);
+    nap->argv[3] = strdup(binary);
+  }
+  nap->binary = strdup(nap->argv[3]);
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
@@ -4550,6 +4548,7 @@ fail:
     free(*pp);
   }
   free(new_argv);
+  free(binary);
   return ret;
 }
 
