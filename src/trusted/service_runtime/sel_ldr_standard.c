@@ -913,7 +913,7 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
 
   if (tl_type != THREAD_LAUNCH_MAIN){
     /* TODO: figure out a better way to avoid extra instance spawns -jp */
-    NaClThreadYield();
+    // NaClThreadYield();
     NaClXMutexLock(&nap_child->mu);
     nap_child->in_fork = 0;
     NaClXMutexUnlock(&nap_child->mu);
