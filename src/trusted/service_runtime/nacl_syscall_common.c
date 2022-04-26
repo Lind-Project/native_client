@@ -4204,7 +4204,13 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
   lind_fork(child_cage_id, nap->cage_id); 
 
+  nap_child->argc = nap_parent->argc;
+  nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
+  for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
+  nap_child->binary = strdup(nap_parent->binary);
+
   nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
+
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;

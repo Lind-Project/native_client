@@ -82,14 +82,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   nap_child->parent = nap_parent;
   nap_child->in_fork = 0;
 
-  nap_child->argc = nap_parent->argc;
-  if (tl_type == THREAD_LAUNCH_FORK) {
-    nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
-    for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap_parent->argv[i]);
-    nap_child->binary = strdup(nap_parent->binary);
-  }
-
-
   for(char const *const *ce = nap_parent->clean_environ; ce && *ce; ++ce) {
     envc++;
   }
