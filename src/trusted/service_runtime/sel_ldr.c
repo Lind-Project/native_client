@@ -389,6 +389,9 @@ void NaClAppDtor(struct NaClApp *nap) {
   DynArrayDtor(&nap->threads);
   free(nap->cpu_features);
   free((void*) nap->clean_environ);
+  free(nap->binary);
+  for (int i = 0; i < nap->argc; i++) free(nap->argv[i]);
+  free(nap->argv);
 
   NaClLog(3, "Freeing nap\n");
   NaClAlignedFree(nap);
