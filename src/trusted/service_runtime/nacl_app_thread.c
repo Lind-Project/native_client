@@ -847,7 +847,6 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     while (natp_to_teardown) {
       NaClXCondVarWait(&teardown_cv, &teardown_mutex);
     }
-    NaClXMutexUnlock(&teardown_mutex);
 
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
@@ -855,6 +854,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     NaClXCondVarSignal(&reapercv);
     NaClXMutexUnlock(&reapermut);
 
+    NaClXMutexUnlock(&teardown_mutex);
 }
 
 void FatalThreadTeardown(void) {
