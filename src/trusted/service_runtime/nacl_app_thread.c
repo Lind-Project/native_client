@@ -839,10 +839,10 @@ void DestroyFatalThreadTeardown(void) {
   NaClCondVarDtor(&reapercv);
 }
 
-
 void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     if (natp_to_teardown == natp) return;
 
+    // wait here if more threads come along ot teardown
     NaClXMutexLock(&teardown_mutex);
     while (natp_to_teardown) {
       NaClXCondVarWait(&teardown_cv, &teardown_mutex);
