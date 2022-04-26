@@ -4204,12 +4204,12 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
   lind_fork(child_cage_id, nap->cage_id); 
 
+  nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
+
   nap_child->argc = nap->argc;
   nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
   for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap->argv[i]);
   nap_child->binary = strdup(nap->binary);
-
-  nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
 
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
@@ -4373,7 +4373,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   }
   new_argv[new_argc] = 0;
 
-  /* set up new "child" NaClApp */
+  /* set up child args */
   child_argc = new_argc + 3;
   child_argv = calloc(child_argc + 1, sizeof(*child_argv));
   if (!child_argv) {
@@ -4386,14 +4386,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   for (int i = 0; i < new_argc; i++) {
     child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
-  child_argv[child_argc] = NULL;
-  nap->argc = child_argc;
-  nap->argv = child_argv;
-  if (binary) {
-    free(nap->argv[3]);
-    nap->argv[3] = strdup(binary);
-  }
-  nap->binary = strdup(nap->argv[3]);
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
@@ -4407,6 +4399,16 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   nap_child->running = 0;
   nap_child->in_fork = 0;
+
+  /* add arguments to child nap */
+  child_argv[child_argc] = NULL;
+  nap_child->argc = child_argc;
+  nap_child->argv = child_argv;
+  if (binary) {
+    free(nap_child->argv[3]);
+    nap_child->argv[3] = strdup(binary);
+  }
+  nap_child->binary = strdup(nap_child->argv[3]);
 
   NaClXMutexUnlock(&nap->mu);
 
