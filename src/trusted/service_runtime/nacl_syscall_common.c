@@ -4374,9 +4374,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
     goto fail;
   }
-  child_argv[0] = "NaClMain";
-  child_argv[1] = "--library-path";
-  child_argv[2] = "/lib/glibc";
+  child_argv[0] = strdup("NaClMain");
+  child_argv[1] = strdup("--library-path");
+  child_argv[2] = strdup("/lib/glibc");
   for (int i = 0; i < new_argc; i++) {
     child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
