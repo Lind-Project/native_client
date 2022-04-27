@@ -73,6 +73,8 @@ uint32_t NaClThreadId(void);
 /* NaClThreadYield() makes the calling thread yield the processor. */
 void NaClThreadYield(void);
 
+void NaClThreadCancel(struct NaClThread *ntp);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_THREADS_H_ */

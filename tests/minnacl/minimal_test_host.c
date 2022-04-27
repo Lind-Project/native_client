@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
   if (use_separate_thread) {
     /* Create a new host thread that is managed by NaCl. */
     CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
-    NaClWaitForMainThreadToExit(&app);
+    NaClWaitForThreadToExit(&app);
 
     NaClLog(LOG_FATAL, "The exit syscall is not supposed to be callable\n");
   } else {

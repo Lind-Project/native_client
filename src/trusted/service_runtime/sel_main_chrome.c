@@ -364,7 +364,7 @@ void NaClChromeMainStart(struct NaClChromeMainArgs *args) {
 
   NaClEnvCleanserDtor(&env_cleanser);
 
-  ret_code = NaClWaitForMainThreadToExit(nap);
+  ret_code = NaClWaitForThreadToExit(nap);
 
   if (NACL_ABI_WIFEXITED(nap->exit_status)) {
     /*

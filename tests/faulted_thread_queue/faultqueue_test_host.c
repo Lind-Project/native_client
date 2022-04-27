@@ -214,7 +214,7 @@ void TestReceivingFault(struct NaClApp *nap) {
   TestSingleStepping(natp);
 
   NaClUntrustedThreadsResumeAll(nap);
-  CHECK(NaClWaitForMainThreadToExit(nap) == 0);
+  CHECK(NaClWaitForThreadToExit(nap) == 0);
 }
 
 /*
@@ -271,7 +271,7 @@ void TestGettingRegistersInMacSwitchRemainingRegs(struct NaClApp *nap) {
   NaClAppThreadSetSuspendedRegisters(natp, &regs);
   ASSERT_EQ(NaClAppThreadUnblockIfFaulted(natp, &signal), 1);
   NaClUntrustedThreadsResumeAll(nap);
-  CHECK(NaClWaitForMainThreadToExit(nap) == 0);
+  CHECK(NaClWaitForThreadToExit(nap) == 0);
 }
 
 int main(int argc, char **argv) {

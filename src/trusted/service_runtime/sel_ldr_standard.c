@@ -912,8 +912,6 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
   }
 
   if (tl_type != THREAD_LAUNCH_MAIN){
-    /* TODO: figure out a better way to avoid extra instance spawns -jp */
-    NaClThreadYield();
     NaClXMutexLock(&nap_child->mu);
     nap_child->in_fork = 0;
     NaClXMutexUnlock(&nap_child->mu);
@@ -941,7 +939,7 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
     user_tls2 = (uint32_t)natp_parent->user.tls_value2;
   }
 
-  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2);
+  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2, false);
 
 
 cleanup:
@@ -957,8 +955,8 @@ already_running:
   pthread_exit(&ignored_ret);
 }
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
-  NaClLog(3, "NaClWaitForMainThreadToExit: taking NaClApp lock\n");
+int NaClWaitForThreadToExit(struct NaClApp  *nap) {
+  NaClLog(3, "NaClWaitForThreadToExit: taking NaClApp lock\n");
   NaClXMutexLock(&nap->mu);
   NaClLog(3, " waiting for exit status\n");
   while (nap->running) {
@@ -974,28 +972,32 @@ int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
   if (NULL != nap->debug_stub_callbacks) {
     nap->debug_stub_callbacks->process_exit_hook();
   }
+  
+  int exit_status = nap->exit_status;
+  NaClXCondVarSignal(&nap->exit_cv);
 
-  return NACL_ABI_WEXITSTATUS(nap->exit_status);
+
+  return NACL_ABI_WEXITSTATUS(exit_status);
 }
 
 /*
  * stack_ptr is from syscall, so a 32-bit address.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      sys_stack_ptr,
                                    uint32_t       user_tls1,
                                    uint32_t       user_tls2) {
 
-  /* We need to set the thread type for the thread mechanics */
-  nap->tl_type = THREAD_LAUNCH_MAIN;
 
-  if (!NaClAppThreadSpawn(NULL,
+  if (!NaClAppThreadSpawn(natp_parent,
                           nap,
                           prog_ctr,
                           sys_stack_ptr,
                           user_tls1,
-                          user_tls2)) {
+                          user_tls2,
+                          true)) {
     NaClLog(LOG_WARNING,
             ("NaClCreateAdditionalThread: could not allocate thread."
              "  Returning EAGAIN per POSIX specs.\n"));

@@ -13,6 +13,7 @@
 #include "native_client/src/include/portability_io.h"
 #include "native_client/src/include/portability_string.h"
 #include "native_client/src/include/nacl_macros.h"
+#include "native_client/src/shared/platform/aligned_malloc.h"
 
 #include "native_client/src/shared/gio/gio.h"
 #include "native_client/src/shared/platform/nacl_check.h"
@@ -109,7 +110,6 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->validation_cache = NULL;
 
   nap->validator = NaClCreateValidator();
-
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
   nap->cpu_features = malloc(nap->validator->CPUFeatureSize);
@@ -214,7 +214,14 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_children_mutex;
   }
   if (!NaClCondVarCtor(&nap->cv)) {
-    goto cleanup_mu;
+    goto cleanup_cv;
+  }
+
+  if (!NaClMutexCtor(&nap->exit_mu)) {
+    goto cleanup_exit_mutex;
+  }
+  if (!NaClCondVarCtor(&nap->exit_cv)) {
+    goto cleanup_exit_cv;
   }
 
 #if NACL_WINDOWS
@@ -310,42 +317,84 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   return 1;
 
- cleanup_desc_mu:
+  cleanup_desc_mu:
   NaClFastMutexDtor(&nap->desc_mu);
- cleanup_threads_mu:
+  cleanup_threads_mu:
   NaClMutexDtor(&nap->threads_mu);
- cleanup_name_service:
+  cleanup_name_service:
   NaClDescUnref(nap->name_service_conn_cap);
   NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
- cleanup_cv:
+  cleanup_exit_cv:
+  NaClCondVarDtor(&nap->exit_cv);
+  cleanup_exit_mutex:
+  NaClMutexDtor(&nap->exit_mu);
+  cleanup_cv:
   NaClCondVarDtor(&nap->cv);
- cleanup_mu:
+  cleanup_mu:
   NaClMutexDtor(&nap->mu);
- cleanup_children_mutex:
+  cleanup_children_mutex:
   NaClMutexDtor(&nap->children_mu);
- cleanup_dynamic_load_mutex:
+  cleanup_dynamic_load_mutex:
   NaClMutexDtor(&nap->dynamic_load_mutex);
- cleanup_effp_free:
+  cleanup_effp_free:
   free(nap->effp);
- cleanup_mem_io_regions:
+  cleanup_mem_io_regions:
   NaClIntervalMultisetDelete(nap->mem_io_regions);
   nap->mem_io_regions = NULL;
- cleanup_mem_map:
+  cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
- cleanup_children:
+  cleanup_children:
   DynArrayDtor(&nap->children);
- cleanup_desc_tbl:
+  cleanup_desc_tbl:
   DynArrayDtor(&nap->desc_tbl);
- cleanup_threads:
+  cleanup_threads:
   DynArrayDtor(&nap->threads);
- cleanup_cpu_features:
+  cleanup_cpu_features:
   free(nap->cpu_features);
- cleanup_none:
+  cleanup_none:
   return 0;
 }
 
 int NaClAppCtor(struct NaClApp *nap) {
   return NaClAppWithSyscallTableCtor(nap, nacl_syscall);
+}
+
+void NaClAppDtor(struct NaClApp *nap) {
+
+  NaClLog(3, "Deconstructing nap\n");
+  NaClLog(3, "Freeing Address Space\n");
+  NaClAddrSpaceFree(nap);
+
+  NaClDescUnref(nap->name_service_conn_cap);
+  NaClRefCountUnref((struct NaClRefCount *) nap->name_service);
+
+  NaClLog(3, "Tearing down mutexes\n");
+  NaClFastMutexDtor(&nap->desc_mu);
+  NaClMutexDtor(&nap->threads_mu);
+  NaClCondVarDtor(&nap->cv);
+  NaClMutexDtor(&nap->mu);
+  NaClMutexDtor(&nap->children_mu);
+  NaClMutexDtor(&nap->dynamic_load_mutex);
+  NaClMutexDtor(&nap->exit_mu);
+  NaClCondVarDtor(&nap->exit_cv);
+  free(nap->effp);
+
+  NaClLog(3, "Deleting io regions\n");
+  NaClIntervalMultisetDelete(nap->mem_io_regions);
+  nap->mem_io_regions = NULL;
+
+  NaClLog(3, "Tearing down dyn arrays\n");
+  DynArrayDtor(&nap->children);
+  DynArrayDtor(&nap->desc_tbl);
+  DynArrayDtor(&nap->threads);
+  free(nap->cpu_features);
+  free((void*) nap->clean_environ);
+  free(nap->binary);
+  for (int i = 0; i < nap->argc; i++) free(nap->argv[i]);
+  free(nap->argv);
+
+  NaClLog(3, "Freeing nap\n");
+  NaClAlignedFree(nap);
 }
 
 /*
@@ -668,6 +717,10 @@ int32_t NaClSetAvail(struct NaClApp  *nap,
   NaClFastMutexUnlock(&nap->desc_mu);
 
   return pos;
+}
+
+int NaClGetNumThreads(struct NaClApp        *nap) {
+  return (&nap->threads)->num_entries;
 }
 
 int NaClAddThreadMu(struct NaClApp        *nap,

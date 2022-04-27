@@ -136,3 +136,8 @@ void NaClThreadExit(void) {
 void NaClThreadYield(void) {
   sched_yield();
 }
+
+void NaClThreadCancel(struct NaClThread *ntp) {
+  pthread_cancel(ntp->tid);
+}
+
