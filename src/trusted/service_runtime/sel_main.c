@@ -902,7 +902,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   DynArrayDtor(&env_vars);
 
   /* yiwen: waiting for running cages to exit */
-  ret_code = NaClWaitForMainThreadToExit(nap);
+  ret_code = NaClWaitForThreadToExit(nap);
 
   NaClXMutexLock(&ccmut);
   while(cagecount > 0) {

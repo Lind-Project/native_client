@@ -637,7 +637,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * Used to launch the main thread.  NB: calling thread may in the
  * future become the main NaCl app thread, and this function will
  * return only after the NaCl app main thread exits.  In such an
- * alternative design, NaClWaitForMainThreadToExit will become a
+ * alternative design, NaClWaitForThreadToExit will become a
  * no-op.
  */
 
@@ -648,7 +648,7 @@ int NaClCreateThread(struct NaClAppThread     *natp_parent,
                      char                     **argv,
                      char const *const        *envv) NACL_WUR;
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
+int NaClWaitForThreadToExit(struct NaClApp  *nap);
 
 /*
  * Used by syscall code.

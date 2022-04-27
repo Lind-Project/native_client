@@ -487,7 +487,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   }
 
   if (natp->is_cage_mainthread) {
-    // we have to wait for NaClWaitForMainThreadToExit on Main/Exec
+    // we have to wait for NaClWaitForThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
     natp->nap = NULL;
@@ -842,7 +842,10 @@ void DestroyFatalThreadTeardown(void) {
 void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
     if (natp_to_teardown == natp) return;
 
-    // wait here if more threads come along ot teardown
+    /* in the case of multiple threads fatally exiting,
+     * we need to queue them here so that only one exits at a time
+     * the first CV wait here keeps them from accessing the reaper mutex simultaneously
+     */
     NaClXMutexLock(&teardown_mutex);
     while (natp_to_teardown) {
       NaClXCondVarWait(&teardown_cv, &teardown_mutex);

@@ -955,8 +955,8 @@ already_running:
   pthread_exit(&ignored_ret);
 }
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
-  NaClLog(3, "NaClWaitForMainThreadToExit: taking NaClApp lock\n");
+int NaClWaitForThreadToExit(struct NaClApp  *nap) {
+  NaClLog(3, "NaClWaitForThreadToExit: taking NaClApp lock\n");
   NaClXMutexLock(&nap->mu);
   NaClLog(3, " waiting for exit status\n");
   while (nap->running) {
