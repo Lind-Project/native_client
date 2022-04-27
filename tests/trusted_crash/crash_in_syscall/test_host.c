@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
   app.tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, argc - 1, argv + 1, NULL));
-  NaClWaitForMainThreadToExit(&app);
+  NaClWaitForThreadToExit(&app);
 
   NaClLog(LOG_ERROR, "We did not expect the test program to exit cleanly\n");
   return 1;
