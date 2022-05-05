@@ -2792,7 +2792,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
                      void                  *shmaddr,
                      int                   shmflg) {
   struct NaClApp                *nap = natp->nap;
-  int32_t                       map_result;
+  uintptr_t                     map_result;
   uintptr_t                     usraddr;
   uintptr_t                     usrpage;
   uintptr_t                     sysaddr;
@@ -2914,6 +2914,13 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   NaClLog(4, ("NaClSysShmat: (,,0x%08"NACL_PRIxPTR","
                "0x%08"NACL_PRIxS",%d\n"), sysaddr, length, shmid);
 
+  //By this point in execution, we should have picked a sysaddr,
+  //so start_addr should and cannot be null, but we sanity check
+  if(!sysaddr){
+    NaClLog(LOG_FATAL,
+            "NaClSysShmat: sysaddr cannot be NULL.\n");
+  }
+
   /* finally lets create the segment */
   topbits = (long) sysaddr & 0xffffffff00000000L;
   mapbottom = lind_shmat(shmid, sysaddr, shmflg, nap->cage_id);
@@ -2933,6 +2940,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
    * top bits and bottom bits into our full return value.
    */
   map_result = (void*) (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
+  
   if (MAP_FAILED == map_result) {
     NaClLog(LOG_INFO,
             ("NaClHostDescMap: "
