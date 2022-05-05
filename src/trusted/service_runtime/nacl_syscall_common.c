@@ -2937,7 +2937,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
     NaClLog(LOG_INFO,
             ("NaClHostDescMap: "
              "mmap(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS", "
-             "0x%x, 0x%d")"
+             "0x%x, 0x%d)"
              " failed, errno %d.\n"),
             (uintptr_t) sysaddr, length, prot, shmid,
             errno);
