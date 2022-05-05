@@ -152,7 +152,6 @@ struct NaClApp {
   char const *const         *clean_environ;
   volatile int              in_fork;
 
-
   /*
    * public, user settable prior to app start.
    */
@@ -284,6 +283,9 @@ struct NaClApp {
 
   struct NaClMutex          mu;
   struct NaClCondVar        cv;
+
+  struct NaClMutex          exit_mu;
+  struct NaClCondVar        exit_cv;
 
 #if NACL_WINDOWS
   /*
@@ -515,6 +517,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
  */
 int NaClAppCtor(struct NaClApp  *nap) NACL_WUR;
 
+void NaClAppDtor(struct NaClApp *nap);
+
 /*
  * Loads a NaCl ELF file into memory in preparation for running it.
  *
@@ -642,7 +646,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * Used to launch the main thread.  NB: calling thread may in the
  * future become the main NaCl app thread, and this function will
  * return only after the NaCl app main thread exits.  In such an
- * alternative design, NaClWaitForMainThreadToExit will become a
+ * alternative design, NaClWaitForThreadToExit will become a
  * no-op.
  */
 
@@ -653,12 +657,13 @@ int NaClCreateThread(struct NaClAppThread     *natp_parent,
                      char                     **argv,
                      char const *const        *envv) NACL_WUR;
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
+int NaClWaitForThreadToExit(struct NaClApp  *nap);
 
 /*
  * Used by syscall code.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      stack_ptr,
                                    uint32_t       user_tls1,
@@ -708,6 +713,7 @@ void NaClSetDescMu(struct NaClApp   *nap,
 int32_t NaClSetAvailMu(struct NaClApp   *nap,
                        struct NaClDesc  *ndp);
 
+int NaClGetNumThreads(struct NaClApp        *nap);
 
 int NaClAddThread(struct NaClApp        *nap,
                   struct NaClAppThread  *natp);

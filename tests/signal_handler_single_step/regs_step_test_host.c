@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
   app.tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, 2, args, NULL));
-  CHECK(NaClWaitForMainThreadToExit(&app) == 0);
+  CHECK(NaClWaitForThreadToExit(&app) == 0);
 
   CHECK(!g_in_untrusted_code);
   ASSERT_EQ(g_context_switch_count,

@@ -381,13 +381,20 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
 
 int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
-
   struct NaClApp *nap = natp->nap;
+
+  /* to close a cage we need to unref the vmmap before officially
+   * closing all the fds in the cage. Then we can exit in rustposix
+   */
+
+  NaClVmmapDtor(&nap->mem_map);
+  NaClAppCloseFDs(nap);
   lind_exit(status, nap->cage_id);
+
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
-  free((void*) nap->clean_environ);
+
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 
@@ -796,11 +803,6 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return -NACL_ABI_EBADF;
   }
 
-  /* there is no standard input to close, but return success anyway */
-  if (!d) {
-    return 0;
-  }
-
   NaClFastMutexLock(&nap->desc_mu);
 
   /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
@@ -870,8 +872,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
    * if the directory is on a networked filesystem this could, and
    * cause mmap to be slower on Windows.
    */
-  NaClXMutexLock(&nap->mu);
 
+  NaClXMutexLock(&nap->mu);
   getdents_ret = lind_getdents(lind_fd,
                               (void *) sysaddr,
                               count,
@@ -3665,7 +3667,8 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
 
   NaClVmHoleWaitToStartThread(nap);
 
-  retval = NaClCreateAdditionalThread(nap,
+  retval = NaClCreateAdditionalThread(natp,
+                                      nap,
                                       (uintptr_t) prog_ctr,
                                       sys_stack,
                                       thread_ptr,
@@ -4494,13 +4497,19 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   NaClXMutexLock(&nap->mu); 
   int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
   lind_fork(child_cage_id, nap->cage_id); 
-  NaClXMutexUnlock(&nap->mu);
 
   nap_child = NaClChildNapCtor(natp->nap, child_cage_id, THREAD_LAUNCH_FORK);
+
+  nap_child->argc = nap->argc;
+  nap_child->argv = calloc((nap_child->argc + 1), sizeof(char*));
+  for (int i = 0; i < nap_child->argc; i++) nap_child->argv[i] = strdup(nap->argv[i]);
+  nap_child->binary = strdup(nap->binary);
+
   child_argc = nap_child->argc;
   child_argv = nap_child->argv;
   nap_child->running = 0;
   ret = child_cage_id;
+  NaClXMutexUnlock(&nap->mu);
 
   /* start fork thread */
   if (!NaClCreateThread(natp, nap_child, child_argc, child_argv, nap_child->clean_environ)) {
@@ -4658,27 +4667,19 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   }
   new_argv[new_argc] = 0;
 
-  /* set up new "child" NaClApp */
+  /* set up child args */
   child_argc = new_argc + 3;
   child_argv = calloc(child_argc + 1, sizeof(*child_argv));
   if (!child_argv) {
     NaClLog(LOG_ERROR, "%s\n", "Failed to allocate child_argv");
     goto fail;
   }
-  child_argv[0] = "NaClMain";
-  child_argv[1] = "--library-path";
-  child_argv[2] = "/lib/glibc";
+  child_argv[0] = strdup("NaClMain");
+  child_argv[1] = strdup("--library-path");
+  child_argv[2] = strdup("/lib/glibc");
   for (int i = 0; i < new_argc; i++) {
     child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
-  child_argv[child_argc] = NULL;
-  nap->argc = child_argc;
-  nap->argv = child_argv;
-  if (binary) {
-    free(nap->argv[3]);
-    nap->argv[3] = strdup(binary);
-  }
-  nap->binary = child_argv[3];
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
@@ -4688,11 +4689,22 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   NaClXMutexLock(&nap->mu); 
   NaClLog(2, "Copying fd table in SafePOSIX\n");
   lind_exec(child_cage_id, nap->cage_id);
-  NaClXMutexUnlock(&nap->mu);
 
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   nap_child->running = 0;
   nap_child->in_fork = 0;
+
+  /* add arguments to child nap */
+  child_argv[child_argc] = NULL;
+  nap_child->argc = child_argc;
+  nap_child->argv = child_argv;
+  if (binary) {
+    free(nap_child->argv[3]);
+    nap_child->argv[3] = strdup(binary);
+  }
+  nap_child->binary = strdup(nap_child->argv[3]);
+
+  NaClXMutexUnlock(&nap->mu);
 
   /* TODO: fix dynamic text validation -jp */
   nap_child->skip_validator = 1;
@@ -4823,9 +4835,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
 
     goto fail;
   }
-    
+
   /* wait for child to finish before cleaning up */
-  NaClWaitForMainThreadToExit(nap_child);
+  NaClWaitForThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
   NaClAppThreadTeardown(natp);
 
@@ -4833,9 +4845,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   ret = 0;
 
 fail:
-  /*  Env Cleanser */
-  free((void *) nap->clean_environ);
-  nap->clean_environ = NULL;
 
   for (char **pp = new_argv; pp && *pp; pp++) {
     free(*pp);

@@ -59,6 +59,7 @@
 #include "native_client/src/trusted/service_runtime/sel_qualify.h"
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
+#include "native_client/src/shared/platform/aligned_malloc.h"
 
 
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
@@ -199,11 +200,10 @@ double LindGetTime(void) {
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
+  struct NaClApp                *nap;
   struct redir                  *entry;
   struct redir                  *redir_queue;
   struct redir                  **redir_qend;
-  struct NaClApp                state = {0};
-  struct NaClApp                *nap = &state;
   struct NaClDesc               *blob_file = NULL;
   struct GioFile                gout;
   struct DynArray               env_vars;
@@ -259,18 +259,27 @@ int NaClSelLdrMain(int argc, char **argv) {
   cagecount = 0;
 
   InitializeShmtable();
+  nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
 
   /* Initialize cage early on to avoid Cage 0 */
   InitializeCage(nap, 1);
 
+  if (!NaClMutexCtor(&ccmut)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count mutex");
+  }
+    if (!NaClCondVarCtor(&cccv)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count cv");
+  }
 
   if (!DynArrayCtor(&nap->children, 16)) {
     NaClLog(1, "%s\n", "Failed to initialize children list");
   }
 
+  LaunchThreadReaper();
+
   NaClAllModulesInit();
   NaClBootstrapChannelErrorReporterInit();
-  NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, &state);
+  NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, nap);
 
   verbosity = NaClLogGetVerbosity();
 
@@ -282,7 +291,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Could not create general standard output channel");
     exit(1);
   }
-  if (!NaClAppCtor(&state)) {
+  if (!NaClAppCtor(nap)) {
     NaClLog(1, "%s\n", "NaClAppCtor() failed");
   }
   if (!DynArrayCtor(&env_vars, 0)) {
@@ -499,8 +508,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   /* to be passed to NaClMain, eventually... */
   argv[--optind] = "NaClMain";
-  state.ignore_validator_result = debug_mode_ignore_validator > 0;
-  state.skip_validator = debug_mode_ignore_validator > 1;
+  nap->ignore_validator_result = debug_mode_ignore_validator > 0;
+  nap->skip_validator = debug_mode_ignore_validator > 1;
 
 /*
  * `_HOST_OSX` is defined so that
@@ -516,15 +525,15 @@ int NaClSelLdrMain(int argc, char **argv) {
 # define _HOST_OSX 0
 #endif
   if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING")) {
-    state.enable_exception_handling = 1;
+    nap->enable_exception_handling = 1;
   }
   /*
    * TODO(mseaborn): Always enable the Mach exception handler on Mac
    * OS X, and remove handle_signals and sel_ldr's "-S" option.
    */
-  if (state.enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
+  if (nap->enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
 #if NACL_WINDOWS
-    state.attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
+    nap->attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
 #elif NACL_LINUX
     /* NaCl's signal handler is always enabled on Linux. */
 #elif NACL_OSX
@@ -736,7 +745,7 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
 
     /* Give debuggers a well known point at which xlate_base is known.  */
-    NaClGdbHook(&state);
+    NaClGdbHook(nap);
   }
 
 /*
@@ -854,10 +863,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Failed to initialise env cleanser");
   }
 
-  if (!NaClAppLaunchServiceThreads(nap)) {
-    NaClLog(1, "%s\n", "Launch service threads failed");
-    goto done;
-  }
   if (enable_debug_stub) {
     if (!NaClDebugInit(nap)) {
       goto done;
@@ -870,8 +875,9 @@ int NaClSelLdrMain(int argc, char **argv) {
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
 
   nap->argc = argc - optind;
-  nap->argv = argv + optind;
-  nap->binary = argv[optind + 3];
+  nap->argv = calloc((nap->argc + 1), sizeof(char*));
+  for (int i = 0; i < nap->argc; i++) nap->argv[i] = strdup(argv[i + optind]);
+  nap->binary = strdup(argv[optind + 3]);
 
   NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
@@ -897,7 +903,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   DynArrayDtor(&env_vars);
 
   /* yiwen: waiting for running cages to exit */
-  ret_code = NaClWaitForMainThreadToExit(nap);
+  ret_code = NaClWaitForThreadToExit(nap);
 
   NaClXMutexLock(&ccmut);
   while(cagecount > 0) {
@@ -958,6 +964,9 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  NaClCondVarDtor(&cccv);
+  NaClMutexDtor(&ccmut);
+  DestroyReaper();
   NaClExit(ret_code);
 
 done:
@@ -990,6 +999,9 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  NaClCondVarDtor(&cccv);
+  NaClMutexDtor(&ccmut);
+  DestroyReaper();
 
   NaClExit(ret_code);
 

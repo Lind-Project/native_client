@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
   CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
-  CHECK(NaClWaitForMainThreadToExit(&app) == 0);
+  CHECK(NaClWaitForThreadToExit(&app) == 0);
 
   /* Check for leaks. */
   CHECK(g_object_count == 0);

@@ -12,12 +12,14 @@
 #define NATIVE_CLIENT_SERVICE_RUNTIME_NACL_APP_THREAD_H__ 1
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
 #include "native_client/src/shared/platform/nacl_threads.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
+#include "native_client/src/trusted/service_runtime/dyn_array.h"
 
 
 EXTERN_C_BEGIN
@@ -155,12 +157,20 @@ struct NaClAppThread {
    * Protected by mu
    */
   int                       dynamic_delete_generation;
+
+  // We use these for the fault handler
+  bool                              is_cage_mainthread;
+  bool                              tearing_down;
+  struct NaClAppThread              *cage_mainthread;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
+void NaClAppCloseFDs(struct NaClApp *nap);
 
 void WINAPI NaClAppThreadLauncher(void *state);
 
+void NaClAppThreadTeardownChildren(struct NaClAppThread *natp);
+void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread);
 void NaClAppThreadTeardown(struct NaClAppThread *natp);
 
 
@@ -195,7 +205,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                usr_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2) NACL_WUR;
+                       uint32_t                 user_tls2,
+                       bool                     cage_thread) NACL_WUR;
 
 
 void NaClAppThreadDelete(struct NaClAppThread *natp);
@@ -214,6 +225,20 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   NACL_COMPILE_TIME_ASSERT(offsetof(struct NaClAppThread, user) == 0);
   return (struct NaClAppThread *) ntcp;
 }
+
+
+void InitFatalThreadTeardown(void);
+
+void DestroyFatalThreadTeardown(void); 
+
+void AddToFatalThreadTeardown(struct NaClAppThread *natp);
+
+void FatalThreadTeardown(void);
+
+
+void ThreadReaper(void* arg);
+void LaunchThreadReaper(void);
+void DestroyReaper(void);
 
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp);
 

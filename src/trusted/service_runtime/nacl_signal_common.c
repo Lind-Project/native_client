@@ -18,6 +18,9 @@
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
+#include "native_client/src/trusted/service_runtime/thread_suspension.h"
+#include "native_client/src/trusted/service_runtime/nacl_tls.h"
+
 
 #if NACL_WINDOWS
 #include <io.h>
@@ -122,7 +125,8 @@ int NaClSignalCheckSandboxInvariants(const struct NaClSignalContext *regs,
   return 1;
 }
 
-void NaClSignalHandleUntrusted(int signal,
+void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
+                               int signal,
                                const struct NaClSignalContext *regs,
                                int is_untrusted) {
   char tmp[128];
@@ -134,7 +138,23 @@ void NaClSignalHandleUntrusted(int signal,
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from untrusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
     NaClSignalErrorMessage(tmp);
-    NaClExit((-signal) & 0xFF);
+
+    /*
+      * Unset the TLS variable so that if a crash occurs during thread
+      * teardown, the signal handler does not dereference a dangling
+      * NaClAppThread pointer.
+    */
+    NaClTlsSetCurrentThread(NULL);
+    // signal for teardown
+    if (natp->is_cage_mainthread) {
+      if (!natp->tearing_down) AddToFatalThreadTeardown(natp);
+      NaClUntrustedThreadSuspend(natp, 0);   
+    } else {
+      if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
+    }
+    // wait here while we get cleaned up
+    while (1);
+
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
              "pc=%" NACL_PRIxNACL_REG "\n", signal, regs->prog_ctr);
@@ -143,6 +163,7 @@ void NaClSignalHandleUntrusted(int signal,
      * Continue the search for another handler so that trusted crashes
      * can be handled by the Breakpad crash reporter.
      */
+    // we had a trusted fault, continue to next handler
   }
 }
 
