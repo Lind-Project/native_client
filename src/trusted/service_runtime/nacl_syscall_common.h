@@ -18,6 +18,7 @@
 #include "native_client/src/trusted/service_runtime/include/sys/time.h"
 #include <sys/poll.h>
 #include <sys/epoll.h>
+#include <sys/shm.h>
 
 
 EXTERN_C_BEGIN
