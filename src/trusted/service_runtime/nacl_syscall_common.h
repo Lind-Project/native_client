@@ -19,7 +19,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <sys/shm.h>
-
+#include <sys/mman.h>
 
 EXTERN_C_BEGIN
 

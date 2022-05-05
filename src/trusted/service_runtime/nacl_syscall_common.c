@@ -2799,6 +2799,8 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   uintptr_t                     endaddr;
   int                           length;
   int                           prot;
+  unsigned long                 topbits;
+  unsigned int                  mapbottom;
 
   NaClLog(2, "Entered NaClSysShmat(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
            (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);
@@ -2913,8 +2915,41 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
                "0x%08"NACL_PRIxS",%d\n"), sysaddr, length, shmid);
 
   /* finally lets create the segment */
+  topbits = (long) sysaddr & 0xffffffff00000000L;
+  mapbottom = lind_shmat(shmid, sysaddr, shmflg, nap->cage_id);
 
-  map_result = lind_shmat(shmid, sysaddr, shmflg, nap->cage_id);
+  /* If we return a value higher than 0xffffffffu - 256
+   * we know that this is in fact a negative integer (an errno)
+   * since due to alignment mmap cannot return an address in that range 
+   */
+
+  if ((unsigned) mapbottom > (0xffffffffu - 256)) {
+    errno = mapbottom;
+    mapbottom = MAP_FAILED;
+  } 
+
+  /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
+   * return a long -1 as our return value. Otherwise, combine the 
+   * top bits and bottom bits into our full return value.
+   */
+  map_result = (void*) (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
+  if (MAP_FAILED == map_result) {
+    NaClLog(LOG_INFO,
+            ("NaClHostDescMap: "
+             "mmap(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS", "
+             "0x%x, 0x%d")"
+             " failed, errno %d.\n"),
+            (uintptr_t) sysaddr, length, prot, shmid,
+            errno);
+    return -NaClXlateErrno(errno);
+  }
+  if (map_result != sysaddr) {
+    NaClLog(LOG_FATAL,
+            ("NaClSysShmat: MAP_FIXED not fixed:"
+             " returned 0x%08"NACL_PRIxPTR" instead of 0x%08"NACL_PRIxPTR"\n"),
+            (uintptr_t) map_result,
+            (uintptr_t) sysaddr);
+  }
 
   if (shmflg & SHM_RDONLY) prot = NACL_ABI_O_RDONLY;
   else prot = NACL_ABI_O_RDWR;
@@ -2924,7 +2959,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
                               NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                               length >> NACL_PAGESHIFT,
                               prot,
-                              NACL_ABI_MAP_SHARED,
+                              NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
                               NULL,
                               0,
                               length);
