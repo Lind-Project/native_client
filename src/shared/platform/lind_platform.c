@@ -309,7 +309,7 @@ int lind_shmdt(void *shmaddr, int cageid) {
 }
 
 int lind_shmctl(int shmid, int cmd, struct shmid_ds *buf, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_fs_shmat, int, shmid, int, cmd, shmidstruct, buf);
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmctl, int, shmid, int, cmd, shmidstruct, buf);
 }
 
 int lind_getpid(int cageid) {
