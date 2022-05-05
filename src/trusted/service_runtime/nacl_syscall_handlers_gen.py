@@ -298,7 +298,7 @@ SYSCALL_LIST = [
     ('NACL_sys_shmget', 'NaClSysShmget', ['int key', 'size_t size', 'int shmflg']),
     ('NACL_sys_shmat', 'NaClSysShmat', ['int shmid', 'void *shmaddr', 'int shmflg']),
     ('NACL_sys_shmdt', 'NaClSysShmdt', ['void *shmaddr']),
-    ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct shmid_ds *buf']),
+    ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct nacl_abi_shmid_ds *buf']),
     ]
 
 

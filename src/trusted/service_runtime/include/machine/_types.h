@@ -276,6 +276,24 @@ struct nacl_abi_timespec {
 #define NACL_ABI_WORDSIZE WORDSIZE
 #endif  /* defined(__native_client__) && !defined(NACL_ABI_WORDSIZE) */
 
+#ifndef nacl_abi___key_t_defined
+#define nacl_abi___key_t_defined
+typedef uint32_t      nacl_abi___key_t;
+typedef nacl_abi___key_t nacl_abi_key_t;
+#endif
+
+#ifndef nacl_abi___pid_t_defined
+#define nacl_abi___pid_t_defined
+typedef uint32_t      nacl_abi___pid_t;
+typedef nacl_abi___pid_t nacl_abi_pid_t;
+#endif
+
+#ifndef nacl_abi___shmatt_t_defined
+#define nacl_abi___shmatt_t_defined
+typedef uint32_t      nacl_abi___shmatt_t;
+typedef nacl_abi___shmatt_t nacl_abi_shmatt_t;
+#endif
+
 #ifndef nacl_abi_size_t_defined
 #define nacl_abi_size_t_defined
 typedef uint32_t NACL_NO_STRIP(size_t);

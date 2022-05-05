@@ -3062,10 +3062,10 @@ cleanup:
 
 }
 
-int32_t NaClSysShmctl(struct NaClAppThread  *natp,
-                      int                   shmid,
-                      int                   cmd,
-                      struct shmid_ds       *buf) {
+int32_t NaClSysShmctl(struct NaClAppThread        *natp,
+                      int                         shmid,
+                      int                         cmd,
+                      struct nacl_abi_shmid_ds    *buf) {
   struct NaClApp                *nap = natp->nap;
   int32_t                       retval;
   struct shmid_ds               *bufsysaddr;

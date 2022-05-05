@@ -52,6 +52,31 @@ struct nacl_abi_stat {  /* must be renamed when ABI is exported */
   int64_t            nacl_abi_st_ctimensec; /* possibly just pad */
 };
 
+struct nacl_abi_ipc_perm {  /* must be renamed when ABI is exported */
+  nacl_abi_key_t        nacl_abi_shm_key;       
+  nacl_abi_uid_t        nacl_abi_shm_uid;
+  nacl_abi_gid_t        nacl_abi_shm_gid;
+  nacl_abi_uid_t        nacl_abi_shm_cuid;
+  nacl_abi_gid_t        nacl_abi_shm_cgid;
+  unsigned short int    nacl_abi_shm_mode;
+  unsigned short int    nacl_abi_shm_pad1;
+  unsigned short int    nacl_abi_shm_seq;
+  unsigned short int    nacl_abi_shm_pad2;
+  unsigned long int     nacl_abi_shm_unused1;
+  unsigned long int     nacl_abi_shm_unused2;
+};
+
+struct nacl_abi_shmid_ds {  /* must be renamed when ABI is exported */
+  struct nacl_abi_ipc_perm  nacl_abi_shm_perm;
+  nacl_abi_size_t           nacl_abi_shm_segsz;
+  nacl_abi_time_t           nacl_abi_shm_atime;
+  nacl_abi_time_t           nacl_abi_shm_dtime;
+  nacl_abi_time_t           nacl_abi_shm_ctime;
+  nacl_abi_pid_t            nacl_abi_shm_cpid;
+  nacl_abi_pid_t            nacl_abi_shm_lpid;
+  nacl_abi_shmatt_t         nacl_abi_shm_nattch;
+};
+
 #ifdef __native_client__
 extern int stat(char const *path, struct nacl_abi_stat *stbuf);
 extern int fstat(int d, struct nacl_abi_stat *stbuf);
