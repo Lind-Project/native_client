@@ -69,15 +69,15 @@ struct lind_statfs
   };
 
   struct nacl_abi_ipc_perm {  /* must be renamed when ABI is exported */
-    uint32_t              nacl_abi_shm_key;       
+    int32_t              nacl_abi_shm_key;       
     uint32_t              nacl_abi_shm_uid;
     uint32_t              nacl_abi_shm_gid;
     uint32_t              nacl_abi_shm_cuid;
     uint32_t              nacl_abi_shm_cgid;
-    unsigned short int    nacl_abi_shm_mode;
-    unsigned short int    nacl_abi_shm_pad1;
-    unsigned short int    nacl_abi_shm_seq;
-    unsigned short int    nacl_abi_shm_pad2;
+    uint16_t              nacl_abi_shm_mode;
+    uint16_t              nacl_abi_shm_pad1;
+    uint16_t              nacl_abi_shm_seq;
+    uint16_t              nacl_abi_shm_pad2;
     uint32_t              nacl_abi_shm_unused1;
     uint32_t              nacl_abi_shm_unused2;
   };
