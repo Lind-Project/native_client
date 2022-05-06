@@ -3073,7 +3073,9 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, shmid, cmd, buf);
 
-  bufsysaddr = (struct shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
+  if (cmd == IPC_STAT) {
+    bufsysaddr = (struct shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
+  } else bufsysaddr = NULL;
 
   if ((void*) kNaClBadAddress == bufsysaddr) {
     NaClLog(2, "NaClSysShmCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
