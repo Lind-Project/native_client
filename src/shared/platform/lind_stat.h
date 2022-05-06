@@ -69,28 +69,28 @@ struct lind_statfs
   };
 
   struct lind_ipc_perm {  /* must be renamed when ABI is exported */
-    int32_t               nacl_abi_shm_key;       
-    uint32_t              nacl_abi_shm_uid;
-    uint32_t              nacl_abi_shm_gid;
-    uint32_t              nacl_abi_shm_cuid;
-    uint32_t              nacl_abi_shm_cgid;
-    uint16_t              nacl_abi_shm_mode;
-    uint16_t              nacl_abi_shm_pad1;
-    uint16_t              nacl_abi_shm_seq;
-    uint16_t              nacl_abi_shm_pad2;
-    uint32_t              nacl_abi_shm_unused1;
-    uint32_t              nacl_abi_shm_unused2;
+    int32_t               shm_key;       
+    uint32_t              shm_uid;
+    uint32_t              shm_gid;
+    uint32_t              shm_cuid;
+    uint32_t              shm_cgid;
+    uint16_t              shm_mode;
+    uint16_t              shm_pad1;
+    uint16_t              shm_seq;
+    uint16_t              shm_pad2;
+    uint32_t              shm_unused1;
+    uint32_t              shm_unused2;
   };
 
 struct lind_shmid_ds {  /* must be renamed when ABI is exported */
-  struct lind_ipc_perm  nacl_abi_shm_perm;
-  uint32_t                  nacl_abi_shm_segsz;
-  int64_t                   nacl_abi_shm_atime;
-  int64_t                   nacl_abi_shm_dtime;
-  int64_t                   nacl_abi_shm_ctime;
-  uint32_t                  nacl_abi_shm_cpid;
-  uint32_t                  nacl_abi_shm_lpid;
-  uint32_t                  nacl_abi_shm_nattch;
+  struct lind_ipc_perm      shm_perm;
+  uint32_t                  shm_segsz;
+  int64_t                   shm_atime;
+  int64_t                   shm_dtime;
+  int64_t                   shm_ctime;
+  uint32_t                  shm_cpid;
+  uint32_t                  shm_lpid;
+  uint32_t                  shm_nattch;
 };
 
 
