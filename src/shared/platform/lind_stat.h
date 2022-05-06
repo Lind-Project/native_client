@@ -9,6 +9,8 @@
 #define LIND_STAT_H_
 
 #include <stdint.h>
+#include "native_client/src/trusted/service_runtime/include/bits/stat.h"
+
 
 struct lind_timespec
 {
