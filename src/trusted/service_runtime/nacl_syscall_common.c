@@ -3065,10 +3065,10 @@ cleanup:
 int32_t NaClSysShmctl(struct NaClAppThread        *natp,
                       int                         shmid,
                       int                         cmd,
-                      struct lind_shmid_ds    *buf) {
+                      struct lind_shmid_ds        *buf) {
   struct NaClApp                *nap = natp->nap;
   int32_t                       retval;
-  struct shmid_ds               *bufsysaddr;
+  struct lind_shmid_ds          *bufsysaddr;
 
   NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, shmid, cmd, buf);
