@@ -53,7 +53,7 @@ struct nacl_abi_stat {  /* must be renamed when ABI is exported */
 };
 
 struct nacl_abi_ipc_perm {  /* must be renamed when ABI is exported */
-  nacl_abi_key_t        nacl_abi_shm_key;       
+  unsigned int          nacl_abi_shm_key;       
   nacl_abi_uid_t        nacl_abi_shm_uid;
   nacl_abi_gid_t        nacl_abi_shm_gid;
   nacl_abi_uid_t        nacl_abi_shm_cuid;
@@ -72,9 +72,9 @@ struct nacl_abi_shmid_ds {  /* must be renamed when ABI is exported */
   nacl_abi_time_t           nacl_abi_shm_atime;
   nacl_abi_time_t           nacl_abi_shm_dtime;
   nacl_abi_time_t           nacl_abi_shm_ctime;
-  nacl_abi_pid_t            nacl_abi_shm_cpid;
-  nacl_abi_pid_t            nacl_abi_shm_lpid;
-  nacl_abi_shmatt_t         nacl_abi_shm_nattch;
+  unsigned int              nacl_abi_shm_cpid;
+  unsigned int              nacl_abi_shm_lpid;
+  unsigned int              nacl_abi_shm_nattch;
 };
 
 #ifdef __native_client__
