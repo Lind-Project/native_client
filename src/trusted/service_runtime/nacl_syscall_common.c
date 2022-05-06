@@ -3065,7 +3065,7 @@ cleanup:
 int32_t NaClSysShmctl(struct NaClAppThread        *natp,
                       int                         shmid,
                       int                         cmd,
-                      struct nacl_abi_shmid_ds    *buf) {
+                      struct lind_shmid_ds    *buf) {
   struct NaClApp                *nap = natp->nap;
   int32_t                       retval;
   struct shmid_ds               *bufsysaddr;
@@ -3076,7 +3076,7 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   bufsysaddr = (struct shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
 
   if ((void*) kNaClBadAddress == bufsysaddr) {
-    NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    NaClLog(2, "NaClSysShmCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
 

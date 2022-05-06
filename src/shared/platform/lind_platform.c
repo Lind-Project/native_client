@@ -308,7 +308,7 @@ int lind_shmdt(void *shmaddr, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_shmdt, cbuf, shmaddr);
 }
 
-int lind_shmctl(int shmid, int cmd, struct nacl_abi_shmid_ds *buf, int cageid) {
+int lind_shmctl(int shmid, int cmd, struct lind_shmid_ds *buf, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_shmctl, int, shmid, int, cmd, shmidstruct, buf);
 }
 

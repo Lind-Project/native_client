@@ -194,7 +194,7 @@ int lind_munmap(void *addr, size_t length, int cageid);
 int lind_shmget(key_t key, size_t size, int shmflg, int cageid);
 int lind_shmat(int shmid, void *shmaddr, int shmflg, int cageid);
 int lind_shmdt(void *shmaddr, int cageid);
-int lind_shmctl(int shmid, int cmd, struct nacl_abi_shmid_ds *buf, int cageid);
+int lind_shmctl(int shmid, int cmd, struct lind_shmid_ds *buf, int cageid);
 int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
