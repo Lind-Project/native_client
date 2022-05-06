@@ -230,7 +230,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 int32_t NaClSysShmctl(struct NaClAppThread  *natp,
                       int                   shmid,
                       int                   cmd,
-                      struct shmid_ds       *buf);
+                      struct nacl_abi_stat  *buf);
 
 int32_t NaClSysGetdents(struct NaClAppThread  *natp,
                         int                   d,
