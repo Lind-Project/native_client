@@ -70,5 +70,30 @@ struct lind_statfs
     int64_t f_spare[4];
   };
 
+  struct nacl_abi_ipc_perm {  /* must be renamed when ABI is exported */
+    uint32_t              nacl_abi_shm_key;       
+    nacl_abi_uid_t        nacl_abi_shm_uid;
+    nacl_abi_gid_t        nacl_abi_shm_gid;
+    nacl_abi_uid_t        nacl_abi_shm_cuid;
+    nacl_abi_gid_t        nacl_abi_shm_cgid;
+    unsigned short int    nacl_abi_shm_mode;
+    unsigned short int    nacl_abi_shm_pad1;
+    unsigned short int    nacl_abi_shm_seq;
+    unsigned short int    nacl_abi_shm_pad2;
+    unsigned long int     nacl_abi_shm_unused1;
+    unsigned long int     nacl_abi_shm_unused2;
+  };
+
+struct nacl_abi_shmid_ds {  /* must be renamed when ABI is exported */
+  struct nacl_abi_ipc_perm  nacl_abi_shm_perm;
+  nacl_abi_size_t           nacl_abi_shm_segsz;
+  nacl_abi_time_t           nacl_abi_shm_atime;
+  nacl_abi_time_t           nacl_abi_shm_dtime;
+  nacl_abi_time_t           nacl_abi_shm_ctime;
+  uint32_t                  nacl_abi_shm_cpid;
+  uint32_t                  nacl_abi_shm_lpid;
+  uint32_t                  nacl_abi_shm_nattch;
+};
+
 
 #endif /* LIND_STAT_H_ */
