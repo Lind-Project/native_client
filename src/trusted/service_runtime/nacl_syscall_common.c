@@ -3090,6 +3090,7 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
 
   if (cmd == IPC_RMID) {
     shmtable[shmid].rmid = true;
+    if (!shmtable[shmid].count) clear_shmentry(shmid); // if we dont have any entries attached we can clear it now
   }
 
   return retval;
