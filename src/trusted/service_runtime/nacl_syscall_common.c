@@ -1573,6 +1573,32 @@ cleanup:
   return retval;
 }
 
+int32_t NaClSysChmod(struct NaClAppThread *natp,
+                     uint32_t             pathname,
+                     int                  mode) {
+  struct NaClApp *nap = natp->nap;
+  char           path[NACL_CONFIG_PATH_MAX];
+  int32_t        retval = -NACL_ABI_EINVAL;
+
+  NaClLog(2, "Cage %d Entered NaClSysChmod(0x%08"NACL_PRIxPTR", "
+          "%d, %d)\n", nap->cage_id, (uintptr_t) natp, pathname, mode);
+
+  if (!NaClAclBypassChecks) {
+    retval = -NACL_ABI_EACCES;
+    goto cleanup;
+  }
+
+  retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
+  if (retval) {
+    goto cleanup;
+  }
+
+  retval = lind_chmod(path, mode, natp->nap->cage_id);
+cleanup:
+  NaClLog(2, "NaClSysChmod: returning %d\n", retval);
+  return retval;
+}
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size) {
@@ -1623,6 +1649,7 @@ int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
 
   return lind_link(srcpath, dstpath, nap->cage_id);
 }
+
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
@@ -1633,6 +1660,23 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   }
 
   return lind_unlink(path, nap->cage_id);
+}
+
+int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const char *newpath) {
+  struct NaClApp *nap = natp->nap;
+  char           oldpathname[NACL_CONFIG_PATH_MAX];
+  char           newpathname[NACL_CONFIG_PATH_MAX];
+  int32_t        retval;
+
+  if ((retval = CopyPathFromUser(nap, oldpathname, sizeof(oldpathname), (uintptr_t) oldpath))) {
+    return retval;
+  }
+
+  if ((retval = CopyPathFromUser(nap, newpathname, sizeof(newpathname), (uintptr_t) newpath))) {
+    return retval;
+  }
+
+  return lind_rename(oldpathname, newpathname, nap->cage_id);
 }
 
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,

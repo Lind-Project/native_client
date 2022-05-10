@@ -35,6 +35,8 @@
 #define LIND_safe_fs_access             2
 #define LIND_safe_fs_unlink             4
 #define LIND_safe_fs_link               5
+#define LIND_safe_fs_link               6
+
 #define LIND_safe_fs_xstat              9
 #define LIND_safe_fs_open               10
 #define LIND_safe_fs_close              11
@@ -101,6 +103,7 @@
 #define LIND_safe_fs_chdir              130
 #define LIND_safe_fs_mkdir              131
 #define LIND_safe_fs_rmdir              132
+#define LIND_safe_fs_chdir              133
 
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
@@ -139,10 +142,12 @@ int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid);
 int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
 int lind_unlink (const char *name, int cageid);
 int lind_link (const char *from, const char *to, int cageid);
+int lind_rename (const char *oldpath, const char *newpath, int cageid);
 int lind_access (const char *file, int mode, int cageid);
 int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
+int lind_chmod (const char *path, int mode, int cageid);
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
