@@ -79,7 +79,7 @@
 #define LIND_safe_sys_getgid            52
 #define LIND_safe_sys_getegid           53
 #define LIND_safe_fs_flock              54
-#define LIND_safe_fs_rename             55
+
 #define LIND_safe_net_epoll_create      56
 #define LIND_safe_net_epoll_ctl         57
 #define LIND_safe_net_epoll_wait        58
