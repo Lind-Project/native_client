@@ -35,7 +35,7 @@
 #define LIND_safe_fs_access             2
 #define LIND_safe_fs_unlink             4
 #define LIND_safe_fs_link               5
-#define LIND_safe_fs_link               6
+#define LIND_safe_fs_rename             6
 
 #define LIND_safe_fs_xstat              9
 #define LIND_safe_fs_open               10
