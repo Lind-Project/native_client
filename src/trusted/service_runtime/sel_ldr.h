@@ -85,8 +85,15 @@ struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
 
+struct NaClShmInfo {
+  int size;
+  int count;
+  bool rmid;
+};
+
 extern volatile sig_atomic_t fork_num;
 extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
+extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -475,6 +482,8 @@ struct NaClApp {
 
 void CheckForLkm(void);
 
+void InitializeShmtable(void);
+void clear_shmentry(int shmid);
 
 void  NaClAppIncrVerbosity(void);
 
