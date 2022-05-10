@@ -103,7 +103,7 @@
 #define LIND_safe_fs_chdir              130
 #define LIND_safe_fs_mkdir              131
 #define LIND_safe_fs_rmdir              132
-#define LIND_safe_fs_chdir              133
+#define LIND_safe_fs_chmod              133
 
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
