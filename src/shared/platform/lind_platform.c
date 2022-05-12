@@ -95,7 +95,7 @@ int lind_link (const char *from, const char *to, int cageid) {
 }
 
 int lind_rename (const char *oldpath, const char *newpath, int cageid) {
-    DISPATCH_SYSCALL_2(LIND_safe_fs_link, cstr, oldpath, cstr, newpath);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_rename, cstr, oldpath, cstr, newpath);
 }
 
 int lind_access (const char *file, int mode, int cageid) {
@@ -115,7 +115,7 @@ int lind_rmdir (const char *path, int cageid) {
 }
 
 int lind_chmod (const char *path, int mode, int cageid) {
-    DISPATCH_SYSCALL_2(LIND_safe_fs_mkdir, cstr, path, int, mode);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_chmod, cstr, path, int, mode);
 }
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
