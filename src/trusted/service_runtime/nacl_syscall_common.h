@@ -158,12 +158,18 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
 int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname);
 
+int32_t NaClSysChmod(struct NaClAppThread *natp,
+                     uint32_t             pathname,
+                     int                  mode);
+                     
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size);
 
 int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to);
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname);
+int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const char *newpath);
+
 
 /* bool */
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,

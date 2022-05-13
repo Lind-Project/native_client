@@ -21,6 +21,7 @@
 #define NACL_sys_nameservice             2
 #define NACL_sys_unlink                  4
 #define NACL_sys_link                    5
+#define NACL_sys_rename                  6
 
 #define NACL_sys_dup                     8
 #define NACL_sys_dup2                    9
