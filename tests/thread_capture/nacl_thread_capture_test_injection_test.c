@@ -78,7 +78,7 @@ void NaClSignalHandler(int signum, siginfo_t *info, void *other) {
   CHECK(g_nacl_syscall_thread_capture_fault_addr == faulting_pc);
   exit(0);
 }
-#define LINUX_SIGSTKSZ 8192
+#define LINUX_SIGSTKSZ 8192 // as of libc 2.34 SIGSTKSZ is no longer a constant, we define it to the old linux value for the purposes of this test
 static char g_nacl_altstack[LINUX_SIGSTKSZ + 4096];
 
 void NaClSetSignalHandler(void) {
