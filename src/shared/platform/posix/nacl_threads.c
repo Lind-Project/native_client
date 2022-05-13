@@ -7,6 +7,7 @@
 /*
  * NaCl Server Runtime threads implementation layer.
  */
+#undef _GNU_SOURCE
 
 #include <string.h>
 #include <stdlib.h>
@@ -19,7 +20,6 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#undef _GNU_SOURCE
 #include <pthread.h>
 #include <limits.h>
 /*
