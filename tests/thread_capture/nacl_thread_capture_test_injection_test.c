@@ -78,8 +78,8 @@ void NaClSignalHandler(int signum, siginfo_t *info, void *other) {
   CHECK(g_nacl_syscall_thread_capture_fault_addr == faulting_pc);
   exit(0);
 }
-
-static char g_nacl_altstack[SIGSTKSZ + 4096];
+#define LINUX_SIGSTKSZ 8192
+static char g_nacl_altstack[LINUX_SIGSTKSZ + 4096];
 
 void NaClSetSignalHandler(void) {
   struct sigaction action;

@@ -18,6 +18,8 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <signal.h>
+
+#undef _GNU_SOURCE
 #include <pthread.h>
 #include <limits.h>
 /*
@@ -141,3 +143,4 @@ void NaClThreadCancel(struct NaClThread *ntp) {
   pthread_cancel(ntp->tid);
 }
 
+#define _GNU_SOURCE

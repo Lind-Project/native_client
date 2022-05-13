@@ -4,6 +4,8 @@
  * found in the LICENSE file.
  */
 
+#undef _GNU_SOURCE
+
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
@@ -112,3 +114,5 @@ void NaClSignalStackUnregister(void) {
             strerror(errno));
   }
 }
+
+#define _GNU_SOURCE
