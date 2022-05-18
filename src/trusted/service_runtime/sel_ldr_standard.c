@@ -717,13 +717,12 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
 
     nap_parent = natp_parent->nap;
 
+    NaClXMutexLock(&nap_child->mu);
+
     /* guard against extra spawned instances */
     if (nap_child->running || nap_child->in_fork) {
       goto already_running;
     }
-    
-    NaClXMutexLock(&nap_child->mu);
-
     nap_child->in_fork = 1;
 
   }
@@ -946,12 +945,13 @@ NaClCreateThread(struct NaClAppThread     *natp_parent,
 cleanup:
   free(argv_len);
   free(envv_len);
-  if (tl_type == THREAD_LAUNCH_FORK) NaClXMutexUnlock(&nap_child->mu);
+//  if (tl_type == THREAD_LAUNCH_FORK) NaClXMutexUnlock(&nap_child->mu);
 
   return retval;
 
 /* NO RETURN */
 already_running:
+  NaClXMutexUnlock(&nap_child->mu);
   pthread_exit(&ignored_ret);
 }
 
