@@ -6076,6 +6076,7 @@ char *fd_set_fd_translator_tolind(struct NaClApp* nap, fd_set *fdset, int maxfd,
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {  
       ndp = GetDescFromCagetable(nap, i);
+      if (!ndp) continue;
       int tempfd = NaClDesc2Lindfd(ndp);
       int translated_fd = fds[fdsindex++] = tempfd;
       if(translated_fd < 0) {
@@ -6109,6 +6110,7 @@ void fd_set_fd_translator_fromlind(struct NaClApp* nap, fd_set *fdset, char* oth
   for(int i = 0; i < maxfd; i++) {
     if(FD_ISSET(i, fdset)) {
       ndp = GetDescFromCagetable(nap, i);
+      if (!ndp) continue;
       int tempfd = NaClDesc2Lindfd(ndp);
       int translated_fd = fds[fdsindex++] = tempfd;
       NaClDescUnref(ndp);
