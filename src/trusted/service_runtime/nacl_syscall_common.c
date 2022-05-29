@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -5034,9 +5035,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
         NaClXMutexUnlock(&nap->children_mu);
       }
-      
+      if (options & WNOHANG) break;
     }
-    
   }
 
 out:
