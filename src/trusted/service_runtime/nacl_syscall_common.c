@@ -5035,7 +5035,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
         NaClXMutexUnlock(&nap->children_mu);
       }
-      if (options == WNOHANG) break;
+      if (options & WNOHANG) break;
     }
   }
 
