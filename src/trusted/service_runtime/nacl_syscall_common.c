@@ -4769,6 +4769,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   for (int i = 0; i < new_argc; i++) {
     child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
+  if (child_argv[3] == NULL){
+    NaClLog(LOG_FATAL, "%s\n", "A NULL argv[0] was passed through an exec system call.");
+  }  
 
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
