@@ -5036,8 +5036,12 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
             ret = cage_id;
             NaClXCondVarBroadcast(&nap->children_cv);
             NaClXMutexUnlock(&nap->children_mu);
+            if (nap_child) *stat_loc_ptr = nap_child->exit_status;
+            else {
+              struct NaClZombie* zombie = NaClWaitZombies(nap);
+              *stat_loc_ptr = zombie->exit_status;
+            }
             NaClRemoveZombie(nap, cage_id);
-            *stat_loc_ptr = nap_child->exit_status;
             goto out;
           }
         }
