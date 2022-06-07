@@ -68,15 +68,8 @@ double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;
 
-/*
- * `fd_cage_table[cage_id][fd] = real fd`
- *
- * The [fd] idx is the virtual fd visible to the cages.
- *
- * -jp
- */
 volatile sig_atomic_t fork_num;
-int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
+int fd_cage_table[CAGE_MAX][FILE_DESC_MAX]; // fd_cage_table[cage_id][userfd] = nacl fd/desc idx
 struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
