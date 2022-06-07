@@ -1955,11 +1955,11 @@ struct NaClZombie* NaClWaitZombies(struct NaClApp *nap) {
 }
 
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id) {
-  NaClMutexLock(&nap->children_mu);
+  NaClMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = DynArrayGet(&nap->zombies, cage_id);
   DynArraySet(&nap->zombies, cage_id, NULL);
   free(zombie);
-  NaClMutexUnlock(&nap->children_mu);
+  NaClMutexUnlock(&nap->zombie_mu);
 }
 
 void NaClAddZombie(struct NaClApp *nap) {
