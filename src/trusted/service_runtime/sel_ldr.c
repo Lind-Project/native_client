@@ -1947,11 +1947,11 @@ struct NaClZombie* NaClWaitZombies(struct NaClApp *nap) {
   struct NaClZombie* zombie = NULL;
   for(int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
     zombie = DynArrayGet(&nap->zombies, cage_id);
-    if (zombie != NULL) return zombie;
+    if (zombie != NULL) break;
   }
   NaClMutexUnlock(&nap->zombie_mu);
 
-  return NULL;
+  return zombie;
 }
 
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id) {
