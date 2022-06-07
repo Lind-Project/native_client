@@ -797,6 +797,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClAlignedFree(natp);
 }
 
+
 /**
  * The following functions are used to reap any cages which have received a fatal signal.
  * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when

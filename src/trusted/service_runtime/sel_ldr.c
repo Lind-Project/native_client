@@ -1942,6 +1942,12 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
   return userfd;
 }
 
+/*
+ * Zombie functions.
+ * Will add any exiting child process to zombie list.
+ * Zombies removed via wait will be removed from list
+ */
+
 struct NaClZombie* NaClWaitZombies(struct NaClApp *nap) {
   NaClMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = NULL;

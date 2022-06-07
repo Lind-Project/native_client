@@ -4968,6 +4968,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     *stat_loc_ptr = 0;
   }
 
+  // First check if we have children, if not check zombies, if no zombies return ECHILD
   if (!nap->num_children || pid > pid_max) {
     struct NaClZombie* zombie = NaClWaitZombies(nap);
     if (zombie == NULL) ret = -NACL_ABI_ECHILD;
@@ -4979,9 +4980,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     goto out;
   }
 
-  /*
-   * WAITPID: explicit child pid given
-   */
+  // If we have an explicit waitpid with child pid given, lets wait for that pid
   if (pid > 0 && pid <= pid_max) {
     int cage_id = pid;
     /* make sure children exists */
@@ -5007,10 +5006,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     goto out;
   }
 
-  /*
-   * WAIT or WAITPID(-1)
-   * TODO: implement pid == WAIT_ANY_PG (0), we currently don't deal with process groups
-   */
+  // if WAIT_ANY, we'll busy loop on all children, except in the case of WNOHANG where we only loop once
   if (pid <= 0) {
     while(1){
 
@@ -5038,10 +5034,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
             NaClXMutexUnlock(&nap->children_mu);
             if (nap_child) *stat_loc_ptr = nap_child->exit_status;
             else {
+              // this could be a zombie so lets check in this case
               struct NaClZombie* zombie = NaClWaitZombies(nap);
               *stat_loc_ptr = zombie->exit_status;
             }
-            NaClRemoveZombie(nap, cage_id);
+            NaClRemoveZombie(nap, cage_id); //remove from zombie list regardless
             goto out;
           }
         }
