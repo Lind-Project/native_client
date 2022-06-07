@@ -189,6 +189,10 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_effp_free;
   }
   if (!NaClMutexCtor(&nap->children_mu)) {
+    goto cleanup_zombie_mutex;
+  }
+
+  if (!NaClMutexCtor(&nap->zombie_mu)) {
     goto cleanup_dynamic_load_mutex;
   }
   nap->dynamic_page_bitmap = NULL;
@@ -339,6 +343,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   NaClCondVarDtor(&nap->cv);
   cleanup_mu:
   NaClMutexDtor(&nap->mu);
+  cleanup_zombie_mutex:
+  NaClMutexDtor(&nap->zombie_mu);
   cleanup_children_mutex:
   NaClMutexDtor(&nap->children_mu);
   cleanup_dynamic_load_mutex:
@@ -383,6 +389,7 @@ void NaClAppDtor(struct NaClApp *nap) {
   NaClCondVarDtor(&nap->cv);
   NaClMutexDtor(&nap->mu);
   NaClMutexDtor(&nap->children_mu);
+  NaClMutexDtor(&nap->zombie_mu);
   NaClMutexDtor(&nap->dynamic_load_mutex);
   NaClMutexDtor(&nap->exit_mu);
   NaClCondVarDtor(&nap->exit_cv);
@@ -1936,13 +1943,13 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
 }
 
 struct NaClZombie* NaClWaitZombies(struct NaClApp *nap) {
-  NaClMutexLock(&nap->children_mu);
+  NaClMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = NULL;
   for(int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
     zombie = DynArrayGet(&nap->zombies, cage_id);
     if (zombie != NULL) return zombie;
   }
-  NaClMutexUnlock(&nap->children_mu);
+  NaClMutexUnlock(&nap->zombie_mu);
 
   return NULL;
 }
@@ -1956,11 +1963,10 @@ void NaClRemoveZombie(struct NaClApp *nap, int cage_id) {
 }
 
 void NaClAddZombie(struct NaClApp *nap) {
-  NaClMutexLock(&nap->children_mu);
+  NaClMutexLock(&nap->zombie_mu);
   struct NaClZombie *zombie = malloc(sizeof(struct NaClZombie));
   zombie->exit_status = nap->exit_status;
   zombie->cage_id = nap->cage_id;
   DynArraySet(&nap->parent->zombies, nap->cage_id, zombie);
-  NaClMutexUnlock(&nap->children_mu);
-
+  NaClMutexUnlock(&nap->zombie_mu);
 }

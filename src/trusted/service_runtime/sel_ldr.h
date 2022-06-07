@@ -143,6 +143,7 @@ struct NaClApp {
   struct NaClCondVar        children_cv;
   struct DynArray           children;
   struct DynArray           zombies;
+  struct NaClMutex          zombie_mu;
   struct NaClApp            *parent;
 
   volatile sig_atomic_t     num_children;
