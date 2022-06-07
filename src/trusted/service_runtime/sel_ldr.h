@@ -94,7 +94,7 @@ struct NaClShmInfo {
 struct NaClZombie {
   int cage_id;
   int exit_status;
-}
+};
 
 extern volatile sig_atomic_t fork_num;
 extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
