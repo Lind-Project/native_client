@@ -4974,8 +4974,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     else {
       ret = zombie->cage_id;
       *stat_loc_ptr = zombie->exit_status;
+       NaClRemoveZombie(nap, zombie->cage_id);
     }
-    NaClRemoveZombie(nap, zombie->cage_id);
     goto out;
   }
 
