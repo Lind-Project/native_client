@@ -162,8 +162,11 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!DynArrayCtor(&nap->children, 2)) {
     goto cleanup_desc_tbl;
   }
-  if (!NaClVmmapCtor(&nap->mem_map)) {
+  if (!DynArrayCtor(&nap->zombies, 2)) {
     goto cleanup_children;
+  }
+  if (!NaClVmmapCtor(&nap->mem_map)) {
+    goto cleanup_zombies;
   }
 
   nap->mem_io_regions = malloc(sizeof(*nap->mem_io_regions) + 8);
@@ -354,6 +357,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->mem_io_regions = NULL;
   cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
+  cleanup_zombies:
+  DynArrayDtor(&nap->zombies);
   cleanup_children:
   DynArrayDtor(&nap->children);
   cleanup_desc_tbl:
@@ -1934,4 +1939,34 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
   NaClFastMutexUnlock(&nap->desc_mu);
 
   return userfd;
+}
+
+struct NaClZombie* NaClWaitZombies(struct NaClApp *nap) {
+  NaClMutexLock(&nap->children_mu);
+  struct NaClZombie* zombie = NULL;
+  for(int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
+    zombie = DynArrayGet(&nap->zombies, cage_id);
+    if (zombie != NULL) return zombie;
+  }
+  NaClMutexUnlock(&nap->children_mu);
+
+  return NULL;
+}
+
+void NaClRemoveZombie(struct NaClApp *nap, int cage_id) {
+  NaClMutexLock(&nap->children_mu);
+  struct NaClZombie* zombie = DynArrayGet(&nap->zombies, cage_id);
+  DynArraySet(&nap->zombies, cage_id, NULL);
+  free(zombie);
+  NaClMutexUnlock(&nap->children_mu);
+}
+
+void NaClAddZombie(struct NaClApp *nap) {
+  NaClMutexLock(&nap->children_mu);
+  struct NaClZombie *zombie = malloc(sizeof(struct NaClZombie));
+  zombie->exit_status = nap->exit_status;
+  zombie->cage_id = nap->cage_id;
+  DynArraySet(&nap->parent->zombies, nap->cage_id, zombie);
+  NaClMutexUnlock(&nap->children_mu);
+
 }

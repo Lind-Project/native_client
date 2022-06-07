@@ -646,6 +646,7 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status) {
      */
   }
   nap->exit_status = exit_status;
+  NaClAddZombie(nap);
   nap->running = 0;
   NaClXCondVarSignal(&nap->cv);
 

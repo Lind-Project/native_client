@@ -4969,7 +4969,13 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
   if (!nap->num_children || pid > pid_max) {
-    ret = -NACL_ABI_ECHILD;
+    struct NaClZombie* zombie = NaClWaitZombies(stat_loc_ptr);
+    if (zombie == NULL) ret = -NACL_ABI_ECHILD;
+    else {
+      ret = zombie->cage_id;
+      *stat_loc_ptr = zombie->exit_status;
+    }
+    NaClRemoveZombie(nap, zombie->cage_id);
     goto out;
   }
 
@@ -4994,7 +5000,10 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     }
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
+    RemoveZombie(nap, pid);
+
     ret = pid;
+    *stat_loc_ptr = nap_child->exit_status;
     goto out;
   }
 
@@ -5027,6 +5036,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
             ret = cage_id;
             NaClXCondVarBroadcast(&nap->children_cv);
             NaClXMutexUnlock(&nap->children_mu);
+            RemoveZombie(nap, cage_id);
+            *stat_loc_ptr = nap_child->exit_status;
             goto out;
           }
         }
@@ -5040,9 +5051,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
 out:
-  if (nap_child && stat_loc_ptr) {
-    *stat_loc_ptr = nap_child->exit_status;
-  }
   NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
