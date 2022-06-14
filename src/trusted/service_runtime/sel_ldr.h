@@ -958,7 +958,7 @@ int CancelFds(struct NaClApp *nap, int userfds[2], int iterations);
 int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
 int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
 
-struct NaClZombie* NaClWaitZombies(struct NaClApp *nap);
+struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
 void NaClAddZombie(struct NaClApp *nap);
 

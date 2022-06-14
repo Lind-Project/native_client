@@ -4970,7 +4970,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
   // First check if we have children, if not check zombies, if no zombies return ECHILD
   if (!nap->num_children || pid > pid_max) {
-    struct NaClZombie* zombie = NaClWaitZombies(nap);
+    struct NaClZombie* zombie = NaClCheckZombies(nap);
     if (zombie == NULL) ret = -NACL_ABI_ECHILD;
     else {
       ret = zombie->cage_id;
@@ -5035,7 +5035,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
             if (nap_child) *stat_loc_ptr = nap_child->exit_status;
             else {
               // this could be a zombie so lets check in this case
-              struct NaClZombie* zombie = NaClWaitZombies(nap);
+              struct NaClZombie* zombie = NaClCheckZombies(nap);
               *stat_loc_ptr = zombie->exit_status;
             }
             NaClRemoveZombie(nap, cage_id); //remove from zombie list regardless
