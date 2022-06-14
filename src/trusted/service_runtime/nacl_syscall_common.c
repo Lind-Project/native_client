@@ -4968,14 +4968,19 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     *stat_loc_ptr = 0;
   }
 
+  // First check if we have children, if not check zombies, if no zombies return ECHILD
   if (!nap->num_children || pid > pid_max) {
-    ret = -NACL_ABI_ECHILD;
+    struct NaClZombie* zombie = NaClCheckZombies(nap);
+    if (zombie == NULL) ret = -NACL_ABI_ECHILD;
+    else {
+      ret = zombie->cage_id;
+      *stat_loc_ptr = zombie->exit_status;
+       NaClRemoveZombie(nap, zombie->cage_id);
+    }
     goto out;
   }
 
-  /*
-   * WAITPID: explicit child pid given
-   */
+  // If we have an explicit waitpid with child pid given, lets wait for that pid
   if (pid > 0 && pid <= pid_max) {
     int cage_id = pid;
     /* make sure children exists */
@@ -4994,14 +4999,14 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     }
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
+    NaClRemoveZombie(nap, pid);
+
     ret = pid;
+    *stat_loc_ptr = nap_child->exit_status;
     goto out;
   }
 
-  /*
-   * WAIT or WAITPID(-1)
-   * TODO: implement pid == WAIT_ANY_PG (0), we currently don't deal with process groups
-   */
+  // if WAIT_ANY, we'll busy loop on all children, except in the case of WNOHANG where we only loop once
   if (pid <= 0) {
     while(1){
 
@@ -5027,6 +5032,13 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
             ret = cage_id;
             NaClXCondVarBroadcast(&nap->children_cv);
             NaClXMutexUnlock(&nap->children_mu);
+            if (nap_child) *stat_loc_ptr = nap_child->exit_status;
+            else {
+              // this could be a zombie so lets check in this case
+              struct NaClZombie* zombie = NaClCheckZombies(nap);
+              *stat_loc_ptr = zombie->exit_status;
+            }
+            NaClRemoveZombie(nap, cage_id); //remove from zombie list regardless
             goto out;
           }
         }
@@ -5040,9 +5052,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   }
 
 out:
-  if (nap_child && stat_loc_ptr) {
-    *stat_loc_ptr = nap_child->exit_status;
-  }
   NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);

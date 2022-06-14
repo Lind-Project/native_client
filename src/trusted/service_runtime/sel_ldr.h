@@ -91,6 +91,11 @@ struct NaClShmInfo {
   bool rmid;
 };
 
+struct NaClZombie {
+  int cage_id;
+  int exit_status;
+};
+
 extern volatile sig_atomic_t fork_num;
 extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
@@ -137,6 +142,8 @@ struct NaClApp {
   struct NaClMutex          children_mu;
   struct NaClCondVar        children_cv;
   struct DynArray           children;
+  struct DynArray           zombies;
+  struct NaClMutex          zombie_mu;
   struct NaClApp            *parent;
 
   volatile sig_atomic_t     num_children;
@@ -950,6 +957,10 @@ void InitializeCage(struct NaClApp *nap, int cage_id);
 int CancelFds(struct NaClApp *nap, int userfds[2], int iterations);
 int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
 int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
+
+struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
+void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
+void NaClAddZombie(struct NaClApp *nap);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);
