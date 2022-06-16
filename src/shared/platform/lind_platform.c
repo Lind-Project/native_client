@@ -249,7 +249,7 @@ int lind_gethostname (char *name, size_t len, int cageid) {
 }
 
 int lind_getifaddrs (char *buf, size_t len, int cageid) {
-    DISPATCH_SYSCALL_2(LIND_safe_net_gethostname, mutcbuf, buf, size_t, len);
+    DISPATCH_SYSCALL_2(LIND_safe_net_getifaddrs, mutcbuf, buf, size_t, len);
 }
 
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {
