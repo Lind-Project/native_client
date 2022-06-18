@@ -20,6 +20,8 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdint.h>
+
 
 #include "native_client/src/include/nacl_platform.h"
 #include "native_client/src/include/portability.h"
@@ -127,7 +129,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   int   need_exec;
   int   whichcage;
   unsigned long topbits;
-  unsigned int mapbottom;
+  uintptr_t  mapbottom;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
@@ -209,7 +211,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
 
   if ((unsigned) mapbottom > (0xffffffffu - 256)) {
     errno = mapbottom;
-    mapbottom = MAP_FAILED;
+    mapbottom = (uintptr_t) MAP_FAILED;
   } 
 
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
@@ -289,7 +291,6 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
                      int                  flags,
                      int                  mode) {
   int host_desc;
-  nacl_host_stat_t stbuf;
   int posix_flags;
 
   NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
@@ -403,7 +404,6 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
 ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
                          void                 *buf,
                          size_t               len) {
-  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
@@ -416,7 +416,6 @@ ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
 ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
                           void const          *buf,
                           size_t              len) {
-  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
@@ -446,8 +445,7 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
                           void *buf,
                           size_t len,
                           nacl_off64_t offset) {
-  ssize_t retval;
-
+  
   NaClHostDescCheckValidity("NaClHostDescPRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
@@ -460,8 +458,7 @@ ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
                            void const *buf,
                            size_t len,
                            nacl_off64_t offset) {
-  ssize_t retval;
-
+  
   NaClHostDescCheckValidity("NaClHostDescPWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");

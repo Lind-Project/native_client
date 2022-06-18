@@ -19,7 +19,6 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
 #define BLANKARGS \
-    int retval; \
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
     arg2.dispatch_ulong = 0; \
@@ -281,6 +280,8 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
+    (void) fd;
+    (void) operation;
     DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
 }
 

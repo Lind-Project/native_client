@@ -351,7 +351,7 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap, //Unused for now
                           void            *arg) {
   NaClLog(2,
           ("NaClIoctlAclCheck(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
-           " %d, 0x%08"NACL_PRIxPTR"\n"),
+           " 0x%08, 0x%08"NACL_PRIxPTR"\n"),
           (uintptr_t) nap, (uintptr_t) ndp, request, (uintptr_t) arg);
   if (NaClAclBypassChecks) {
     return 0;
