@@ -483,7 +483,6 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp *nap = natp->nap;
   struct NaClDesc *old_nd;
   int old_hostfd;
-  int new_desc;
   int ret;
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
@@ -700,9 +699,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   struct NaClApp       *nap = natp->nap;
   int                  retval = -NACL_ABI_EINVAL;
   char                 path[NACL_CONFIG_PATH_MAX];
-  nacl_host_stat_t     stbuf;
   int                  allowed_flags;
-  int                  fd_retval = -1;
   const char           *glibc_prefix = "/lib/glibc/";
   const char           *tls_prefix = "/lib/glibc/tls/";
   const size_t         tls_start_idx = strlen(glibc_prefix);
@@ -833,8 +830,6 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   ssize_t         getdents_ret;
   uintptr_t       sysaddr;
   struct NaClDesc *ndp;
-
-  int fd;
 
   NaClLog(1, "Entered NaClSysGetdents(0x%08"NACL_PRIxPTR","
           " %d, 0x%08"NACL_PRIxPTR","
@@ -1360,10 +1355,10 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   
   retval = lind_ioctl(lindfd ,request, sysaddr, nap->cage_id);
 
-cleanup:
-  NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
-  NaClDescUnref(ndp);
-  return retval;
+//cleanup:
+// NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
+ // NaClDescUnref(ndp);
+ // return retval;
 }
 
 
@@ -1822,10 +1817,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   int                         mapping_code;
   uintptr_t                   map_result;
   int                         holding_app_lock;
-  struct nacl_abi_stat        stbuf;
   size_t                      alloc_rounded_length;
-  nacl_off64_t                host_rounded_file_bytes;
-  size_t                      alloc_rounded_file_bytes;
   int fd;
 
   holding_app_lock = 0;
@@ -3630,7 +3622,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   int                     lind_fds[2];
   int                     user_fds[2];
   int32_t                 retval;
-  struct NaClDesc *       faildesc;
   int                     i;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
@@ -5097,7 +5088,7 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   
   NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", "
-          "%d)\n",
+          "%lx)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
   
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) name, len, NACL_ABI_PROT_WRITE);
@@ -5119,7 +5110,6 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
 
   struct NaClApp *nap = natp->nap;
   struct NaClHostDesc *hd;
-  int naclfd;
   int userfd;
 
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
@@ -5807,7 +5797,6 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
   fdtrans = NaClDesc2Lindfd(ndp);
 
   if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
-    int new_hostfd;
     int newuser;
     int old_hostfd;
     struct NaClDesc *old_nd;
@@ -5942,7 +5931,6 @@ int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size) {
   struct NaClApp *nap = natp->nap;
   struct NaClHostDesc  *hd;
   int userfd;
-  int code = 0; //usage must be checked
   int32_t ret;
 
   
@@ -5985,7 +5973,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
   int32_t ret;
   struct NaClDesc *ndp, *ndpe;
 
-  NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %d)\n",
+  NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, epfd, op, fd, (uintptr_t) event);
 
   ndpe = GetDescFromCagetable(nap, epfd);
