@@ -351,7 +351,7 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap, //Unused for now
                           void            *arg) {
   NaClLog(2,
           ("NaClIoctlAclCheck(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR","
-           " 0x%08, 0x%08"NACL_PRIxPTR"\n"),
+           " %lu, 0x%08"NACL_PRIxPTR"\n"),
           (uintptr_t) nap, (uintptr_t) ndp, request, (uintptr_t) arg);
   if (NaClAclBypassChecks) {
     return 0;
@@ -1330,7 +1330,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
 
   NaClLog(2, "Cage %d Entered NaClSysIoctl(0x%08"NACL_PRIxPTR
-           ", %d, %d, 0x%08"NACL_PRIxPTR")\n",
+           ", %d, %lu, 0x%08"NACL_PRIxPTR")\n",
            nap->cage_id, (uintptr_t)natp, d, request,
            (uintptr_t)arg_ptr);
   
@@ -1604,7 +1604,7 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
 
   NaClLog(2, "Cage %d Entered NaClSysGetcwd(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", "
-          "%d)\n",
+          "%lx)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) buf, size);
 
   if (!NaClAclBypassChecks) {
@@ -2804,7 +2804,7 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
   size_t                        alloc_rounded_size;
 
 
-  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+  NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %lu, %d)\n",
            (uintptr_t)natp, key, size, shmflg);
 
 
@@ -2839,7 +2839,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   unsigned long                 topbits;
   unsigned int                  mapbottom;
 
-  NaClLog(2, "Entered NaClSysShmat(0x%08"NACL_PRIxPTR" , %d, %d, %d)\n",
+  NaClLog(2, "Entered NaClSysShmat(0x%08"NACL_PRIxPTR" , %d, %lx, %d)\n",
            (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);
 
   length = shmtable[shmid].size;
@@ -2918,7 +2918,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   if (endaddr < usraddr) {
     NaClLog(0,
             ("NaClSysShmat: integer overflow -- "
-             "NaClSysShmat(0x%08"NACL_PRIxPTR",0x%"NACL_PRIxS",%d\n"),
+             "NaClSysShmat(0x%08"NACL_PRIxPTR",%d"NACL_PRIxS",%d\n"),
             usraddr, length, shmid);
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
@@ -2949,7 +2949,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   sysaddr = NaClUserToSys(nap, usraddr);
 
   NaClLog(4, ("NaClSysShmat: (,,0x%08"NACL_PRIxPTR","
-               "0x%08"NACL_PRIxS",%d\n"), sysaddr, length, shmid);
+               "%d"NACL_PRIxS",%d\n"), sysaddr, length, shmid);
 
   //By this point in execution, we should have picked a sysaddr,
   //so start_addr should and cannot be null, but we sanity check
@@ -2981,8 +2981,8 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   if (MAP_FAILED == map_result) {
     NaClLog(LOG_INFO,
             ("NaClHostDescMap: "
-             "mmap(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxS", "
-             "0x%x, 0x%d)"
+             "mmap(0x%08"NACL_PRIxPTR", %d"NACL_PRIxS", "
+             "0x%d, 0x%d)"
              " failed, errno %d.\n"),
             (uintptr_t) sysaddr, length, prot, shmid,
             errno);
@@ -3107,8 +3107,8 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   int32_t                       retval;
   struct lind_shmid_ds          *bufsysaddr;
 
-  NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""0x%08"NACL_PRIxPTR")\n",
-           (uintptr_t)natp, shmid, cmd, buf);
+  NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""%p"NACL_PRIxPTR")\n",
+           (uintptr_t)natp, shmid, cmd, (void *) buf);
 
   if (cmd == IPC_STAT) {
     bufsysaddr = (struct shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
@@ -5248,7 +5248,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
   socklen_t *sysaddrlenaddr = addrlen == NULL ? NULL : (void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) addrlen, sizeof(socklen_t), NACL_ABI_PROT_WRITE);
   struct sockaddr *sysaddraddr;
   NaClLog(2, "Cage %d Entered NaClSysRecvfrom(0x%08"NACL_PRIxPTR", "
-          "%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
+          "%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, buf, len, flags, (uintptr_t)src_addr, (uintptr_t)addrlen);
 
   if ((void*) kNaClBadAddress == sysbufaddr) {
@@ -5383,7 +5383,7 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
   sysvaladdr = (void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) optval, *syslenaddr, NACL_ABI_PROT_WRITE);
   NaClLog(2, "Cage %d Entered NaClSysGetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, (uintptr_t) optlen);
-  NaClLog(2, "NaClSysgetSockopt %d %p %p\n", *syslenaddr, syslenaddr, optlen);
+  NaClLog(2, "NaClSysgetSockopt %p %p %p\n",(void *) *syslenaddr, (void *) syslenaddr, (void*) optlen);
 
   if ((void*) kNaClBadAddress == sysvaladdr) {
     NaClLog(2, "NaClSysGetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
@@ -5709,7 +5709,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
 
   NaClLog(2, "Cage %d Entered NaClSysBind(0x%08"NACL_PRIxPTR", %d, %d, 0x%08"NACL_PRIxPTR")\n",
-          nap->cage_id, (uintptr_t) natp, sockfd, (uintptr_t) addr, addrlen);
+          nap->cage_id, (uintptr_t) natp, sockfd, addrlen, (uintptr_t) addr);
 
   ndp = GetDescFromCagetable(nap, sockfd);
   if (!ndp) {
@@ -5973,7 +5973,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
   int32_t ret;
   struct NaClDesc *ndp, *ndpe;
 
-  NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, %d, 0x%08"NACL_PRIxPTR")\n",
+  NaClLog(2, "Cage %d Entered NaClSysEpollCtl(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, epfd, op, fd, (uintptr_t) event);
 
   ndpe = GetDescFromCagetable(nap, epfd);
