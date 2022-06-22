@@ -5126,7 +5126,7 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, len, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
-    NaClLog(2, "NaClSysGethostname could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    NaClLog(2, "NaClSysGetifaddrs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     ret = -NACL_ABI_EFAULT;
     return ret;
   }
