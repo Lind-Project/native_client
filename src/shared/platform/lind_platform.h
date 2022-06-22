@@ -107,6 +107,8 @@
 
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
+#define LIND_safe_net_getifaddrs        146
+
 
 union RustArg {
     int dispatch_int;
@@ -182,6 +184,7 @@ int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid);
 int lind_getcwd (char *buf, size_t size, int cageid);
 int lind_gethostname (char *name, size_t len, int cageid);
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
+int lind_getifaddrs (char *buf, size_t len, int cageid);
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_shutdown (int sockfd, int how, int cageid);
