@@ -5105,6 +5105,30 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   return ret;
 }
 
+int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
+  int32_t ret;
+  uintptr_t sysaddr;
+  struct NaClApp *nap = natp->nap;
+  
+  NaClLog(2, "Cage %d Entered NaClSysGetifaddrs(0x%08"NACL_PRIxPTR", "
+          "0x%08"NACL_PRIxPTR", "
+          "%d)\n",
+          nap->cage_id, (uintptr_t) natp, (uintptr_t) buf, len);
+  
+  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, len, NACL_ABI_PROT_WRITE);
+  if (kNaClBadAddress == sysaddr) {
+    NaClLog(2, "NaClSysGetifaddrs could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+    ret = -NACL_ABI_EFAULT;
+    return ret;
+  }
+  
+  ret = lind_getifaddrs (sysaddr, len, nap->cage_id);
+  
+  NaClLog(2, "NaClSysGetifaddrs: returning %d\n", ret);
+  
+  return ret;
+}
+
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
   int32_t ret;
 

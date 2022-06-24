@@ -392,6 +392,7 @@ int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, in
 int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set, void *oldset);
 
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len);
+int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len);
 
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol);
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf);

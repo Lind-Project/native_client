@@ -164,6 +164,8 @@
 #define NACL_sys_listen                 143
 #define NACL_sys_getsockname            144
 #define NACL_sys_getpeername            145
+#define NACL_sys_getifaddrs             146
+
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
