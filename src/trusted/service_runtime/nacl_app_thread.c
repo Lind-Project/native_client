@@ -136,6 +136,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
     nap_child->text_shm = nap_parent->text_shm;
     NaClErrorCode err = NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    //UNREFERENCED_PARAMETER(err);
     NaClInitSwitchToApp(nap_child); 
   }
 

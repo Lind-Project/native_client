@@ -1354,11 +1354,10 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   // Those calls are not implemented for now
   
   retval = lind_ioctl(lindfd ,request, (void *) sysaddr, nap->cage_id);
-
 //cleanup:
-// NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
- // NaClDescUnref(ndp);
- // return retval;
+ //NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
+  //NaClDescUnref(ndp);
+ return retval;
 }
 
 
@@ -5384,9 +5383,8 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
   sysvaladdr = (void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) optval, *syslenaddr, NACL_ABI_PROT_WRITE);
   NaClLog(2, "Cage %d Entered NaClSysGetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, level, optname, (uintptr_t) optval, (uintptr_t) optlen);
-  NaClLog(2, "NaClSysgetSockopt %p %p %p\n",(void *) *syslenaddr, (void *) syslenaddr, (void*) optlen);
 
-  if ((void*) kNaClBadAddress == sysvaladdr) {
+  if ((void *) kNaClBadAddress == sysvaladdr) {
     NaClLog(2, "NaClSysGetsockopt could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
   }
@@ -5626,7 +5624,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
                       socklen_t *addrlen) {
   struct NaClApp *nap = natp->nap;
   struct sockaddr* sysvaladdr;
-  const  socklen_t* syslenaddr;
+  socklen_t* syslenaddr;
   int32_t ret;
   int userfd;
   struct NaClHostDesc* hd;
@@ -5668,7 +5666,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
     }
   }
 
-  ret = lind_accept(sockfd, sysvaladdr,  syslenaddr, nap->cage_id);
+  ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
   if (ret < 0) {
     userfd = ret;
     goto cleanup;
