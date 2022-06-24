@@ -954,9 +954,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 void InitializeCage(struct NaClApp *nap, int cage_id);
 
 /* Find the next usable fd */
-int CancelFds(struct NaClApp *nap, int userfds[2], int iterations);
-int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
-int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
+void CancelFds(struct NaClApp *nap, int userfds[2], int iterations);
+int  AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
+int  AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
