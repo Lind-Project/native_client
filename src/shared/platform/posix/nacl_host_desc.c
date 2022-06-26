@@ -432,7 +432,8 @@ nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
 
   NaClHostDescCheckValidity("NaClHostDescSeek", d);
 #if NACL_LINUX
-  return lind_lseek(d->d, offset, whence, d->cageid);
+  retval = lind_lseek(d->d, offset, whence, d->cageid);
+  return retval;
 #elif NACL_OSX
   return ((-1 == (retval = lind_lseek(d->d, offset, whence, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);

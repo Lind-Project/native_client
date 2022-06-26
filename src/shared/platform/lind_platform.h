@@ -131,7 +131,7 @@ union RustArg {
     struct sockaddr *dispatch_sockaddrstruct;
     struct epoll_event *dispatch_epolleventstruct;
     const struct sockaddr *dispatch_constsockaddrstruct;
-    struct shmid_ds *dispatch_shmidstruct;
+    struct lind_shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
 };
 
@@ -210,3 +210,4 @@ int lind_exit(int status, int cageid);
 
 
 #endif /* LIND_PLATFORM_H_ */
+

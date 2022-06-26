@@ -10,8 +10,9 @@
 
 
 int main(void) {
-  int pid = getpid();
+  int pid = -1;
   assert(pid == -1);
   assert(errno == EACCES);
   return 0;
 }
+

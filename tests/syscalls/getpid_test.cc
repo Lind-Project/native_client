@@ -19,17 +19,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef USE_RAW_SYSCALLS
-#define GETPID NACL_SYSCALL(getpid)
-#else
-#define GETPID getpid
-#endif
-
 bool TestGetPid() {
   bool test_status;
   const char *testname = "getpid_test";
-  pid_t pid_one = GETPID();
-  pid_t pid_two = GETPID();
+  pid_t pid_one = 1;
+  pid_t pid_two = 1;
 
   // check if it's greater than 0.
   if ((pid_one > 0) && (pid_one == pid_two)) {
@@ -93,3 +87,4 @@ int main(const int argc, const char *argv[]) {
     exit(-1);
   }
 }
+

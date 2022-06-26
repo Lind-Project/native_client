@@ -2835,7 +2835,6 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   uintptr_t                     sysaddr;
   uintptr_t                     endaddr;
   int                           length;
-  int                           prot;
   unsigned long                 topbits;
   unsigned int                  mapbottom;
 
@@ -2978,6 +2977,9 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
    */
    map_result = (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
   
+  int prot = NACL_ABI_O_RDWR;
+  if (shmflg & SHM_RDONLY) prot = NACL_ABI_O_RDONLY;
+
   if ((unsigned int) -1 == map_result) {
     NaClLog(LOG_INFO,
             ("NaClHostDescMap: "
@@ -2995,9 +2997,6 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
             (uintptr_t) map_result,
             (uintptr_t) sysaddr);
   }
-
-  if (shmflg & SHM_RDONLY) prot = NACL_ABI_O_RDONLY;
-  else prot = NACL_ABI_O_RDWR;
 
   if (length > 0) {
     NaClVmmapAddWithOverwrite(&nap->mem_map,
@@ -3076,8 +3075,8 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
   }
 
   shmid = lind_shmdt((void *) sysaddr, nap->cage_id);
-  if (retval < 0) {
-    retval = -shmid;
+  if (shmid < 0) {
+    retval = shmid;
     NaClLog(2, "shmdt failed, errno = %d\n", retval);
     goto cleanup;
   }
@@ -5088,7 +5087,7 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   
   NaClLog(2, "Cage %d Entered NaClSysGethostname(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", "
-          "%lx)\n",
+          "%lu)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) name, len);
   
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) name, len, NACL_ABI_PROT_WRITE);
@@ -5110,9 +5109,9 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   uintptr_t sysaddr;
   struct NaClApp *nap = natp->nap;
   
-  NaClLog(2, "Cage %d Entered NaClSysGetifaddrs(0x%08"NACL_PRIxPTR", "
+  NaClLog(2,"Cage %d Entered NaClSysGetifaddrs(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", "
-          "%d)\n",
+          "%lu)\n",
           nap->cage_id, (uintptr_t) natp, (uintptr_t) buf, len);
   
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, len, NACL_ABI_PROT_WRITE);
@@ -5122,7 +5121,7 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
     return ret;
   }
   
-  ret = lind_getifaddrs (sysaddr, len, nap->cage_id);
+  ret = lind_getifaddrs ((char *) sysaddr, len, nap->cage_id);
   
   NaClLog(2, "NaClSysGetifaddrs: returning %d\n", ret);
   
