@@ -934,7 +934,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
-
+  if (!ndp) {
+    return - NACL_ABI_EBADF;
+  }
   /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
@@ -1120,7 +1122,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
-
+  if (!ndp) {
+    return - NACL_ABI_EBADF;
+  }
    /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
