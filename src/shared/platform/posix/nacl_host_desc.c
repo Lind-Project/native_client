@@ -129,7 +129,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   int   need_exec;
   int   whichcage;
   unsigned long topbits;
-  uintptr_t  mapbottom;
+  unsigned int mapbottom;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
@@ -211,7 +211,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
 
   if ((unsigned) mapbottom > (0xffffffffu - 256)) {
     errno = mapbottom;
-    mapbottom = (uintptr_t) MAP_FAILED;
+    mapbottom = (unsigned int) MAP_FAILED;
   } 
 
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
