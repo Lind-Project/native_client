@@ -210,7 +210,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
 
   if ((unsigned) mapbottom > (0xffffffffu - 256)) {
     errno = mapbottom;
-     mapbottom = (unsigned int) MAP_FAILED;
+    mapbottom = (unsigned int) MAP_FAILED;
   } 
 
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
