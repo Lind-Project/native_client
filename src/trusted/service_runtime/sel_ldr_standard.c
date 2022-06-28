@@ -716,7 +716,7 @@ int NaClCreateThread(struct NaClAppThread     *natp_parent,
 
   if (tl_type == THREAD_LAUNCH_FORK){
 
-   // nap_parent = natp_parent->nap;
+    //nap_parent = natp_parent->nap;
 
     NaClXMutexLock(&nap_child->mu);
 

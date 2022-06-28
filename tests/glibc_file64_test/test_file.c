@@ -24,7 +24,7 @@
  * after glibc-2.9 to match the POSIX.1-2008 specification.
  *
  */
-/* Lind, co-Lind has commented out some of the tests */
+/* Lind, Koe-Lind has commented out some of the tests */
 
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ < 10
 typedef const void *scandir_cmp_arg_t;

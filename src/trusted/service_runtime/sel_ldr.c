@@ -1557,7 +1557,7 @@ static void StopForDebuggerInit (uintptr_t mem_start) {
   _ovly_debug_event();
 }
 
-void NaClGdbHook(struct NaClApp const	*nap) {
+void NaClGdbHook(struct NaClApp const *nap) {
   StopForDebuggerInit(nap->mem_start);
 }
 

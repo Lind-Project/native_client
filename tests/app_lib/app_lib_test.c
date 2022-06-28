@@ -196,6 +196,8 @@ int NaClMain(const char* fn)
   }
 
   printf("Goodbye cruel world.  Really.\n");
+
+  /*getpid() is being suppressed for Lind */
   //fprintf(stderr, "My pid is %d\n", getpid());
   fflush(0);
   return 0;
