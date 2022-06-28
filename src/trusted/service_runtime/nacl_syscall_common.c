@@ -935,28 +935,27 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
   if (!ndp) {
-    return - NACL_ABI_EBADF;
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;  
+    goto out;
   }
+
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+
   /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-
-
   NaClHostDescCheckValidity("NaClSysRead", hd);
   if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysRead: WRONLY file\n");
+    NaClFastMutexUnlock(&nap->desc_mu);
     retval = -NACL_ABI_EBADF;
     goto out;
   }
+  
   lindfd = hd->d; // we can extract the lindfd here w/o worrying about it closing
   NaClFastMutexUnlock(&nap->desc_mu);
-
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
@@ -1123,8 +1122,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
   if (!ndp) {
-    return - NACL_ABI_EBADF;
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;
+    goto out;
   }
+
+  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+
    /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
@@ -1132,18 +1136,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   NaClHostDescCheckValidity("NaClSysWrite", hd);
   if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysWrite: RDONLY file\n");
+    NaClFastMutexUnlock(&nap->desc_mu);
     retval = -NACL_ABI_EBADF;
     goto out;
   }
+
   lindfd = hd->d; // extract fd from HostDesc, we can unlock now safely
   NaClFastMutexUnlock(&nap->desc_mu);
-
-
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-  if (!ndp) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
