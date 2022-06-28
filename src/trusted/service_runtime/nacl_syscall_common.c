@@ -2968,14 +2968,14 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   if ((unsigned) mapbottom > (0xffffffffu - 256)) {
     errno = mapbottom;
-    mapbottom = (unsigned int) -1;
+    mapbottom = MAP_FAILED;
   } 
 
   /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
    * return a long -1 as our return value. Otherwise, combine the 
    * top bits and bottom bits into our full return value.
    */
-   map_result = (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
+  map_result = (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
   
   int prot = NACL_ABI_O_RDWR;
   if (shmflg & SHM_RDONLY) prot = NACL_ABI_O_RDONLY;
