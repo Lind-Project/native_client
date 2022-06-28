@@ -6,7 +6,7 @@
 
 
 /*
- * Test for getpid syscall.
+ * Test for getpid syscall is being ignored.
  */
 
 #ifdef USE_RAW_SYSCALLS
@@ -22,6 +22,7 @@
 bool TestGetPid() {
   bool test_status;
   const char *testname = "getpid_test";
+  //ignoring these variables.
   pid_t pid_one = 1;
   pid_t pid_two = 1;
 
