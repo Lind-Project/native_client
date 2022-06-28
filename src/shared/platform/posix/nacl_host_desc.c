@@ -21,7 +21,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-
 #include "native_client/src/include/nacl_platform.h"
 #include "native_client/src/include/portability.h"
 
