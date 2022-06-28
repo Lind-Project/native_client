@@ -1338,13 +1338,13 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   sysaddr = NaClUserToSysAddrProt(nap, (uintptr_t) arg_ptr, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysIoctl could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
-    retval = -NACL_ABI_EFAULT;
-    return retval;
+    return -NACL_ABI_EFAULT;
   }
 
   ndp = GetDescFromCagetable(nap, d);
   if (!ndp) {
     NaClLog(2, "NaClSysIoctl was passed an unrecognized file descriptor, returning %d\n", -NACL_ABI_EBADF);
+    NaClDescUnref(ndp);
     return -NACL_ABI_EBADF;
   }
   
@@ -1354,10 +1354,10 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   // Those calls are not implemented for now
   
   retval = lind_ioctl(lindfd ,request, (void *) sysaddr, nap->cage_id);
-//cleanup:
- //NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
-  //NaClDescUnref(ndp);
- return retval;
+  
+  NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
+  NaClDescUnref(ndp);
+  return retval;
 }
 
 
@@ -1783,7 +1783,7 @@ static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t len
    * zero-filled pages, which should be copy-on-write and thus
    * relatively cheap.  Do not open up an address space hole.
    */
-  if (-1 == lind_mmap((void *) sysaddr,
+  if (MAP_FAILED == (void *) lind_mmap((void *) sysaddr,
                               length,  
                               PROT_NONE,  
                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 
