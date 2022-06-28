@@ -870,6 +870,8 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
   NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
+  if ((argv + optind)[3] == NULL) NaClLog(LOG_FATAL, "%s\n", "FATAL: You must specify a binary.");
+
   NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
   NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
   NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
