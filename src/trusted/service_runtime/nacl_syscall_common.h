@@ -123,7 +123,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
                      nacl_abi_off_t       *offp,
                      int                  whence);
 
-int32_t  NaClSysIoctl(struct NaClAppThread *natp,
+int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
                      unsigned long        request,
                      void                 *arg_ptr);
