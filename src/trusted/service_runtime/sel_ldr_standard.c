@@ -702,7 +702,6 @@ int NaClCreateThread(struct NaClAppThread     *natp_parent,
   size_t                *argv_len;
   size_t                *envv_len;
   static THREAD int     ignored_ret;
-  //struct NaClApp        *nap_parent;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -715,8 +714,6 @@ int NaClCreateThread(struct NaClAppThread     *natp_parent,
 
 
   if (tl_type == THREAD_LAUNCH_FORK){
-
-    //nap_parent = natp_parent->nap;
 
     NaClXMutexLock(&nap_child->mu);
 

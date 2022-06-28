@@ -457,8 +457,7 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
 ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
                            void const *buf,
                            size_t len,
-                           nacl_off64_t offset) {
-  
+                           nacl_off64_t offset) { 
   NaClHostDescCheckValidity("NaClHostDescPWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");
