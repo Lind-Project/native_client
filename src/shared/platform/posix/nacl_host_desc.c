@@ -289,7 +289,6 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
                      int                  flags,
                      int                  mode) {
   int host_desc;
-  nacl_host_stat_t stbuf;
   int posix_flags;
 
   NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
@@ -403,7 +402,6 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
 ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
                          void                 *buf,
                          size_t               len) {
-  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
@@ -416,7 +414,6 @@ ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
 ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
                           void const          *buf,
                           size_t              len) {
-  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
@@ -433,7 +430,8 @@ nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
 
   NaClHostDescCheckValidity("NaClHostDescSeek", d);
 #if NACL_LINUX
-  return lind_lseek(d->d, offset, whence, d->cageid);
+  retval = lind_lseek(d->d, offset, whence, d->cageid);
+  return retval;
 #elif NACL_OSX
   return ((-1 == (retval = lind_lseek(d->d, offset, whence, d->cageid)))
           ? -NaClXlateErrno(errno) : retval);
@@ -446,8 +444,7 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
                           void *buf,
                           size_t len,
                           nacl_off64_t offset) {
-  ssize_t retval;
-
+  
   NaClHostDescCheckValidity("NaClHostDescPRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
@@ -459,9 +456,7 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
 ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
                            void const *buf,
                            size_t len,
-                           nacl_off64_t offset) {
-  ssize_t retval;
-
+                           nacl_off64_t offset) { 
   NaClHostDescCheckValidity("NaClHostDescPWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");

@@ -336,7 +336,7 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts);
 
-int32_t NaClCommonDescSocketPair(struct NaClDesc      **pair);
+int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
 
 int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
                              uint32_t             descs_out);

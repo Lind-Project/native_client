@@ -13,6 +13,7 @@
 #include "native_client/src/include/portability_io.h"
 #include "native_client/src/include/portability_string.h"
 #include "native_client/src/include/nacl_macros.h"
+#include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/shared/platform/aligned_malloc.h"
 
 #include "native_client/src/shared/gio/gio.h"
@@ -1894,7 +1895,7 @@ void InitializeCage(struct NaClApp *nap, int cage_id) {
 
 /* Find next available fd in cagetable */
 
-int CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
+void CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
 
   for (int i = 0; i < iterations; i++) {
     int naclfd = fd_cage_table[nap->cage_id][userfds[i]];
@@ -1952,30 +1953,30 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
  */
 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap) {
-  NaClMutexLock(&nap->zombie_mu);
+  NaClXMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = NULL;
-  for(int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
+  for(long unsigned int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
     zombie = DynArrayGet(&nap->zombies, cage_id);
     if (zombie != NULL) break;
   }
-  NaClMutexUnlock(&nap->zombie_mu);
+  NaClXMutexUnlock(&nap->zombie_mu);
 
   return zombie;
 }
 
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id) {
-  NaClMutexLock(&nap->zombie_mu);
+  NaClXMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = DynArrayGet(&nap->zombies, cage_id);
   DynArraySet(&nap->zombies, cage_id, NULL);
   free(zombie);
-  NaClMutexUnlock(&nap->zombie_mu);
+  NaClXMutexUnlock(&nap->zombie_mu);
 }
 
 void NaClAddZombie(struct NaClApp *nap) {
-  NaClMutexLock(&nap->zombie_mu);
+  NaClXMutexLock(&nap->zombie_mu);
   struct NaClZombie *zombie = malloc(sizeof(struct NaClZombie));
   zombie->exit_status = nap->exit_status;
   zombie->cage_id = nap->cage_id;
   DynArraySet(&nap->parent->zombies, nap->cage_id, zombie);
-  NaClMutexUnlock(&nap->zombie_mu);
+  NaClXMutexUnlock(&nap->zombie_mu);
 }

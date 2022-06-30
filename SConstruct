@@ -2299,16 +2299,9 @@ def MakeWindowsEnv():
 
 def MakeUnixLikeEnv():
   unix_like_env = MakeBaseTrustedEnv()
-  # -Wdeclaration-after-statement is desirable because MS studio does
-  # not allow declarations after statements in a block, and since much
-  # of our code is portable and primarily initially tested on Linux,
-  # it'd be nice to get the build error earlier rather than later
-  # (building and testing on Linux is faster).
-  # TODO(nfullagar): should we consider switching to -std=c99 ?
   unix_like_env.Prepend(
     CFLAGS = [
         '-std=gnu99',
-        '-Wdeclaration-after-statement',
         # Require defining functions as "foo(void)" rather than
         # "foo()" because, in C (but not C++), the latter defines a
         # function with unspecified arguments rather than no

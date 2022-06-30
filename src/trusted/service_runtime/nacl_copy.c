@@ -68,7 +68,7 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
   }
 
   uintptr_t check_addr = src_usr_addr;
-  int bytes_copied = 0;
+  size_t bytes_copied = 0;
 
   /*
    * We need to handle NULL terminated strings that possibly could overlap VMMap entries,

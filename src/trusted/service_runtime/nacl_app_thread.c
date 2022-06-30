@@ -135,7 +135,8 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     nap_child->initial_entry_pt = nap_parent->initial_entry_pt;
     nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
     nap_child->text_shm = nap_parent->text_shm;
-    NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    NaClErrorCode err = NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    if (err != LOAD_OK) NaClLog(LOG_FATAL, "%s\n", "NaClAllocAddrSpaceAslr failed. Terminating.");
     NaClInitSwitchToApp(nap_child); 
   }
 
@@ -200,7 +201,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
 
 
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
   }
 
   return nap_child;
@@ -365,7 +366,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
   struct NaClApp  *nap_parent = nap->parent;
-  size_t          thread_idx;
 
   /* remove self from parent's list of children */
   if (nap->parent) {
@@ -387,7 +387,7 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
    * Remove parent from any children, and hope they don't become the Batman
    */
   NaClXMutexLock(&nap->children_mu);
-  for (int i = 0; i < (&nap->children)->num_entries; i++) {
+  for (size_t i = 0; i < (&nap->children)->num_entries; i++) {
     struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
     if (nap_child) nap_child->parent = NULL;
   }
@@ -408,7 +408,6 @@ void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
  */
 void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClApp  *nap_parent = nap->parent;
   size_t          thread_idx;
 
 
@@ -892,6 +891,7 @@ void FatalThreadTeardown(void) {
 }
 
 void ThreadReaper(void* arg) {
+  (void) arg;
   NaClXMutexLock(&reapermut);
   while (reap) {
     NaClXCondVarWait(&reapercv, &reapermut);
