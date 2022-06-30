@@ -155,7 +155,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   }
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
+  for (int fd = 0; fd < FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
     int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
