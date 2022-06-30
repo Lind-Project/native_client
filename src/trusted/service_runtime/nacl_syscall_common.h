@@ -18,7 +18,7 @@
 #include "native_client/src/trusted/service_runtime/include/sys/time.h"
 #include <sys/poll.h>
 #include <sys/epoll.h>
-
+#include <sys/shm.h>
 
 EXTERN_C_BEGIN
 
@@ -31,6 +31,9 @@ struct NaClImcMsgHdr;
 struct nacl_abi_stat;
 struct rusage;
 struct sockaddr;
+
+struct NaClDesc *GetDescFromCagetable(struct NaClApp *nap, int fd);
+int NaClDesc2Lindfd(struct NaClDesc * ndp);
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp);
 
@@ -122,8 +125,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
 int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
-                     int                  request,
-                     void                 *arg);
+                     unsigned long        request,
+                     void                 *arg_ptr);
 
 int32_t NaClSysFstat(struct NaClAppThread *natp,
                      int                  d,
@@ -155,12 +158,18 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
 int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname);
 
+int32_t NaClSysChmod(struct NaClAppThread *natp,
+                     uint32_t             pathname,
+                     int                  mode);
+                     
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
-                      uint32_t             buffer,
-                      int                  len);
+                      char                 *buf,
+                      size_t               size);
 
 int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to);
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname);
+int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const char *newpath);
+
 
 /* bool */
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
@@ -209,6 +218,25 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
 int32_t NaClSysMunmap(struct NaClAppThread  *natp,
                       void                  *start,
                       size_t                length);
+
+
+int32_t NaClSysShmget(struct NaClAppThread  *natp,
+                      int                   key,
+                      size_t                size,
+                      int                   shmflg);
+
+int32_t NaClSysShmat(struct NaClAppThread  *natp,
+                     int                   shmid,
+                     void                  *shmaddr,
+                     int                   shmflg);
+
+int32_t NaClSysShmdt(struct NaClAppThread  *natp,
+                     void                  *shmaddr);
+
+int32_t NaClSysShmctl(struct NaClAppThread  *natp,
+                      int                   shmid,
+                      int                   cmd,
+                      struct lind_shmid_ds  *buf);
 
 int32_t NaClSysGetdents(struct NaClAppThread  *natp,
                         int                   d,
@@ -308,7 +336,7 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts);
 
-int32_t NaClCommonDescSocketPair(struct NaClDesc      **pair);
+int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
 
 int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
                              uint32_t             descs_out);
@@ -353,15 +381,18 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type);
 
 int32_t NaClSysPipe(struct NaClAppThread *natp, uint32_t *pipedes);
 int32_t NaClSysPipe2(struct NaClAppThread *natp, uint32_t *pipedes, int flags);
+
 int32_t NaClSysFork(struct NaClAppThread *natp);
 int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const *argv, char *const *envp);
 int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv);
+
 int32_t NaClSysWaitpid(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options);
 int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc);
 int32_t NaClSysWait4(struct NaClAppThread *natp, int pid, uint32_t *stat_loc, int options, void *rusage);
 int32_t NaClSysSigProcMask(struct NaClAppThread *natp, int how, const void *set, void *oldset);
 
 int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len);
+int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len);
 
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol);
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf);
@@ -383,7 +414,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp, int sockfd,  struct socka
 int32_t NaClSysGetpeername(struct NaClAppThread *natp, int sockfd,  struct sockaddr * addr, socklen_t * addrlen);
 
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
-int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, socklen_t addrlen, const struct sockaddr *addr);
+int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
 int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout);
 int32_t NaClSysEpollCreate(struct NaClAppThread  *natp, int size);

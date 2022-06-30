@@ -104,8 +104,9 @@ struct NaClSignalContext *StartGuestWithSharedMemory(
   expected_regs = (struct NaClSignalContext *) NaClUserToSys(nap, mmap_addr);
 
   WaitForThreadToExitFully(nap);
+  nap->tl_type = THREAD_LAUNCH_MAIN;
 
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, nap, NACL_ARRAY_SIZE(args), args, NULL));
+  CHECK(NaClCreateThread(NULL, nap, NACL_ARRAY_SIZE(args), args, NULL));
   return expected_regs;
 }
 
@@ -213,7 +214,7 @@ void TestReceivingFault(struct NaClApp *nap) {
   TestSingleStepping(natp);
 
   NaClUntrustedThreadsResumeAll(nap);
-  CHECK(NaClWaitForMainThreadToExit(nap) == 0);
+  CHECK(NaClWaitForThreadToExit(nap) == 0);
 }
 
 /*
@@ -270,7 +271,7 @@ void TestGettingRegistersInMacSwitchRemainingRegs(struct NaClApp *nap) {
   NaClAppThreadSetSuspendedRegisters(natp, &regs);
   ASSERT_EQ(NaClAppThreadUnblockIfFaulted(natp, &signal), 1);
   NaClUntrustedThreadsResumeAll(nap);
-  CHECK(NaClWaitForMainThreadToExit(nap) == 0);
+  CHECK(NaClWaitForThreadToExit(nap) == 0);
 }
 
 int main(int argc, char **argv) {

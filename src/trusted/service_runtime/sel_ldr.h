@@ -30,6 +30,7 @@
 
 #include <signal.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "native_client/src/include/atomic_ops.h"
 #include "native_client/src/include/nacl_base.h"
@@ -72,6 +73,8 @@ EXTERN_C_BEGIN
 
 #define NACL_BAD_FD                     -1
 
+#define INIT_PROCESS_NUM 1
+
 struct NaClAppThread;
 struct NaClDesc;  /* see native_client/src/trusted/desc/nacl_desc_base.h */
 struct NaClDynamicRegion;
@@ -82,8 +85,20 @@ struct NaClThreadInterface;  /* see sel_ldr_thread_interface.h */
 struct NaClValidationCache;
 struct NaClValidationMetadata;
 
+struct NaClShmInfo {
+  int size;
+  int count;
+  bool rmid;
+};
+
+struct NaClZombie {
+  int cage_id;
+  int exit_status;
+};
+
 extern volatile sig_atomic_t fork_num;
 extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
+extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
   void (*thread_create_hook)(struct NaClAppThread *natp);
@@ -116,12 +131,6 @@ struct NaClSpringboardInfo {
   uint32_t end_addr;
 };
 
-enum NaClThreadLaunchType {
-  THREAD_LAUNCH_MAIN,
-  THREAD_LAUNCH_FORK,
-  THREAD_LAUNCH_EXEC
-};
-
 struct NaClApp {
   /*
    * children table lock children_mu is higher in the locking order than
@@ -133,6 +142,8 @@ struct NaClApp {
   struct NaClMutex          children_mu;
   struct NaClCondVar        children_cv;
   struct DynArray           children;
+  struct DynArray           zombies;
+  struct NaClMutex          zombie_mu;
   struct NaClApp            *parent;
 
   volatile sig_atomic_t     num_children;
@@ -147,7 +158,6 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
-
 
   /*
    * public, user settable prior to app start.
@@ -280,6 +290,9 @@ struct NaClApp {
 
   struct NaClMutex          mu;
   struct NaClCondVar        cv;
+
+  struct NaClMutex          exit_mu;
+  struct NaClCondVar        exit_cv;
 
 #if NACL_WINDOWS
   /*
@@ -474,6 +487,10 @@ struct NaClApp {
 };
 
 
+void CheckForLkm(void);
+
+void InitializeShmtable(void);
+void clear_shmentry(int shmid);
 
 void  NaClAppIncrVerbosity(void);
 
@@ -506,6 +523,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
  * nap is a pointer to the NaCl object that is being filled in.
  */
 int NaClAppCtor(struct NaClApp  *nap) NACL_WUR;
+
+void NaClAppDtor(struct NaClApp *nap);
 
 /*
  * Loads a NaCl ELF file into memory in preparation for running it.
@@ -634,24 +653,24 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap);
  * Used to launch the main thread.  NB: calling thread may in the
  * future become the main NaCl app thread, and this function will
  * return only after the NaCl app main thread exits.  In such an
- * alternative design, NaClWaitForMainThreadToExit will become a
+ * alternative design, NaClWaitForThreadToExit will become a
  * no-op.
  */
 
 
-int NaClCreateThread(enum NaClThreadLaunchType tl_type,
-                     struct NaClAppThread     *natp_parent,
+int NaClCreateThread(struct NaClAppThread     *natp_parent,
                      struct NaClApp           *nap_child,
                      int                      argc,
                      char                     **argv,
                      char const *const        *envv) NACL_WUR;
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap);
+int NaClWaitForThreadToExit(struct NaClApp  *nap);
 
 /*
  * Used by syscall code.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      stack_ptr,
                                    uint32_t       user_tls1,
@@ -691,6 +710,9 @@ int32_t NaClSetAvail(struct NaClApp   *nap,
 struct NaClDesc *NaClGetDescMu(struct NaClApp *nap,
                                int            d);
 
+struct NaClDesc *NaClGetDescMuNoRef(struct NaClApp *nap,
+                                    int            d);
+
 void NaClSetDescMu(struct NaClApp   *nap,
                    int              d,
                    struct NaClDesc  *ndp);
@@ -698,6 +720,7 @@ void NaClSetDescMu(struct NaClApp   *nap,
 int32_t NaClSetAvailMu(struct NaClApp   *nap,
                        struct NaClDesc  *ndp);
 
+int NaClGetNumThreads(struct NaClApp        *nap);
 
 int NaClAddThread(struct NaClApp        *nap,
                   struct NaClAppThread  *natp);
@@ -859,6 +882,11 @@ void NaClVmHoleClosingMu(struct NaClApp *nap);
  * region..
  */
 
+/* Lind
+ * We're only using Linux so it's fine to disregard these operations which are
+ * Windows specific. 
+ */
+
 /*
  * Some potentially blocking I/O operation is about to start.  Syscall
  * handlers implement DMA-style access where the host-OS syscalls
@@ -925,9 +953,14 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
 /* Set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id);
 
-/* Find the next usuable fd */
-int NextFd(int cage_id);
-int NextFdBounded(int cage_id, int lowerbound);
+/* Find the next usable fd */
+void CancelFds(struct NaClApp *nap, int userfds[2], int iterations);
+int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
+int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
+
+struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
+void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
+void NaClAddZombie(struct NaClApp *nap);
 
 static INLINE void NaClLogUserMemoryContent(struct NaClApp *nap, uintptr_t user_addr) {
   char *addr = (char *)NaClUserToSys(nap, user_addr);

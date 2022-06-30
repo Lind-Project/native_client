@@ -250,7 +250,9 @@ NaClErrorCode NaClAppLoadFileAslr(struct NaClDesc *ndp,
    * the linux-style brk system call (which returns current break on
    * failure) permits a non-aligned address as argument.
    */
-  nap->break_addr = max_vaddr;
+
+  if (nap->tl_type == THREAD_LAUNCH_FORK) nap->break_addr = nap->parent->break_addr;
+  else nap->break_addr = max_vaddr;
   nap->data_end = max_vaddr;
 
   NaClLog(4, "Values from NaClElfImageValidateProgramHeaders:\n");
@@ -644,6 +646,7 @@ int NaClReportExitStatus(struct NaClApp *nap, int exit_status) {
      */
   }
   nap->exit_status = exit_status;
+  if (nap->parent) NaClAddZombie(nap);
   nap->running = 0;
   NaClXCondVarSignal(&nap->cv);
 
@@ -677,8 +680,7 @@ uintptr_t NaClGetInitialStackTop(struct NaClApp *nap) {
   * envv may be NULL (this happens on MacOS/Cocoa and in tests)
   * if envv is non-NULL it is 'consistent', null terminated etc.
   */
-NaClCreateThread(enum NaClThreadLaunchType tl_type,
-                struct NaClAppThread     *natp_parent,
+int NaClCreateThread(struct NaClAppThread     *natp_parent,
                 struct NaClApp           *nap_child,
                 int                      argc,
                 char                     **argv,
@@ -700,7 +702,6 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   size_t                *argv_len;
   size_t                *envv_len;
   static THREAD int     ignored_ret;
-  struct NaClApp        *nap_parent;
 
   CHECK(argc >= 0);
   CHECK(argv || !argc);
@@ -709,13 +710,10 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
   size = 0;
   envc = 0;
 
-  /* Set nap's thread launch type */
-  nap_child->tl_type = tl_type;
+  enum NaClThreadLaunchType tl_type = nap_child->tl_type;
 
 
   if (tl_type == THREAD_LAUNCH_FORK){
-
-    nap_parent = natp_parent->nap;
 
     NaClXMutexLock(&nap_child->mu);
 
@@ -812,72 +810,74 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
     goto cleanup;
   }
 
-  /*
-   * Write strings and char * arrays to stack.
-   */
-  stack_ptr = NaClUserToSysAddrRange(nap_child,
-                                     NaClGetInitialStackTop(nap_child) - size,
-                                     size);
-  if (stack_ptr == kNaClBadAddress) {
-    NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
-    goto cleanup;
+  if(tl_type != THREAD_LAUNCH_FORK) {
+    /*
+     * Write strings and char * arrays to stack.
+     */
+    stack_ptr = NaClUserToSysAddrRange(nap_child,
+                                       NaClGetInitialStackTop(nap_child) - size,
+                                       size);
+    if (stack_ptr == kNaClBadAddress) {
+      NaClLog(LOG_WARNING, "NaClCreateThread failed: cage_id %d stack_ptr address bad!\n", nap_child->cage_id);
+      goto cleanup;
+    }
+
+    NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
+
+    VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
+           ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
+
+    p = (uint32_t *)stack_ptr;
+    strp = (char *)stack_ptr + ptr_tbl_size;
+
+    /*
+     * For x86-32, we push an initial argument that is the address of
+     * the main argument block.  For other machines, this is passed
+     * in a register and that's set in NaClStartThreadInApp.
+     */
+    if (NACL_STACK_GETS_ARG) {
+      uint32_t *argloc = p++;
+      *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
+    }
+
+    *p++ = 0;  /* Cleanup function pointer, always NULL.  */
+    *p++ = envc;
+    *p++ = argc;
+
+    for (i = 0; i < argc && argv && argv[i]; i++) {
+      *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+      NaClLog(1, "copying arg %d  %p -> %p\n",
+              i, (void *)argv[i], (void *)strp);
+      snprintf(strp, ARG_LIMIT, "%s", argv[i]);
+      strp += argv_len[i];
+    }
+    *p++ = 0;  /* argv[argc] is NULL.  */
+
+    for (i = 0; i < envc && envv && envv[i]; i++) {
+      *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
+      NaClLog(1, "copying env %d  %p -> %p\n",
+              i, (void *)envv[i], (void *)strp);
+      snprintf(strp, ARG_LIMIT, "%s", envv[i]);
+      strp += envv_len[i];
+    }
+    *p++ = 0;  /* envp[envc] is NULL.  */
+
+    /* Push an auxv */
+    if (nap_child->user_entry_pt) {
+      *p++ = AT_ENTRY;
+      *p++ = (uint32_t)nap_child->user_entry_pt;
+    }
+    *p++ = AT_NULL;
+    *p++ = 0;
+
+    /* TODO: fix failing CHECK() -jp */
+    if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
+      NaClLog(1,
+              "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
+              (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
+    }
+    /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
   }
-
-  NaClLog(2, "setting stack to : %016"NACL_PRIxPTR"\n", stack_ptr);
-
-  VCHECK(!(stack_ptr & NACL_STACK_ALIGN_MASK),
-         ("stack_ptr not aligned: %016"NACL_PRIxPTR"\n", stack_ptr));
-
-  p = (uint32_t *)stack_ptr;
-  strp = (char *)stack_ptr + ptr_tbl_size;
-
-  /*
-   * For x86-32, we push an initial argument that is the address of
-   * the main argument block.  For other machines, this is passed
-   * in a register and that's set in NaClStartThreadInApp.
-   */
-  if (NACL_STACK_GETS_ARG) {
-    uint32_t *argloc = p++;
-    *argloc = (uint32_t) NaClSysToUser(nap_child, (uintptr_t) p);
-  }
-
-  *p++ = 0;  /* Cleanup function pointer, always NULL.  */
-  *p++ = envc;
-  *p++ = argc;
-
-  for (i = 0; i < argc && argv && argv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(1, "copying arg %d  %p -> %p\n",
-            i, (void *)argv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", argv[i]);
-    strp += argv_len[i];
-  }
-  *p++ = 0;  /* argv[argc] is NULL.  */
-
-  for (i = 0; i < envc && envv && envv[i]; i++) {
-    *p++ = (uint32_t) NaClSysToUser(nap_child, (uintptr_t)strp);
-    NaClLog(1, "copying env %d  %p -> %p\n",
-            i, (void *)envv[i], (void *)strp);
-    snprintf(strp, ARG_LIMIT, "%s", envv[i]);
-    strp += envv_len[i];
-  }
-  *p++ = 0;  /* envp[envc] is NULL.  */
-
-  /* Push an auxv */
-  if (nap_child->user_entry_pt) {
-    *p++ = AT_ENTRY;
-    *p++ = (uint32_t)nap_child->user_entry_pt;
-  }
-  *p++ = AT_NULL;
-  *p++ = 0;
-
-  /* TODO: fix failing CHECK() -jp */
-  if ((char *)p != (char *)stack_ptr + ptr_tbl_size) {
-    NaClLog(1,
-            "p (%p) != stack_ptr (%p) + ptr_tbl_size (%#lx) [%#lx]\n",
-            (void *)p, (void *)stack_ptr, ptr_tbl_size, stack_ptr + ptr_tbl_size);
-  }
-  /* CHECK((char *)p == (char *)stack_ptr + ptr_tbl_size); */
 
   /* 
     now actually spawn the thread 
@@ -899,19 +899,17 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
    * We avoid the otherwise harmless call for the zero case because
    * _FORTIFY_SOURCE memset can warn about zero-length calls.
    */
-  if (NACL_STACK_PAD_BELOW_ALIGN) {
+  if (tl_type != THREAD_LAUNCH_FORK && NACL_STACK_PAD_BELOW_ALIGN) {
     stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
     memset((void *)stack_ptr, 0, NACL_STACK_PAD_BELOW_ALIGN);
+
+    NaClLog(1, "   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
+    NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
+    NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
+    NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
   }
 
-  NaClLog(1, "   system stack ptr : %016"NACL_PRIxPTR"\n", stack_ptr);
-  NaClLog(1, "     user stack ptr : %016"NACL_PRIxPTR"\n", NaClSysToUserStackAddr(nap_child, stack_ptr));
-  NaClLog(1, "   initial entry pt : %016"NACL_PRIxPTR"\n", nap_child->initial_entry_pt);
-  NaClLog(1, "      user entry pt : %016"NACL_PRIxPTR"\n", nap_child->user_entry_pt);
-
   if (tl_type != THREAD_LAUNCH_MAIN){
-    /* TODO: figure out a better way to avoid extra instance spawns -jp */
-    NaClThreadYield();
     NaClXMutexLock(&nap_child->mu);
     nap_child->in_fork = 0;
     NaClXMutexUnlock(&nap_child->mu);
@@ -939,14 +937,12 @@ NaClCreateThread(enum NaClThreadLaunchType tl_type,
     user_tls2 = (uint32_t)natp_parent->user.tls_value2;
   }
 
-  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2);
+  retval = NaClAppThreadSpawn(natp_parent, nap_child, nap_child->initial_entry_pt, stack_ptr, user_tls1, user_tls2, false);
 
 
 cleanup:
   free(argv_len);
   free(envv_len);
-  if (tl_type == THREAD_LAUNCH_FORK) NaClXMutexUnlock(&nap_child->mu);
-
   return retval;
 
 /* NO RETURN */
@@ -955,8 +951,8 @@ already_running:
   pthread_exit(&ignored_ret);
 }
 
-int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
-  NaClLog(3, "NaClWaitForMainThreadToExit: taking NaClApp lock\n");
+int NaClWaitForThreadToExit(struct NaClApp  *nap) {
+  NaClLog(3, "NaClWaitForThreadToExit: taking NaClApp lock\n");
   NaClXMutexLock(&nap->mu);
   NaClLog(3, " waiting for exit status\n");
   while (nap->running) {
@@ -972,28 +968,32 @@ int NaClWaitForMainThreadToExit(struct NaClApp  *nap) {
   if (NULL != nap->debug_stub_callbacks) {
     nap->debug_stub_callbacks->process_exit_hook();
   }
+  
+  int exit_status = nap->exit_status;
+  NaClXCondVarSignal(&nap->exit_cv);
 
-  return NACL_ABI_WEXITSTATUS(nap->exit_status);
+
+  return NACL_ABI_WEXITSTATUS(exit_status);
 }
 
 /*
  * stack_ptr is from syscall, so a 32-bit address.
  */
-int32_t NaClCreateAdditionalThread(struct NaClApp *nap,
+int32_t NaClCreateAdditionalThread(struct NaClAppThread     *natp_parent,
+                                   struct NaClApp *nap,
                                    uintptr_t      prog_ctr,
                                    uintptr_t      sys_stack_ptr,
                                    uint32_t       user_tls1,
                                    uint32_t       user_tls2) {
 
-  /* We need to set the thread type for the thread mechanics */
-  nap->tl_type = THREAD_LAUNCH_MAIN;
 
-  if (!NaClAppThreadSpawn(NULL,
+  if (!NaClAppThreadSpawn(natp_parent,
                           nap,
                           prog_ctr,
                           sys_stack_ptr,
                           user_tls1,
-                          user_tls2)) {
+                          user_tls2,
+                          true)) {
     NaClLog(LOG_WARNING,
             ("NaClCreateAdditionalThread: could not allocate thread."
              "  Returning EAGAIN per POSIX specs.\n"));

@@ -157,8 +157,11 @@ int main(int argc, char **argv) {
   app.enable_exception_handling = 1;
   CHECK(NaClAppLoadFileFromFilename(&app, argv[2]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
-  CHECK(NaClWaitForMainThreadToExit(&app) == 0);
+
+  app.tl_type = THREAD_LAUNCH_MAIN;
+
+  CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
+  CHECK(NaClWaitForThreadToExit(&app) == 0);
 
   if (g_expect_crash) {
     NaClLog(LOG_FATAL, "Did not expect the guest code to exit\n");

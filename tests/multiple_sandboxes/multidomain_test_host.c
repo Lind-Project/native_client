@@ -76,12 +76,15 @@ int main(int argc, char **argv) {
   NaClAddImcHandle(&app[0], handle_pair[0], SEND_DESC);
   NaClAddImcHandle(&app[1], handle_pair[1], RECEIVE_DESC);
 
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app[0], 2, domain1_args, NULL));
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app[1], 2, domain2_args, NULL));
+  app[0].tl_type = THREAD_LAUNCH_MAIN;
+  app[1].tl_type = THREAD_LAUNCH_MAIN;
 
-  return_code = NaClWaitForMainThreadToExit(&app[0]);
+  CHECK(NaClCreateThread(NULL, &app[0], 2, domain1_args, NULL));
+  CHECK(NaClCreateThread(NULL, &app[1], 2, domain2_args, NULL));
+
+  return_code = NaClWaitForThreadToExit(&app[0]);
   CHECK(return_code == 101);
-  return_code = NaClWaitForMainThreadToExit(&app[1]);
+  return_code = NaClWaitForThreadToExit(&app[1]);
   CHECK(return_code == 102);
 
   /*

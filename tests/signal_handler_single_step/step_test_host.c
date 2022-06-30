@@ -169,10 +169,13 @@ int main(int argc, char **argv) {
   NaClSignalHandlerInit();
   NaClSignalHandlerSet(TrapSignalHandler);
 
+  app.tl_type = THREAD_LAUNCH_MAIN;
+
+
   CHECK(NaClAppLoadFileFromFilename(&app, argv[1]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
-  CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
-  CHECK(NaClWaitForMainThreadToExit(&app) == 0);
+  CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
+  CHECK(NaClWaitForThreadToExit(&app) == 0);
 
   CHECK(!g_in_untrusted_code);
   CHECK(g_context_switch_count == kNumberOfCallsToTest * 2);

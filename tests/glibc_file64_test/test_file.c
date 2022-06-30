@@ -22,7 +22,10 @@
 /*
  * The type of the arguments to the comparison function changed
  * after glibc-2.9 to match the POSIX.1-2008 specification.
+ *
  */
+/* Lind, Koe-Lind has commented out some of the tests */
+
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ < 10
 typedef const void *scandir_cmp_arg_t;
 #else
@@ -56,11 +59,11 @@ int main(void) {
     char mode[] = "";
     char buf[1];
     struct stat st;
-    struct statfs stfs;
+    //struct statfs stfs;
     struct statvfs stvfs;
     fpos_t fpos;
     off_t off;
-    struct rlimit rlim;
+    //struct rlimit rlim;
     glob_t glb;
     int result;
     DIR* dir;
@@ -78,13 +81,13 @@ int main(void) {
     fsetpos(0, &fpos);
     fstat(0, &st);
     fstatat(0, path, &st, 0);
-    fstatfs(0, &stfs);
+    //fstatfs(0, &stfs);
     fstatvfs(0, &stvfs);
     ftello(0);
-    ftruncate(0, 0);
+    //ftruncate(0, 0);
     ftw(path, ftw_stub, 0);
     getdirentries(0, buf, 0, &off);
-    getrlimit(0, &rlim);
+    //getrlimit(0, &rlim);
     glob(path, 0, glob_stub, &glb);
     lockf(0, 0, 0);
     lseek(0, 0, 0);
@@ -97,20 +100,20 @@ int main(void) {
     open(path, 0, 0);
     openat(0, path, 0);
     openat(0, path, 0, 0);
-    posix_fadvise(0, 0, 0, 0);
+    //posix_fadvise(0, 0, 0, 0);
     posix_fallocate(0, 0, 0);
-    pread(0, buf, 0, 0);
-    pwrite(0, buf, 0, 0);
+    //pread(0, buf, 0, 0);
+    //pwrite(0, buf, 0, 0);
     readdir(dir);
     readdir_r(dir, &direntry, &pdirentry);
     scandir(path, &ppdirentry, scandir_filter_stub, scandir_compare_stub);
-    sendfile(0, 0, &off, 0);
-    setrlimit(0, &rlim);
+    //sendfile(0, 0, &off, 0);
+    //setrlimit(0, &rlim);
     stat(path, &st);
-    statfs(path, &stfs);
+    //statfs(path, &stfs);
     statvfs(path, &stvfs);
     tmpfile();
-    truncate(path, 0);
+    //truncate(path, 0);
     result = versionsort(&pconstdirentry, &pconstdirentry);
     return result;
 }

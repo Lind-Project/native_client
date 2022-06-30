@@ -69,12 +69,13 @@ int main(int argc, char **argv) {
   CHECK(NaClAppWithSyscallTableCtor(&app, syscall_table));
   CHECK(NaClAppLoadFileFromFilename(&app, argv[1]) == LOAD_OK);
   CHECK(NaClAppPrepareToLaunch(&app) == LOAD_OK);
+  app.tl_type = THREAD_LAUNCH_MAIN;
 
   /* These are examples of two different ways to run untrusted code. */
   if (use_separate_thread) {
     /* Create a new host thread that is managed by NaCl. */
-    CHECK(NaClCreateThread(THREAD_LAUNCH_MAIN, NULL, &app, 0, NULL, NULL));
-    NaClWaitForMainThreadToExit(&app);
+    CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
+    NaClWaitForThreadToExit(&app);
 
     NaClLog(LOG_FATAL, "The exit syscall is not supposed to be callable\n");
   } else {

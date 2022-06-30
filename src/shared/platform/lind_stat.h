@@ -20,11 +20,10 @@ struct lind_stat
 {
     uint64_t st_dev;     /* Device.  */
     uint64_t st_ino;     /* File serial number.  */
-    uint64_t st_nlink;     /* Link count.  */
     uint32_t st_mode;       /* File mode.  */
+    uint32_t st_nlink;     /* Link count.  */
     uint32_t st_uid;     /* User ID of the file's owner. */
     uint32_t st_gid;     /* Group ID of the file's group.*/
-    int32_t __pad0;
     uint64_t st_rdev;        /* Device number, if device.  */
     int64_t st_size;            /* Size of file, in bytes.  */
     int64_t st_blksize; /* Optimal block size for I/O.  */
@@ -68,6 +67,31 @@ struct lind_statfs
     int64_t f_flags;
     int64_t f_spare[4];
   };
+
+  struct lind_ipc_perm {  /* must be renamed when ABI is exported */
+    int32_t               shm_key;       
+    uint32_t              shm_uid;
+    uint32_t              shm_gid;
+    uint32_t              shm_cuid;
+    uint32_t              shm_cgid;
+    uint16_t              shm_mode;
+    uint16_t              shm_pad1;
+    uint16_t              shm_seq;
+    uint16_t              shm_pad2;
+    uint32_t              shm_unused1;
+    uint32_t              shm_unused2;
+  };
+
+struct lind_shmid_ds {  /* must be renamed when ABI is exported */
+  struct lind_ipc_perm      shm_perm;
+  uint32_t                  shm_segsz;
+  int64_t                   shm_atime;
+  int64_t                   shm_dtime;
+  int64_t                   shm_ctime;
+  uint32_t                  shm_cpid;
+  uint32_t                  shm_lpid;
+  uint32_t                  shm_nattch;
+};
 
 
 #endif /* LIND_STAT_H_ */
