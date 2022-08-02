@@ -106,7 +106,7 @@ struct NaClDesc *GetDescFromCagetable(struct NaClApp *nap, int fd) {
     return NULL;
   }
 
-  int naclfd = fd_cage_table[nap->cage_id][fd];
+  int naclfd = fd_cage_table[nap->cage_id][fd]; // search fd_cage_table using using user_fd and cage_id
   if (naclfd < 0) {
     return NULL;
   }
@@ -6037,54 +6037,37 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   struct epoll_event *eventsysaddr;
   int retval = 0;
   int nfds;
-  int hfd;
-  struct epoll_event *pfds;
-  struct NaClDesc * ndp;
+  int lind_fd;
+  int lindepfd;
+  struct epoll_event *sys_event_array;
+  struct NaClDesc * epndp;
+  struct NaClDesc * eventndp;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d,)\n",
           nap->cage_id, (uintptr_t) natp, epfd, (uintptr_t) events, maxevents, timeout);
 
-  ndp = GetDescFromCagetable(nap, epfd);
-  if (!ndp) {
+  epndp = GetDescFromCagetable(nap, epfd);
+  if (!epndp) {
     NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
     return -NACL_ABI_EBADF;
   }
 
-  epfd = NaClDesc2Lindfd(ndp);
+  lindepfd = NaClDesc2Lindfd(epndp);
 
-  pfds = (struct epoll_event*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) events, sizeof(eventsysaddr), NACL_ABI_PROT_WRITE);
+  sys_event_array = (struct epoll_event*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) events, sizeof(eventsysaddr), NACL_ABI_PROT_WRITE);
 
-  if ((void*) kNaClBadAddress == pfds) {
+  if ((void*) kNaClBadAddress == sys_event_array) {
     NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
 
-  nfds = lind_epoll_wait(epfd, pfds, maxevents, timeout, nap->cage_id);
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for(int i = 0; i < nfds; ++i) {
-      for(int j = 0; j < 1024; ++j) {
-          ndp = NaClGetDescMu(nap, j);
-          if(!ndp) {
-              NaClDescSafeUnref(ndp);
-              continue;
-          }
-          hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
-          if(pfds[i].data.fd == hfd) {
-              pfds[i].data.fd = j;
-          }
-          NaClDescUnref(ndp);
-      }
-  }
-  
-  NaClFastMutexUnlock(&nap->desc_mu);
+  nfds = lind_epoll_wait(lindepfd, sys_event_array, maxevents, timeout, nap->cage_id);
 
   retval = nfds;
 
 cleanup:
-  NaClDescUnref(ndp);
+  NaClDescUnref(epndp);
   return retval;
 }
 
