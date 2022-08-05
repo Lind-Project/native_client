@@ -106,7 +106,7 @@ struct NaClDesc *GetDescFromCagetable(struct NaClApp *nap, int fd) {
     return NULL;
   }
 
-  int naclfd = fd_cage_table[nap->cage_id][fd]; // search fd_cage_table using using user_fd and cage_id
+  int naclfd = fd_cage_table[nap->cage_id][fd];
   if (naclfd < 0) {
     return NULL;
   }
@@ -6024,6 +6024,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
   }
 
   ret = lind_epoll_ctl(epfd, op, fd, eventsysaddr, nap->cage_id);
+  //Inside the epoll_event struct, there is a fd that is being left as an untranslated userfd so it does not have to be translated back after the lind call.
 cleanup:
   NaClDescUnref(ndpe);
   NaClDescUnref(ndp);
@@ -6037,19 +6038,17 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   struct epoll_event *eventsysaddr;
   int retval = 0;
   int nfds;
-  int lind_fd;
   int lindepfd;
   struct epoll_event *sys_event_array;
   struct NaClDesc * epndp;
-  struct NaClDesc * eventndp;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d,)\n",
           nap->cage_id, (uintptr_t) natp, epfd, (uintptr_t) events, maxevents, timeout);
 
   epndp = GetDescFromCagetable(nap, epfd);
   if (!epndp) {
-    NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
-    return -NACL_ABI_EBADF;
+      NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
+      return -NACL_ABI_EBADF;
   }
 
   lindepfd = NaClDesc2Lindfd(epndp);
@@ -6063,7 +6062,8 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   }
 
   nfds = lind_epoll_wait(lindepfd, sys_event_array, maxevents, timeout, nap->cage_id);
-
+  //There is a fd inside the epoll_event struct which is being left as an untranslated userfd since it isnt needed as lind_fd.  This saves time since it does not have to 
+  //translated back after the lind call.
   retval = nfds;
 
 cleanup:
