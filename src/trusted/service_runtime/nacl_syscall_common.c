@@ -6024,6 +6024,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
   }
 
   ret = lind_epoll_ctl(epfd, op, fd, eventsysaddr, nap->cage_id);
+  //Inside the epoll_event struct, there is a fd that is being left as an untranslated userfd so it does not have to be translated back after the lind call.
 cleanup:
   NaClDescUnref(ndpe);
   NaClDescUnref(ndp);
@@ -6037,54 +6038,36 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   struct epoll_event *eventsysaddr;
   int retval = 0;
   int nfds;
-  int hfd;
-  struct epoll_event *pfds;
-  struct NaClDesc * ndp;
+  int lindepfd;
+  struct epoll_event *sys_event_array;
+  struct NaClDesc * epndp;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d,)\n",
           nap->cage_id, (uintptr_t) natp, epfd, (uintptr_t) events, maxevents, timeout);
 
-  ndp = GetDescFromCagetable(nap, epfd);
-  if (!ndp) {
-    NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
-    return -NACL_ABI_EBADF;
+  epndp = GetDescFromCagetable(nap, epfd);
+  if (!epndp) {
+      NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
+      return -NACL_ABI_EBADF;
   }
 
-  epfd = NaClDesc2Lindfd(ndp);
+  lindepfd = NaClDesc2Lindfd(epndp);
 
-  pfds = (struct epoll_event*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) events, sizeof(eventsysaddr), NACL_ABI_PROT_WRITE);
+  sys_event_array = (struct epoll_event*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) events, sizeof(eventsysaddr), NACL_ABI_PROT_WRITE);
 
-  if ((void*) kNaClBadAddress == pfds) {
+  if ((void*) kNaClBadAddress == sys_event_array) {
     NaClLog(2, "NaClSysEpollCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
     retval = -NACL_ABI_EFAULT;
     goto cleanup;
   }
 
-  nfds = lind_epoll_wait(epfd, pfds, maxevents, timeout, nap->cage_id);
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for(int i = 0; i < nfds; ++i) {
-      for(int j = 0; j < 1024; ++j) {
-          ndp = NaClGetDescMu(nap, j);
-          if(!ndp) {
-              NaClDescSafeUnref(ndp);
-              continue;
-          }
-          hfd = ((struct NaClDescIoDesc *)ndp)->hd->d;
-          if(pfds[i].data.fd == hfd) {
-              pfds[i].data.fd = j;
-          }
-          NaClDescUnref(ndp);
-      }
-  }
-  
-  NaClFastMutexUnlock(&nap->desc_mu);
-
+  nfds = lind_epoll_wait(lindepfd, sys_event_array, maxevents, timeout, nap->cage_id);
+  //There is a fd inside the epoll_event struct which is being left as an untranslated userfd since it isnt needed as lind_fd.  This saves time since it does not have to 
+  //translated back after the lind call.
   retval = nfds;
 
 cleanup:
-  NaClDescUnref(ndp);
+  NaClDescUnref(epndp);
   return retval;
 }
 
