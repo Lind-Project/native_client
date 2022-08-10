@@ -1598,6 +1598,34 @@ cleanup:
   return retval;
 }
 
+int32_t NaClSysFchmod(struct NaClAppThread *natp,
+                     int                   fd,
+                     int                  mode) {
+  struct NaClApp *nap = natp->nap;
+  struct NaClDesc *ndp;
+  int32_t        retval;
+
+  NaClLog(2, "Cage %d Entered NaClSysFchmod(0x%08"NACL_PRIxPTR", "
+          "%d, %d)\n", nap->cage_id, (uintptr_t) natp, fd, mode);
+  if (!NaClAclBypassChecks) {
+    return  -NACL_ABI_EACCES;
+  }
+
+  ndp = GetDescFromCagetable(nap, fd);
+  if (!ndp) {
+    NaClLog(2, "NaClSysFchmod was passed an unrecognizable file descriptor, returning %d\n", fd);
+    return -NACL_ABI_EBADF;
+  }
+
+  fd = NaClDesc2Lindfd(ndp);
+  retval = lind_fchmod(fd, mode, nap->cage_id);
+
+  if (retval > 0) retval = 0;
+  NaClDescUnref(ndp);
+  return retval;
+}
+
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size) {
