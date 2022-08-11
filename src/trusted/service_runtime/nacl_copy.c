@@ -23,9 +23,7 @@ int NaClCopyInFromUser(struct NaClApp *nap,
   if (kNaClBadAddress == src_sys_addr) {
     return 0;
   }
-  NaClCopyTakeLock(nap);
   memcpy((void *) dst_sys_ptr, (void *) src_sys_addr, num_bytes);
-  NaClCopyDropLock(nap);
 
   return 1;
 }
@@ -48,7 +46,6 @@ int NaClCopyInFromUserAndDropLock(struct NaClApp *nap,
   }
 
   memcpy((void *) dst_sys_ptr, (void *) src_sys_addr, num_bytes);
-  NaClCopyDropLock(nap);
 
   return 1;
 }
@@ -78,7 +75,6 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
    * Exit conditions are: 1) page is non-valid, 2) we've found a NULL character, 3) we've copied up to the destination length
    */
 
-  NaClCopyTakeLock(nap);
   while (1) {
     uintptr_t page_end = NaClVmmapCheckAddrMapping( &nap->mem_map, check_addr >> NACL_PAGESHIFT, 1, NACL_ABI_PROT_READ);
     if (!page_end) break;
@@ -91,8 +87,6 @@ int NaClCopyInFromUserZStr(struct NaClApp *nap,
     if (bytes_copied == dst_buffer_bytes) break;
     check_addr = (page_end + 1) << NACL_PAGESHIFT;
   }
-  NaClCopyDropLock(nap);
-
 
   /* POSIX strncpy pads with NUL characters */
   if (dst_buffer[dst_buffer_bytes - 1] != '\0') {
@@ -113,9 +107,7 @@ int NaClCopyOutToUser(struct NaClApp  *nap,
   if (kNaClBadAddress == dst_sys_addr) {
     return 0;
   }
-  NaClCopyTakeLock(nap);
   memcpy((void *) dst_sys_addr, src_sys_ptr, num_bytes);
-  NaClCopyDropLock(nap);
 
   return 1;
 }
