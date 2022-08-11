@@ -1620,7 +1620,6 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
   fd = NaClDesc2Lindfd(ndp);
   retval = lind_fchmod(fd, mode, nap->cage_id);
 
-  if (retval > 0) retval = 0;
   NaClDescUnref(ndp);
   return retval;
 }
