@@ -21,6 +21,7 @@
 #define NACL_sys_nameservice             2
 #define NACL_sys_unlink                  4
 #define NACL_sys_link                    5
+#define NACL_sys_rename                  6
 
 #define NACL_sys_dup                     8
 #define NACL_sys_dup2                    9
@@ -71,6 +72,11 @@
 #define NACL_sys_getgid                 52
 #define NACL_sys_getegid                53
 #define NACL_sys_flock                  54
+
+#define NACL_sys_shmget                 56
+#define NACL_sys_shmat                  57
+#define NACL_sys_shmdt                  58
+#define NACL_sys_shmctl                 59
 
 #define NACL_sys_imc_makeboundsock      60
 #define NACL_sys_imc_accept             61
@@ -158,6 +164,8 @@
 #define NACL_sys_listen                 143
 #define NACL_sys_getsockname            144
 #define NACL_sys_getpeername            145
+#define NACL_sys_getifaddrs             146
+
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159

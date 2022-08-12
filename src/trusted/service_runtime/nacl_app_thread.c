@@ -39,6 +39,16 @@
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
 int cagecount;
+extern bool use_lkm;
+
+struct NaClThread reaper;
+
+struct NaClMutex teardown_mutex;
+struct NaClCondVar teardown_cv;
+struct NaClAppThread *natp_to_teardown = NULL;
+struct NaClMutex reapermut;
+struct NaClCondVar reapercv;
+bool reap = true;
 
 /*
  * dynamically allocate and initilize a copy
@@ -63,10 +73,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   mod_status = &nap_child->module_load_status;
   nap_child->tl_type = tl_type;     /* Set nap's thread launch type */
-  nap_child->argc = nap_parent->argc;
-  nap_child->argv = nap_parent->argv;
-  nap_child->binary = nap_parent->binary;
-  nap_child->nacl_file = nap_parent->nacl_file ? nap_parent->nacl_file : LD_FILE;
+  nap_child->nacl_file = LD_FILE;
   nap_child->enable_exception_handling = nap_parent->enable_exception_handling;
   nap_child->validator_stub_out_mode = nap_parent->validator_stub_out_mode;
   nap_child->ignore_validator_result = nap_parent->ignore_validator_result;
@@ -110,14 +117,30 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
   NaClXMutexUnlock(&nap_parent->children_mu);
 
-  NaClLog(1, "child_cage_id = %d, cage_id = %d\n", child_cage_id, nap_child->cage_id);
-  //Prevalidate forked nexe to remove loading time. We know it's valid because the parent is
-  nap_child->main_exe_prevalidated = 1;
-  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-    NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-    NaClLog(LOG_FATAL, "%s\n%s\n",
-                       "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-                       "or a corrupt nexe file may be responsible for this error.");
+  NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
+  if(!use_lkm || tl_type != THREAD_LAUNCH_FORK) {
+    //exec not prevalidated
+    if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
+      NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+      NaClLog(LOG_FATAL, "%s\n%s\n",
+                         "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                         "or a corrupt nexe file may be responsible for this error.");
+    }
+  } else {
+    //we already know the fork child has an ok nexe, and we don't even need to load it
+    nap_child->stack_size = nap_parent->stack_size;
+    nap_child->static_text_end = nap_parent->static_text_end;
+    nap_child->rodata_start = nap_parent->rodata_start;
+    nap_child->data_start = nap_parent->data_start;
+    nap_child->break_addr = nap_parent->break_addr;
+    nap_child->data_end = nap_parent->data_end;
+    nap_child->bundle_size = NACL_INSTR_BLOCK_SIZE;
+    nap_child->initial_entry_pt = nap_parent->initial_entry_pt;
+    nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
+    nap_child->text_shm = nap_parent->text_shm;
+    NaClErrorCode err = NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
+    if (err != LOAD_OK) NaClLog(LOG_FATAL, "%s\n", "NaClAllocAddrSpaceAslr failed. Terminating.");
+    NaClInitSwitchToApp(nap_child); 
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
@@ -133,15 +156,9 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
   }
-  if (!NaClAppLaunchServiceThreads(nap_child)) {
-    NaClLog(LOG_FATAL, "Launch service threads failed\n");
-  }
-
   
   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  NaClXMutexLock(&nap_parent->mu);
-
-  for (int fd = 0; fd <= FILE_DESC_MAX; fd++) {
+  for (int fd = 0; fd < FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
     int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
@@ -160,6 +177,12 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
     struct NaClHostDesc *parent_hd = self->hd;
 
+    /* If we're creating an exec cage and we have CLOEXEC set, dont pass these on */
+    if ((tl_type == THREAD_LAUNCH_EXEC) && (parent_hd->flags & NACL_ABI_O_CLOEXEC)) {
+      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
+      continue;
+    }
+
     /* Create and set vars for child hd */
     struct NaClHostDesc *child_hd;
     child_hd = malloc(sizeof(*child_hd));
@@ -175,18 +198,42 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     /* Create and set new NaClDesc from Child HD in Child nap */
     int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
 
-    /* We've got to put that parent NaClDescriptor back in there... */
-    NaClSetDesc(nap_parent, parent_host_fd, parent_nd);
+    NaClDescUnref(parent_nd);
 
     /* Set childs cage table with the current fd to the old parent host fd */
     fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
 
 
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd);
+    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
   }
-  NaClXMutexUnlock(&nap_parent->mu);
 
   return nap_child;
+}
+
+void NaClAppCloseFDs(struct NaClApp *nap) {
+  
+  NaClFastMutexLock(&nap->desc_mu);
+
+  for (int i = 0; i < FILE_DESC_MAX; i++) {
+    /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
+    int fd = fd_cage_table[nap->cage_id][i];
+
+    /* If we have an fd and nacl descriptor, lets close it */
+    if (fd >= 0) {
+      struct NaClDesc *ndp = NULL;
+      ndp = NaClGetDescMu(nap, fd);
+      if (ndp) {
+        NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
+        NaClSetDescMu(nap, fd, NULL);
+        NaClDescUnref(ndp);
+      }
+    }
+
+    /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
+    fd_cage_table[nap->cage_id][i] = NACL_BAD_FD;
+  }
+
+  NaClFastMutexUnlock(&nap->desc_mu);
 }
 
 void WINAPI NaClAppThreadLauncher(void *state) {
@@ -209,7 +256,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   thread_idx = NaClGetThreadIdx(natp);
   CHECK(thread_idx > 0 && thread_idx < NACL_THREAD_MAX);
   NaClTlsSetCurrentThread(natp);
-  nacl_user[thread_idx] = &natp->user;
   #if NACL_WINDOWS
     nacl_thread_ids[thread_idx] = GetCurrentThreadId();
   #elif NACL_OSX
@@ -319,23 +365,13 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   }
 }
 
-/*
- * preconditions:
- * * natp must be thread_self(), called while holding no locks.
- */
-void NaClAppThreadTeardown(struct NaClAppThread *natp) {
+
+void NaClAppThreadTeardownChildren(struct NaClAppThread *natp) {
   struct NaClApp  *nap = natp->nap;
   struct NaClApp  *nap_parent = nap->parent;
-  size_t          thread_idx;
 
-  /*
-   * mark this thread as dead; doesn't matter if some other thread is
-   * asking us to commit suicide.
-   */
-  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
-
-    /* remove self from parent's list of children */
-  if (nap_parent) {
+  /* remove self from parent's list of children */
+  if (nap->parent) {
     NaClXMutexLock(&nap_parent->children_mu);
     nap_parent->num_children--;
     NaClLog(1, "[parent %d] new child count: %d\n", nap_parent->cage_id, nap_parent->num_children);
@@ -345,14 +381,44 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     else {
       NaClLog(1, "[NaClAppThreadTeardown][parent %d] removed cage: cage_id = %d\n", nap_parent->cage_id, nap->cage_id);
     }
+
     NaClXCondVarBroadcast(&nap_parent->children_cv);
     NaClXMutexUnlock(&nap_parent->children_mu);
+  }
 
+  /* Sadly we've created orphans :'(
+   * Remove parent from any children, and hope they don't become the Batman
+   */
+  NaClXMutexLock(&nap->children_mu);
+  for (size_t i = 0; i < (&nap->children)->num_entries; i++) {
+    struct NaClApp* nap_child = (struct NaClApp *) DynArrayGet(&nap->children, i);
+    if (nap_child) nap_child->parent = NULL;
+  }
+  NaClXMutexUnlock(&nap->children_mu);
+
+  // decrease our counter for additional cages
+  if (nap->tl_type != THREAD_LAUNCH_MAIN) {
     NaClXMutexLock(&ccmut);
     cagecount--;
-    NaClCondVarBroadcast(&cccv);
+    NaClXCondVarBroadcast(&cccv);
     NaClXMutexUnlock(&ccmut);
-  }
+  } 
+}
+
+/*
+ * preconditions:
+ * * natp must be thread_self(), called while holding no locks.
+ */
+void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) {
+  struct NaClApp  *nap = natp->nap;
+  size_t          thread_idx;
+
+
+  /*
+   * mark this thread as dead; doesn't matter if some other thread is
+   * asking us to commit suicide.
+   */
+  NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
@@ -365,8 +431,12 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
     nap->debug_stub_callbacks->thread_exit_hook(natp);
   }
 
-  NaClLog(3, " getting thread table lock\n");
-  NaClXMutexLock(&nap->threads_mu);
+  // if we're not active, we're getting cleaned up so we lock outside for efficiency
+  if (active_thread) {
+    NaClLog(3, " getting thread table lock\n");
+    NaClXMutexLock(&nap->threads_mu);
+  }
+
   NaClLog(3, " getting thread lock\n");
   NaClXMutexLock(&natp->mu);
 
@@ -379,41 +449,68 @@ void NaClAppThreadTeardown(struct NaClAppThread *natp) {
    */
   thread_idx = NaClGetThreadIdx(natp);
 
-  /*
-   * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-   * fault if another syscall is made with this thread_idx.  In
-   * particular, thread_idx 0 is never used.
-   */
-  nacl_user[thread_idx] = NULL;
-#if NACL_WINDOWS
-  nacl_thread_ids[thread_idx] = 0;
-#elif NACL_OSX
-  NaClClearMachThreadForThreadIndex(thread_idx);
-#endif
+
+  if (natp->is_cage_mainthread) {
+    // handle children upon exit
+    NaClAppThreadTeardownChildren(natp);
+
+    /*
+    * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+    * fault if another syscall is made with this thread_idx.  In
+    * particular, thread_idx 0 is never used.
+    */
+    nacl_user[thread_idx] = NULL;
+  #if NACL_WINDOWS
+    nacl_thread_ids[thread_idx] = 0;
+  #elif NACL_OSX
+    NaClClearMachThreadForThreadIndex(thread_idx);
+  #endif
+  }
   /*
    * Unset the TLS variable so that if a crash occurs during thread
    * teardown, the signal handler does not dereference a dangling
    * NaClAppThread pointer.
    */
-  NaClTlsSetCurrentThread(NULL);
+  if (active_thread) NaClTlsSetCurrentThread(NULL);
 
   NaClLog(3, " removing thread from thread table\n");
   /* Deallocate the ID natp->thread_num. */
   NaClRemoveThreadMu(nap, natp->thread_num);
   NaClLog(3, " unlocking thread\n");
   NaClXMutexUnlock(&natp->mu);
-  NaClLog(3, " unlocking thread table\n");
-  NaClXMutexUnlock(&nap->threads_mu);
-  NaClLog(3, " unregistering signal stack\n");
-  NaClSignalStackUnregister();
+
+  // we can only unregister the sig stack if a thread is actively
+  // shutting itself down
+  if (active_thread) {
+    NaClLog(3, " unlocking thread table\n");
+    NaClXMutexUnlock(&nap->threads_mu);
+    NaClLog(3, " unregistering signal stack\n");
+    NaClSignalStackUnregister();
+  }
+
+  if (natp->is_cage_mainthread) {
+    // we have to wait for NaClWaitForThreadToExit on Main/Exec
+    if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
+    NaClAppDtor(nap);
+    natp->nap = NULL;
+  }
+
   NaClLog(3, " freeing thread object\n");
   NaClAppThreadDelete(natp);
-  NaClLog(3, " NaClThreadExit\n");
-
-  NaClThreadExit();
-  NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
-  /* NOTREACHED */
+  
+  // if were handling threads, we'll call pthread_cancel from outside, otherwise lets leave
+  if (active_thread) {
+    NaClLog(3, " NaClThreadExit\n");
+    NaClThreadExit();
+    NaClLog(LOG_FATAL, "NaClAppThreadTeardown: NaClThreadExit() should not return\n");
+  }
 }
+
+
+void NaClAppThreadTeardown(struct NaClAppThread *natp) {
+  NaClAppThreadTeardownInner(natp, true);
+}
+
 
 struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
                                         uintptr_t      usr_entry,
@@ -569,7 +666,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
                        uintptr_t                usr_entry,
                        uintptr_t                sys_stack_ptr,
                        uint32_t                 user_tls1,
-                       uint32_t                 user_tls2){
+                       uint32_t                 user_tls2,
+                       bool                     cage_thread){
 
 
   void *stack_ptr_parent;
@@ -610,9 +708,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
 
   if (!natp_child) return 0;
 
-  if (tl_type == THREAD_LAUNCH_MAIN){
-    nap_child->parent = NULL;
-  }
+  if (tl_type == THREAD_LAUNCH_MAIN) nap_child->parent = NULL;
+
   else if (tl_type == THREAD_LAUNCH_FORK) {
     NaClForkThreadContextSetup(natp_parent, natp_child, stack_ptr_parent, stack_ptr_child);
   }
@@ -621,7 +718,7 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   /*
    * setup TLS slot in the global nacl_user array for Fork/Exec
    */
-  if (tl_type != THREAD_LAUNCH_MAIN) {
+  if (!cage_thread && tl_type != THREAD_LAUNCH_MAIN) {
     natp_child->user.tls_idx = nap_child->cage_id;
     if (nacl_user[natp_child->user.tls_idx]) {
       NaClLog(1, "nacl_user[%u] not NULL (%p)\n)",
@@ -632,6 +729,17 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     nacl_user[natp_child->user.tls_idx] = &natp_child->user;
     NaClTlsSetTlsValue1(natp_child, user_tls1);
     NaClTlsSetTlsValue2(natp_child, user_tls2);
+  }
+
+
+  if (!cage_thread) {
+    natp_child->is_cage_mainthread = true;
+    natp_child->cage_mainthread = natp_child;
+    natp_child->tearing_down = false;
+  } 
+  else {
+    natp_child->is_cage_mainthread = false;
+    natp_child->cage_mainthread = natp_parent->cage_mainthread;
   }
 
   /*
@@ -690,6 +798,125 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClMutexDtor(&natp->mu);
   NaClAlignedFree(natp);
 }
+
+
+/**
+ * The following functions are used to reap any cages which have received a fatal signal.
+ * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
+ * a faulted thread is caught in the signal handler (nacl_signal.c)
+ * 
+ * The fault teardown function will cycle through all child threads in cage,
+ * tear them down, and call pthread_cancel upon them
+ * 
+ * Finally it will exit the parent thread and signal that the cage has exited with SIGKILL
+ * 
+ * Note: We implement it this way because
+ * 1. We can't fully teardown threads within the signal handler since
+ *  a. We can't unregister/unmap the handler while within itself
+ *  b. Most libc functions are invalid within the handler
+ * 2. We need to not only teardown the faulting thread itself, but any other threads that have been
+ *    launched wtihin that cage.
+ */
+
+
+void InitFatalThreadTeardown(void) {
+  if (!NaClMutexCtor(&teardown_mutex)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
+  }
+  if (!NaClCondVarCtor(&teardown_cv)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper cv");
+  }
+  if (!NaClMutexCtor(&reapermut)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
+  }
+  if (!NaClCondVarCtor(&reapercv)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper cv");
+  }
+}
+
+void DestroyFatalThreadTeardown(void) {
+  NaClMutexDtor(&teardown_mutex);
+  NaClCondVarDtor(&teardown_cv);
+  NaClMutexDtor(&reapermut);
+  NaClCondVarDtor(&reapercv);
+}
+
+void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
+    if (natp_to_teardown == natp) return;
+
+    /* in the case of multiple threads fatally exiting,
+     * we need to queue them here so that only one exits at a time
+     * the first CV wait here keeps them from accessing the reaper mutex simultaneously
+     */
+    NaClXMutexLock(&teardown_mutex);
+    while (natp_to_teardown) {
+      NaClXCondVarWait(&teardown_cv, &teardown_mutex);
+    }
+
+    NaClXMutexLock(&reapermut);
+    natp_to_teardown = natp;
+    natp->tearing_down = true;
+    NaClXCondVarSignal(&reapercv);
+    NaClXMutexUnlock(&reapermut);
+
+    NaClXMutexUnlock(&teardown_mutex);
+}
+
+void FatalThreadTeardown(void) {
+  struct NaClThread *thread;
+  int status = 137; // Fatal error signal SIGKILL
+
+  struct NaClApp *nap = natp_to_teardown->nap;
+
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
+
+  for(int i = 0; i < num_threads; i++) {
+
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp_to_teardown) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+      NaClAppThreadTeardownInner(natp_child, false);
+      NaClThreadCancel(child_thread);
+    }
+  }
+  
+  lind_exit(status, nap->cage_id);
+  (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+  thread = &natp_to_teardown->host_thread;
+  NaClXMutexUnlock(&nap->threads_mu);
+
+  NaClAppThreadTeardownInner(natp_to_teardown, false);
+  NaClThreadCancel(thread);
+  natp_to_teardown = NULL;
+  NaClXCondVarSignal(&teardown_cv);
+}
+
+void ThreadReaper(void* arg) {
+  (void) arg;
+  NaClXMutexLock(&reapermut);
+  while (reap) {
+    NaClXCondVarWait(&reapercv, &reapermut);
+    if (reap) FatalThreadTeardown();
+  }
+  NaClXMutexUnlock(&reapermut);
+}
+
+void LaunchThreadReaper(void) {
+  InitFatalThreadTeardown();
+  if (!NaClThreadCtor(&reaper, ThreadReaper, NULL, NACL_KERN_STACK_SIZE)) {
+    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize reaper");
+  }
+}
+
+void DestroyReaper(void) {
+  reap = false;
+  NaClXCondVarSignal(&reapercv);
+  DestroyFatalThreadTeardown();
+  NaClThreadCancel(&reaper);
+}
+
 
 void NaClAppThreadPrintInfo(struct NaClAppThread *natp) {
   NaClLog(1, "[NaClAppThreadPrintInfo] "

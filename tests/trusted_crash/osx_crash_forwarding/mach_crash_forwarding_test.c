@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
   app.tl_type = THREAD_LAUNCH_MAIN;
 
   CHECK(NaClCreateThread(NULL, &app, 0, NULL, NULL));
-  CHECK(NaClWaitForMainThreadToExit(&app) == 0);
+  CHECK(NaClWaitForThreadToExit(&app) == 0);
 
   if (g_expect_crash) {
     NaClLog(LOG_FATAL, "Did not expect the guest code to exit\n");

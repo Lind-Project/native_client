@@ -353,7 +353,16 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     return;
   }
 
-  NaClSignalHandleUntrusted(sig, &sig_ctx, is_untrusted);
+  if (natp == NULL) {
+      char tmp[128];
+    SNPRINTF(tmp, sizeof(tmp),
+        "\n** User exited program with signal %d.\n",
+        sig);
+    NaClSignalErrorMessage(tmp);
+    NaClExit(-sig);
+  }
+
+  NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
   FindAndRunHandler(sig, info, uc);
 }

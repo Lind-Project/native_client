@@ -7,6 +7,7 @@
 /*
  * NaCl Server Runtime threads implementation layer.
  */
+#undef _GNU_SOURCE
 
 #include <string.h>
 #include <stdlib.h>
@@ -136,3 +137,9 @@ void NaClThreadExit(void) {
 void NaClThreadYield(void) {
   sched_yield();
 }
+
+void NaClThreadCancel(struct NaClThread *ntp) {
+  pthread_cancel(ntp->tid);
+}
+
+#define _GNU_SOURCE

@@ -160,7 +160,7 @@ SYSCALL_LIST = [
     ('NACL_sys_lseek', 'NaClSysLseek',
      ['int d', 'nacl_abi_off_t *offp', 'int whence']),
     ('NACL_sys_ioctl', 'NaClSysIoctl',
-     ['int d', 'int request', 'void *arg']),
+     ['int d', 'unsigned long request', 'void *arg_ptr']),
     ('NACL_sys_fstat', 'NaClSysFstat',
      ['int d', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_stat', 'NaClSysStat',
@@ -192,7 +192,7 @@ SYSCALL_LIST = [
     ('NACL_sys_mkdir', 'NaClSysMkdir', ['uint32_t path', 'int mode']),
     ('NACL_sys_rmdir', 'NaClSysRmdir', ['uint32_t path']),
     ('NACL_sys_chdir', 'NaClSysChdir', ['uint32_t path']),
-    ('NACL_sys_getcwd', 'NaClSysGetcwd', ['uint32_t buffer', 'int len']),
+    ('NACL_sys_getcwd', 'NaClSysGetcwd', ['char *buf', 'size_t size']),
     ('NACL_sys_link', 'NaClSysLink', ['char *to' , 'char *from']),
     ('NACL_sys_unlink', 'NaClSysUnlink', ['char *path']),
     ('NACL_sys_imc_makeboundsock', 'NaClSysImcMakeBoundSock',
@@ -266,6 +266,7 @@ SYSCALL_LIST = [
     ('NACL_sys_sigprocmask', 'NaClSysSigProcMask', ['int how', 'const void *set', 'void *oldset']),
     ('NACL_sys_lstat', 'NaClSysLStat', ['const char *path', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_gethostname', 'NaClSysGethostname', ['char *name', 'size_t len']),
+    ('NACL_sys_getifaddrs', 'NaClSysGetifaddrs', ['char *buf', 'size_t len']),
     ('NACL_sys_socket', 'NaClSysSocket', ['int domain', 'int type', 'int protocol']),
     ('NACL_sys_send', 'NaClSysSend', ['int sockfd', 'size_t len', 'int flags', 'const void *buf']),
     ('NACL_sys_sendto', 'NaClSysSendto', 
@@ -286,7 +287,7 @@ SYSCALL_LIST = [
     ('NACL_sys_getsockname', 'NaClSysGetsockname', ['int sockfd', 'struct sockaddr * addr', 'socklen_t * addrlen']),
     ('NACL_sys_getpeername', 'NaClSysGetpeername', ['int sockfd', 'struct sockaddr * addr', 'socklen_t * addrlen']),
     ('NACL_sys_access', 'NaClSysAccess', ['const char *file', 'int mode']),
-    ('NACL_sys_bind', 'NaClSysBind', ['int sockfd', 'socklen_t addrlen', 'const struct sockaddr *addr']),
+    ('NACL_sys_bind', 'NaClSysBind', ['int sockfd', 'const struct sockaddr *addr', 'socklen_t addrlen']),
     ('NACL_sys_listen', 'NaClSysListen', ['int sockfd', 'int backlog']),
     ('NACL_sys_fcntl_get', 'NaClSysFcntlGet', ['int fd', 'int cmd']),
     ('NACL_sys_fcntl_set', 'NaClSysFcntlSet', ['int fd', 'int cmd', 'long set_op']),
@@ -294,7 +295,13 @@ SYSCALL_LIST = [
     ('NACL_sys_epoll_create', 'NaClSysEpollCreate', ['int size']),
     ('NACL_sys_epoll_ctl', 'NaClSysEpollCtl', ['int epfd', 'int op', 'int fd', 'struct epoll_event *event']),
     ('NACL_sys_epoll_wait', 'NaClSysEpollWait', ['int epfd', 'struct epoll_event *events', 'int maxevents', 'int timeout']),
-    ('NACL_sys_select', 'NaClSysSelect', ['int nfds', 'fd_set *readfds', 'fd_set *writefds', 'fd_set *exceptfds', 'struct timeval *timeout'])
+    ('NACL_sys_select', 'NaClSysSelect', ['int nfds', 'fd_set *readfds', 'fd_set *writefds', 'fd_set *exceptfds', 'struct timeval *timeout']),
+    ('NACL_sys_shmget', 'NaClSysShmget', ['int key', 'size_t size', 'int shmflg']),
+    ('NACL_sys_shmat', 'NaClSysShmat', ['int shmid', 'void *shmaddr', 'int shmflg']),
+    ('NACL_sys_shmdt', 'NaClSysShmdt', ['void *shmaddr']),
+    ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct lind_shmid_ds *buf']),
+    ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
+    ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath'])
     ]
 
 

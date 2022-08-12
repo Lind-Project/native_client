@@ -82,9 +82,9 @@ int main(int argc, char **argv) {
   CHECK(NaClCreateThread(NULL, &app[0], 2, domain1_args, NULL));
   CHECK(NaClCreateThread(NULL, &app[1], 2, domain2_args, NULL));
 
-  return_code = NaClWaitForMainThreadToExit(&app[0]);
+  return_code = NaClWaitForThreadToExit(&app[0]);
   CHECK(return_code == 101);
-  return_code = NaClWaitForMainThreadToExit(&app[1]);
+  return_code = NaClWaitForThreadToExit(&app[1]);
   CHECK(return_code == 102);
 
   /*

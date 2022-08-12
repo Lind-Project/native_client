@@ -53,6 +53,7 @@ struct NaClVmmap {
   struct NaClVmmapEntry **vmentry;       /* must not overlap */
   size_t                nvalid, size;
   int                   is_sorted;
+  struct NaClVmmapEntry *cached_entry;
 };
 
 void NaClVmmapDebug(struct NaClVmmap  *self,
@@ -126,6 +127,14 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
                                   uintptr_t         page_num,
                                   size_t            npages,
                                   int               prot);
+
+/*
+ * NaClVmmapCheckAddrMapping checks whether pages are mapped for an address
+ */
+int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot);
 
 /*
  * NaClVmmapFindPage and NaClVmmapFindPageIter only works if pnum is

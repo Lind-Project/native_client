@@ -19,71 +19,62 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 
 #define BLANKARGS \
-    int retval; \
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
     arg2.dispatch_ulong = 0; \
     arg3.dispatch_ulong = 0; \
     arg4.dispatch_ulong = 0; \
     arg5.dispatch_ulong = 0; \
-    arg6.dispatch_ulong = 0//no semicolon here to force macro caller to place one for neatness
+    arg6.dispatch_ulong = 0 //no semicolon here to force macro caller to place one for neatness
 
-#define GENERIC_ERROR_HANDLER   (retval < 0)
-#define MMAP_ERROR_HANDLER      ((unsigned) retval > (0xffffffffu - 256))
-
-#define DISPATCH_SYSCALL_0_inner(callnum, errhandler) \
-    retval = dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6); \
-    if (errhandler) { \
-        errno = -retval; \
-        retval = -1; \
-    }  \
-    return retval //no semicolon here to force macro caller to place one for neatness
-#define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, errhandler) \
+#define DISPATCH_SYSCALL_0_inner(callnum) \
+    return dispatcher(cageid, callnum, arg1, arg2, arg3, arg4, arg5, arg6) //no semicolon here to force macro caller to place one for neatness
+#define DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val) \
     arg1.dispatch_ ## arg1type = arg1val; \
-    DISPATCH_SYSCALL_0_inner(callnum, errhandler)
-#define DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, errhandler) \
+    DISPATCH_SYSCALL_0_inner(callnum)
+#define DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val) \
     arg2.dispatch_ ## arg2type = arg2val; \
-    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, errhandler)
-#define DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, errhandler) \
+    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val)
+#define DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val) \
     arg3.dispatch_ ## arg3type = arg3val; \
-    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, errhandler)
+    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val)
 #define DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, errhandler) \
+                                 arg4type, arg4val) \
     arg4.dispatch_ ## arg4type = arg4val; \
-    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, errhandler)
+    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val)
 #define DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, arg5type, arg5val, errhandler) \
+                                 arg4type, arg4val, arg5type, arg5val) \
     arg5.dispatch_ ## arg5type = arg5val; \
-    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, errhandler)
+    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val)
 #define DISPATCH_SYSCALL_6_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                                 arg4type, arg4val, arg5type, arg5val, arg6type, arg6val, errhandler) \
+                                 arg4type, arg4val, arg5type, arg5val, arg6type, arg6val) \
     arg6.dispatch_ ## arg6type = arg6val; \
-    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val, errhandler)
+    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val)
 
 
 #define DISPATCH_SYSCALL_6(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
                            arg4type, arg4val, arg5type, arg5val, arg6type, arg6val) \
     BLANKARGS; \
     DISPATCH_SYSCALL_6_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, \
-                             arg4type, arg4val, arg5type, arg5val, arg6type, arg6val, GENERIC_ERROR_HANDLER)
+                             arg4type, arg4val, arg5type, arg5val, arg6type, arg6val)
 #define DISPATCH_SYSCALL_5(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_5_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, arg5type, arg5val)
 #define DISPATCH_SYSCALL_4(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_4_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, arg4type, arg4val)
 #define DISPATCH_SYSCALL_3(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_3_inner(callnum, arg1type, arg1val, arg2type, arg2val, arg3type, arg3val)
 #define DISPATCH_SYSCALL_2(callnum, arg1type, arg1val, arg2type, arg2val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_2_inner(callnum, arg1type, arg1val, arg2type, arg2val)
 #define DISPATCH_SYSCALL_1(callnum, arg1type, arg1val) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_1_inner(callnum, arg1type, arg1val)
 #define DISPATCH_SYSCALL_0(callnum) \
     BLANKARGS; \
-    DISPATCH_SYSCALL_0_inner(callnum, GENERIC_ERROR_HANDLER)
+    DISPATCH_SYSCALL_0_inner(callnum)
 
 
 int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid) {
@@ -102,6 +93,10 @@ int lind_link (const char *from, const char *to, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_link, cstr, from, cbuf, to);
 }
 
+int lind_rename (const char *oldpath, const char *newpath, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_rename, cstr, oldpath, cstr, newpath);
+}
+
 int lind_access (const char *file, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_access, cstr, file, int, mode);
 }
@@ -118,7 +113,11 @@ int lind_rmdir (const char *path, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_rmdir, cstr, path);
 }
 
-int lind_xstat (const char *path, struct stat *buf, int cageid) {
+int lind_chmod (const char *path, int mode, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_chmod, cstr, path, int, mode);
+}
+
+int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_xstat, cstr, path, statstruct, buf);
 }
 
@@ -142,7 +141,7 @@ int lind_lseek (int fd, off_t offset, int whence, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_lseek, int, fd, off_t, offset, int, whence);
 }
 
-int lind_fxstat (int fd, struct stat *buf, int cageid) {
+int lind_fxstat (int fd, struct lind_stat *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fxstat, int, fd, statstruct, buf);
 }
 
@@ -174,6 +173,10 @@ int lind_fcntl_set (int fd, int cmd, long set_op, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_fcntl, int, fd, int, cmd, long, set_op);
 }
 
+int lind_ioctl (int fd, unsigned long request, void *arg_ptr, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_ioctl, int, fd, ulong, request, mutcbuf, arg_ptr);
+}
+
 int lind_bind (int sockfd, const struct sockaddr *addr, socklen_t addrlen, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_net_bind, int, sockfd, constsockaddrstruct, addr, socklen_t, addrlen);
 }
@@ -195,7 +198,7 @@ int lind_recvfrom (int sockfd, const void *buf, size_t len, int flags, struct so
 }
 
 int lind_accept(int sockfd, struct sockaddr *sockaddr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_recvfrom, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen);
+    DISPATCH_SYSCALL_3(LIND_safe_net_accept, int, sockfd, sockaddrstruct, sockaddr, socklen_t_ptr, addrlen);
 }
 
 int lind_connect (int sockfd, const struct sockaddr *src_addr, socklen_t addrlen, int cageid) {
@@ -229,23 +232,31 @@ int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cage
     DISPATCH_SYSCALL_4(LIND_safe_net_epoll_ctl, int, epfd, int, op, int, fd, epolleventstruct, event);
 }
 int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid) {
-    DISPATCH_SYSCALL_4(LIND_safe_net_epoll_ctl, int, epfd, epolleventstruct, events, int, maxevents, int, timeout);
+    DISPATCH_SYSCALL_4(LIND_safe_net_epoll_wait, int, epfd, epolleventstruct, events, int, maxevents, int, timeout);
 }
 
 int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid) {
     DISPATCH_SYSCALL_4(LIND_safe_net_socketpair, int, domain, int, type, int, protocol, pipearray, sv);
 }
 
+int lind_getcwd (char *buf, size_t size, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_getcwd, mutcbuf, buf, size_t, size);
+}
+
 int lind_gethostname (char *name, size_t len, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_net_gethostname, mutcbuf, name, size_t, len);
 }
 
+int lind_getifaddrs (char *buf, size_t len, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_net_getifaddrs, mutcbuf, buf, size_t, len);
+}
+
 int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_getsockname, int, sockfd, socklen_t_ptr, addrlen, sockaddrstruct, addr);
+    DISPATCH_SYSCALL_3(LIND_safe_net_getsockname, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
 }
 
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_net_listen, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
+    DISPATCH_SYSCALL_3(LIND_safe_net_getpeername, int, sockfd, sockaddrstruct, addr, socklen_t_ptr, addrlen);
 }
 
 int lind_socket (int domain, int type, int protocol, int cageid) {
@@ -273,6 +284,8 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
+    (void) fd;
+    (void) operation;
     DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
 }
 
@@ -280,7 +293,6 @@ int lind_pipe(int* pipefds, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_pipe, pipearray, pipefds);
 }
 
-/* pipe2 currently unimplemented */
 int lind_pipe2(int* pipefds, int flags, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_pipe2, pipearray, pipefds, int, flags);
 }
@@ -290,12 +302,27 @@ int lind_fork(int newcageid, int cageid) {
 }
 
 int lind_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset, int cageid) {
-    BLANKARGS;
-    DISPATCH_SYSCALL_6_inner(LIND_safe_fs_mmap, cbuf, addr, size_t, length, int, prot, int, flags, int, fd, off_t, offset, MMAP_ERROR_HANDLER);
+    DISPATCH_SYSCALL_6(LIND_safe_fs_mmap, cbuf, addr, size_t, length, int, prot, int, flags, int, fd, off_t, offset);
 }
 
 int lind_munmap(void *addr, size_t length, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_munmap, cbuf, addr, size_t, length);
+}
+
+int lind_shmget(int key, size_t size, int shmflg, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmget, int, key, size_t, size, int, shmflg);
+}
+
+int lind_shmat(int shmid, void *shmaddr, int shmflg, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmat, int, shmid, cbuf, shmaddr, int, shmflg);
+}
+
+int lind_shmdt(void *shmaddr, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_shmdt, cbuf, shmaddr);
+}
+
+int lind_shmctl(int shmid, int cmd, struct lind_shmid_ds *buf, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_shmctl, int, shmid, int, cmd, shmidstruct, buf);
 }
 
 int lind_getpid(int cageid) {
