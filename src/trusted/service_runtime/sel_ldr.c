@@ -1660,6 +1660,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
         uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
         size_t copy_size = entry->npages << NACL_PAGESHIFT;
+        size_t endaddr = page_addr_parent + copy_size;
 
         NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
                 entry->npages,
@@ -1668,28 +1669,52 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                 (void *)page_addr_parent,
                 (void *)page_addr_child);
 
-        if(entry->prot && (entry->desc != nap_parent->text_shm)) {
-          size_t endaddr = page_addr_parent + copy_size;
-          if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-          }
-          if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-          }
-          if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
-            //if the mapping corresponds to the stack, only copy up to the stack pointer
-            copy_size = endaddr - parent_stack_addr;
-            inputvector[veccount].iov_base = (void*) parent_stack_addr;
-            (uintptr_t) (outputvector[veccount].iov_base =
-                (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
+        if(!entry->prot || entry->desc == nap_parent->text_shm)
+          continue;
+
+        if(entry->flags & NACL_ABI_MAP_SHARED) {
+          if(entry->flags & NACL_ABI_MAP_ANONYMOUS) {
+            NaClLog(LOG_WARNING, "%s\n", "Forking MAP_SHARED | MAP_ANONYMOUS regions not implemented correctly yet.");
+            //in this case, we fall through to handling it as a non-shared mapping
           } else {
-            inputvector[veccount].iov_base = (void*) page_addr_parent;
-            outputvector[veccount].iov_base = (void*) page_addr_child;
+            int result;
+
+            //shm mappings (i.e. shmat) are stored without an associated nacl desc
+            if(entry->desc) {
+                struct NaClHostDesc *hd = ((struct NaClDescIoDesc *) &entry->desc->base)->hd;
+                result = lind_mmap((void*) page_addr_child, copy_size, entry->prot, entry->flags 
+                                   | NACL_ABI_MAP_FIXED, hd->d, entry->offset, nap_parent->cage_id);
+            } else {
+                result = copy_shared_mapping(nap_parent->cage_id, page_addr_child, 
+                                             copy_size, entry->prot, page_addr_parent);
+            }
+
+            if(result)
+                NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
+
+            continue;
           }
-          inputvector[veccount].iov_len = copy_size;
-          outputvector[veccount].iov_len = copy_size;
-          ++veccount;
         }
+
+        if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        }
+        if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+        }
+        if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
+          //if the mapping corresponds to the stack, only copy up to the stack pointer
+          copy_size = endaddr - parent_stack_addr;
+          inputvector[veccount].iov_base = (void*) parent_stack_addr;
+          (uintptr_t) (outputvector[veccount].iov_base =
+              (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
+        } else {
+          inputvector[veccount].iov_base = (void*) page_addr_parent;
+          outputvector[veccount].iov_base = (void*) page_addr_child;
+        }
+        inputvector[veccount].iov_len = copy_size;
+        outputvector[veccount].iov_len = copy_size;
+        ++veccount;
       }
       // Reset iteration counter for copying into child later (in the loop with iters2)
 

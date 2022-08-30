@@ -3012,7 +3012,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   if ((unsigned int) -1 == map_result) {
     NaClLog(LOG_INFO,
-            ("NaClHostDescMap: "
+            ("NaClSysShmat: "
              "mmap(0x%08"NACL_PRIxPTR", %d"NACL_PRIxS", "
              "0x%d, 0x%d)"
              " failed, errno %d.\n"),
