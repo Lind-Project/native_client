@@ -25,6 +25,7 @@
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
 #include "native_client/src/trusted/service_runtime/sel_mem.h"
 #include "native_client/src/trusted/service_runtime/sel_util.h"
+#include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
@@ -87,7 +88,20 @@ void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
 
   if (entry->desc != NULL) {
     NaClDescSafeUnref(entry->desc);
+  } else if (entry->flags & NACL_ABI_MAP_SHARED && entry->file_size & (NACL_PAGESIZE - 1)) {
+    //in this case, we hacked a shmid in here!
+    int shmid = (entry->file_size & ~(NACL_PAGESIZE - 1)) + NACL_PAGESIZE - entry->file_size;
+
+    if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+      NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+
+    shmtable[shmid].count -= 1;
+
+    if(shmtable[shmid].rmid && shmtable[shmid].count == 0) {
+      clear_shmentry(shmid);
+    }
   }
+
   free(entry);
 }
 

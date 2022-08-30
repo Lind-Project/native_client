@@ -1679,6 +1679,15 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
 
           if(result)
             NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
+
+          //if we hacked the shmid into the file_size field, update the shmid count
+          if(!entry->desc && entry->file_size & (NACL_PAGESIZE - 1)) {
+            int shmid = (entry->file_size & ~(NACL_PAGESIZE - 1)) + NACL_PAGESIZE - entry->file_size;
+            if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+              NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+            shmtable[shmid].count++;
+          }
+
           continue;
         }
 
