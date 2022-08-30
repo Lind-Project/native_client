@@ -1673,27 +1673,12 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
           continue;
 
         if(entry->flags & NACL_ABI_MAP_SHARED) {
-          if(entry->flags & NACL_ABI_MAP_ANONYMOUS) {
-            NaClLog(LOG_WARNING, "%s\n", "Forking MAP_SHARED | MAP_ANONYMOUS regions not implemented correctly yet.");
-            //in this case, we fall through to handling it as a non-shared mapping
-          } else {
-            int result;
+          int result = NaClMremap((void*) page_addr_parent, 0, copy_size, NACL_ABI_MREMAP_MAYMOVE | 
+                                  NACL_ABI_MREMAP_FIXED, (void*) page_addr_child);
 
-            //shm mappings (i.e. shmat) are stored without an associated nacl desc
-            if(entry->desc) {
-                struct NaClHostDesc *hd = ((struct NaClDescIoDesc *) &entry->desc->base)->hd;
-                result = lind_mmap((void*) page_addr_child, copy_size, entry->prot, entry->flags 
-                                   | NACL_ABI_MAP_FIXED, hd->d, entry->offset, nap_parent->cage_id);
-            } else {
-                result = copy_shared_mapping(nap_parent->cage_id, page_addr_child, 
-                                             copy_size, entry->prot, page_addr_parent);
-            }
-
-            if(result)
-                NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
-
-            continue;
-          }
+          if(result)
+            NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
+          continue;
         }
 
         if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
@@ -1756,7 +1741,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                  entry->flags,
                                   desc,
                                   entry->offset,
                                   entry->file_size);
@@ -1771,7 +1756,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                  entry->flags,
                                   entry->desc,
                                   entry->offset,
                                   entry->file_size);

@@ -3120,6 +3120,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
   NaClVmmapRemove(&nap->mem_map,
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
+  retval = 0;
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);

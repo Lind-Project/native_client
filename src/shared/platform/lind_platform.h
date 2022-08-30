@@ -139,8 +139,6 @@ int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union 
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
 void lindrustinit(int verbosity);
 void lindrustfinalize(void);
-int copy_shared_mapping(unsigned long int src_cageid, unsigned long dest_addr, 
-                        unsigned long int length, int prot, unsigned long src_addr);
 
 int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid);
 int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);
