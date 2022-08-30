@@ -3161,7 +3161,7 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   }
 
   if (cmd == IPC_STAT) {
-    bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
+    bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(*bufsysaddr), NACL_ABI_PROT_READ);
   } else bufsysaddr = NULL;
 
   if ((void*) kNaClBadAddress == bufsysaddr) {
