@@ -89,6 +89,7 @@ struct NaClShmInfo {
   int size;
   int count;
   bool rmid;
+  bool extant;
 };
 
 struct NaClZombie {

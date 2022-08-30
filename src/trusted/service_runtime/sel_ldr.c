@@ -102,9 +102,10 @@ void InitializeShmtable(void) {
 }
 
 void clear_shmentry(int shmid) {
-  shmtable[shmid].size = -1;
+  shmtable[shmid].size = 0;
   shmtable[shmid].count = 0;
   shmtable[shmid].rmid = false;
+  shmtable[shmid].extant = false;
 }
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
