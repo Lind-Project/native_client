@@ -1670,24 +1670,29 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                 (void *)page_addr_parent,
                 (void *)page_addr_child);
 
+        //these are either PROT_NONE mappings or the special text_shm mapping which we don't copy
         if(!entry->prot || entry->desc == nap_parent->text_shm)
           continue;
 
         if(entry->flags & NACL_ABI_MAP_SHARED) {
+          //See "man 2 mremap" for description of what MREMAP_MAYMOVE does with old_size=0
+          //when old_address points to a shared mapping...
           int result = NaClMremap((void*) page_addr_parent, 0, copy_size, NACL_ABI_MREMAP_MAYMOVE | 
                                   NACL_ABI_MREMAP_FIXED, (void*) page_addr_child);
 
           if(result)
             NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
 
-          //if we hacked the shmid into the file_size field, update the shmid count
-          if(!entry->desc && entry->file_size & (NACL_PAGESIZE - 1)) {
-            int shmid = (entry->file_size & ~(NACL_PAGESIZE - 1)) + NACL_PAGESIZE - entry->file_size;
+          //if it's a shared shmid mapping
+          if(!entry->desc && entry->shmid != -1) {
+            int shmid = entry->shmid;
             if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
               NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
             shmtable[shmid].count++;
           }
 
+          //in this case, because of the mremap, we've already copied the mapping, so we don't
+          //need to copy it using process_vm_writev
           continue;
         }
 
@@ -1747,14 +1752,15 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
           struct NaClHostDesc *hd = self->hd;
           desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
         }
-        NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                                  entry->page_num,
-                                  entry->npages,
-                                  entry->prot,
-                                  entry->flags,
-                                  desc,
-                                  entry->offset,
-                                  entry->file_size);
+        NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
+                                          entry->page_num,
+                                          entry->npages,
+                                          entry->prot,
+                                          entry->flags,
+                                          entry->shmid,
+                                          desc,
+                                          entry->offset,
+                                          entry->file_size);
         if(!use_lkm && entry->prot) {
           if (NaClMprotect((void *)((entry->page_num << NACL_PAGESHIFT) | offset), entry->npages << NACL_PAGESHIFT, entry->prot) == -1) {
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");

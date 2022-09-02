@@ -3041,17 +3041,15 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   }
 
   if (length > 0) {
-    //we hack the file_size field to store the shmid, because FILE_DESC_MAX is less than 4096 
-    //this doesn't change the page boundary, as the length here is always rounded up to the
-    //page boundary, and it can't be resized.
-    NaClVmmapAddWithOverwrite(&nap->mem_map,
-                              NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
-                              length >> NACL_PAGESHIFT,
-                              prot,
-                              NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
-                              NULL,
-                              0,
-                              length - shmid);
+    NaClVmmapAddWithOverwriteAndShmid(&nap->mem_map,
+                                      NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
+                                      length >> NACL_PAGESHIFT,
+                                      prot,
+                                      NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
+                                      shmid,
+                                      NULL,
+                                      0,
+                                      length);
 
     shmtable[shmid].count++;
   }
@@ -3131,7 +3129,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
   length = shmtable[shmid].size;
 
-  //shmid information updated on Vmmap remove
+  //When the shmid entry is freed, we decrement the shm refcount
   NaClVmmapRemove(&nap->mem_map,
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
