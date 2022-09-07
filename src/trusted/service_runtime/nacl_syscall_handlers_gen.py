@@ -51,9 +51,8 @@ void NaClSyscallTableInit() {
 IMPLEMENTATION_SKELETON = """\
 /* this function was automagically generated */
 static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
-
+  %(members)s\
   return %(name)s(natp%(arglist)s);
-
 }
 
 /*
