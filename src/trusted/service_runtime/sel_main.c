@@ -246,7 +246,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   envp = (const char **)environ;
 #endif
 
-  nacl_syscall_counter = 0;
   lind_syscall_counter = 0;
   nacl_syscall_trace_level_counter = 0;
   ret_code = 1;
