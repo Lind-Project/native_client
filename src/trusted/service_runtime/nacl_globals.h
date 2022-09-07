@@ -18,8 +18,12 @@
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 #include "native_client/src/shared/platform/lind_platform.h"
+#include <time.h>
 
 EXTERN_C_BEGIN
+
+#define SYSCALL_TIMING
+
 /* snprintf length limit for each argv string */
 #define PROT_RW (NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE)
 #define PROT_RX (NACL_ABI_PROT_READ | NACL_ABI_PROT_EXEC)
@@ -59,8 +63,6 @@ struct NaClApp;
  */
 extern double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
 extern int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
-extern int nacl_syscall_trace_level_counter;
-extern int lind_syscall_counter;
 extern double time_counter;
 extern double time_start;
 extern double time_end;
@@ -95,6 +97,8 @@ __declspec(dllexport) extern uint32_t nacl_thread_ids[NACL_THREAD_MAX];
  * code.
  */
 
+double LindGetTime(void);
+
 void  NaClGlobalModuleInit(void);
 void  NaClGlobalModuleFini(void);
 
@@ -105,6 +109,8 @@ static INLINE struct NaClAppThread *NaClAppThreadGetFromIndex(uint32_t thread_in
   DCHECK(thread_index < NACL_THREAD_MAX);
   return NaClAppThreadFromThreadContext(nacl_user[thread_index]);
 }
+
+
 
 /* hack for gdb */
 #if NACL_WINDOWS

@@ -141,6 +141,10 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   natp->usr_syscall_args = NaClRawUserStackAddrNormalize(sp_user +
                                                          NACL_SYSARGS_FIX);
 
+  #ifdef SYSCALL_TIMING
+  double call_start_time = LindGetTime();
+  #endif
+
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
     NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
     sysret = -NACL_ABI_EINVAL;
@@ -149,6 +153,14 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
     sysret = (*(nap->syscall_table[sysnum].handler))(natp);
     /* Implicitly drops lock */
   }
+
+  #ifdef SYSCALL_TIMING
+  double call_end_time = LindGetTime();
+  double call_total_time = call_end_time - call_start_time;
+  lind_syscall_execution_time[sysnum] += call_total_time;
+  lind_syscall_invoked_times[sysnum]++;
+  #endif
+
   NaClLog(4,
           ("Returning from syscall %"NACL_PRIdS": return value %"NACL_PRId32
            " (0x%"NACL_PRIx32")\n"),

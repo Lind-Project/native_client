@@ -186,17 +186,6 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
   static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
 #endif
 
-double LindGetTime(void) {
-  struct timespec tp;
-
-  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
-    perror( "clock gettime" );
-    exit( EXIT_FAILURE );
-  }
-
-  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
-}
-
 int NaClSelLdrMain(int argc, char **argv) {
   int                           opt;
   char                          *rest;
@@ -232,9 +221,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   double                        nacl_user_program_finish;
   double                        nacl_user_program_spent;
   int                           toggle_time_info = 0;
-  #ifdef SYSCALL_TIMING
-  double                        lind_syscall_total_time;
-  #endif
 
 #if NACL_OSX
   /* Mac dynamic libraries cannot access the environ variable directly. */
@@ -246,8 +232,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   envp = (const char **)environ;
 #endif
 
-  lind_syscall_counter = 0;
-  nacl_syscall_trace_level_counter = 0;
   ret_code = 1;
   redir_queue = NULL;
   redir_qend = &redir_queue;
@@ -941,15 +925,14 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 #ifdef SYSCALL_TIMING
 
-  NaClLog(1, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
-  NaClLog(1, "%s\n", "[NaClMain] Print out Lind system call timing table: ");
-  lind_syscall_total_time = 0.0;
+  fprintf(stderr, "[NaClMain] Print out Lind system call timing table: ");
   for (size_t i = 0; i < LIND_MAX_SYSCALLS; i++) {
-    NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
-    lind_syscall_total_time +=  lind_syscall_execution_time[i];
+    if (lind_syscall_invoked_times[i] == 0) continue;
+    double average_time = lind_syscall_execution_time[i]/lind_syscall_invoked_times[i];
+    fprintf(stderr, "sys_num: %d, invoked times: %d, average execution time: %f \n", i, lind_syscall_invoked_times[i], average_time);
   }
 
-  NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
+  fprintf(stderr, "[NaClMain] Results printing out: done! ");
 #endif
 
   lindrustfinalize();

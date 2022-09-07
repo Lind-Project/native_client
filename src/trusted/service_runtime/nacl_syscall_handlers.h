@@ -23,8 +23,6 @@ extern struct NaClSyscallTableEntry nacl_syscall[];
 
 void NaClSyscallTableInit(void);
 
-extern int nacl_syscall_counter;
-extern int nacl_syscall_trace_level_counter;
 extern int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 extern double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 

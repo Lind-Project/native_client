@@ -32,10 +32,20 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
 uintptr_t                   nacl_global_xlate_base;
 int lind_syscall_counter = 0;
 int nacl_syscall_counter = 0;
-int nacl_syscall_trace_level_counter = 0;
 int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
 double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 bool use_lkm = true;
+
+double LindGetTime(void) {
+  struct timespec tp;
+
+  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
+    perror( "clock gettime" );
+    exit( EXIT_FAILURE );
+  }
+
+  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
+}
 
 void NaClGlobalModuleInit(void) {
   NaClInitGlobals();
