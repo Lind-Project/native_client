@@ -924,9 +924,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
 #ifdef SYSCALL_TIMING
-
   fprintf(stderr, "[NaClMain] Print out Lind system call timing table: ");
-  for (size_t i = 0; i < LIND_MAX_SYSCALLS; i++) {
+  for (int i = 0; i < NACL_MAX_SYSCALLS; i++) {
     if (lind_syscall_invoked_times[i] == 0) continue;
     double average_time = lind_syscall_execution_time[i]/lind_syscall_invoked_times[i];
     fprintf(stderr, "sys_num: %d, invoked times: %d, average execution time: %f \n", i, lind_syscall_invoked_times[i], average_time);
