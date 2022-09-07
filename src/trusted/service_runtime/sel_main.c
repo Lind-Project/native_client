@@ -233,7 +233,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   double                        nacl_user_program_spent;
   int                           toggle_time_info = 0;
   #ifdef SYSCALL_TIMING
-  double                        nacl_syscall_total_time;
   double                        lind_syscall_total_time;
   #endif
 
@@ -942,17 +941,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
 #ifdef SYSCALL_TIMING
-  NaClLog(1, "%s\n", "[NaClMain] NaCl system call timing enabled! ");
-  NaClLog(1, "%s\n", "[NaClMain] Start printing out results now: ");
-  NaClLog(1, "[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
-  NaClLog(1, "%s\n", "[NaClMain] Print out system call timing table: ");
-  nacl_syscall_total_time = 0.0;
-  for (size_t i = 0; i < NACL_MAX_SYSCALLS; i++) {
-    NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
-    nacl_syscall_total_time +=  nacl_syscall_execution_time[i];
-  }
 
-  NaClLog(1, "[NaClMain] NaCl system call total time: %f \n\n", nacl_syscall_total_time);
   NaClLog(1, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
   NaClLog(1, "%s\n", "[NaClMain] Print out Lind system call timing table: ");
   lind_syscall_total_time = 0.0;
@@ -961,7 +950,6 @@ int NaClSelLdrMain(int argc, char **argv) {
     lind_syscall_total_time +=  lind_syscall_execution_time[i];
   }
 
-  NaClLog(1, "[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
   NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
 #endif
 
