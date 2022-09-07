@@ -43,6 +43,7 @@ struct NaClVmmapEntry {
   size_t            npages;     /* number of pages */
   int               prot;       /* mprotect attribute */
   int               flags;      /* mapping flags */
+  int               shmid;      /* shmid for if it's a shm mapping */
   int               removed;    /* flag set in NaClVmmapUpdate */
   struct NaClDesc   *desc;      /* the backing store, if any */
   nacl_off64_t      offset;     /* offset into desc */
@@ -102,6 +103,16 @@ void  NaClVmmapAddWithOverwrite(struct NaClVmmap  *self,
                                 struct NaClDesc   *desc,
                                 nacl_off64_t      offset,
                                 nacl_off64_t      file_size);
+
+void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
+                                       uintptr_t          page_num,
+                                       size_t             npages,
+                                       int                prot,
+                                       int                flags,
+                                       int                shmid,
+                                       struct NaClDesc    *desc,
+                                       nacl_off64_t       offset,
+                                       nacl_off64_t       file_size);
 
 /*
  * NaClVmmapRemove modifies the specified region and updates the existing

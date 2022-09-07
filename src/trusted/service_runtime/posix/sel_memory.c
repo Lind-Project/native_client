@@ -185,3 +185,9 @@ int NaClMadvise(void *start, size_t length, int advice) {
    */
   return ret == -1 ? -errno : ret;
 }
+
+int NaClMremap(void *old_address, int old_size, size_t new_size, int flags, void *new_address) {
+    void* ret = mremap(old_address, old_size, new_size, flags, new_address);
+
+    return (long int) ret == -1 ? -errno : 0;
+}
