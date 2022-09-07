@@ -157,7 +157,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   #ifdef SYSCALL_TIMING
   double call_end_time = LindGetTime();
   double call_total_time = call_end_time - call_start_time;
-
+  add_syscall_time(sysnum, call_total_time);
   #endif
 
   NaClLog(4,

@@ -96,6 +96,9 @@ __declspec(dllexport) extern uint32_t nacl_thread_ids[NACL_THREAD_MAX];
  * code.
  */
 
+void add_syscall_time(int sysnum, double call_time);
+void print_execution_times(int sysnum);
+
 double LindGetTime(void);
 
 void  NaClGlobalModuleInit(void);
