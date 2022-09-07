@@ -51,44 +51,8 @@ void NaClSyscallTableInit() {
 IMPLEMENTATION_SKELETON = """\
 /* this function was automagically generated */
 static int32_t %(name)sDecoder(struct NaClAppThread *natp) {
-  #ifdef SYSCALL_TIMING
-  int32_t retval;
-  clock_t nacl_sys_begin;
-  clock_t nacl_sys_finish;
-  #endif
-  #ifdef NACL_SYSCALL_TRACE_ENABLED
-  struct NaClApp *nap = natp->nap;
-  int32_t retval;
-#if %(arglist_not_empty)d
-  unsigned int i = 0;
-#endif
-  #endif
+ 
   %(members)s\
-
-  #ifdef SYSCALL_TIMING
-  nacl_syscall_counter++;
-  nacl_syscall_invoked_times[%(num)s]++;
-  nacl_sys_begin = clock();
-  retval = %(name)s(natp%(arglist)s);
-  nacl_sys_finish = clock();
-  nacl_syscall_execution_time[%(num)s] += (double)(nacl_sys_finish - nacl_sys_begin) / CLOCKS_PER_SEC;
-  return retval;
-  #endif
-  #ifdef NACL_SYSCALL_TRACE_ENABLED
-  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [enter][syscall_depth = %%d]\\n", nap->cage_id, nacl_syscall_trace_level_counter);
-  printf("==> %(num)s(");
-#if %(arglist_not_empty)d
-  for (i = 0; i < sizeof(p)/4; i++) {
-    printf("%%x,", *((uint32_t *)&p+i));
-  }
-#endif
-  printf(")\\n");
-  nacl_syscall_trace_level_counter++;
-  retval = %(name)s(natp%(arglist)s);
-  nacl_syscall_trace_level_counter--;
-  printf("[NaClSysCallInterface] cage id = %%d, syscall_num = %(num)s [exit][syscall_depth = %%d] \\n", nap->cage_id, nacl_syscall_trace_level_counter);
-  return retval;
-  #endif
 
   return %(name)s(natp%(arglist)s);
 
