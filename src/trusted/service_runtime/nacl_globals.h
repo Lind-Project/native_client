@@ -61,8 +61,7 @@ struct NaClApp;
 /*
  * always points at original program context
  */
-extern double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
-extern int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
+
 extern double time_counter;
 extern double time_start;
 extern double time_end;

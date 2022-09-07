@@ -8,6 +8,7 @@
  * NaCl Server Runtime global scoped objects for handling global resources.
  */
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "native_client/src/shared/platform/nacl_interruptible_mutex.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -30,11 +31,21 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
  * and (2) gdb doesn't need debug info (it just needs symbol info).
  */
 uintptr_t                   nacl_global_xlate_base;
-int lind_syscall_counter = 0;
-int nacl_syscall_counter = 0;
-int nacl_syscall_invoked_times[NACL_MAX_SYSCALLS];
-double nacl_syscall_execution_time[NACL_MAX_SYSCALLS];
 bool use_lkm = true;
+
+double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
+int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
+
+void add_syscall_time(int sysnum, double call_time) {
+  lind_syscall_execution_time[sysnum] += call_time;
+  lind_syscall_invoked_times[sysnum]++;
+}
+
+void print_execution_times(int sysnum){
+    if (lind_syscall_invoked_times[sysnum] == 0) return;
+    double average_time = lind_syscall_execution_time[sysnum]/lind_syscall_invoked_times[sysnum];
+    fprintf(stderr, "sys_num: %d, invoked times: %d, average execution time: %f \n", sysnum, lind_syscall_invoked_times[sysnum], average_time);
+}
 
 double LindGetTime(void) {
   struct timespec tp;
