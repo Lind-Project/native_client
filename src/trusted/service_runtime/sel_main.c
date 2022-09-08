@@ -914,6 +914,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   if (toggle_time_info)
   {
+    fprintf(stderr, "\n[TimeInfo] --- Program Time Statistics --- \n");
     nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin);
     fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
     nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin);
@@ -924,11 +925,10 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
 #ifdef SYSCALL_TIMING
-  fprintf(stderr, "[TimeInfo] --- Syscall Perfomance Statistics --- \n");
+  fprintf(stderr, "\n[TimeInfo] --- Syscall Perfomance Statistics --- \n");
   for (int i = 0; i < NACL_MAX_SYSCALLS; i++) {
     print_execution_times(i);
   }
-  fprintf(stderr, "[TimeInfo] --- Completed. ---\n");
 #endif
 
   lindrustfinalize();
