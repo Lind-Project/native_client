@@ -924,11 +924,11 @@ int NaClSelLdrMain(int argc, char **argv) {
 
 
 #ifdef SYSCALL_TIMING
-  fprintf(stderr, "[NaClMain] Print out Lind system call timing table: ");
+  fprintf(stderr, "[TimeInfo] --- Syscall Perfomance Statistics --- \n");
   for (int i = 0; i < NACL_MAX_SYSCALLS; i++) {
     print_execution_times(i);
   }
-  fprintf(stderr, "[NaClMain] Results printing out: done!\n");
+  fprintf(stderr, "[TimeInfo] --- Completed. ---\n");
 #endif
 
   lindrustfinalize();
