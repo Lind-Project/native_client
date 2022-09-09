@@ -147,7 +147,7 @@ static int32_t SpinWaitTestSyscall(struct NaClAppThread *natp) {
   struct SuspendTestShm *test_shm;
   uint32_t next_val = 0;
 
-  NaClCopyDropLock(natp->nap);
+  
   CHECK(NaClCopyInFromUser(natp->nap, &test_shm_uptr, natp->usr_syscall_args,
                            sizeof(test_shm_uptr)));
   test_shm = (struct SuspendTestShm *) NaClUserToSysAddrRange(
@@ -384,7 +384,7 @@ static void TestGettingRegisterSnapshotInSyscall(struct NaClApp *nap) {
  * trusted/untrusted context switches.
  */
 static int32_t SimpleTestSyscall(struct NaClAppThread *natp) {
-  NaClCopyDropLock(natp->nap);
+  
   g_simple_syscall_called = 1;
   if (g_simple_syscall_should_exit) {
     NaClAppThreadTeardown(natp);

@@ -70,7 +70,7 @@ static void SignalSafePrintf(const char *format, ...) {
  * problem.
  */
 static int32_t TestSyscall(struct NaClAppThread *natp) {
-  NaClCopyDropLock(natp->nap);
+  
 
   /* Check that the trap flag has not been unset by anything unexpected. */
   CHECK(GetTrapFlag());

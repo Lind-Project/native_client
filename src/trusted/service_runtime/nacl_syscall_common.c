@@ -120,7 +120,7 @@ int NaClDesc2Lindfd(struct NaClDesc * ndp) {
 }
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
-  NaClCopyDropLock(natp->nap);
+  
   return -NACL_ABI_ENOSYS;
 }
 
@@ -909,11 +909,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   char const      *ellipsis = "";
   int             lindfd;
 
-  NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
-           "%d, 0x%08"NACL_PRIxPTR", "
-           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -941,7 +936,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  NaClHostDescCheckValidity("NaClSysRead", hd);
   if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysRead: WRONLY file\n");
     NaClFastMutexUnlock(&nap->desc_mu);
@@ -967,28 +961,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
-
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
   read_result = lind_read(lindfd, (void *)sysaddr, count, nap->cage_id);
-
-  if (read_result > 0) {
-    NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
-    log_bytes = (size_t) read_result;
-    if (log_bytes > INT32_MAX) {
-      log_bytes = INT32_MAX;
-      ellipsis = "...";
-    }
-    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-      log_bytes = kdefault_io_buffer_bytes_to_log;
-      ellipsis = "...";
-    }
-    NaClLog(8, "read result: %.*s%s\n",
-            (int) log_bytes, (char *) sysaddr, ellipsis);
-  } else {
-    NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
-  }
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -1096,12 +1072,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   size_t          log_bytes;
   int             lindfd;
 
-  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
-          "%d, 0x%08"NACL_PRIxPTR", "
-          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-
-
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -1128,7 +1098,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  NaClHostDescCheckValidity("NaClSysWrite", hd);
   if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysWrite: RDONLY file\n");
     NaClFastMutexUnlock(&nap->desc_mu);
@@ -1151,19 +1120,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
    * we'll just clamp the request size if it's too large.
    */
   count = count > INT32_MAX ? INT32_MAX : count;
-  log_bytes = count;
-  if (log_bytes == INT32_MAX) {
-    ellipsis = "...";
-  }
-  UNREFERENCED_PARAMETER(ellipsis);
-  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-     log_bytes = kdefault_io_buffer_bytes_to_log;
-     ellipsis = "...";
-  }
-  UNREFERENCED_PARAMETER(log_bytes);
-  UNREFERENCED_PARAMETER(ellipsis);
-  NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
-          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
@@ -1597,6 +1553,33 @@ cleanup:
   NaClLog(2, "NaClSysChmod: returning %d\n", retval);
   return retval;
 }
+
+int32_t NaClSysFchmod(struct NaClAppThread *natp,
+                     int                   fd,
+                     int                  mode) {
+  struct NaClApp *nap = natp->nap;
+  struct NaClDesc *ndp;
+  int32_t        retval;
+
+  NaClLog(2, "Cage %d Entered NaClSysFchmod(0x%08"NACL_PRIxPTR", "
+          "%d, %d)\n", nap->cage_id, (uintptr_t) natp, fd, mode);
+  if (!NaClAclBypassChecks) {
+    return  -NACL_ABI_EACCES;
+  }
+
+  ndp = GetDescFromCagetable(nap, fd);
+  if (!ndp) {
+    NaClLog(2, "NaClSysFchmod was passed an unrecognizable file descriptor, returning %d\n", fd);
+    return -NACL_ABI_EBADF;
+  }
+
+  fd = NaClDesc2Lindfd(ndp);
+  retval = lind_fchmod(fd, mode, nap->cage_id);
+
+  NaClDescUnref(ndp);
+  return retval;
+}
+
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
@@ -2809,8 +2792,7 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
 
   NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %lu, %d)\n",
            (uintptr_t)natp, key, size, shmflg);
-
-
+  
   alloc_rounded_size = NaClRoundAllocPage(size);
   if (alloc_rounded_size != size) {
     NaClLog(1, "NaClSysShmget: rounded size to 0x%"NACL_PRIxS"\n",
@@ -2819,9 +2801,17 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
 
   retval = lind_shmget(key, alloc_rounded_size, shmflg, nap->cage_id);
 
-  if ((retval > 0) && (shmflg & IPC_CREAT)) {
-    shmtable[retval].size = alloc_rounded_size;
-    shmtable[retval].rmid = false;
+  if (retval > 0) {
+    if(retval >= FILE_DESC_MAX)
+      NaClLog(LOG_FATAL, "NaClSysShmget: shmid returned by lind is too large!\n");
+    if(shmflg & IPC_CREAT) {
+      shmtable[retval].size = alloc_rounded_size;
+      shmtable[retval].rmid = false;
+      shmtable[retval].extant = true;
+    } else {
+      if(!shmtable[retval].extant)
+        NaClLog(LOG_FATAL, "NaClSysShmget: shmid returned by lind does not exist!\n");
+    }
   }
 
   return retval;
@@ -2843,6 +2833,11 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   NaClLog(2, "Entered NaClSysShmat(0x%08"NACL_PRIxPTR" , %d, %lx, %d)\n",
            (uintptr_t)natp, shmid, (uintptr_t)shmaddr, shmflg);
+
+  if((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant) {
+    NaClLog(2, "NaClSysShmat: shmid invalid\n");
+    return -NACL_ABI_EINVAL;
+  }
 
   length = shmtable[shmid].size;
   if (!length) return -NACL_ABI_EINVAL;
@@ -2985,7 +2980,7 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   if ((unsigned int) -1 == map_result) {
     NaClLog(LOG_INFO,
-            ("NaClHostDescMap: "
+            ("NaClSysShmat: "
              "mmap(0x%08"NACL_PRIxPTR", %d"NACL_PRIxS", "
              "0x%d, 0x%d)"
              " failed, errno %d.\n"),
@@ -3002,14 +2997,15 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   }
 
   if (length > 0) {
-    NaClVmmapAddWithOverwrite(&nap->mem_map,
-                              NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
-                              length >> NACL_PAGESHIFT,
-                              prot,
-                              NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
-                              NULL,
-                              0,
-                              length);
+    NaClVmmapAddWithOverwriteAndShmid(&nap->mem_map,
+                                      NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
+                                      length >> NACL_PAGESHIFT,
+                                      prot,
+                                      NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
+                                      shmid,
+                                      NULL,
+                                      0,
+                                      length);
 
     shmtable[shmid].count++;
   }
@@ -3072,7 +3068,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
   if (NaClSysCommonAddrRangeContainsExecutablePages(nap,
                                                     (uintptr_t) shmaddr,
                                                     1)) {
-    NaClLog(2, "NaClSysMunmap: region contains executable pages\n");
+    NaClLog(2, "NaClSysShmdt: region contains executable pages\n");
     retval = -NACL_ABI_EINVAL;
     goto cleanup;
   }
@@ -3084,15 +3080,16 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  shmtable[shmid].count--;
-  length = shmtable->size;
-  if ((shmtable[shmid].rmid) && (!shmtable[shmid].count)) {
-    clear_shmentry(shmid);
-  }
+  if((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+      NaClLog(LOG_FATAL, "NaClSysShmdt: nonsense shmid returned by lind_shmdt!");
 
+  length = shmtable[shmid].size;
+
+  //When the shmid entry is freed, we decrement the shm refcount
   NaClVmmapRemove(&nap->mem_map,
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
+  retval = 0;
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
@@ -3112,8 +3109,13 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""%p"NACL_PRIxPTR")\n",
            (uintptr_t)natp, shmid, cmd, (void *) buf);
 
+  if((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant) {
+    NaClLog(2, "NaClSysShmat: shmid invalid\n");
+    return -NACL_ABI_EINVAL;
+  }
+
   if (cmd == IPC_STAT) {
-    bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(bufsysaddr), NACL_ABI_PROT_READ);
+    bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(*bufsysaddr), NACL_ABI_PROT_READ);
   } else bufsysaddr = NULL;
 
   if ((void*) kNaClBadAddress == bufsysaddr) {

@@ -35,7 +35,6 @@
 #define NACL_sys_stat                   17
 #define NACL_sys_fstat                  18
 #define NACL_sys_chmod                  19
-/* no fchmod emulation on windows */
 
 #define NACL_sys_brk                    20
 #define NACL_sys_mmap                   21
@@ -151,7 +150,7 @@
 #define NACL_sys_rmdir                  132
 #define NACL_sys_statfs                 133
 #define NACL_sys_fstatfs                134
-
+#define NACL_sys_fchmod                 135
 #define NACL_sys_socket                 136
 #define NACL_sys_getsockopt             137
 #define NACL_sys_setsockopt             138

@@ -114,7 +114,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
 
   nap = natp->nap;
 
-  NaClCopyTakeLock(nap);
   /*
    * held until syscall args are copied, which occurs in the generated
    * code.
@@ -144,7 +143,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
     NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
     sysret = -NACL_ABI_EINVAL;
-    NaClCopyDropLock(nap);
   } else {
     sysret = (*(nap->syscall_table[sysnum].handler))(natp);
     /* Implicitly drops lock */

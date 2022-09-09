@@ -102,9 +102,10 @@ void InitializeShmtable(void) {
 }
 
 void clear_shmentry(int shmid) {
-  shmtable[shmid].size = -1;
+  shmtable[shmid].size = 0;
   shmtable[shmid].count = 0;
   shmtable[shmid].rmid = false;
+  shmtable[shmid].extant = false;
 }
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
@@ -1666,6 +1667,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
         uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
         uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
         size_t copy_size = entry->npages << NACL_PAGESHIFT;
+        size_t endaddr = page_addr_parent + copy_size;
 
         NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
                 entry->npages,
@@ -1674,28 +1676,51 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                 (void *)page_addr_parent,
                 (void *)page_addr_child);
 
-        if(entry->prot && (entry->desc != nap_parent->text_shm)) {
-          size_t endaddr = page_addr_parent + copy_size;
-          if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        //these are either PROT_NONE mappings or the special text_shm mapping which we don't copy
+        if(!entry->prot || entry->desc == nap_parent->text_shm)
+          continue;
+
+        if(entry->flags & NACL_ABI_MAP_SHARED) {
+          //See "man 2 mremap" for description of what MREMAP_MAYMOVE does with old_size=0
+          //when old_address points to a shared mapping...
+          int result = NaClMremap((void*) page_addr_parent, 0, copy_size, NACL_ABI_MREMAP_MAYMOVE | 
+                                  NACL_ABI_MREMAP_FIXED, (void*) page_addr_child);
+
+          if(result)
+            NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
+
+          //if it's a shared shmid mapping
+          if(!entry->desc && entry->shmid != -1) {
+            int shmid = entry->shmid;
+            if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+              NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+            shmtable[shmid].count++;
           }
-          if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-          }
-          if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
-            //if the mapping corresponds to the stack, only copy up to the stack pointer
-            copy_size = endaddr - parent_stack_addr;
-            inputvector[veccount].iov_base = (void*) parent_stack_addr;
-            (uintptr_t) (outputvector[veccount].iov_base =
-                (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
-          } else {
-            inputvector[veccount].iov_base = (void*) page_addr_parent;
-            outputvector[veccount].iov_base = (void*) page_addr_child;
-          }
-          inputvector[veccount].iov_len = copy_size;
-          outputvector[veccount].iov_len = copy_size;
-          ++veccount;
+
+          //in this case, because of the mremap, we've already copied the mapping, so we don't
+          //need to copy it using process_vm_writev
+          continue;
         }
+
+        if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+        }
+        if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+          NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+        }
+        if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
+          //if the mapping corresponds to the stack, only copy up to the stack pointer
+          copy_size = endaddr - parent_stack_addr;
+          inputvector[veccount].iov_base = (void*) parent_stack_addr;
+          (uintptr_t) (outputvector[veccount].iov_base =
+              (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
+        } else {
+          inputvector[veccount].iov_base = (void*) page_addr_parent;
+          outputvector[veccount].iov_base = (void*) page_addr_child;
+        }
+        inputvector[veccount].iov_len = copy_size;
+        outputvector[veccount].iov_len = copy_size;
+        ++veccount;
       }
       // Reset iteration counter for copying into child later (in the loop with iters2)
 
@@ -1733,14 +1758,15 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
           struct NaClHostDesc *hd = self->hd;
           desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
         }
-        NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                                  entry->page_num,
-                                  entry->npages,
-                                  entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
-                                  desc,
-                                  entry->offset,
-                                  entry->file_size);
+        NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
+                                          entry->page_num,
+                                          entry->npages,
+                                          entry->prot,
+                                          entry->flags,
+                                          entry->shmid,
+                                          desc,
+                                          entry->offset,
+                                          entry->file_size);
         if(!use_lkm && entry->prot) {
           if (NaClMprotect((void *)((entry->page_num << NACL_PAGESHIFT) | offset), entry->npages << NACL_PAGESHIFT, entry->prot) == -1) {
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
@@ -1752,7 +1778,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                  entry->flags,
                                   entry->desc,
                                   entry->offset,
                                   entry->file_size);

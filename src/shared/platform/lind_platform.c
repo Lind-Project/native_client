@@ -117,6 +117,10 @@ int lind_chmod (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_chmod, cstr, path, int, mode);
 }
 
+int lind_fchmod(int fd, int mode, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_fchmod, int, fd, int, mode); 
+}
+
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_xstat, cstr, path, statstruct, buf);
 }

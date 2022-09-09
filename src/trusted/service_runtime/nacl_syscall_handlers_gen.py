@@ -301,7 +301,8 @@ SYSCALL_LIST = [
     ('NACL_sys_shmdt', 'NaClSysShmdt', ['void *shmaddr']),
     ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct lind_shmid_ds *buf']),
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
-    ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath'])
+    ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
+    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode'])
     ]
 
 
@@ -356,7 +357,7 @@ def ArgList(architecture, alist):
 
 def MemoryArgStruct(architecture, name, alist):
   if not alist:
-    return '  NaClCopyDropLock(natp->nap);'
+    return '  '
 
   # Note: although this return value might be computed more
   # concisely with a list comprehension, we instead use a
