@@ -34,6 +34,7 @@ void NaClPageFree(void *p, size_t num_bytes);
 int NaClMprotect(void *addr, size_t len, int prot) NACL_WUR;
 
 int NaClMadvise(void *start, size_t length, int advice) NACL_WUR;
+int NaClMremap(void *old_address, int old_size, size_t new_size, int flags, void *new_address) NACL_WUR;
 
 #ifdef __cplusplus
 }

@@ -104,7 +104,7 @@
 #define LIND_safe_fs_mkdir              131
 #define LIND_safe_fs_rmdir              132
 #define LIND_safe_fs_chmod              133
-
+#define LIND_safe_fs_fchmod             134
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
@@ -150,6 +150,7 @@ int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
 int lind_chmod (const char *path, int mode, int cageid);
+int lind_fchmod (int fd, int mode, int cageid);
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
