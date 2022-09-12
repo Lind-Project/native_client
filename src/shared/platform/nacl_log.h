@@ -245,7 +245,7 @@ void NaClLogV(int         detail_level,
               char const  *fmt,
               va_list     ap);
 
-void NaClLog(int         detail_level,
+INLINE void NaClLog(int         detail_level,
              char const  *fmt,
              ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 
