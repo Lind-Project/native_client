@@ -33,7 +33,7 @@ uint32_t                    nacl_thread_ids[NACL_THREAD_MAX] = {0};
 uintptr_t                   nacl_global_xlate_base;
 bool use_lkm = true;
 
-double lind_syscall_execution_time[NACL_MAX_SYSCALLS];
+long lind_syscall_execution_time[NACL_MAX_SYSCALLS];
 int lind_syscall_invoked_times[NACL_MAX_SYSCALLS];
 
 void add_syscall_time(int sysnum, double call_time) {
@@ -43,11 +43,11 @@ void add_syscall_time(int sysnum, double call_time) {
 
 void print_execution_times(int sysnum) {
     if (lind_syscall_invoked_times[sysnum] == 0) return;
-    double average_time = 1000000 * (lind_syscall_execution_time[sysnum]/lind_syscall_invoked_times[sysnum]);
+    double average_time = ((double)lind_syscall_execution_time[sysnum])/lind_syscall_invoked_times[sysnum];
     fprintf(stderr, "call number: %d, calls: %d, usecs/call: %f \n", sysnum, lind_syscall_invoked_times[sysnum], average_time);
 }
 
-double LindGetTime(void) {
+long LindGetTime_ns(void) {
   struct timespec tp;
 
   if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
@@ -55,7 +55,11 @@ double LindGetTime(void) {
     exit( EXIT_FAILURE );
   }
 
-  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
+  return (tp.tv_sec * 1000000000) + tp.tv_nsec;
+}
+
+double LindGetTime(void) {
+  return ((double) LindGetTime_ns())/1000000000.0;
 }
 
 void NaClGlobalModuleInit(void) {
