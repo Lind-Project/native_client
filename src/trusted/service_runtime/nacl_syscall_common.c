@@ -908,6 +908,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   char const      *ellipsis = "";
   int             lindfd;
 
+  
+  NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
     goto out;
@@ -1070,6 +1076,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   struct NaClDesc *ndp;
   size_t          log_bytes;
   int             lindfd;
+
+  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+        "%d, 0x%08"NACL_PRIxPTR", "
+        "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+        nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
