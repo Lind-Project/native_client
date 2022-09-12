@@ -3839,23 +3839,13 @@ int NaClSysThreadNice(struct NaClAppThread *natp,
 int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   struct NaClApp       *nap = natp->nap;
   int32_t              retval = -NACL_ABI_EINVAL;
-  struct NaClDescMutex *desc;
 
   NaClLog(3,
           ("Entered NaClSysMutexCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
-  desc = malloc(sizeof(*desc));
+  retval = lind_mutex_create(nap->cage_id);
 
-  if (!desc || !NaClDescMutexCtor(desc)) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-
-  retval = NaClSetAvail(nap, (struct NaClDesc *) desc);
-  desc = NULL;
-cleanup:
-  free(desc);
   NaClLog(3,
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
@@ -3866,22 +3856,12 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
                          int32_t               mutex_handle) {
   struct NaClApp        *nap = natp->nap;
   int32_t               retval = -NACL_ABI_EINVAL;
-  struct NaClDesc       *desc;
 
   NaClLog(2, "Entered NaClSysMutexLock(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t)natp, mutex_handle);
 
-  desc = NaClGetDesc(nap, mutex_handle);
+  retval = lind_mutex_lock(mutex_handle, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Lock)(desc);
-  NaClDescUnref(desc);
-
-cleanup:
   return retval;
 }
 
@@ -3889,22 +3869,12 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
                            int32_t               mutex_handle) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
 
   NaClLog(2, "Entered NaClSysMutexUnlock(0x%08"NACL_PRIxPTR", %d)\")",
           (uintptr_t)natp, mutex_handle);
 
-  desc = NaClGetDesc(nap, mutex_handle);
+  retval = lind_mutex_unlock(mutex_handle, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Unlock)(desc);
-  NaClDescUnref(desc);
-
-cleanup:
   return retval;
 }
 
@@ -3912,45 +3882,38 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
                             int32_t                 mutex_handle) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
 
   NaClLog(2, "Entered NaClSysMutexTrylock(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t)natp, mutex_handle);
 
-  desc = NaClGetDesc(nap, mutex_handle);
+  retval = lind_mutex_trylock(mutex_handle, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+  return retval;
+}
 
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->TryLock)(desc);
-  NaClDescUnref(desc);
+int32_t NaClSysMutexDestroy(struct NaClAppThread   *natp,
+                            int32_t                 mutex_handle) {
+  struct NaClApp  *nap = natp->nap;
+  int32_t         retval = -NACL_ABI_EINVAL;
 
-cleanup:
+  NaClLog(2, "Entered NaClSysMutexDestroy(0x%08"NACL_PRIxPTR", %d)\n",
+          (uintptr_t)natp, mutex_handle);
+
+  retval = lind_mutex_destroy(mutex_handle, nap->cage_id);
+
   return retval;
 }
 
 int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
   struct NaClApp         *nap = natp->nap;
   int32_t                retval = -NACL_ABI_EINVAL;
-  struct NaClDescCondVar *desc;
 
   NaClLog(3,
           ("Entered NaClSysCondCreate(0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp);
 
-  desc = malloc(sizeof(*desc));
+  retval = lind_cond_create(nap->cage_id);
 
-  if (!desc || !NaClDescCondVarCtor(desc)) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-
-  retval = NaClSetAvail(nap, (struct NaClDesc *)desc);
-  desc = NULL;
-cleanup:
-  free(desc);
   NaClLog(2, "NaClSysCondCreate(0x%08"NACL_PRIxPTR") = %d\n",
            (uintptr_t)natp, retval);
   return retval;
@@ -3961,32 +3924,12 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
                         int32_t              mutex_handle) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *cv_desc;
-  struct NaClDesc *mutex_desc;
 
   NaClLog(2, "Entered NaClSysCondWait(0x%08"NACL_PRIxPTR", %d, %d)\n",
            (uintptr_t)natp, cond_handle, mutex_handle);
 
-  cv_desc = NaClGetDesc(nap, cond_handle);
+  retval = lind_cond_wait(cond_handle, mutex_handle, nap->cage_id);
 
-  if (!cv_desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  mutex_desc = NaClGetDesc(nap, mutex_handle);
-  if (!mutex_desc) {
-    NaClDescUnref(cv_desc);
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = (*((struct NaClDescVtbl const *) cv_desc->base.vtbl)->
-            Wait)(cv_desc, mutex_desc);
-  NaClDescUnref(cv_desc);
-  NaClDescUnref(mutex_desc);
-
-cleanup:
   return retval;
 }
 
@@ -3994,44 +3937,38 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
                           int32_t              cond_handle) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
 
   NaClLog(2, "Entered NaClSysCondSignal(0x%08"NACL_PRIxPTR", %d)\n",
            (uintptr_t)natp, cond_handle);
 
-  desc = NaClGetDesc(nap, cond_handle);
+  retval = lind_cond_signal(cond_handle, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Signal)(desc);
-  NaClDescUnref(desc);
-cleanup:
   return retval;
 }
 
 int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
                              int32_t               cond_handle) {
   struct NaClApp  *nap = natp->nap;
-  struct NaClDesc *desc;
   int32_t         retval = -NACL_ABI_EINVAL;
 
   NaClLog(2, "Entered NaClSysCondBroadcast(0x%08"NACL_PRIxPTR", %d)\n",
           (uintptr_t)natp, cond_handle);
 
-  desc = NaClGetDesc(nap, cond_handle);
+  retval = lind_cond_broadcast(cond_handle, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+  return retval;
+}
 
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->Broadcast)(desc);
-  NaClDescUnref(desc);
+int32_t NaClSysCondDestroy(struct NaClAppThread  *natp,
+                           int32_t               cond_handle) {
+  struct NaClApp  *nap = natp->nap;
+  int32_t         retval = -NACL_ABI_EINVAL;
 
-cleanup:
+  NaClLog(2, "Entered NaClSysCondDestroy(0x%08"NACL_PRIxPTR", %d)\n",
+          (uintptr_t)natp, cond_handle);
+
+  retval = lind_cond_destroy(cond_handle, nap->cage_id);
+
   return retval;
 }
 
@@ -4041,8 +3978,6 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 struct nacl_abi_timespec *ts) {
   struct NaClApp           *nap = natp->nap;
   int32_t                  retval = -NACL_ABI_EINVAL;
-  struct NaClDesc          *cv_desc;
-  struct NaClDesc          *mutex_desc;
   struct nacl_abi_timespec trusted_ts;
 
   NaClLog(2, "Entered NaClSysCondTimedWaitAbs(0x%08"NACL_PRIxPTR
@@ -4055,28 +3990,15 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
     goto cleanup;
   }
 
-  /* TODO(gregoryd): validate ts - do we have a limit for time to wait? */
+  retval = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
-  cv_desc = NaClGetDesc(nap, cond_handle);
-  if (!cv_desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  mutex_desc = NaClGetDesc(nap, mutex_handle);
-  if (!mutex_desc) {
-    NaClDescUnref(cv_desc);
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
-
-  retval = ((struct NaClDescVtbl const *)cv_desc->base.vtbl)->TimedWaitAbs(cv_desc, mutex_desc, &trusted_ts);
-  NaClDescUnref(cv_desc);
-  NaClDescUnref(mutex_desc);
 cleanup:
   return retval;
 }
 
+//TODO: semaphores currently do not have a proper implementation as the desc numbers cannot be
+//cloned on fork and thus we can't really implement them in lind as is. We must do a proper
+//implementation of semaphores as not desc associated in order for this to work properly
 int32_t NaClSysSemCreate(struct NaClAppThread *natp,
                          int32_t              init_value) {
   struct NaClApp           *nap = natp->nap;

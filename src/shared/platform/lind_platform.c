@@ -243,6 +243,51 @@ int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid) {
     DISPATCH_SYSCALL_4(LIND_safe_net_socketpair, int, domain, int, type, int, protocol, pipearray, sv);
 }
 
+int lind_mutex_create (int cageid) {
+    DISPATCH_SYSCALL_0(LIND_safe_mutex_create);
+}
+
+int lind_mutex_destroy (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_destroy, int, mutex_handle);
+}
+
+int lind_mutex_lock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_lock, int, mutex_handle);
+}
+
+int lind_mutex_trylock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_trylock, int, mutex_handle);
+}
+
+int lind_mutex_unlock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_unlock, int, mutex_handle);
+}
+
+int lind_cond_create (int cageid) {
+    DISPATCH_SYSCALL_0(LIND_safe_cond_create);
+}
+
+int lind_cond_destroy (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_destroy, int, cond_handle);
+}
+
+int lind_cond_wait (int cond_handle, int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_cond_broadcast, int, cond_handle, int, mutex_handle);
+}
+
+int lind_cond_broadcast (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_broadcast, int, cond_handle);
+}
+
+int lind_cond_signal (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_signal, int, cond_handle);
+}
+
+int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_cond_broadcast, int, cond_handle, 
+                       timespecstruct, ts, int, mutex_handle);
+}
+
 int lind_getcwd (char *buf, size_t size, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_getcwd, mutcbuf, buf, size_t, size);
 }

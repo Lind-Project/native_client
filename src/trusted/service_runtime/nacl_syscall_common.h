@@ -316,6 +316,9 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread *natp,
 int32_t NaClSysMutexTrylock(struct NaClAppThread *natp,
                             int32_t              mutex_handle);
 
+int32_t NaClSysMutexDestroy(struct NaClAppThread *natp,
+                            int32_t              mutex_handle);
+
 /* condition variable */
 
 int32_t NaClSysCondCreate(struct NaClAppThread *natp);
@@ -339,6 +342,9 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  cond_handle,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts);
+
+int32_t NaClSysCondDestroy(struct NaClAppThread *natp,
+                           int32_t              cond_handle);
 
 int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
 

@@ -94,6 +94,18 @@
 #define LIND_safe_fs_fork               68
 #define LIND_safe_fs_exec               69
 
+#define LIND_safe_mutex_create          70
+#define LIND_safe_mutex_destroy         71
+#define LIND_safe_mutex_lock            72
+#define LIND_safe_mutex_trylock         73
+#define LIND_safe_mutex_unlock          74
+#define LIND_safe_cond_create           75
+#define LIND_safe_cond_destroy          76
+#define LIND_safe_cond_wait             77
+#define LIND_safe_cond_broadcast        78
+#define LIND_safe_cond_signal           79
+#define LIND_safe_cond_timedwait        80
+
 #define LIND_safe_net_gethostname       125
 
 #define LIND_safe_net_socket            136
@@ -128,6 +140,7 @@ union RustArg {
     struct lind_stat *dispatch_statstruct;
     struct statfs *dispatch_statfsstruct;
     struct timeval *dispatch_timevalstruct;
+    struct timespec *dispatch_timespecstruct;
     struct sockaddr *dispatch_sockaddrstruct;
     struct epoll_event *dispatch_epolleventstruct;
     const struct sockaddr *dispatch_constsockaddrstruct;
@@ -181,7 +194,6 @@ int lind_poll (struct pollfd *fds, nfds_t nfds, int timeout, int cageid);
 int lind_epoll_create(int size, int cageid);
 int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);
 int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout, int cageid);
-int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid);
 int lind_getcwd (char *buf, size_t size, int cageid);
 int lind_gethostname (char *name, size_t len, int cageid);
 int lind_getpeername (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int cageid);
@@ -190,6 +202,17 @@ int lind_getsockname (int sockfd, struct sockaddr *addr, socklen_t *addrlen, int
 int lind_socket (int domain, int type, int protocol, int cageid);
 int lind_shutdown (int sockfd, int how, int cageid);
 int lind_socketpair (int domain, int type, int protocol, int *fds, int cageid);
+int lind_mutex_create (int cageid);
+int lind_mutex_destroy (int mutex_handle, int cageid);
+int lind_mutex_lock (int mutex_handle, int cageid);
+int lind_mutex_trylock (int mutex_handle, int cageid);
+int lind_mutex_unlock (int mutex_handle, int cageid);
+int lind_cond_create (int cageid);
+int lind_cond_destroy (int cond_handle, int cageid);
+int lind_cond_wait (int cond_handle, int mutex_handle, int cageid);
+int lind_cond_broadcast (int cond_handle, int cageid);
+int lind_cond_signal (int cond_handle, int cageid);
+int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid);
 int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);
