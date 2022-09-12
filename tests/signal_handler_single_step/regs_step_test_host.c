@@ -185,8 +185,6 @@ static void SetUpBreakpoints(struct NaClApp *nap) {
 
 
 static int32_t TestSyscall(struct NaClAppThread *natp) {
-  
-
   if (g_call_count == 0) {
     g_natp = natp;
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm

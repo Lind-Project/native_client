@@ -120,7 +120,6 @@ int NaClDesc2Lindfd(struct NaClDesc * ndp) {
 }
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
-  
   return -NACL_ABI_ENOSYS;
 }
 

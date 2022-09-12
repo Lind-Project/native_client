@@ -646,11 +646,6 @@ int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
 
-  NaClLog(2,
-          ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
-           ", 0x%"NACL_PRIxS", 0x%x)\n"),
-          (uintptr_t) self, page_num, npages, prot);
-
   if (0 == self->nvalid) {
     return 0;
   }

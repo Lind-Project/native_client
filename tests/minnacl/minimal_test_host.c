@@ -19,7 +19,6 @@
 #include "native_client/tests/minnacl/minimal_test_syscalls.h"
 
 static int32_t NotImplementedDecoder(struct NaClAppThread *natp) {
-  
   printf("Error: entered an unexpected syscall!\n");
   fflush(stdout);
   _exit(1);
