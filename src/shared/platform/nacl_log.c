@@ -665,7 +665,7 @@ void NaClLogDoLogAndUnsetModule(int        detail_level,
   va_end(ap);
 }
 
-inline void NaClLog(int         detail_level,
+void NaClLog(int         detail_level,
              char const  *fmt,
              ...) {
   va_list ap;
