@@ -907,7 +907,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   size_t          log_bytes;
   char const      *ellipsis = "";
   int             lindfd;
-
   
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
