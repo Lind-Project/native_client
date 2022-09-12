@@ -142,7 +142,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
                                                          NACL_SYSARGS_FIX);
 
   #ifdef SYSCALL_TIMING
-  double call_start_time = LindGetTime();
+  double call_start_time = LindGetTime_ns();
   #endif
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
@@ -155,7 +155,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   }
 
   #ifdef SYSCALL_TIMING
-  double call_end_time = LindGetTime();
+  double call_end_time = LindGetTime_ns();
   double call_total_time = call_end_time - call_start_time;
   add_syscall_time(sysnum, call_total_time);
   #endif
