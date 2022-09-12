@@ -100,6 +100,7 @@ void add_syscall_time(int sysnum, double call_time);
 void print_execution_times(int sysnum);
 
 double LindGetTime(void);
+long LindGetTime_ns(void);
 
 void  NaClGlobalModuleInit(void);
 void  NaClGlobalModuleFini(void);
