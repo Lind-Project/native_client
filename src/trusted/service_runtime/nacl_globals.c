@@ -43,8 +43,8 @@ void add_syscall_time(int sysnum, double call_time) {
 
 void print_execution_times(int sysnum) {
     if (lind_syscall_invoked_times[sysnum] == 0) return;
-    double average_time = ((double)lind_syscall_execution_time[sysnum])/lind_syscall_invoked_times[sysnum];
-    fprintf(stderr, "call number: %d, calls: %d, usecs/call: %f \n", sysnum, lind_syscall_invoked_times[sysnum], average_time);
+    double average_time = ((double)lind_syscall_execution_time[sysnum])/((double)lind_syscall_invoked_times[sysnum]);
+    fprintf(stderr, "call number: %d, calls: %d, nsecs/call: %f \n", sysnum, lind_syscall_invoked_times[sysnum], average_time);
 }
 
 long LindGetTime_ns(void) {
