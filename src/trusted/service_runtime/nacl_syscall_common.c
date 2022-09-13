@@ -934,11 +934,13 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-
   /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
+
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysRead NULL or closed desc\n");
+  }
 
   if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysRead: WRONLY file\n");
@@ -1101,11 +1103,13 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-
    /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
+
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysWrite NULL or closed desc\n");
+  }
 
   if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysWrite: RDONLY file\n");
