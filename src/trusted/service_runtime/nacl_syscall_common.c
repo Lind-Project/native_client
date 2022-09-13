@@ -120,7 +120,6 @@ int NaClDesc2Lindfd(struct NaClDesc * ndp) {
 }
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
-  NaClCopyDropLock(natp->nap);
   return -NACL_ABI_ENOSYS;
 }
 
@@ -908,7 +907,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   size_t          log_bytes;
   char const      *ellipsis = "";
   int             lindfd;
-
+  
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
@@ -935,13 +934,14 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-
   /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  NaClHostDescCheckValidity("NaClSysRead", hd);
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysRead NULL or closed desc\n");
+  }
+
   if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysRead: WRONLY file\n");
     NaClFastMutexUnlock(&nap->desc_mu);
@@ -967,28 +967,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
-
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
   read_result = lind_read(lindfd, (void *)sysaddr, count, nap->cage_id);
-
-  if (read_result > 0) {
-    NaClLog(4, "read returned %"NACL_PRIdS" bytes\n", read_result);
-    log_bytes = (size_t) read_result;
-    if (log_bytes > INT32_MAX) {
-      log_bytes = INT32_MAX;
-      ellipsis = "...";
-    }
-    if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-      log_bytes = kdefault_io_buffer_bytes_to_log;
-      ellipsis = "...";
-    }
-    NaClLog(8, "read result: %.*s%s\n",
-            (int) log_bytes, (char *) sysaddr, ellipsis);
-  } else {
-    NaClLog(4, "read returned %"NACL_PRIdS"\n", read_result);
-  }
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
@@ -1097,10 +1079,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   int             lindfd;
 
   NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
-          "%d, 0x%08"NACL_PRIxPTR", "
-          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-
+        "%d, 0x%08"NACL_PRIxPTR", "
+        "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+        nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
@@ -1122,13 +1103,14 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  NaClLog(2, " ndp = %"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-
    /* Translate from NaCl Desc to Host Desc */
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
   struct NaClHostDesc *hd = self->hd;
 
-  NaClHostDescCheckValidity("NaClSysWrite", hd);
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysWrite NULL or closed desc\n");
+  }
+
   if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysWrite: RDONLY file\n");
     NaClFastMutexUnlock(&nap->desc_mu);
@@ -1151,19 +1133,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
    * we'll just clamp the request size if it's too large.
    */
   count = count > INT32_MAX ? INT32_MAX : count;
-  log_bytes = count;
-  if (log_bytes == INT32_MAX) {
-    ellipsis = "...";
-  }
-  UNREFERENCED_PARAMETER(ellipsis);
-  if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-     log_bytes = kdefault_io_buffer_bytes_to_log;
-     ellipsis = "...";
-  }
-  UNREFERENCED_PARAMETER(log_bytes);
-  UNREFERENCED_PARAMETER(ellipsis);
-  NaClLog(2, "In NaClSysWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
-          d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
