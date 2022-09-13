@@ -3998,7 +3998,8 @@ cleanup:
 
 //TODO: semaphores currently do not have a proper implementation as the desc numbers cannot be
 //cloned on fork and thus we can't really implement them in lind as is. We must do a proper
-//implementation of semaphores as not desc associated in order for this to work properly
+//implementation of semaphores as not desc associated in order for this to work properly.
+//However, this is irrelevant for now, as semaphores are not hooked in through glibc
 int32_t NaClSysSemCreate(struct NaClAppThread *natp,
                          int32_t              init_value) {
   struct NaClApp           *nap = natp->nap;
