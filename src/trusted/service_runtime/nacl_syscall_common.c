@@ -5539,11 +5539,45 @@ int32_t NaClSysAccess(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, path, mode);
 
   if (ret) {
-    NaClLog(2, "NaClSysStatfs could not translate path address, returning %d\n", ret);
+    NaClLog(2, "NaClSysAccess could not translate path address, returning %d\n", ret);
     return ret;
   }
 
   ret = lind_access(path, mode, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysTruncate(struct NaClAppThread *natp,
+                        uint32_t file, int length) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  char path[NACL_CONFIG_PATH_MAX];
+
+  ret = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) file);
+
+  NaClLog(2, "Cage %d Entered NaClSysTruncate(0x%08"NACL_PRIxPTR", %s, %d)\n",
+          nap->cage_id, (uintptr_t) natp, path, length);
+
+  if (ret) {
+    NaClLog(2, "NaClSysTruncate could not translate path address, returning %d\n", ret);
+    return ret;
+  }
+
+  ret = lind_truncate(path, length, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysFtruncate(struct NaClAppThread *natp,
+                         int fd, int length) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFTruncate(0x%08"NACL_PRIxPTR", %d, %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd, length);
+
+  ret = lind_ftruncate(fd, length, nap->cage_id);
 
   return ret;
 }

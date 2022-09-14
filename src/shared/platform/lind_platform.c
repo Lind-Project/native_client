@@ -101,6 +101,14 @@ int lind_access (const char *file, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_access, cstr, file, int, mode);
 }
 
+int lind_truncate (const char *file, int length, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_truncate, cstr, file, off_t, length);
+}
+
+int lind_ftruncate (int fd, int length, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_ftruncate, int, fd, off_t, length);
+}
+
 int lind_chdir (const char *name, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_chdir, cstr, name);
 }

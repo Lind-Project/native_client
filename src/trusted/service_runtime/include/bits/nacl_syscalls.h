@@ -46,6 +46,9 @@
 
 #define NACL_sys_list_mappings          25
 
+#define NACL_sys_truncate               26
+#define NACL_sys_ftruncate              27
+
 #define NACL_sys_exit                   30
 #define NACL_sys_getpid                 31
 #define NACL_sys_sched_yield            32

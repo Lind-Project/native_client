@@ -424,6 +424,8 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp, int sockfd,  struct socka
 int32_t NaClSysGetpeername(struct NaClAppThread *natp, int sockfd,  struct sockaddr * addr, socklen_t * addrlen);
 
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
+int32_t NaClSysTruncate(struct NaClAppThread *natp, uint32_t file, int length);
+int32_t NaClSysFtruncate(struct NaClAppThread *natp, int fd, int length);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
 int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout);
