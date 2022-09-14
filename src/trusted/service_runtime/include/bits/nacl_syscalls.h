@@ -85,6 +85,7 @@
 #define NACL_sys_imc_mem_obj_create     65
 #define NACL_sys_imc_socketpair         66
 
+#define NACL_sys_mutex_destroy          69
 #define NACL_sys_mutex_create           70
 #define NACL_sys_mutex_lock             71
 #define NACL_sys_mutex_trylock          72
@@ -93,6 +94,7 @@
 #define NACL_sys_cond_wait              75
 #define NACL_sys_cond_signal            76
 #define NACL_sys_cond_broadcast         77
+#define NACL_sys_cond_destroy           78
 #define NACL_sys_cond_timed_wait_abs    79
 
 #define NACL_sys_thread_create          80
