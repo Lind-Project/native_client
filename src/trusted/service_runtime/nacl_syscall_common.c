@@ -5573,9 +5573,18 @@ int32_t NaClSysFtruncate(struct NaClAppThread *natp,
                          int fd, int length) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
+  struct NaClDesc *ndp;
 
   NaClLog(2, "Cage %d Entered NaClSysFTruncate(0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, fd, length);
+
+  ndp = GetDescFromCagetable(nap, fd);
+  if (!ndp) {
+    NaClLog(2, "NaClSysTruncate was passed an unrecognized file descriptor, returning %d\n", fd);
+    return -NACL_ABI_EBADF;
+  }
+
+  fd = NaClDesc2Lindfd(ndp);
 
   ret = lind_ftruncate(fd, length, nap->cage_id);
 
