@@ -165,6 +165,8 @@ SYSCALL_LIST = [
      ['int d', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_stat', 'NaClSysStat',
      ['const char *path', 'struct nacl_abi_stat *nasp']),
+    ('NACL_sys_truncate', 'NaClSysTruncate', ['uint32_t path', 'int mode']),
+    ('NACL_sys_ftruncate', 'NaClSysFtruncate', ['int fd', 'int mode']),
     ('NACL_sys_getdents', 'NaClSysGetdents',
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_brk', 'NaClSysBrk', ['uintptr_t new_break']),

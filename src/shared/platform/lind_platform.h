@@ -44,7 +44,9 @@
 #define LIND_safe_fs_write              13
 #define LIND_safe_fs_lseek              14
 #define LIND_safe_fs_ioctl              15
+#define LIND_safe_fs_truncate           16
 #define LIND_safe_fs_fxstat             17
+#define LIND_safe_fs_ftruncate          18
 #define LIND_safe_fs_fstatfs            19
 #define LIND_safe_fs_mmap               21
 #define LIND_safe_fs_munmap             22
@@ -108,8 +110,6 @@
 
 #define LIND_safe_net_gethostname       125
 
-#define LIND_safe_net_socket            136
-
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
 #define LIND_safe_fs_chdir              130
@@ -117,6 +117,9 @@
 #define LIND_safe_fs_rmdir              132
 #define LIND_safe_fs_chmod              133
 #define LIND_safe_fs_fchmod             134
+
+#define LIND_safe_net_socket            136
+
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
@@ -159,6 +162,8 @@ int lind_unlink (const char *name, int cageid);
 int lind_link (const char *from, const char *to, int cageid);
 int lind_rename (const char *oldpath, const char *newpath, int cageid);
 int lind_access (const char *file, int mode, int cageid);
+int lind_truncate (const char *file, int length, int cageid);
+int lind_ftruncate (int fd, int length, int cageid);
 int lind_chdir (const char *name, int cageid);
 int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
