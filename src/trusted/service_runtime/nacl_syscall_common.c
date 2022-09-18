@@ -4986,11 +4986,6 @@ int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc) {
   int ret;
 
   NaClLog(1, "%s\n", "[NaClSysWait] entered wait! \n");
-
-  if (!nap->num_children) {
-    ret = -NACL_ABI_ECHILD;
-    goto out;
-  }
   ret = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
 
 out:
