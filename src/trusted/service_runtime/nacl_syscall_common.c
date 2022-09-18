@@ -4987,7 +4987,6 @@ out:
 }
 
 int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc) {
-  struct NaClApp *nap = natp->nap;
   int ret;
 
   NaClLog(1, "%s\n", "[NaClSysWait] entered wait! \n");
