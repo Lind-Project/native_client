@@ -4905,7 +4905,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     if (zombie == NULL) ret = -NACL_ABI_ECHILD;
     else {
       ret = zombie->cage_id;
-      *stat_loc_ptr = zombie->exit_status;
+        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
        NaClRemoveZombie(nap, zombie->cage_id);
     }
     goto out;
@@ -4933,7 +4933,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     NaClRemoveZombie(nap, pid);
 
     ret = pid;
-    *stat_loc_ptr = nap_child->exit_status;
+    if (stat_loc_ptr) *stat_loc_ptr = nap_child->exit_status;
     goto out;
   }
 
@@ -4954,7 +4954,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
       struct NaClZombie* zombie = NaClCheckZombies(nap);
       if (zombie) {
-        *stat_loc_ptr = zombie->exit_status;
+        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
         ret = zombie->cage_id;
         NaClRemoveZombie(nap, ret); //remove from zombie list regardless
 
