@@ -4950,13 +4950,18 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       }
 
       NaClXMutexLock(&nap->children_mu);
+      NaClLog(1, "Thread children count: %d\n", nap->num_children);
+
+      // wait here until a signal is sent to check 
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+
+      // check the zombies dynarray, and lazily return the first exited process if it exists
 
       struct NaClZombie* zombie = NaClCheckZombies(nap);
       if (zombie) {
-        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
+        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
         ret = zombie->cage_id;
-        NaClRemoveZombie(nap, ret); //remove from zombie list regardless
+        NaClRemoveZombie(nap, ret); //remove from zombie list
 
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
@@ -4988,7 +4993,6 @@ int32_t NaClSysWait(struct NaClAppThread *natp, uint32_t *stat_loc) {
   NaClLog(1, "%s\n", "[NaClSysWait] entered wait! \n");
   ret = NaClSysWaitpid(natp, WAIT_ANY, stat_loc, 0);
 
-out:
   NaClLog(1, "[NaClSysWait] ret = %d \n", ret);
   return ret;
 }
