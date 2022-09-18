@@ -1981,7 +1981,7 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap) {
   NaClXMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = NULL;
-  for(long unsigned int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
+  for(long unsigned int cage_id = 0; cage_id < nap->zombies.num_entries; cage_id++) {
     zombie = DynArrayGet(&nap->zombies, cage_id);
     if (zombie != NULL) break;
   }

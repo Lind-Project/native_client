@@ -4942,13 +4942,12 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     while(1){
 
       /* make sure children exist, if not send ABI_ECHILD */
-      if (!nap->num_children) {
+      if (!nap->num_children && !nap->zombies.num_entries) {
         ret = -NACL_ABI_ECHILD;
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
         goto out;
       }
-
 
       NaClXMutexLock(&nap->children_mu);
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
