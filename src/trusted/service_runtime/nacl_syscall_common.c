@@ -4878,6 +4878,12 @@ fail:
 #define WAIT_ANY (-1)
 #define WAIT_ANY_PG 0
 
+/*
+ * Wait/Waitpid is used to reap a process's exited children, referred to as zombies
+ * We use the NaClCheckZombies/NaClAddZombies/NaClRemoveZombies functions from sel_ldr.c to manage these zombies
+ * Zombies are added to a parents zombie list when a child exits, in the NaClReportExitStatus function in sel_ldr_standard.c
+ */
+
 int32_t NaClSysWaitpid(struct NaClAppThread *natp,
                        int pid,
                        uint32_t *stat_loc,
@@ -4956,7 +4962,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
 
       // check the zombies dynarray, and lazily return the first exited process if it exists
-
       struct NaClZombie* zombie = NaClCheckZombies(nap);
       if (zombie) {
         if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
