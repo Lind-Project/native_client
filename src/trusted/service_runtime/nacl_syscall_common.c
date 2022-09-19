@@ -4956,6 +4956,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       /* make sure children exist, if not send ABI_ECHILD */
       if (!nap->num_children && !nap->zombies.num_entries) {
         ret = -NACL_ABI_ECHILD;
+        NaClXCondVarBroadcast(&nap->children_cv);
         goto out;
       }
 
@@ -4969,7 +4970,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       struct NaClZombie *zombie = NaClCheckZombies(nap);
       if (zombie) {
         if (stat_loc_ptr)
-          *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
+        *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
         ret = zombie->cage_id;
         NaClRemoveZombie(nap, ret); // remove from zombie list
 
