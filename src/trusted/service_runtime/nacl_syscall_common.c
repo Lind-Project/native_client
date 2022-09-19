@@ -4927,7 +4927,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     if (!nap_child && !zombie)
     {
       ret = -NACL_ABI_ECHILD;
-      // NaClXCondVarBroadcast(&nap->children_cv);
+      NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
       goto out;
     }
