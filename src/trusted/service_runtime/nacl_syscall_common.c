@@ -4923,7 +4923,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     /* make sure a child exists */
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
-    zombie = NaClCheckZombiesById(nap, cage_id);
+    zombie = NaClCheckZombieById(nap, cage_id);
     if (!nap_child && !zombie)
     {
       ret = -NACL_ABI_ECHILD;
@@ -4939,7 +4939,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     while (!zombie)
     {
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
-      zombie = NaClCheckZombiesById(nap, cage_id);
+      zombie = NaClCheckZombieById(nap, cage_id);
     }
     NaClXCondVarBroadcast(&nap->children_cv);
 
