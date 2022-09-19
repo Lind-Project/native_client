@@ -4901,84 +4901,90 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
 
   CHECK(nap->num_children < NACL_THREAD_MAX);
-  if (stat_loc_ptr) {
-    *stat_loc_ptr = 0;
-  }
+  if (stat_loc_ptr) *stat_loc_ptr = 0;
 
   // First check if we have children, if not check zombies, if no zombies return ECHILD
-  if (!nap->num_children || pid > pid_max) {
-    struct NaClZombie* zombie = NaClCheckZombies(nap);
-    if (zombie == NULL) ret = -NACL_ABI_ECHILD;
-    else {
-      ret = zombie->cage_id;
-        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
-       NaClRemoveZombie(nap, zombie->cage_id);
-    }
-    goto out;
-  }
+  // if (!nap->num_children || pid > pid_max) {
+  //   // struct NaClZombie* zombie = NaClCheckZombies(nap);
+  //   // if (zombie == NULL) ret = -NACL_ABI_ECHILD;
+  //   // else {
+  //   //   ret = zombie->cage_id;
+  //   //     if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
+  //   //    NaClRemoveZombie(nap, zombie->cage_id);
+  //   // }
+  //   ret = -NACL_ABI_ECHILD;
+  //   goto out;
+  // }
 
   // If we have an explicit waitpid with child pid given, lets wait for that pid
   if (pid > 0 && pid <= pid_max) {
+    struct NaClZombie* zombie;
     int cage_id = pid;
-    /* make sure children exists */
+    /* make sure a child exists */
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
-    if (!nap_child) {
+    zombie = NaClCheckZombiesById(nap, cage_id);
+    if (!nap_child && !zombie)
+    {
       ret = -NACL_ABI_ECHILD;
-      NaClXCondVarBroadcast(&nap->children_cv);
+      // NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
       goto out;
     }
+    NaClXMutexUnlock(&nap->children_mu);
+
     NaClLog(1, "Thread children count: %d\n", nap->num_children);
+    
     /* wait for child to finish */
-    while (DynArrayGet(&nap->children, cage_id)) {
+    while (!zombie)
+    {
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+      zombie = NaClCheckZombiesById(nap, cage_id);
     }
     NaClXCondVarBroadcast(&nap->children_cv);
-    NaClXMutexUnlock(&nap->children_mu);
-    NaClRemoveZombie(nap, pid);
 
-    ret = pid;
-    if (stat_loc_ptr) *stat_loc_ptr = nap_child->exit_status;
+    ret = zombie->cage_id;
+    if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
+    NaClRemoveZombie(nap, cage_id);
     goto out;
   }
 
   // if WAIT_ANY, we'll busy loop on all children, except in the case of WNOHANG where we only loop once
   if (pid <= 0) {
-    while(1){
+    while (1) {
 
       /* make sure children exist, if not send ABI_ECHILD */
       if (!nap->num_children && !nap->zombies.num_entries) {
         ret = -NACL_ABI_ECHILD;
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
         goto out;
       }
 
       NaClXMutexLock(&nap->children_mu);
       NaClLog(1, "Thread children count: %d\n", nap->num_children);
 
-      // wait here until a signal is sent to check 
+      // wait here until a signal is sent to check
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
 
       // check the zombies dynarray, and lazily return the first exited process if it exists
-      struct NaClZombie* zombie = NaClCheckZombies(nap);
+      struct NaClZombie *zombie = NaClCheckZombies(nap);
       if (zombie) {
-        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
+        if (stat_loc_ptr)
+          *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
         ret = zombie->cage_id;
-        NaClRemoveZombie(nap, ret); //remove from zombie list
+        NaClRemoveZombie(nap, ret); // remove from zombie list
 
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
 
-        goto out;  
+        goto out;
       }
-  
+
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
 
       // exit after one loop if NOHANG
-      if (options & WNOHANG) break;
+      if (options & WNOHANG)
+        break;
     }
   }
 

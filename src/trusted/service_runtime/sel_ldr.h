@@ -960,6 +960,7 @@ int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
 int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
+struct NaClZombie* NaClCheckZombieById(struct NaClApp *nap, int cage_id);
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
 void NaClAddZombie(struct NaClApp *nap);
 
