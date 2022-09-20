@@ -4932,11 +4932,9 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       zombie = NaClCheckZombies(nap); //re-check on signal
     }
 
-  } else {
-    // else we have an explicit waitpid with child pid given, lets wait for that pid
-
+  } else {   // else we have an explicit waitpid with child pid given, lets wait for that pid
     int cage_id = pid;
-
+    
     /* make sure children exist (check children and zombies) */
     nap_child = DynArrayGet(&nap->children, cage_id);
     zombie = NaClCheckZombieById(nap, cage_id);
@@ -4959,7 +4957,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   NaClRemoveZombie(nap, zombie->cage_id);
 
 out:
-  // NaClXCondVarBroadcast(&nap->children_cv);
   NaClXMutexUnlock(&nap->children_mu);
 
   NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
