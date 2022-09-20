@@ -4917,7 +4917,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
     // check the zombies dynarray, and lazily return the first exited process if it exists
     zombie = NaClCheckZombies(nap);
-    if (!zombie && (options & WNOHANG)) goto out; // exit here if WNOHANG
+    if (!zombie && (options & WNOHANG)) goto out; // exit here if WNOHANG, ret stays initialized to 0
     while(!zombie){
 
       /* make sure children exist, if not send ABI_ECHILD */
@@ -4934,7 +4934,7 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
   } else {   // else we have an explicit waitpid with child pid given, lets wait for that pid
     int cage_id = pid;
-    
+
     /* make sure children exist (check children and zombies) */
     nap_child = DynArrayGet(&nap->children, cage_id);
     zombie = NaClCheckZombieById(nap, cage_id);
@@ -4942,6 +4942,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       ret = -NACL_ABI_ECHILD;
       goto out;
     }
+    
+    if (!zombie && (options & WNOHANG)) goto out; // exit here if WNOHANG, ret stays initialized to 0
 
     NaClLog(1, "Thread children count: %d\n", nap->num_children);
     /* wait for child to finish */

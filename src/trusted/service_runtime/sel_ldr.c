@@ -1992,7 +1992,7 @@ struct NaClZombie* NaClCheckZombies(struct NaClApp *nap) {
 
 struct NaClZombie* NaClCheckZombieById(struct NaClApp *nap, int cage_id) {
   NaClXMutexLock(&nap->zombie_mu);
-  struct NaClZombie* zombie = NULL;
+  struct NaClZombie* zombie;
   zombie = DynArrayGet(&nap->zombies, cage_id);
   NaClXMutexUnlock(&nap->zombie_mu);
 
