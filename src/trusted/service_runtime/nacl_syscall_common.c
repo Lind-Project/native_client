@@ -4913,7 +4913,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   if (pid > 0) {
     int cage_id = pid;
     struct NaClZombie* zombie;
-    /* make sure children exists */
+
+    /* make sure children exist (check children and zombies) */
     NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
     zombie = NaClCheckZombieById(nap, cage_id);
@@ -4923,21 +4924,20 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       NaClXMutexUnlock(&nap->children_mu);
       goto out;
     }
-    NaClLog(1, "Thread children count: %d\n", nap->num_children);
 
+    NaClLog(1, "Thread children count: %d\n", nap->num_children);
     /* wait for child to finish */
     while (!zombie) {
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
       zombie = NaClCheckZombieById(nap, cage_id);
     }
-
     NaClXCondVarBroadcast(&nap->children_cv);
     NaClXMutexUnlock(&nap->children_mu);
 
+    // return finished cage information
     if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
     ret = zombie->cage_id;
     NaClRemoveZombie(nap, zombie->cage_id);
-
     goto out;
   }
 
@@ -4953,7 +4953,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
 
       NaClXMutexLock(&nap->children_mu);
       NaClLog(1, "Thread children count: %d\n", nap->num_children);
-
       // wait here until a signal is sent to check 
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
 
@@ -4963,13 +4962,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
         if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
         ret = zombie->cage_id;
         NaClRemoveZombie(nap, ret); //remove from zombie list
-
         NaClXCondVarBroadcast(&nap->children_cv);
         NaClXMutexUnlock(&nap->children_mu);
-
         goto out;  
       }
-  
+      
       NaClXCondVarBroadcast(&nap->children_cv);
       NaClXMutexUnlock(&nap->children_mu);
 
