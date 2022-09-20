@@ -4924,7 +4924,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       goto out;
     }
     NaClLog(1, "Thread children count: %d\n", nap->num_children);
-    NaClXMutexUnlock(&nap->children_mu);
 
     /* wait for child to finish */
     while (!zombie) {
@@ -4933,6 +4932,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     }
 
     NaClXCondVarBroadcast(&nap->children_cv);
+    NaClXMutexUnlock(&nap->children_mu);
+
     if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
     ret = zombie->cage_id;
     NaClRemoveZombie(nap, zombie->cage_id);
