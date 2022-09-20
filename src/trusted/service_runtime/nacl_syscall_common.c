@@ -4904,6 +4904,8 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   CHECK(nap->num_children < NACL_THREAD_MAX);
   if (stat_loc_ptr) *stat_loc_ptr = 0;
 
+  NaClXMutexLock(&nap->children_mu);
+
   // First check if we have children, if not return ECHILD
   if (pid > pid_max || (!nap->num_children && !nap->zombies.num_entries)) {
     ret = -NACL_ABI_ECHILD;
@@ -4915,13 +4917,10 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     int cage_id = pid;
 
     /* make sure children exist (check children and zombies) */
-    NaClXMutexLock(&nap->children_mu);
     nap_child = DynArrayGet(&nap->children, cage_id);
     zombie = NaClCheckZombieById(nap, cage_id);
     if (!nap_child && !zombie) {
       ret = -NACL_ABI_ECHILD;
-      NaClXCondVarBroadcast(&nap->children_cv);
-      NaClXMutexUnlock(&nap->children_mu);
       goto out;
     }
 
@@ -4931,8 +4930,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
       zombie = NaClCheckZombieById(nap, cage_id);
     }
-    NaClXCondVarBroadcast(&nap->children_cv);
-    NaClXMutexUnlock(&nap->children_mu);
 
     // return finished cage information
     if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
@@ -4944,7 +4941,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   // if WAIT_ANY, we'll busy loop on all children, except in the case of WNOHANG where we only loop once
   if (pid <= 0) {
 
-    NaClXMutexLock(&nap->children_mu);
     // check the zombies dynarray, and lazily return the first exited process if it exists
     zombie = NaClCheckZombies(nap);
     if (!zombie && (options & WNOHANG)) goto out; // exit here if WNOHANG
@@ -4953,8 +4949,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       /* make sure children exist, if not send ABI_ECHILD */
       if (!nap->num_children && !nap->zombies.num_entries) {
         ret = -NACL_ABI_ECHILD;
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
         goto out;
       }
 
@@ -4967,12 +4961,12 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
     ret = zombie->cage_id;
     NaClRemoveZombie(nap, ret); //remove from zombie list
-    NaClXCondVarBroadcast(&nap->children_cv);
-    NaClXMutexUnlock(&nap->children_mu);
-
   }
 
 out:
+  NaClXCondVarBroadcast(&nap->children_cv);
+  NaClXMutexUnlock(&nap->children_mu);
+
   NaClLog(1, "[NaClSysWaitpid] pid = %d \n", pid);
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
