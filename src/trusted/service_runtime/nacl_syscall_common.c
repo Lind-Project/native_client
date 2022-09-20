@@ -4901,19 +4901,11 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
 
   CHECK(nap->num_children < NACL_THREAD_MAX);
-  if (stat_loc_ptr) {
-    *stat_loc_ptr = 0;
-  }
+  if (stat_loc_ptr) *stat_loc_ptr = 0;
 
-  // First check if we have children, if not check zombies, if no zombies return ECHILD
-  if (!nap->num_children || pid > pid_max) {
-    struct NaClZombie* zombie = NaClCheckZombies(nap);
-    if (zombie == NULL) ret = -NACL_ABI_ECHILD;
-    else {
-      ret = zombie->cage_id;
-        if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
-       NaClRemoveZombie(nap, zombie->cage_id);
-    }
+  // First check if we have children, if not return ECHILD
+  if (pid > pid_max || (!nap->num_children && !nap->zombies.num_entries)) {
+    ret = -NACL_ABI_ECHILD;
     goto out;
   }
 
