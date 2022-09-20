@@ -4912,32 +4912,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
     goto out;
   }
 
-  // If we have an explicit waitpid with child pid given, lets wait for that pid
-  if (pid > 0) {
-    int cage_id = pid;
-
-    /* make sure children exist (check children and zombies) */
-    nap_child = DynArrayGet(&nap->children, cage_id);
-    zombie = NaClCheckZombieById(nap, cage_id);
-    if (!nap_child && !zombie) {
-      ret = -NACL_ABI_ECHILD;
-      goto out;
-    }
-
-    NaClLog(1, "Thread children count: %d\n", nap->num_children);
-    /* wait for child to finish */
-    while (!zombie) {
-      NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
-      zombie = NaClCheckZombieById(nap, cage_id);
-    }
-
-    // return finished cage information
-    if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
-    ret = zombie->cage_id;
-    NaClRemoveZombie(nap, zombie->cage_id);
-    goto out;
-  }
-
   // if WAIT_ANY, we'll busy loop on all children, except in the case of WNOHANG where we only loop once
   if (pid <= 0) {
 
@@ -4957,11 +4931,32 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
       zombie = NaClCheckZombies(nap); //re-check on signal
     }
+    
+  } else {
+    // else we have an explicit waitpid with child pid given, lets wait for that pid
 
-    if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status; // set the status pointer if it exists
-    ret = zombie->cage_id;
-    NaClRemoveZombie(nap, ret); //remove from zombie list
+    int cage_id = pid;
+
+    /* make sure children exist (check children and zombies) */
+    nap_child = DynArrayGet(&nap->children, cage_id);
+    zombie = NaClCheckZombieById(nap, cage_id);
+    if (!nap_child && !zombie) {
+      ret = -NACL_ABI_ECHILD;
+      goto out;
+    }
+
+    NaClLog(1, "Thread children count: %d\n", nap->num_children);
+    /* wait for child to finish */
+    while (!zombie) {
+      NaClXCondVarTimedWaitRelative(&nap->children_cv, &nap->children_mu, &timeout);
+      zombie = NaClCheckZombieById(nap, cage_id);
+    }
   }
+
+  // return finished cage information
+  if (stat_loc_ptr) *stat_loc_ptr = zombie->exit_status;
+  ret = zombie->cage_id;
+  NaClRemoveZombie(nap, zombie->cage_id);
 
 out:
   NaClXCondVarBroadcast(&nap->children_cv);
