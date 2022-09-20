@@ -4950,8 +4950,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
       /* make sure children exist, if not send ABI_ECHILD */
       if (!nap->num_children && !nap->zombies.num_entries) {
         ret = -NACL_ABI_ECHILD;
-        NaClXCondVarBroadcast(&nap->children_cv);
-        NaClXMutexUnlock(&nap->children_mu);
         goto out;
       }
 
