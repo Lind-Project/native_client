@@ -280,7 +280,7 @@ int lind_cond_destroy (int cond_handle, int cageid) {
 }
 
 int lind_cond_wait (int cond_handle, int mutex_handle, int cageid) {
-    DISPATCH_SYSCALL_2(LIND_safe_cond_broadcast, int, cond_handle, int, mutex_handle);
+    DISPATCH_SYSCALL_2(LIND_safe_cond_wait, int, cond_handle, int, mutex_handle);
 }
 
 int lind_cond_broadcast (int cond_handle, int cageid) {
@@ -292,7 +292,7 @@ int lind_cond_signal (int cond_handle, int cageid) {
 }
 
 int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_cond_broadcast, int, cond_handle, 
+    DISPATCH_SYSCALL_3(LIND_safe_cond_timedwait, int, cond_handle, 
                        timespecstruct, ts, int, mutex_handle);
 }
 
