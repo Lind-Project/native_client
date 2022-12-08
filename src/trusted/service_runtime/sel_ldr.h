@@ -159,6 +159,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
+  volatile int              io_counter;
 
   /*
    * public, user settable prior to app start.
@@ -441,6 +442,7 @@ struct NaClApp {
   struct DynArray           threads;   /* NaClAppThread pointers */
   int                       num_threads;  /* number actually running */
 
+  struct NaClFastMutex      io_mu;
   struct NaClFastMutex      desc_mu;
   struct DynArray           desc_tbl;  /* NaClDesc pointers */
 

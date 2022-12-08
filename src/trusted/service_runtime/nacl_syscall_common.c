@@ -925,11 +925,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     goto out;
   }
 
-  NaClFastMutexLock(&nap->desc_mu);
+  NaClFastMutexLock(&nap->io_mu);
+  
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
   if (!ndp) {
-    NaClFastMutexUnlock(&nap->desc_mu);
+    NaClFastMutexUnlock(&nap->io_mu);
     retval = -NACL_ABI_EBADF;  
     goto out;
   }
@@ -944,13 +945,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysRead: WRONLY file\n");
-    NaClFastMutexUnlock(&nap->desc_mu);
+    NaClFastMutexUnlock(&nap->io_mu);
     retval = -NACL_ABI_EBADF;
     goto out;
   }
   
   lindfd = hd->d; // we can extract the lindfd here w/o worrying about it closing
-  NaClFastMutexUnlock(&nap->desc_mu);
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
@@ -967,6 +967,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
     count = INT32_MAX;
   }
 
+  nap->io_counter++;
+  NaClFastMutexUnlock(&nap->io_mu);
+
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
@@ -974,6 +977,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
+  nap->io_counter--;
+
 out:
   return retval;
 }
@@ -1094,11 +1099,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     goto out;
   }
 
-  NaClFastMutexLock(&nap->desc_mu);
+  NaClFastMutexLock(&nap->io_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
   if (!ndp) {
-    NaClFastMutexUnlock(&nap->desc_mu);
+    NaClXMutexUnlock(&nap->mu);
     retval = -NACL_ABI_EBADF;
     goto out;
   }
@@ -1113,13 +1118,12 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClSysWrite: RDONLY file\n");
-    NaClFastMutexUnlock(&nap->desc_mu);
+    NaClFastMutexUnlock(&nap->io_mu);
     retval = -NACL_ABI_EBADF;
     goto out;
   }
 
   lindfd = hd->d; // extract fd from HostDesc, we can unlock now safely
-  NaClFastMutexUnlock(&nap->desc_mu);
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) {
@@ -1134,6 +1138,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
    */
   count = count > INT32_MAX ? INT32_MAX : count;
 
+  nap->io_counter++;
+  NaClFastMutexUnlock(&nap->io_mu);
+
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
@@ -1141,6 +1148,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
+
+  nap->io_counter--;
 
 out:
   return retval;
@@ -1819,6 +1828,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   size_t                      alloc_rounded_length;
   int fd;
 
+  NaClFastMutexLock(&nap->io_mu);
+  while(nap->io_counter > 0); // wait here if any threads remain in I/O
+
   holding_app_lock = 0;
   ndp = NULL;
 
@@ -2372,6 +2384,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
   if (ndp) {
     NaClDescUnref(ndp);
   }
+
+  NaClFastMutexUnlock(&nap->io_mu);
+
 
   /*
    * Check to ensure that map_result will fit into a 32-bit value. This is

@@ -129,6 +129,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->initial_nexe_max_code_bytes = 0;
   nap->aux_info = NULL;
   nap->mem_start = 0;
+  nap->io_counter = 0;
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   nap->pcrel_thunk = 0;
@@ -288,8 +289,12 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
     goto cleanup_name_service;
   }
   nap->num_threads = 0;
-  if (!NaClFastMutexCtor(&nap->desc_mu)) {
+
+  if (!NaClFastMutexCtor(&nap->io_mu)) {
     goto cleanup_threads_mu;
+  }
+  if (!NaClFastMutexCtor(&nap->desc_mu)) {
+    goto cleanup_io_mu;
   }
 
   nap->running = 0;
@@ -335,6 +340,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   cleanup_desc_mu:
   NaClFastMutexDtor(&nap->desc_mu);
+  cleanup_io_mu:
+  NaClFastMutexDtor(&nap->io_mu);
   cleanup_threads_mu:
   NaClMutexDtor(&nap->threads_mu);
   cleanup_name_service:
@@ -390,6 +397,7 @@ void NaClAppDtor(struct NaClApp *nap) {
 
   NaClLog(3, "Tearing down mutexes\n");
   NaClFastMutexDtor(&nap->desc_mu);
+  NaClFastMutexDtor(&nap->io_mu);
   NaClMutexDtor(&nap->threads_mu);
   NaClCondVarDtor(&nap->cv);
   NaClMutexDtor(&nap->mu);
