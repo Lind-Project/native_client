@@ -2713,9 +2713,9 @@ nacl_env = MakeArchSpecificEnv().Clone(
                ] +
               werror_flags,
 
-    CFLAGS = ['-std=gnu11',
+    CFLAGS = ['-std=gnu99',
               ],
-    CXXFLAGS = ['-std=gnu++11',
+    CXXFLAGS = ['-std=gnu++98',
                 '-Wno-long-long',
                 ],
 

@@ -302,7 +302,7 @@ def _SetEnvForPnacl(env, root):
   # instead of CFLAGS etc to keep them from getting blown away by some
   # tests. Don't add flags here unless they always need to be preserved.
   pnacl_cxx_flags = ''
-  pnacl_cc_flags = ' -std=gnu11'
+  pnacl_cc_flags = ' -std=gnu99'
   pnacl_ld_flags = ' ' + ' '.join(env['PNACL_BCLDFLAGS'])
   pnacl_translate_flags = ''
 
