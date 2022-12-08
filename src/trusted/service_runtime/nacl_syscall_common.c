@@ -799,6 +799,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     return -NACL_ABI_EBADF;
   }
 
+  NaClFastMutexLock(&nap->io_mu);
   NaClFastMutexLock(&nap->desc_mu);
 
   /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
@@ -817,6 +818,8 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   fd_cage_table[nap->cage_id][d] = NACL_BAD_FD;
 
   NaClFastMutexUnlock(&nap->desc_mu);
+  NaClFastMutexUnlock(&nap->io_mu);
+
   return ret;
 }
 
@@ -1726,6 +1729,10 @@ int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
 
 
 static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t length) {
+
+  NaClFastMutexLock(&nap->io_mu);
+  while(nap->io_counter > 0); // wait here if any threads remain in I/O
+
 #if NACL_WINDOWS
   uintptr_t addr;
   uintptr_t endaddr = sysaddr + length;
@@ -1805,6 +1812,8 @@ static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t len
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
 #endif /* NACL_WINDOWS */
+  NaClFastMutexLock(&nap->io_mu);
+
   return 0;
 }
 
@@ -2629,6 +2638,9 @@ static int32_t MprotectInternal(struct NaClApp *nap,
   struct NaClVmmapIter    iter;
   struct NaClVmmapEntry   *entry;
 
+  NaClFastMutexLock(&nap->io_mu);
+  while(nap->io_counter > 0); // wait here if any threads remain in I/O
+
   host_prot = NaClProtMap(prot);
 
   usraddr = NaClSysToUser(nap, sysaddr);
@@ -2672,6 +2684,8 @@ static int32_t MprotectInternal(struct NaClApp *nap,
       }
     }
   }
+
+  NaClFastMutexUnlock(&nap->io_mu);
 
   return 0;
 }
