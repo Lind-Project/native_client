@@ -977,7 +977,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
-  NaClXMutexLock(&nap->mu);
+  NaClXMutexUnlock(&nap->mu);
   return retval;
 }
 
