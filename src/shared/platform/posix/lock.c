@@ -51,3 +51,10 @@ NaClSyncStatus NaClMutexUnlock(struct NaClMutex *mp) {
   }
   return NACL_SYNC_INTERNAL_ERROR;
 }
+
+int NaClRWLockCtor(struct NaClRWLock *rwl) {
+  if (0 != pthread_rwlock_init(&rwl->mu, (pthread_rwlockattr_t *) 0)) {
+    return 0;
+  }
+  return 1;
+}

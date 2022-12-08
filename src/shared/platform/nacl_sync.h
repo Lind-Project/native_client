@@ -53,6 +53,22 @@ struct NaClMutex {
 #endif
 };
 
+struct NaClRWLock {
+#if defined(__native_client__) || NACL_LINUX || NACL_OSX
+  pthread_rwlock_t rw;
+  int held;
+#elif NACL_WINDOWS
+  void* lock;
+  int held;
+  /*
+   * Windows lock implementation is recursive -- use a boolean to
+   * convert to a binary mutex.
+   */
+#else
+# error "What OS?"
+#endif
+};
+
 struct NaClCondVar {
 #if defined(__native_client__) || NACL_LINUX || NACL_OSX
   pthread_cond_t cv;
