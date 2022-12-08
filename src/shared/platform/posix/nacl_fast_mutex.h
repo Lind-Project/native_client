@@ -11,6 +11,15 @@
 
 #include "native_client/src/include/nacl_base.h"
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
+#if _XOPEN_SOURCE < 600
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 /*
  * Structure definition for allocation purposes only.  We use
  * placement-new style construction, so object size must be exposed.
