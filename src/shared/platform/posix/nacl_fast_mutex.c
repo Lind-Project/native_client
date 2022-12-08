@@ -30,3 +30,34 @@ int NaClFastMutexTryLock(struct NaClFastMutex *flp) {
 void NaClFastMutexUnlock(struct NaClFastMutex *flp) {
   CHECK(0 == pthread_mutex_unlock(&flp->mu));
 }
+
+int NaClFastMutexCtor(struct NaClFastMutex *flp) {
+  if (0 != pthread_rwlock_init(&flp->mu, (pthread_rwlockattr_t *) NULL)) {
+    return 0;
+  }
+  return 1;
+}
+
+void NaClFastMutexDtor(struct NaClFastMutex *flp) {
+  pthread_rwlock_destroy(&flp->mu);
+}
+
+void NaClFastMutexRdLock(struct NaClFastMutex *flp) {
+  CHECK(0 == pthread_rwlock_rdlock(&flp->mu));
+}
+
+void NaClFastMutexWrLock(struct NaClFastMutex *flp) {
+  CHECK(0 == pthread_rwlock_wrlock(&flp->mu));
+}
+
+int NaClFastMutexTryRdLock(struct NaClFastMutex *flp) {
+  return NaClXlateErrno(pthread_rwlock_rdlock(&flp->mu));
+}
+
+int NaClFastMutexTryWrLock(struct NaClFastMutex *flp) {
+  return NaClXlateErrno(pthread_rwlock_wrlock(&flp->mu));
+}
+
+void NaClFastMutexUnlock(struct NaClFastMutex *flp) {
+  CHECK(0 == pthread_rwlock_unlock(&flp->mu));
+}
