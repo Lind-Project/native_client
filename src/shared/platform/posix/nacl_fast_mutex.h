@@ -7,6 +7,8 @@
 #ifndef NATIVE_CLIENT_SRC_SHARED_PLATFORM_POSIX_NACL_FAST_MUTEX_H_
 #define NATIVE_CLIENT_SRC_SHARED_PLATFORM_POSIX_NACL_FAST_MUTEX_H_
 
+#define _GNU_SOURCE
+
 #include <pthread.h>
 
 #include "native_client/src/include/nacl_base.h"
