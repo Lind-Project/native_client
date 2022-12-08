@@ -20,4 +20,9 @@ struct NaClFastMutex {
   pthread_mutex_t mu;
 };
 
+
+struct NaClFastRWLock {
+  pthread_rwlock_t mu;
+};
+
 #endif  /* NATIVE_CLIENT_SRC_SHARED_PLATFORM_POSIX_NACL_FAST_MUTEX_H_ */
