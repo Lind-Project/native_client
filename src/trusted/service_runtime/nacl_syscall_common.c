@@ -907,6 +907,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   size_t          log_bytes;
   char const      *ellipsis = "";
   int             lindfd;
+
+  NaClXMutexLock(&nap->mu);
   
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
@@ -975,6 +977,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 out:
+  NaClXMutexLock(&nap->mu);
   return retval;
 }
 
@@ -1082,6 +1085,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
         "%d, 0x%08"NACL_PRIxPTR", "
         "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
         nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+  NaClXMutexLock(&nap->mu);
 
   if ((d >= FILE_DESC_MAX)  || (d < 0)) {
     retval = -NACL_ABI_EBADF;
@@ -1093,7 +1097,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
     retval = -NACL_ABI_EBADF;
     goto out;
   }
-
+  
   NaClFastMutexLock(&nap->desc_mu);
   /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
   ndp = NaClGetDescMuNoRef(nap, fd);
@@ -1143,6 +1147,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t)write_result;
 
 out:
+  NaClXMutexUnlock(&nap->mu);
+
   return retval;
 }
 
