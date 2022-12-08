@@ -2301,7 +2301,7 @@ def MakeUnixLikeEnv():
   unix_like_env = MakeBaseTrustedEnv()
   unix_like_env.Prepend(
     CFLAGS = [
-        '-std=gnu99',
+        '-std=gnu11',
         # Require defining functions as "foo(void)" rather than
         # "foo()" because, in C (but not C++), the latter defines a
         # function with unspecified arguments rather than no
@@ -2321,7 +2321,7 @@ def MakeUnixLikeEnv():
         '-fvisibility=hidden',
         '-fstack-protector',
         ] + werror_flags,
-    CXXFLAGS=['-std=c++98'],
+    CXXFLAGS=['-std=gnu++11'],
     # NOTE: pthread is only neeeded for libppNaClPlugin.so and on arm
     LIBS = ['pthread'],
     CPPDEFINES = [['__STDC_LIMIT_MACROS', '1'],
