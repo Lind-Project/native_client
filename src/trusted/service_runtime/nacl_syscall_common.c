@@ -1812,7 +1812,7 @@ static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t len
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
 #endif /* NACL_WINDOWS */
-  NaClFastMutexLock(&nap->io_mu);
+  NaClFastMutexUnlock(&nap->io_mu);
 
   return 0;
 }
