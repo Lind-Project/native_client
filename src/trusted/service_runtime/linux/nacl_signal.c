@@ -362,6 +362,9 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     NaClExit(-sig);
   }
 
+  // Lind: If we segfault on a user address (presumably because it was unmapped between check and use), we can call that an untrusted fault
+  if ((sig == SIGSEGV) && (info->_sifields->_sigfault->si_addr & ~(natp->nap->addr_bits))) is_untrusted = true;
+
   NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
   FindAndRunHandler(sig, info, uc);
