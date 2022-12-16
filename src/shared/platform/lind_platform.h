@@ -155,6 +155,7 @@ int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union 
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
 void lindrustinit(int verbosity);
 void lindrustfinalize(void);
+void lindrustfatalunlock(int cageid);
 
 int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid);
 int lind_pwrite(int fd, const void *buf, size_t count, off_t offset, int cageid);

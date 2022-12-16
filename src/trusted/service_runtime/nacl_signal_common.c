@@ -148,6 +148,7 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     // signal for teardown
     if (natp->is_cage_mainthread) {
       if (!natp->tearing_down) AddToFatalThreadTeardown(natp);
+      lindrustfatalunlock(natp->nap->cage_id);
       NaClUntrustedThreadSuspend(natp, 0);   
     } else {
       if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
