@@ -74,6 +74,7 @@ uint32_t NaClThreadId(void);
 void NaClThreadYield(void);
 
 void NaClThreadCancel(struct NaClThread *ntp);
+void NaClThreadKill(struct NaClThread *ntp);
 
 EXTERN_C_END
 

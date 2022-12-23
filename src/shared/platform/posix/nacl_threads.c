@@ -142,4 +142,10 @@ void NaClThreadCancel(struct NaClThread *ntp) {
   pthread_cancel(ntp->tid);
 }
 
+void NaClThreadKill(struct NaClThread *ntp) {
+  pthread_kill(ntp->tid, SIGSEGV);
+}
+
+
+
 #define _GNU_SOURCE
