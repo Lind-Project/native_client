@@ -244,6 +244,11 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClLog(1, "%s\n", "NaClAppForkThreadLauncher: entered");
 
+  // Lind: we need to enable pthread cancellation to deal with untrusted teardowns 
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+
   NaClSignalStackRegister(natp->signal_stack);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
