@@ -152,7 +152,8 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
       if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
     }
     // wait here while we get cleaned up
-    while (1);
+    // while (1);
+    NaClThreadExit();
 
   } else {
     SNPRINTF(tmp, sizeof(tmp), "\n** Signal %d from trusted code: "
