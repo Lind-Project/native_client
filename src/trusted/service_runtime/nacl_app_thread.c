@@ -884,7 +884,11 @@ void FatalThreadTeardown(void) {
     }
   }
   
+  // properly teadown vmmap/fds before exit
+  NaClVmmapDtor(&nap->mem_map);
+  NaClAppCloseFDs(nap);
   lind_exit(status, nap->cage_id);
+  
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   thread = &natp_to_teardown->host_thread;
   NaClXMutexUnlock(&nap->threads_mu);
