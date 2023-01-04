@@ -155,7 +155,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   }
 
 
-  tl_type != THREAD_LAUNCH_FORK {
+  if (tl_type == THREAD_LAUNCH_EXEC) {
     DynArrayDtor(&nap_child->desc_tbl);
     nap_child->desc_tbl = nap_parent->desc_tbl;
   } else {
