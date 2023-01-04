@@ -4857,6 +4857,8 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     goto fail;
   }
 
+  NaClVmmapDtor(&nap->mem_map);
+
   /* wait for child to finish before cleaning up */
   NaClWaitForThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
