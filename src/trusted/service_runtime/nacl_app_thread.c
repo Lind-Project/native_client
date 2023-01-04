@@ -191,6 +191,7 @@ void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_chil
       NaClDescUnref(parent_nd);
 
       fd_cage_table[nap_child->cage_id][fd] = parent_host_fd;
+      NaClLog(1, "NaClGetDesc() moved parent fd [%d] to child fd [%d]\n", fd, parent_host_fd);
 
     } else {
       /* Create and set vars for child hd */
@@ -212,9 +213,9 @@ void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_chil
 
       /* Set childs cage table with the current fd to the old parent host fd */
       fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
-    }
 
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
+      NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
+    }
   }
 }
 
