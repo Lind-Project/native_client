@@ -382,6 +382,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
 
+  // First, tell any child threads to exit so we can cleanup and exit properly from here
   NaClChildThreadExit(natp);
 
   /* to close a cage we need to unref the vmmap before officially
