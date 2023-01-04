@@ -4705,6 +4705,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     child_argv[i + 3] = new_argv[i] ? strdup(new_argv[i]) : NULL;
   }
 
+  // We're going to actually exec now, so lets close all the child threads
+  NaClChildThreadExit(natp);
+
   /* initialize child from parent state */
   NaClLogThreadContext(natp);
   int child_cage_id = INIT_PROCESS_NUM + ++fork_num;
