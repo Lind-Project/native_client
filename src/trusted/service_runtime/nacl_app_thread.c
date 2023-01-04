@@ -153,8 +153,20 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   if (!nap_child->validator->FixCPUFeatures(nap_child->cpu_features)) {
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
   }
+
+
+  tl_type != THREAD_LAUNCH_FORK {
+    DynArrayDtor(&nap_child->desc_tbl);
+    nap_child->desc_tbl = nap_parent->desc_tbl;
+  } else {
+    NaClAppChildDupFDTable(nap_parent, nap_child);
+  }
   
-  /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
+  return nap_child;
+}
+
+void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_child) {
+   /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
   for (int fd = 0; fd < FILE_DESC_MAX; fd++) {
 
     /* Retrive the host fd we had stored in the Cage Table for the parent */
@@ -203,8 +215,6 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
 
     NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
   }
-
-  return nap_child;
 }
 
 void NaClAppCloseFDs(struct NaClApp *nap) {
