@@ -801,6 +801,26 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
   NaClAlignedFree(natp);
 }
 
+void NaClChildThreadExit(struct NaClAppThread *natp) {
+  
+  struct NaClApp *nap = natp->nap;
+
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
+
+  for(int i = 0; i < num_threads; i++) {
+
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+      NaClAppThreadTeardownInner(natp_child, false);
+      NaClThreadCancel(child_thread);
+    }
+  }
+  NaClXMutexUnlock(&nap->threads_mu);
+}
+
 
 /**
  * The following functions are used to reap any cages which have received a fatal signal.
