@@ -165,7 +165,7 @@ struct NaClAppThread {
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
-void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_child);
+void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_child, enum NaClThreadLaunchType tl_type);
 void NaClAppCloseFDs(struct NaClApp *nap);
 
 void WINAPI NaClAppThreadLauncher(void *state);
