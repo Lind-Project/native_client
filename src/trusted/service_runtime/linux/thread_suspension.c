@@ -220,9 +220,7 @@ static void WaitForUntrustedThreadToSuspend(struct NaClAppThread *natp) {
 
 // Lind: Similar to NaClUntrustedThreadSuspend
 // Here we CaS to trap thread in either trusted or untrusted code,
-// and if trapped in untrusted we send a signal for the handler to catch and kill the thread
-
-void NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp) {
+void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
   Atomic32 old_state;
   Atomic32 suspending_state;
 
@@ -247,14 +245,6 @@ void NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp) {
    * check.
    */
   DCHECK(natp->suspend_state == suspending_state);
-
-  if (natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
-    CHECK(natp->host_thread_is_defined);
-    if (pthread_kill(natp->host_thread.tid, NACL_THREAD_SUSPEND_SIGNAL) != 0) {
-      NaClLog(LOG_FATAL, "NaClUntrustedThreadSuspend: "
-              "pthread_kill() call failed\n");
-    }
-  }
 }
 
 void NaClUntrustedThreadSuspend(struct NaClAppThread *natp,

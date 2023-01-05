@@ -882,7 +882,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 
 void FatalThreadTeardown(void) {
   int status = 137; // Fatal error signal SIGKILL
-
+  struct NaClThread *thread;
   struct NaClApp *nap = natp_to_teardown->nap;
 
   NaClXMutexLock(&nap->threads_mu);
@@ -893,7 +893,14 @@ void FatalThreadTeardown(void) {
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
     if (natp_child && natp_child != natp_to_teardown) {
       natp_child->kill_flag = true;
-      NaClThreadTrapAndKillUntrusted(natp_child); // this will exit a thread trapped in untrusted space, otherwise we have to wait for a cancellation point
+      NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
+      if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
+        struct NaClThread *child_thread;
+        child_thread = &natp_child->host_thread;
+        NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
+        natp_child->kill_flag = false;
+      }
+
       while (natp_child->kill_flag == true);
       NaClAppThreadTeardownInner(natp_child, false);
     }
