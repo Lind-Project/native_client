@@ -15,7 +15,7 @@ struct NaClAppThread;
 struct NaClSignalContext;
 
 
-NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp);
+void NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp);
 
 /*
  * NaClUntrustedThreadSuspend() suspends a single thread.  It is not

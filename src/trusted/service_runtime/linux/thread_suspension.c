@@ -222,7 +222,7 @@ static void WaitForUntrustedThreadToSuspend(struct NaClAppThread *natp) {
 // Here we CaS to trap thread in either trusted or untrusted code,
 // and if trapped in untrusted we send a signal for the handler to catch and kill the thread
 
-NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp) {
+void NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp) {
   Atomic32 old_state;
   Atomic32 suspending_state;
 
