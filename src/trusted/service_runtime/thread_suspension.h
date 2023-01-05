@@ -14,6 +14,9 @@ EXTERN_C_BEGIN
 struct NaClAppThread;
 struct NaClSignalContext;
 
+
+NaClThreadTrapAndKillUntrusted(struct NaClAppThread *natp);
+
 /*
  * NaClUntrustedThreadSuspend() suspends a single thread.  It is not
  * valid to call this if the thread has already been suspended.

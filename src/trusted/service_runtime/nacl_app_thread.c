@@ -34,6 +34,7 @@
 #include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
+#include "native_client/src/trusted/service_runtime/thread_suspension.h"
 
 
 struct NaClMutex ccmut;
@@ -892,7 +893,7 @@ void FatalThreadTeardown(void) {
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
     if (natp_child && natp_child != natp_to_teardown) {
       natp_child->kill_flag = true;
-      NaClUntrustedThreadSuspendAndKill(natp_child); // this will exit a thread in untrusted space, otherwise we have to wait for a cancellation point
+      NaClThreadTrapAndKillUntrusted(natp_child); // this will exit a thread trapped in untrusted space, otherwise we have to wait for a cancellation point
       while (natp_child->kill_flag == true);
       NaClAppThreadTeardownInner(natp_child, false);
     }
