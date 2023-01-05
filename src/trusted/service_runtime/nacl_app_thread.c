@@ -892,7 +892,7 @@ void FatalThreadTeardown(void) {
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
     if (natp_child && natp_child != natp_to_teardown) {
       natp_child->kill_flag = true;
-      NaClUntrustedThreadSuspend(natp_child, 0); // this will exit a thread in untrusted space, otherwise we have to wait for a cancellation point
+      NaClUntrustedThreadSuspendAndKill(natp_child); // this will exit a thread in untrusted space, otherwise we have to wait for a cancellation point
       while (natp_child->kill_flag == true);
       NaClAppThreadTeardownInner(natp_child, false);
     }

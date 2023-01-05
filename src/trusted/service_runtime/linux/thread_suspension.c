@@ -218,6 +218,38 @@ static void WaitForUntrustedThreadToSuspend(struct NaClAppThread *natp) {
   }
 }
 
+NaClUntrustedThreadSuspendAndKill(struct NaClAppThread *natp) {
+  Atomic32 old_state;
+  Atomic32 suspending_state;
+
+  /*
+   * We do not want the thread to enter a NaCl syscall and start
+   * taking locks when pthread_kill() takes effect, so we ask the
+   * thread to suspend even if it is currently running untrusted code.
+   */
+  while (1) {
+    old_state = natp->suspend_state;
+    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
+    suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
+    if (CompareAndSwap(&natp->suspend_state, old_state, suspending_state)
+        != old_state) {
+      continue;  /* Retry */
+    }
+    break;
+  }
+  /*
+   * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
+   * change state itself, so there should be no race condition in this
+   * check.
+   */
+  DCHECK(natp->suspend_state == suspending_state);
+  CHECK(natp->host_thread_is_defined);
+  if (pthread_kill(natp->host_thread.tid, NACL_THREAD_SUSPEND_SIGNAL) != 0) {
+    NaClLog(LOG_FATAL, "NaClUntrustedThreadSuspend: "
+            "pthread_kill() call failed\n");
+  }
+}
+
 void NaClUntrustedThreadSuspend(struct NaClAppThread *natp,
                                 int save_registers) {
   Atomic32 old_state;
