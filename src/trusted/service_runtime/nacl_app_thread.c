@@ -880,7 +880,6 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 }
 
 void FatalThreadTeardown(void) {
-  struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
 
   struct NaClApp *nap = natp_to_teardown->nap;
