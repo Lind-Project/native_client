@@ -162,6 +162,7 @@ struct NaClAppThread {
   bool                              is_cage_mainthread;
   bool                              tearing_down;
   struct NaClAppThread              *cage_mainthread;
+  bool                              kill_flag;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
@@ -226,6 +227,7 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   return (struct NaClAppThread *) ntcp;
 }
 
+void lindthread_testcancel(struct NaClAppThread *natp);
 
 void InitFatalThreadTeardown(void);
 

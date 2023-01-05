@@ -578,6 +578,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->suspend_state = NACL_APP_THREAD_TRUSTED;
   natp->suspended_registers = NULL;
   natp->fault_signal = 0;
+  natp->kill_flag = false;
 
   natp->dynamic_delete_generation = 0;
   return natp;
@@ -820,6 +821,20 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  *    launched wtihin that cage.
  */
 
+void lindthread_testcancel(struct NaClAppThread *natp) {
+
+  struct NaClAppThread *cancel_natp;
+  if (natp == NULL) cancel_natp = NaClTlsGetCurrentThread();
+  else cancel_natp = natp;
+
+  if (cancel_natp == NULL) return;
+
+  if (cancel_natp->kill_flag == true) {
+    cancel_natp->kill_flag = false;
+    NaClThreadExit();
+  }
+}
+
 
 void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
@@ -877,10 +892,17 @@ void FatalThreadTeardown(void) {
 
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
     if (natp_child && natp_child != natp_to_teardown) {
-      struct NaClThread *child_thread;
-      child_thread = &natp_child->host_thread;
+      natp_child->kill_flag = true;
+      NaClUntrustedThreadSuspend(natp_child, 0);
+      if (natp_child->suspend_state == NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) {
+        struct NaClThread *child_thread;
+        child_thread = &natp_child->host_thread;
+        NaClThreadCancel(child_thread);
+        natp_child->kill_flag = false;
+      }
+
+      while (natp_child->kill_flag = true);
       NaClAppThreadTeardownInner(natp_child, false);
-      NaClThreadCancel(child_thread);
     }
   }
   
@@ -894,7 +916,6 @@ void FatalThreadTeardown(void) {
   NaClXMutexUnlock(&nap->threads_mu);
 
   NaClAppThreadTeardownInner(natp_to_teardown, false);
-  NaClThreadCancel(thread);
   natp_to_teardown = NULL;
   NaClXCondVarSignal(&teardown_cv);
 }
