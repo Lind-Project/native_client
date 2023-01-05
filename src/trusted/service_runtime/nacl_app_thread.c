@@ -893,7 +893,7 @@ void FatalThreadTeardown(void) {
     if (natp_child && natp_child != natp_to_teardown) {
       natp_child->kill_flag = true;
       NaClUntrustedThreadSuspend(natp_child, 0); // this will exit a thread in untrusted space, otherwise we have to wait for a cancellation point
-      while (natp_child->kill_flag = true);
+      while (natp_child->kill_flag == true);
       NaClAppThreadTeardownInner(natp_child, false);
     }
   }
@@ -904,7 +904,6 @@ void FatalThreadTeardown(void) {
   lind_exit(status, nap->cage_id);
   
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-  thread = &natp_to_teardown->host_thread;
   NaClXMutexUnlock(&nap->threads_mu);
 
   NaClAppThreadTeardownInner(natp_to_teardown, false);
