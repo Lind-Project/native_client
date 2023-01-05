@@ -875,7 +875,9 @@ void FatalThreadTeardown(void) {
       struct NaClThread *child_thread;
       child_thread = &natp_child->host_thread;
       NaClAppThreadTeardownInner(natp_child, false);
-      NaClThreadCancel(child_thread);
+      NaClThreadUsrSignal(child_thread);
+
+      // NaClThreadCancel(child_thread);
     }
   }
   

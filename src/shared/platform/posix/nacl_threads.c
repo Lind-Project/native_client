@@ -142,4 +142,8 @@ void NaClThreadCancel(struct NaClThread *ntp) {
   pthread_cancel(ntp->tid);
 }
 
+void NaClThreadUsrSignal(struct NaClThread *ntp) {
+  pthread_cancel(ntp->tid, SIGUSR1);
+}
+
 #define _GNU_SOURCE

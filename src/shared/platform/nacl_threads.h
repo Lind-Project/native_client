@@ -75,6 +75,8 @@ void NaClThreadYield(void);
 
 void NaClThreadCancel(struct NaClThread *ntp);
 
+void NaClThreadUsrSignal(struct NaClThread *ntp);
+
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_THREADS_H_ */
