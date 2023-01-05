@@ -332,6 +332,12 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 #endif
 
+  // we've called thread suspend from the fatal handler, we can safely exit the thread here
+  if (sig == SIGUSR1 && (natp_child->suspend_state == NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && natp->kill_flag == true) {
+    natp->kill_flag = false;
+    NaClThreadExit();
+  }
+
   if (sig != SIGINT && sig != SIGQUIT) {
     if (NaClThreadSuspensionSignalHandler(sig, &sig_ctx, is_untrusted, natp)) {
       NaClSignalContextToHandler(uc, &sig_ctx);
