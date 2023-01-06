@@ -184,8 +184,12 @@ void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_chil
     if (tl_type == THREAD_LAUNCH_EXEC) {
       if (parent_hd->flags & NACL_ABI_O_CLOEXEC) {
         fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
+        NaClSetDescMu(nap_parent, parent_host_fd, NULL); // close fd in parent so it isnt transferred
+        NaClDescUnref(parent_nd);
         continue;
       }
+
+      parent_hd->cageid = nap_child->cage_id; // update cageid
 
       NaClSetDesc(nap_child, parent_host_fd, parent_nd);
       NaClDescUnref(parent_nd);
