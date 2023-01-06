@@ -112,8 +112,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_UNTRUSTED,
                                NACL_APP_THREAD_TRUSTED);
 
-  lindthread_testcancel(natp);
-
   nap = natp->nap;
 
   /*
@@ -161,8 +159,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
    * NACLVERBOSITY is set high enough to enable the NaClLog() calls in
    * NaClSwitchToApp(), these calls could deadlock.
    */
-
-  lindthread_testcancel(natp);
   
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
                                NACL_APP_THREAD_UNTRUSTED);

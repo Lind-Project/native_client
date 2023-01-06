@@ -227,7 +227,7 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   return (struct NaClAppThread *) ntcp;
 }
 
-void lindthread_testcancel(struct NaClAppThread *natp);
+void lindthread_testcancel(void *natp);
 
 void InitFatalThreadTeardown(void);
 

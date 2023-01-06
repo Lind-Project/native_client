@@ -71,6 +71,11 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
     }
     if ((state & NACL_APP_THREAD_SUSPENDING) != 0) {
       /* We have been asked to suspend, so wait. */
+      if (natp->kill_flag) {
+        while(1) {
+            lindthread_testcancel(natp);
+        }
+      }
       FutexWait(&natp->suspend_state, state);
     } else {
       NaClLog(LOG_FATAL, "NaClAppThreadSetSuspendState: Unexpected state: %i\n",

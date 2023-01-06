@@ -822,7 +822,7 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  *    launched wtihin that cage.
  */
 
-void lindthread_testcancel(struct NaClAppThread *natp) {
+void lindthread_testcancel(void *natp) {
 
   struct NaClAppThread *cancel_natp;
   if (natp == NULL) cancel_natp = NaClTlsGetCurrentThread();
@@ -882,7 +882,6 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 
 void FatalThreadTeardown(void) {
   int status = 137; // Fatal error signal SIGKILL
-  struct NaClThread *thread;
   struct NaClApp *nap = natp_to_teardown->nap;
 
   NaClXMutexLock(&nap->threads_mu);
