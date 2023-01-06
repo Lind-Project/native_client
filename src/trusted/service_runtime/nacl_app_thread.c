@@ -232,7 +232,7 @@ void NaClAppCloseFDs(struct NaClApp *nap, bool cloexec) {
       if (cloexec) {
         struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
         struct NaClHostDesc *hd = self->hd;
-        if !(hd->flags & NACL_ABI_O_CLOEXEC) continue;
+        if ( !(hd->flags & NACL_ABI_O_CLOEXEC) ) continue;
       }
 
       if (ndp) {
