@@ -826,7 +826,7 @@ void lindthread_testcancel(void *natp) {
 
   struct NaClAppThread *cancel_natp;
   if (natp == NULL) cancel_natp = NaClTlsGetCurrentThread();
-  else cancel_natp = natp;
+  else cancel_natp = (struct NaClAppThread *)natp;
 
   if (cancel_natp == NULL) return;
 
