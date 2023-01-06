@@ -387,7 +387,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
    */
 
   NaClVmmapDtor(&nap->mem_map);
-  NaClAppCloseFDs(nap);
+  NaClAppCloseFDs(nap, false);
   lind_exit(status, nap->cage_id);
 
   NaClLog(1, "Exit syscall handler: %d\n", status);
@@ -4708,11 +4708,11 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
 
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu); 
-
-  nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
+  NaClAppCloseFDs(nap, true); //first close cloexec fds
   lind_exec(child_cage_id, nap->cage_id);
 
+  nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
   nap_child->running = 0;
   nap_child->in_fork = 0;
 

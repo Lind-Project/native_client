@@ -182,12 +182,6 @@ void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_chil
 
     /* If we're creating an exec cage and we have CLOEXEC set, dont pass these on */
     if (tl_type == THREAD_LAUNCH_EXEC) {
-      if (parent_hd->flags & NACL_ABI_O_CLOEXEC) {
-        fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
-        NaClSetDescMu(nap_parent, parent_host_fd, NULL); // close fd in parent so it isnt transferred
-        NaClDescUnref(parent_nd);
-        continue;
-      }
 
       parent_hd->cageid = nap_child->cage_id; // update cageid
 
@@ -223,7 +217,7 @@ void NaClAppChildDupFDTable(struct NaClApp *nap_parent, struct NaClApp *nap_chil
   }
 }
 
-void NaClAppCloseFDs(struct NaClApp *nap) {
+void NaClAppCloseFDs(struct NaClApp *nap, bool cloexec) {
   
   NaClFastMutexLock(&nap->desc_mu);
 
@@ -235,6 +229,12 @@ void NaClAppCloseFDs(struct NaClApp *nap) {
     if (fd >= 0) {
       struct NaClDesc *ndp = NULL;
       ndp = NaClGetDescMu(nap, fd);
+      if (cloexec) {
+        struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+        struct NaClHostDesc *hd = self->hd;
+        if !(hd->flags & NACL_ABI_O_CLOEXEC) continue;
+      }
+
       if (ndp) {
         NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
         NaClSetDescMu(nap, fd, NULL);
