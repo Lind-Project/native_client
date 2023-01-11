@@ -1004,7 +1004,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = lind_stat(path, &stbuf, nap->cage_id);
+  retval = lind_xstat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
@@ -1044,7 +1044,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   /*
    * Perform a host stat.
    */
-  retval = lind_stat(path, &stbuf, nap->cage_id);
+  retval = lind_xstat(path, &stbuf, nap->cage_id);
   if (!retval) {
     struct nacl_abi_stat abi_stbuf;
 
