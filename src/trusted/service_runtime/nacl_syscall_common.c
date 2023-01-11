@@ -883,7 +883,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-  write_result = lind_write(fd, (void *)sysaddr, count, offset, nap->cage_id);
+  write_result = lind_pwrite(fd, (void *)sysaddr, count, offset, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -913,8 +913,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   if (d < 0) return -NACL_ABI_EBADF;
 
   if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) {
-    retval = -NACL_ABI_EFAULT;
-    goto out;
+    return -NACL_ABI_EFAULT;
   }
   NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
