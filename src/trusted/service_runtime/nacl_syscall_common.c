@@ -855,7 +855,6 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-
   if (d < 0) return -NACL_ABI_EBADF;
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
@@ -3367,7 +3366,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   struct NaClApp *nap = natp->nap;
   int32_t ret = 0;
 
-  int lindfs[2];
+  int lindfds[2];
 
 
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
@@ -4142,7 +4141,8 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-    if (d < 0) {
+  
+  if (sockfd < 0) return -NACL_ABI_EBADF;
   
   const void *sysvaladdr = (const void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) optval, optlen, NACL_ABI_PROT_READ);
   NaClLog(2, "Cage %d Entered NaClSysSetsockopt(0x%08"NACL_PRIxPTR", %d, %d, %d, 0x%08"NACL_PRIxPTR", %u)\n",
@@ -4163,6 +4163,8 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        struct lind_statfs   *buf) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
+
+  if (d < 0) return -NACL_ABI_EBADF;
   
   struct lind_statfs *sysbufaddr = (struct lind_statfs*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(struct lind_statfs), NACL_ABI_PROT_WRITE);
   NaClLog(2, "Cage %d Entered NaClSysFstatfs(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR")\n",
