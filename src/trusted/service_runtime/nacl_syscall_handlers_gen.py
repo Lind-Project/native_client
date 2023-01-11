@@ -201,7 +201,6 @@ SYSCALL_LIST = [
      ['int32_t *sap']),
     ('NACL_sys_accept', 'NaClSysAccept', ['int sockfd', 'struct sockaddr *addr', 'socklen_t *addrlen']),
     ('NACL_sys_connect', 'NaClSysConnect', ['int sockfd', 'const struct sockaddr *addr', 'socklen_t addrlen']),
-     ['int d', 'struct NaClAbiNaClImcMsgHdr *nanimhp', 'int flags']),
     ('NACL_sys_imc_mem_obj_create', 'NaClSysImcMemObjCreate',
      ['size_t size']),
     ('NACL_sys_tls_init', 'NaClSysTlsInit', ['uint32_t thread_ptr']),
