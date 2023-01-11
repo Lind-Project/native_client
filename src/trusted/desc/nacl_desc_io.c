@@ -16,9 +16,6 @@
 # include "fcntl.h"
 #endif
 
-#include <string.h>
-
-#include "native_client/src/include/nacl_macros.h"
 #include "native_client/src/shared/imc/nacl_imc_c.h"
 #include "native_client/src/trusted/desc/nacl_desc_base.h"
 #include "native_client/src/trusted/desc/nacl_desc_effector.h"
@@ -44,40 +41,21 @@
  * for host-OS descriptors).
  */
 
-extern struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
-
-static int NaClDescIoDescSubclassCtor(struct NaClDescIoDesc  *self,
-                                      struct NaClHostDesc    *hd) {
-  struct NaClDesc *basep = (struct NaClDesc *) self;
-
-  self->hd = hd;
-  basep->base.vtbl = (struct NaClRefCountVtbl const *) &kNaClDescIoDescVtbl;
-  return 1;
-}
-
+static struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
 /*
  * Takes ownership of hd, will close in Dtor.
  */
 int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
                        struct NaClHostDesc    *hd) {
   struct NaClDesc *basep = (struct NaClDesc *) self;
-  int rv;
 
-  if (!basep) {
-    return -NACL_ABI_EBADF;
-  }
-  basep->base.vtbl = NULL;
+  basep->base.vtbl = (struct NaClRefCountVtbl const *) NULL;
   if (!NaClDescCtor(basep)) {
     return 0;
   }
-  rv = NaClDescIoDescSubclassCtor(self, hd);
-  if (!rv) {
-    (*NACL_VTBL(NaClRefCount, basep)->Dtor)((struct NaClRefCount *) basep);
-  }
-  if (hd) {
-    NACL_VTBL(NaClDesc, basep)->SetFlags(basep, hd->flags & NACL_ABI_O_ACCMODE);
-  }
-  return rv;
+  self->hd = hd;
+  basep->base.vtbl = (struct NaClRefCountVtbl const *) &kNaClDescIoDescVtbl;
+  return 1;
 }
 
 static void NaClDescIoDescDtor(struct NaClRefCount *vself) {
@@ -85,9 +63,7 @@ static void NaClDescIoDescDtor(struct NaClRefCount *vself) {
 
   NaClLog(4, "NaClDescIoDescDtor(0x%08"NACL_PRIxPTR").\n",
           (uintptr_t) vself);
-  if (0 != NaClHostDescClose(self->hd)) {
-    NaClLog(LOG_FATAL, "NaClDescIoDescDtor: NaClHostDescClose failed\n");
-  }
+  NaClHostDescClose(self->hd);
   free(self->hd);
   self->hd = NULL;
   vself->vtbl = (struct NaClRefCountVtbl const *) &kNaClDescVtbl;
@@ -114,81 +90,18 @@ struct NaClDescIoDesc *NaClDescIoDescMake(struct NaClHostDesc *nhdp) {
   return ndp;
 }
 
-/*
- * DEPRECATED, here for backwards compatibility.  See header file for
- * details.
- */
-struct NaClDesc *NaClDescIoDescMakeFromHandle(NaClHandle handle) {
-  return NaClDescIoDescFromHandleAllocCtor(handle, NACL_ABI_O_RDWR);
-}
-
-struct NaClDesc *NaClDescIoDescFromHandleAllocCtor(NaClHandle handle,
-                                                   int flags) {
-  int posix_d;
-
-#if NACL_WINDOWS
-  int win_flags = 0;
-
-  switch (flags & NACL_ABI_O_ACCMODE) {
-    case NACL_ABI_O_RDONLY:
-      win_flags = _O_RDONLY | _O_BINARY;
-      break;
-    case NACL_ABI_O_WRONLY:
-      win_flags = _O_WRONLY | _O_BINARY;
-      break;
-    case NACL_ABI_O_RDWR:
-      win_flags = _O_RDWR | _O_BINARY;
-      break;
-  }
-  if (0 == win_flags) {
-    return NULL;
-  }
-  posix_d = _open_osfhandle((intptr_t) handle, win_flags);
-  if (-1 == posix_d) {
-    return NULL;
-  }
-#else
-  posix_d = handle;
-#endif
-  return NaClDescIoDescFromDescAllocCtor(posix_d, flags);
-}
-
-struct NaClDesc *NaClDescIoDescFromDescAllocCtor(int desc,
-                                                 int flags) {
-  struct NaClHostDesc *nhdp;
-
-  nhdp = NaClHostDescPosixMake(desc, flags);
-  if (NULL == nhdp) {
-    /*
-     * BUG: In Windows, we leak posix_d representation in the POSIX
-     * layer, since caller will continue to own |handle| on a failure
-     * return, but we cannot close |posix_d| without implicitly
-     * invoking CloseHandle on |handle|.
-     */
-    return NULL;
-  }
-  return (struct NaClDesc *) NaClDescIoDescMake(nhdp);
-}
-
-struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
-                                          int mode,
-                                          int perms,
-					  int cage_id) {
+struct NaClDescIoDesc *NaClDescIoDescOpen(char  *path,
+                                          int   mode,
+                                          int   perms) {
   struct NaClHostDesc *nhdp;
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
     NaClLog(LOG_FATAL, "NaClDescIoDescOpen: no memory for %s\n", path);
   }
-  
-  /* Set cageid for HostDesc, important for NaCl Runtime fds */
-  nhdp->cageid = cage_id;
-  
   if (0 != NaClHostDescOpen(nhdp, path, mode, perms)) {
-    NaClLog(4,
-            "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",
+    NaClLog(LOG_FATAL, "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",
             path);
-    return NULL;
   }
   return NaClDescIoDescMake(nhdp);
 }
@@ -205,13 +118,19 @@ static uintptr_t NaClDescIoDescMap(struct NaClDesc         *vself,
   uintptr_t             addr;
 
   /*
-   * prot must only contain NACL_ABI_PROT_* flags.
+   * prot must be PROT_NONE or a combination of PROT_{READ|WRITE}
    */
-  if (0 != (~(NACL_ABI_PROT_MASK) & prot)) {
+  if (0 != (~(NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE) & prot)) {
     NaClLog(LOG_INFO,
             ("NaClDescIoDescMap: prot has other bits"
-             " than NACL_ABI_PROT_{READ|WRITE|EXEC}\n"));
+             " than PROT_{READ|WRITE}\n"));
     return -NACL_ABI_EINVAL;
+  }
+
+  if (0 == (NACL_ABI_MAP_FIXED & flags) && NULL == start_addr) {
+    NaClLog(LOG_INFO,
+            ("NaClDescIoDescMap: Mapping not NACL_ABI_MAP_FIXED"
+             " but start_addr is NULL\n"));
   }
 
   if (0 == (NACL_ABI_MAP_FIXED & flags)) {
@@ -219,10 +138,6 @@ static uintptr_t NaClDescIoDescMap(struct NaClDesc         *vself,
       NaClLog(1, "NaClDescIoDescMap: no address space?\n");
       return -NACL_ABI_ENOMEM;
     }
-    NaClLog(4,
-            "NaClDescIoDescMap: NaClFindAddressSpace"
-            " returned 0x%"NACL_PRIxPTR"\n",
-            addr);
     start_addr = (void *) addr;
   }
   flags |= NACL_ABI_MAP_FIXED;
@@ -234,8 +149,10 @@ static uintptr_t NaClDescIoDescMap(struct NaClDesc         *vself,
                            prot,
                            flags,
                            offset);
-  NaClLog(4, "NaClDescIoDescMap returning %"NACL_PRIxPTR"\n", status);
-  return status;
+  if (NACL_MAP_FAILED == (void *) status) {
+    return -NACL_ABI_E_MOVE_ADDRESS_SPACE;
+  }
+  return (uintptr_t) start_addr;
 }
 
 uintptr_t NaClDescIoDescMapAnon(struct NaClDescEffector *effp,
@@ -281,24 +198,6 @@ static nacl_off64_t NaClDescIoDescSeek(struct NaClDesc          *vself,
   return NaClHostDescSeek(self->hd, offset, whence);
 }
 
-static ssize_t NaClDescIoDescPRead(struct NaClDesc *vself,
-                                   void *buf,
-                                   size_t len,
-                                   nacl_off64_t offset) {
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
-
-  return NaClHostDescPRead(self->hd, buf, len, offset);
-}
-
-static ssize_t NaClDescIoDescPWrite(struct NaClDesc *vself,
-                                    void const *buf,
-                                    size_t len,
-                                    nacl_off64_t offset) {
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
-
-  return NaClHostDescPWrite(self->hd, buf, len, offset);
-}
-
 static int NaClDescIoDescIoctl(struct NaClDesc         *vself,
                                int                     request,
                                void                    *arg) {
@@ -323,36 +222,20 @@ static int NaClDescIoDescFstat(struct NaClDesc         *vself,
 static int NaClDescIoDescExternalizeSize(struct NaClDesc *vself,
                                          size_t          *nbytes,
                                          size_t          *nhandles) {
-  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
-  int rv;
+  UNREFERENCED_PARAMETER(vself);
 
-  rv = NaClDescExternalizeSize(vself, nbytes, nhandles);
-  if (0 != rv) {
-    return rv;
-  }
-  *nhandles += 1;
-  *nbytes += sizeof self->hd->flags;
-  /* For Windows, we do not need to send flProtect since it is a cache */
+  *nbytes = 0;
+  *nhandles = 1;
   return 0;
 }
 
 static int NaClDescIoDescExternalize(struct NaClDesc           *vself,
                                      struct NaClDescXferState  *xfer) {
   struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) vself;
-  int rv;
-#if NACL_WINDOWS
-  HANDLE  h;
-#endif
 
-  rv = NaClDescExternalize(vself, xfer);
-  if (0 != rv) {
-    return rv;
-  }
-
-  memcpy(xfer->next_byte, &self->hd->flags, sizeof self->hd->flags);
-  xfer->next_byte += sizeof self->hd->flags;
 #if NACL_WINDOWS
-  h = (HANDLE) _get_osfhandle(self->hd->d);
+  HANDLE  h = (HANDLE) _get_osfhandle(self->hd->d);
+
   *xfer->next_handle++ = (NaClHandle) h;
 #else
   *xfer->next_handle++ = self->hd->d;
@@ -360,7 +243,7 @@ static int NaClDescIoDescExternalize(struct NaClDesc           *vself,
   return 0;
 }
 
-struct NaClDescVtbl const kNaClDescIoDescVtbl = {
+static struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   {
     NaClDescIoDescDtor,
   },
@@ -373,11 +256,10 @@ struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   NaClDescIoDescRead,
   NaClDescIoDescWrite,
   NaClDescIoDescSeek,
-  NaClDescIoDescPRead,
-  NaClDescIoDescPWrite,
   NaClDescIoDescIoctl,
   NaClDescIoDescFstat,
   NaClDescGetdentsNotImplemented,
+  NACL_DESC_HOST_IO,
   NaClDescIoDescExternalizeSize,
   NaClDescIoDescExternalize,
   NaClDescLockNotImplemented,
@@ -396,11 +278,6 @@ struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   NaClDescPostNotImplemented,
   NaClDescSemWaitNotImplemented,
   NaClDescGetValueNotImplemented,
-  NaClDescSetMetadata,
-  NaClDescGetMetadata,
-  NaClDescSetFlags,
-  NaClDescGetFlags,
-  NACL_DESC_HOST_IO,
 };
 
 /* set *out_desc to struct NaClDescIo * output */
@@ -410,7 +287,6 @@ int NaClDescIoInternalize(struct NaClDesc               **out_desc,
   int                   rv;
   NaClHandle            h;
   int                   d;
-  int                   flags;
   struct NaClHostDesc   *nhdp;
   struct NaClDescIoDesc *ndidp;
 
@@ -420,6 +296,10 @@ int NaClDescIoInternalize(struct NaClDesc               **out_desc,
   nhdp = NULL;
   ndidp = NULL;
 
+  if (xfer->next_handle == xfer->handle_buffer_end) {
+    rv = -NACL_ABI_EIO;
+    goto cleanup;
+  }
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
     rv = -NACL_ABI_ENOMEM;
@@ -430,26 +310,12 @@ int NaClDescIoInternalize(struct NaClDesc               **out_desc,
     rv = -NACL_ABI_ENOMEM;
     goto cleanup;
   }
-  if (!NaClDescInternalizeCtor((struct NaClDesc *) ndidp, xfer)) {
-    rv = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-  if (xfer->next_handle == xfer->handle_buffer_end ||
-      xfer->next_byte + sizeof ndidp->hd->flags > xfer->byte_buffer_end) {
-    rv = -NACL_ABI_EIO;
-    goto cleanup_ndidp_dtor;
-  }
-
-  NACL_COMPILE_TIME_ASSERT(sizeof flags == sizeof(ndidp->hd->flags));
-  memcpy(&flags, xfer->next_byte, sizeof flags);
-  xfer->next_byte += sizeof flags;
-
   h = *xfer->next_handle;
   *xfer->next_handle++ = NACL_INVALID_HANDLE;
 #if NACL_WINDOWS
   if (-1 == (d = _open_osfhandle((intptr_t) h, _O_RDWR | _O_BINARY))) {
     rv = -NACL_ABI_EIO;
-    goto cleanup_ndidp_dtor;
+    goto cleanup;
   }
 #else
   d = h;
@@ -458,32 +324,25 @@ int NaClDescIoInternalize(struct NaClDesc               **out_desc,
    * We mark it as read/write, but don't really know for sure until we
    * try to make those syscalls (in which case we'd get EBADF).
    */
-  if ((rv = NaClHostDescPosixTake(nhdp, d, flags)) < 0) {
-    goto cleanup_ndidp_dtor;
+  if ((rv = NaClHostDescPosixTake(nhdp, d, NACL_ABI_O_RDWR)) < 0) {
+    goto cleanup;
   }
   h = NACL_INVALID_HANDLE;  /* nhdp took ownership of h */
 
-  if (!NaClDescIoDescSubclassCtor(ndidp, nhdp)) {
+  if (!NaClDescIoDescCtor(ndidp, nhdp)) {
     rv = -NACL_ABI_ENOMEM;
-    goto cleanup_nhdp_dtor;
+    goto cleanup_hd_dtor;
   }
   /*
    * ndidp took ownership of nhdp, now give ownership of ndidp to caller.
    */
   *out_desc = (struct NaClDesc *) ndidp;
   rv = 0;
- cleanup_nhdp_dtor:
+cleanup_hd_dtor:
   if (rv < 0) {
-    if (0 != NaClHostDescClose(nhdp)) {
-      NaClLog(LOG_FATAL, "NaClDescIoInternalize: NaClHostDescClose failed\n");
-    }
+    (void) NaClHostDescClose(nhdp);
   }
- cleanup_ndidp_dtor:
-  if (rv < 0) {
-    NaClDescSafeUnref((struct NaClDesc *) ndidp);
-    ndidp = NULL;
-  }
- cleanup:
+cleanup:
   if (rv < 0) {
     free(nhdp);
     free(ndidp);
