@@ -610,7 +610,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (blob_library_file) {
     NaClFileNameForValgrind(blob_library_file);
     blob_file = (struct NaClDesc *) NaClDescIoDescOpen(blob_library_file,
-                                                       NACL_ABI_O_RDONLY, 0, 0);
+                                                       NACL_ABI_O_RDONLY, 0);
     if (!blob_file) {
       perror("sel_main");
       NaClLog(1, "Cannot open \"%s\".\n", blob_library_file);
