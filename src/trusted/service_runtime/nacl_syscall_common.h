@@ -12,6 +12,7 @@
 #define NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ 1
 
 #include "native_client/src/include/portability.h"
+#include "native_client/src/shared/platform/lind_stat.h"
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/shared/platform/nacl_host_desc.h"
@@ -270,7 +271,7 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
                        int sockfd, 
                        const struct sockaddr *addr, 
                        socklen_t addrlen);
-                       
+
 int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
                                size_t                size);
 
