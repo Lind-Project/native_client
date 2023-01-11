@@ -32,6 +32,15 @@
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
 
+#if NACL_LINUX
+# define PREAD pread64
+# define PWRITE pwrite64
+#elif NACL_OSX
+# define PREAD pread
+# define PWRITE pwrite
+#else
+# error "Which POSIX OS?"
+#endif
 
 /*
  * Map our ABI to the host OS's ABI.  On linux, this should be a big no-op.
@@ -110,7 +119,9 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   int   desc;
   void  *map_addr;
   int   host_prot;
+  int   tmp_prot;
   int   host_flags;
+  int   need_exec;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
@@ -129,9 +140,14 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   if (NULL != d && -1 == d->d) {
     NaClLog(LOG_FATAL, "NaClHostDescMap: already closed\n");
   }
-  prot &= (NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE);
-  /* may be PROT_NONE too, just not PROT_EXEC */
+  if ((0 == (flags & NACL_ABI_MAP_SHARED)) ==
+      (0 == (flags & NACL_ABI_MAP_PRIVATE))) {
+    NaClLog(LOG_FATAL,
+            "NaClHostDescMap: exactly one of NACL_ABI_MAP_SHARED"
+            " and NACL_ABI_MAP_PRIVATE must be set.\n");
+  }
 
+  prot &= NACL_ABI_PROT_MASK;
 
   if (flags & NACL_ABI_MAP_ANONYMOUS) {
     desc = -1;
@@ -139,15 +155,54 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
     desc = d->d;
   }
   /*
-   * Translate flags, prot to host_flags, host_prot.
+   * Translate prot, flags to host_prot, host_flags.
    */
-  host_flags = NaClMapFlagMap(flags);
   host_prot = NaClProtMap(prot);
+  host_flags = NaClMapFlagMap(flags);
 
-  NaClLog(4, "NaClHostDescMap: host_flags 0x%x, host_prot 0x%x\n",
-          host_flags, host_prot);
+  NaClLog(4, "NaClHostDescMap: host_prot 0x%x, host_flags 0x%x\n",
+          host_prot, host_flags);
 
-  map_addr = mmap(start_addr, len, host_prot, host_flags, desc, offset);
+  /*
+   * In chromium-os, the /dev/shm and the user partition (where
+   * installed apps live) are mounted no-exec, and a special
+   * modification was made to the chromium-os version of the Linux
+   * kernel to allow mmap to use files as backing store with
+   * PROT_EXEC. The standard mmap code path will fail mmap requests
+   * that ask for PROT_EXEC, but mprotect will allow chaning the
+   * permissions later. This retains most of the defense-in-depth
+   * property of disallowing PROT_EXEC in mmap, but enables the use
+   * case of getting executable code from a file without copying.
+   *
+   * See https://code.google.com/p/chromium/issues/detail?id=202321
+   * for details of the chromium-os change.
+   */
+  tmp_prot = host_prot & ~PROT_EXEC;
+  need_exec = (0 != (PROT_EXEC & host_prot));
+  map_addr = mmap(start_addr, len, tmp_prot, host_flags, desc, offset);
+  if (need_exec && MAP_FAILED != map_addr) {
+    if (0 != mprotect(map_addr, len, host_prot)) {
+      /*
+       * Not being able to turn on PROT_EXEC is fatal: we have already
+       * replaced the original mapping -- restoring them would be too
+       * painful.  Without scanning /proc (disallowed by outer
+       * sandbox) or Mach's vm_region call, there is no way
+       * simple/direct to figure out what was there before.  On Linux
+       * we could have mremap'd the old memory elsewhere, but still
+       * would require probing to find the contiguous memory segments
+       * within the original address range.  And restoring dirtied
+       * pages on OSX the mappings for which had disappeared may well
+       * be impossible (getting clean copies of the pages is feasible,
+       * but insufficient).
+       */
+      NaClLog(LOG_FATAL,
+              "NaClHostDescMap: mprotect to turn on PROT_EXEC failed,"
+              " errno %d\n", errno);
+    }
+  }
+
+  NaClLog(4, "NaClHostDescMap: mmap returned %"NACL_PRIxPTR"\n",
+          (uintptr_t) map_addr);
 
   if (MAP_FAILED == map_addr) {
     NaClLog(LOG_INFO,
@@ -168,14 +223,20 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
             (uintptr_t) start_addr);
   }
   NaClLog(4, "NaClHostDescMap: returning 0x%08"NACL_PRIxPTR"\n",
-          (uintptr_t) start_addr);
+          (uintptr_t) map_addr);
 
-  return (uintptr_t) start_addr;
+  return (uintptr_t) map_addr;
 }
 
-int NaClHostDescCtor(struct NaClHostDesc  *d,
-                     int                  fd) {
+int NaClHostDescUnmapUnsafe(void *start_addr, size_t len) {
+  return (0 == munmap(start_addr, len)) ? 0 : -errno;
+}
+
+static int NaClHostDescCtor(struct NaClHostDesc  *d,
+                            int fd,
+                            int flags) {
   d->d = fd;
+  d->flags = flags;
   NaClLog(3, "NaClHostDescCtor: success.\n");
   return 0;
 }
@@ -184,8 +245,9 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
                      char const           *path,
                      int                  flags,
                      int                  mode) {
-  int         host_desc;
+  int host_desc;
   struct stat stbuf;
+  int posix_flags;
 
   NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
           (uintptr_t) d, path, flags, mode);
@@ -211,16 +273,15 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
       return -NACL_ABI_EINVAL;
   }
 
-  flags = NaClMapOpenFlags(flags);
+  posix_flags = NaClMapOpenFlags(flags);
   mode = NaClMapOpenPerm(mode);
 
   NaClLog(3, "NaClHostDescOpen: invoking POSIX open(%s,0x%x,0%o)\n",
-          path, flags, mode);
-  host_desc = open(path, flags, mode);
+          path, posix_flags, mode);
+  host_desc = open(path, posix_flags, mode);
   NaClLog(3, "NaClHostDescOpen: got descriptor %d\n", host_desc);
   if (-1 == host_desc) {
-    NaClLog(LOG_ERROR,
-            "NaClHostDescOpen: open returned -1, errno %d\n", errno);
+    NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", errno);
     return -NaClXlateErrno(errno);
   }
   if (-1 == fstat(host_desc, &stbuf)) {
@@ -236,7 +297,7 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
     /* cannot access anything other than a real file */
     return -NACL_ABI_EPERM;
   }
-  return NaClHostDescCtor(d, host_desc);
+  return NaClHostDescCtor(d, host_desc, flags);
 }
 
 int NaClHostDescPosixDup(struct NaClHostDesc  *d,
@@ -271,6 +332,7 @@ int NaClHostDescPosixDup(struct NaClHostDesc  *d,
     return -NACL_ABI_EINVAL;
   }
   d->d = host_desc;
+  d->flags = flags;
   return 0;
 }
 
@@ -300,6 +362,7 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
   }
 
   d->d = posix_d;
+  d->flags = flags;
   return 0;
 }
 
@@ -309,6 +372,10 @@ ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescRead", d);
+  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClHostDescRead: WRONLY file\n");
+    return -NACL_ABI_EBADF;
+  }
   return ((-1 == (retval = read(d->d, buf, len)))
           ? -NaClXlateErrno(errno) : retval);
 }
@@ -319,6 +386,10 @@ ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
   ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescWrite", d);
+  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClHostDescWrite: RDONLY file\n");
+    return -NACL_ABI_EBADF;
+  }
   return ((-1 == (retval = write(d->d, buf, len)))
           ? -NaClXlateErrno(errno) : retval);
 }
@@ -339,6 +410,52 @@ nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
 # error "What Unix-like OS is this?"
 #endif
 }
+
+ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
+                          void *buf,
+                          size_t len,
+                          nacl_off64_t offset) {
+  ssize_t retval;
+
+  NaClHostDescCheckValidity("NaClHostDescPRead", d);
+  if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
+    return -NACL_ABI_EBADF;
+  }
+  return ((-1 == (retval = PREAD(d->d, buf, len, offset)))
+          ? -NaClXlateErrno(errno) : retval);
+}
+
+ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
+                           void const *buf,
+                           size_t len,
+                           nacl_off64_t offset) {
+  ssize_t retval;
+
+  NaClHostDescCheckValidity("NaClHostDescPWrite", d);
+  if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");
+    return -NACL_ABI_EBADF;
+  }
+#if NACL_OSX
+  /*
+   * OSX's interpretation of what the POSIX standard requires differs
+   * from Linux.  On OSX, pwrite using a descriptor that was opened
+   * with O_APPEND will not append, but write to the offset specified
+   * by the pread formal parameter.  On Linux, the O_APPEND-induced
+   * seek to the end wins.  We standardize on Linux behavior.  By just
+   * using the write syscall, we ensure that the
+   * seek-to-end-before-write semantics apply.
+   */
+  if (0 != (d->flags & NACL_ABI_O_APPEND)) {
+    return ((-1 == (retval = write(d->d, buf, len)))
+            ? -NaClXlateErrno(errno) : retval);
+  }
+#endif
+  return ((-1 == (retval = PWRITE(d->d, buf, len, offset)))
+          ? -NaClXlateErrno(errno) : retval);
+}
+
 
 int NaClHostDescIoctl(struct NaClHostDesc *d,
                       int                 request,

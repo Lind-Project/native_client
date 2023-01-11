@@ -12,6 +12,7 @@
 #ifndef NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_HOST_DESC_H__
 #define NATIVE_CLIENT_SRC_TRUSTED_PLATFORM_NACL_HOST_DESC_H__
 
+#include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
 
@@ -58,20 +59,23 @@ typedef struct _stati64 nacl_host_stat_t;
 # error "what OS?"
 #endif
 
-/* TODO(ilewis, bsy): it seems like these error functions are useful in more
- * places than just the NaClDesc library. Move them to a more central header.
- * When that's done, it should be possible to include this header *only* from
- * host code, removing the need for the #ifdef __native_client__ directives.
+/*
+ * TODO(bsy): it seems like these error functions are useful in more
+ * places than just the NaClDesc library. Move them to a more central
+ * header.  When that's done, it should be possible to include this
+ * header *only* from host code, removing the need for the #ifdef
+ * __native_client__ directives.
  *
- * Currently that's not possible, unless we want to forego NaClIsNegErrno in
- * trusted code, and go back to writing if(retval < 0) to check for errors.
+ * Currently that's not possible, unless we want to forego
+ * NaCl*IsNegErrno in trusted code, and go back to writing if(retval <
+ * 0) to check for errors.
  */
 
 /*
  * On 64-bit Linux, the app has the entire 32-bit address space
  * (kernel no longer occupies the top 1G), so what is an errno and
  * what is an address is trickier: we require that our NACL_ABI_
- * errno values be at most 64K.
+ * errno values be less than 64K.
  *
  * NB: The runtime assumes that valid errno values can ALWAYS be
  * represented using no more than 16 bits. If this assumption
@@ -111,24 +115,23 @@ extern int NaClXlateNaClSyncStatus(NaClSyncStatus status);
  *
  * start_addr and len must be multiples of NACL_MAP_PAGESIZE.
  *
- * Of prot bits, only PROT_READ and PROT_WRITE are allowed.  Of flags,
- * only MAP_ANONYMOUS is allowed.  start_addr must be specified, and
- * this code will add in MAP_FIXED.  start_address, len, and offset
- * must be a multiple of NACL_MAP_PAGESIZE.
+ * Of prot bits, NACL_ABI_PROT_READ, NACL_ABI_PROT_WRITE, and
+ * NACL_ABI_PROT_WRITE are allowed.  Of flags, only
+ * NACL_ABI_MAP_ANONYMOUS is allowed.  start_addr may be NULL when
+ * NACL_ABI_MAP_FIXED is not set, and in Windows NaClFindAddressSpace
+ * is used to find a starting address (NB: NaCl module syscall
+ * handling should always use NACL_ABI_MAP_FIXED to select the
+ * location to be within the untrusted address space).  start_address,
+ * len, and offset must be a multiple of NACL_MAP_PAGESIZE.
  *
- * Note that in Windows, in order for the mapping to be coherent, the
- * mapping must arise from the same mapping handle and just using the
- * same file handle won't ensure coherence.  If the file mapping
- * object were created and destroyed inside of NaClHostDescMap, there
- * would never be any chance at coherence.  One alternative is to
- * create a file mapping object for each mapping mode.  Native
- * descriptors are then shareable, but only when the mode matches (!).
- * A read-only shared mapping not seeing the changes made by a
- * read-write mapping seem rather ugly.
- *
- * Instead of this ugliness, we just say that a map operation cannot
- * request MAP_SHARED.  Anonymous mappings ignore the descriptor
- * argument.
+ * Note that in Windows, in order for the mapping to be coherent (two
+ * or more shared mappings/views of the file data will show changes
+ * that are made in another mapping/view), the mappings must use the
+ * same mapping handle or open file handle.  Either may be sent to
+ * another process to achieve this.  Windows does not guarantee
+ * coherence, however, if a process opened the same file again and
+ * performed CreateFileMapping / MapViewOfFile using the new file
+ * handle.
  *
  * Underlying host-OS syscalls:  mmap / MapViewOfFileEx
  *
@@ -140,18 +143,7 @@ extern uintptr_t NaClHostDescMap(struct NaClHostDesc  *d,
                                  size_t               len,
                                  int                  prot,
                                  int                  flags,
-                                 nacl_off64_t         offset);
-
-/*
- * Undo a file mapping.  The memory range specified by start_address,
- * len must be memory that came from NaClHostDescMap.
- *
- * start_addr and len must be multiples of NACL_MAP_PAGESIZE.
- *
- * Underlying host-OS syscalls: mmap / UnmapViewOfFile/VirtualAlloc
- */
-extern int NaClHostDescUnmap(void   *start_addr,
-                             size_t len);
+                                 nacl_off64_t         offset) NACL_WUR;
 
 /*
  * Undo a file mapping.  The memory range specified by start_address,
@@ -162,22 +154,22 @@ extern int NaClHostDescUnmap(void   *start_addr,
  * Underlying host-OS syscalls: munmap / UnmapViewOfFile
  */
 extern int NaClHostDescUnmapUnsafe(void   *start_addr,
-                                   size_t len);
+                                   size_t len) NACL_WUR;
 
 
 /*
  * These are the flags that are permitted.
  */
-#define NACL_ALLOWED_OPEN_FLAGS                 \
-  (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT        \
-   | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND)
+#define NACL_ALLOWED_OPEN_FLAGS \
+  (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND)
 
 /*
  * Constructor for a NaClHostDesc object.
  *
- * path should be a host-OS pathname to a file.  No validation is
- * done.  flags should contain one of O_RDONLY, O_WRONLY, and O_RDWR,
- * and can additionally contain O_CREAT, O_TRUNC, and O_APPEND.
+ * |path| should be a host-OS pathname to a file.  No validation is
+ * done.  |flags| should contain one of NACL_ABI_O_RDONLY,
+ * NACL_ABI_O_WRONLY, and NACL_ABI_O_RDWR, and can additionally
+ * contain NACL_ABI_O_CREAT, NACL_ABI_O_TRUNC, and NACL_ABI_O_APPEND.
  *
  * Uses raw syscall return convention, so returns 0 for success and
  * non-zero (usually -NACL_ABI_EINVAL) for failure.
@@ -193,7 +185,7 @@ extern int NaClHostDescUnmapUnsafe(void   *start_addr,
 extern int NaClHostDescOpen(struct NaClHostDesc *d,
                             char const          *path,
                             int                 flags,
-                            int                 perms);
+                            int                 perms) NACL_WUR;
 
 /*
  * Constructor for a NaClHostDesc object.
@@ -214,7 +206,7 @@ extern int NaClHostDescOpen(struct NaClHostDesc *d,
  */
 extern int NaClHostDescPosixDup(struct NaClHostDesc *d,
                                 int                 posix_d,
-                                int                 flags);
+                                int                 flags) NACL_WUR;
 
 /*
  * Essentially the same as NaClHostDescPosixDup, but without the dup
@@ -222,7 +214,7 @@ extern int NaClHostDescPosixDup(struct NaClHostDesc *d,
  */
 extern int NaClHostDescPosixTake(struct NaClHostDesc  *d,
                                  int                  posix_d,
-                                 int                  flags);
+                                 int                  flags) NACL_WUR;
 
 
 /*
@@ -230,17 +222,17 @@ extern int NaClHostDescPosixTake(struct NaClHostDesc  *d,
  * Aborts process if no memory.
  */
 extern struct NaClHostDesc *NaClHostDescPosixMake(int posix_d,
-                                                  int flags);
+                                                  int flags) NACL_WUR;
 /*
  * Read data from an opened file into a memory buffer.
  *
  * buf is not validated.
  *
- * Underlying host-OS functions: read / _read
+ * Underlying host-OS functions: read / FileRead
  */
 extern ssize_t NaClHostDescRead(struct NaClHostDesc *d,
                                 void                *buf,
-                                size_t              len);
+                                size_t              len) NACL_WUR;
 
 
 /*
@@ -248,11 +240,38 @@ extern ssize_t NaClHostDescRead(struct NaClHostDesc *d,
  *
  * buf is not validated.
  *
- * Underlying host-OS functions: write / _write
+ * Underlying host-OS functions: write / FileWrite
  */
 extern ssize_t NaClHostDescWrite(struct NaClHostDesc  *d,
                                  void const           *buf,
-                                 size_t               count);
+                                 size_t               count) NACL_WUR;
+
+/*
+ * Read data from an opened file into a memory buffer from specified
+ * offset into file.
+ *
+ * buf is not validated.
+ *
+ * Underlying host-OS functions: pread{,64} / FileRead
+ */
+extern ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
+                                 void *buf,
+                                 size_t len,
+                                 nacl_off64_t offset) NACL_WUR;
+
+
+/*
+ * Write data from a memory buffer into an opened file at the specific
+ * offset in the file.
+ *
+ * buf is not validated.
+ *
+ * Underlying host-OS functions: pwrite{,64} / FileWrite
+ */
+extern ssize_t NaClHostDescPWrite(struct NaClHostDesc  *d,
+                                  void const *buf,
+                                  size_t count,
+                                  nacl_off64_t offset) NACL_WUR;
 
 extern nacl_off64_t NaClHostDescSeek(struct NaClHostDesc *d,
                                      nacl_off64_t        offset,
@@ -265,23 +284,23 @@ extern nacl_off64_t NaClHostDescSeek(struct NaClHostDesc *d,
  */
 extern int NaClHostDescIoctl(struct NaClHostDesc  *d,
                              int                  request,
-                             void                 *arg);
+                             void                 *arg) NACL_WUR;
 
 /*
  * Fstat.
  */
 extern int NaClHostDescFstat(struct NaClHostDesc  *d,
-                             nacl_host_stat_t     *nasp);
+                             nacl_host_stat_t     *nasp) NACL_WUR;
 
 /*
  * Dtor for the NaClHostFile object. Close the file.
  *
  * Underlying host-OS functions:  close(2) / _close
  */
-extern int NaClHostDescClose(struct NaClHostDesc  *d);
+extern int NaClHostDescClose(struct NaClHostDesc  *d) NACL_WUR;
 
 extern int NaClHostDescStat(char const        *host_os_pathname,
-                            nacl_host_stat_t  *nasp);
+                            nacl_host_stat_t  *nasp) NACL_WUR;
 
 /*
  * Maps NACI_ABI_ versions of the mmap prot argument to host ABI versions
