@@ -933,31 +933,6 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
 
-
-  /* Set up cage-id's for initial descriptors */
-  for (int fd = 0; fd < 3; fd++) {
-
-    /* Retrieve NaCl Descriptor based on fd */
-    int host_fd = fd_cage_table[nap->cage_id][fd];
-
-    struct NaClDesc *nd;
-    struct NaClDescIoDesc *self;
-    struct NaClHostDesc *hd;
-    nd = NaClGetDesc(nap, host_fd);
-    if (!nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    self = (struct NaClDescIoDesc *) &nd->base;
-    hd = self->hd;
-
-    hd->cageid = nap->cage_id;
-    hd->d = fd;
-    hd->userfd = fd;
-
-    NaClDescUnref(nd);
-  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
@@ -1746,11 +1721,6 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
-        if(entry->desc) {
-          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
-          struct NaClHostDesc *hd = self->hd;
-          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
-        }
         NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
                                           entry->page_num,
                                           entry->npages,
@@ -1904,16 +1874,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   }
 }
 
-/* set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id) {
-  fd_cage_table[cage_id][0] = 0;
-  fd_cage_table[cage_id][1] = 1;
-  fd_cage_table[cage_id][2] = 2;
-
-  /* Initialize unused fd's to -1 */
-  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
-
-  /* set to the next unused (available for dup() etc.) file descriptor */
   nap->num_children = 0;
   nap->cage_id = cage_id;
 }

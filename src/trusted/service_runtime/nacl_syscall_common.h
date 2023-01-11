@@ -270,17 +270,7 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
                        int sockfd, 
                        const struct sockaddr *addr, 
                        socklen_t addrlen);
-
-int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
-int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
+                       
 int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
                                size_t                size);
 
