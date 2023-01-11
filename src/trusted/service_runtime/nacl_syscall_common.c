@@ -26,6 +26,7 @@
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 #include "native_client/src/shared/platform/lind_stat.h"
+
 #include "native_client/src/include/nacl_assert.h"
 #include "native_client/src/include/nacl_macros.h"
 #include "native_client/src/include/nacl_platform.h"
