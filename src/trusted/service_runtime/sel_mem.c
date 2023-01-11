@@ -619,8 +619,8 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   for (i = 0; i < self->nvalid; ++i) {
     struct NaClVmmapEntry   *ent = self->vmentry[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
-    int                     flags = NaClVmmapEntryMaxProt(ent);
-
+    int                     flags = ent->prot;
+    
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
       return 0 == (prot & (~flags));
