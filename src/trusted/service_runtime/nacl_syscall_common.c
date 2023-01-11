@@ -366,7 +366,6 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
    */
 
   NaClVmmapDtor(&nap->mem_map);
-  NaClAppCloseFDs(nap);
   lind_exit(status, nap->cage_id);
 
   NaClLog(1, "Exit syscall handler: %d\n", status);
@@ -485,9 +484,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
 
   ret = lind_dup2(oldfd, newfd, nap->cage_id);
 
-  ret = newfd;
-
-out:
   return ret;
 }
 
@@ -692,23 +688,17 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
   
-  size_t          log_bytes;
-  char const      *ellipsis = "";
   
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
            "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
           nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  if (d < 0) {
-    retval = -NACL_ABI_EBADF;
-    goto out;
-  }
+  if (d < 0) return -NACL_ABI_EBADF;
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) {
-    retval = -NACL_ABI_EFAULT;
-    goto out;
+    return -NACL_ABI_EFAULT;
   }
 
   /*
@@ -727,7 +717,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
-out:
   return retval;
 }
 
@@ -832,7 +821,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
 
-out:
   return retval;
 }
 
@@ -1744,7 +1732,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     NaClVmHoleClosingMu(nap);
     NaClXMutexUnlock(&nap->mu);
   }
- cleanup_no_locks:
 
   /*
    * Check to ensure that map_result will fit into a 32-bit value. This is
