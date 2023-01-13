@@ -682,7 +682,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
                     void                  *buf,
                     size_t                count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -784,14 +783,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
                      void                 *buf,
                      size_t               count) {
   struct NaClApp  *nap = natp->nap;
-  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  char const      *ellipsis = "";
   
-  size_t          log_bytes;
-  int             lindfd;
 
   NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
         "%d, 0x%08"NACL_PRIxPTR", "
@@ -815,7 +810,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
-  write_result = lind_write(fd, (void *)sysaddr, count, nap->cage_id);
+  write_result = lind_write(d, (void *)sysaddr, count, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -829,7 +824,6 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       size_t                count,
                       off_t                 offset) {
   struct NaClApp  *nap = natp->nap;
-  int             fd;
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
@@ -869,7 +863,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-  write_result = lind_pwrite(fd, (void *)sysaddr, count, offset, nap->cage_id);
+  write_result = lind_pwrite(d, (void *)sysaddr, count, offset, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
@@ -4511,8 +4505,6 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   struct NaClApp *nap = natp->nap;
   struct epoll_event *eventsysaddr;
   int retval = 0;
-  int nfds;
-  int lindepfd;
   struct epoll_event *sys_event_array;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d,)\n",
@@ -4534,7 +4526,6 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout) {
   struct NaClApp *nap = natp->nap;
   int retval;
-  int max_fd = 0;
   fd_set *syswritefds, *sysreadfds, *sysexceptfds;
   struct timeval* nacltimeout = NULL;
 
@@ -4577,7 +4568,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     }
   }
 
-  retval = lind_select(max_fd, sysreadfds, syswritefds, sysexceptfds, nacltimeout, nap->cage_id);
+  retval = lind_select(nfds, sysreadfds, syswritefds, sysexceptfds, nacltimeout, nap->cage_id);
   
   return retval;
 }
