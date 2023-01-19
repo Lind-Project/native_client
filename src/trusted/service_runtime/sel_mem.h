@@ -20,7 +20,8 @@ EXTERN_C_BEGIN
 
 struct NaClDesc;
 
-#define NACL_MAP_COPY   0x100
+#define NACL_MAP_COPY   0x1003d
+#define ENTRY_OFFSET_NOFD -1
 
 /*
  * Interface is based on setting properties and query properties by

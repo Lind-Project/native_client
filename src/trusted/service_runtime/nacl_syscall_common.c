@@ -1538,6 +1538,7 @@ int32_t NaClSysMmapIntern(struct NaClApp *nap,
   unsigned int mapbottom;
   int desc;
   int maxprot = PROT_RW;
+  nacl_abi_off_t entry_offset = ENTRY_OFFSET_NOFD;
 
   holding_app_lock = 0;
 
@@ -1767,6 +1768,7 @@ int32_t NaClSysMmapIntern(struct NaClApp *nap,
     else
     {
       desc = d;
+      entry_offset = offset;
       maxprot = lind_fcntl_get(d, F_GETFL, nap->cage_id) & (NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE); // get and extract file protection flags
     }
 
@@ -1884,7 +1886,7 @@ int32_t NaClSysMmapIntern(struct NaClApp *nap,
                               maxprot,
                               flags,
                               NULL,
-                              offset,
+                              entry_offset,
                               length);
   }
 
@@ -2180,7 +2182,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
                "addr 0x%08" NACL_PRIxPTR ", desc 0x%08" NACL_PRIxPTR "\n",
             addr, (uintptr_t)entry->desc);
 
-    if (!entry->desc)
+    if (!entry->desc && entry->offset == ENTRY_OFFSET_NOFD) // with no nacl desc or entry offset set to ENTRY_OFFSET_NOFD, this is anonymous
     {
       if (mprotect((void *)addr, entry_len, host_prot))
       {
