@@ -3987,6 +3987,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
                             tramp_pnum,
                             tramp_npages,
                             PROT_RW,
+                            PROT_RW,
                             MAP_ANON_PRIV,
                             NULL,
                             0,
