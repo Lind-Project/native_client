@@ -3956,6 +3956,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
                0,
                NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                NACL_ABI_PROT_NONE,
+               NACL_ABI_PROT_NONE,
                NACL_ABI_MAP_PRIVATE,
                NULL,
                0,
