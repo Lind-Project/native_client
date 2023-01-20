@@ -785,7 +785,6 @@ int32_t NaClSysPread(struct NaClAppThread *natp, // will make NaCl logs like rea
                      off_t offset)
 {
   struct NaClApp *nap = natp->nap;
-  int fd;
   int32_t retval = -NACL_ABI_EINVAL;
   ssize_t read_result = -NACL_ABI_EINVAL;
   uintptr_t sysaddr;
@@ -961,8 +960,6 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   nacl_off64_t retval64;
   int32_t retval = -NACL_ABI_EINVAL;
 
-  int fd;
-
   NaClLog(2, "Entered NaClSysLseek(0x%08" NACL_PRIxPTR ", %d,"
              " 0x%08" NACL_PRIxPTR ", %d)\n",
           (uintptr_t)natp, d, (uintptr_t)offp, whence);
@@ -1006,7 +1003,6 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int retval = -NACL_ABI_EINVAL;
   uintptr_t sysaddr;
-  int lindfd;
 
   NaClLog(2, "Cage %d Entered NaClSysIoctl(0x%08" NACL_PRIxPTR ", %d, %lu, 0x%08" NACL_PRIxPTR ")\n",
           nap->cage_id, (uintptr_t)natp, d, request,
@@ -1036,7 +1032,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
 {
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
-  struct nacl_abi_stat result;
+  struct lind_stat result;
 
   NaClLog(2, "Entered NaClSysFstat(0x%08" NACL_PRIxPTR ", %d, 0x%08" NACL_PRIxPTR ")\n",
           (uintptr_t)natp,
@@ -1063,8 +1059,8 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
   char path[NACL_CONFIG_PATH_MAX];
-  struct nacl_abi_stat abi_stbuf;
-
+  struct lind_stat result;
+  
   NaClLog(2, "Entered NaClSysStat(0x%08" NACL_PRIxPTR ", 0x%08" NACL_PRIxPTR ","
              " 0x%08" NACL_PRIxPTR ")\n",
           (uintptr_t)natp, (uintptr_t)pathname, (uintptr_t)buf);
@@ -1075,9 +1071,9 @@ int32_t NaClSysStat(struct NaClAppThread *natp,
   retval = NaClStatAclCheck(nap, path);
   if (retval) return retval;
 
-  retval = lind_xstat(path, &abi_stbuf, nap->cage_id);
+  retval = lind_xstat(path, &result, nap->cage_id);
   if (!retval) {
-    if (!NaClCopyOutToUser(nap, (uintptr_t)buf, &abi_stbuf, sizeof(abi_stbuf))) retval = -NACL_ABI_EFAULT;
+    if (!NaClCopyOutToUser(nap, (uintptr_t)buf, &result, sizeof(result))) retval = -NACL_ABI_EFAULT;
   }
 
   return retval;
@@ -1090,8 +1086,8 @@ int32_t NaClSysLStat(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   int32_t retval = -NACL_ABI_EINVAL;
   char path[NACL_CONFIG_PATH_MAX];
-  struct nacl_abi_stat abi_stbuf;
-
+  struct lind_stat result;
+  
   NaClLog(2, "Entered NaClSysStat(0x%08" NACL_PRIxPTR ", 0x%08" NACL_PRIxPTR ","
              " 0x%08" NACL_PRIxPTR ")\n",
           (uintptr_t)natp, (uintptr_t)pathname, (uintptr_t)buf);
@@ -1102,9 +1098,9 @@ int32_t NaClSysLStat(struct NaClAppThread *natp,
   retval = NaClStatAclCheck(nap, path);
   if (retval) return retval;
 
-  retval = lind_xstat(path, &abi_stbuf, nap->cage_id);
+  retval = lind_xstat(path, &result, nap->cage_id);
   if (!retval) {
-    if (!NaClCopyOutToUser(nap, (uintptr_t)buf, &abi_stbuf, sizeof(abi_stbuf))) retval = -NACL_ABI_EFAULT;
+    if (!NaClCopyOutToUser(nap, (uintptr_t)buf, &result, sizeof(result))) retval = -NACL_ABI_EFAULT;
   }
 
   return retval;
@@ -4806,13 +4802,12 @@ int32_t NaClSysFcntlSet(struct NaClAppThread *natp,
                         int fd, int cmd, long set_op)
 {
   int32_t ret;
-  int fdtrans;
   struct NaClApp *nap = natp->nap;
 
   NaClLog(2, "Cage %d Entered NaClSysFcntlSet(0x%08" NACL_PRIxPTR ", %d, %d, %ld)\n",
           nap->cage_id, (uintptr_t)natp, fd, cmd, set_op);
 
-  ret = lind_fcntl_set(fdtrans, cmd, set_op, nap->cage_id);
+  ret = lind_fcntl_set(fd, cmd, set_op, nap->cage_id);
 
   NaClLog(2, "Exiting NaClSysFcntlSet\n");
   return ret;

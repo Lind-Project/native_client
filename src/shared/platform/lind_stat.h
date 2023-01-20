@@ -10,14 +10,12 @@
 
 #include <stdint.h>
 
-struct lind_timespec
-{
-    int64_t tv_sec;
-    int64_t tv_nsec;
+struct lind_timespec {
+    uint64_t tv_sec;
+    uint64_t tv_nsec;
 };
 
-struct lind_stat
-{
+struct lind_stat {
     uint64_t st_dev;     /* Device.  */
     uint64_t st_ino;     /* File serial number.  */
     uint32_t st_mode;       /* File mode.  */
@@ -26,8 +24,8 @@ struct lind_stat
     uint32_t st_gid;     /* Group ID of the file's group.*/
     uint64_t st_rdev;        /* Device number, if device.  */
     int64_t st_size;            /* Size of file, in bytes.  */
-    int64_t st_blksize; /* Optimal block size for I/O.  */
-    int64_t st_blocks;       /* Number 512-byte blocks allocated. */
+    int32_t st_blksize; /* Optimal block size for I/O.  */
+    uint32_t st_blocks;       /* Number 512-byte blocks allocated. */
     /* Nanosecond resolution timestamps are stored in a format
        equivalent to 'struct timespec'.  This is the type used
        whenever possible but the Unix namespace rules do not allow the
@@ -37,23 +35,9 @@ struct lind_stat
     struct lind_timespec st_atim;        /* Time of last access.  */
     struct lind_timespec st_mtim;        /* Time of last modification.  */
     struct lind_timespec st_ctim;        /* Time of last status change.  */
-#ifdef st_atime
-#undef st_atime
-#endif
-# define st_atime st_atim.tv_sec    /* Backward compatibility.  */
-#ifdef st_mtime
-#undef st_mtime
-#endif
-# define st_mtime st_mtim.tv_sec
-#ifdef st_ctime
-#undef st_ctime
-#endif
-# define st_ctime st_ctim.tv_sec
-    int64_t ___unused[3]; //double underscore is not enough for OSX
 };
 
-struct lind_statfs
-  {
+struct lind_statfs {
     int64_t f_type;
     int64_t f_bsize;
     uint64_t f_blocks;
@@ -66,21 +50,21 @@ struct lind_statfs
     int64_t f_frsize;
     int64_t f_flags;
     int64_t f_spare[4];
-  };
+};
 
-  struct lind_ipc_perm {  /* must be renamed when ABI is exported */
-    int32_t               shm_key;       
-    uint32_t              shm_uid;
-    uint32_t              shm_gid;
-    uint32_t              shm_cuid;
-    uint32_t              shm_cgid;
-    uint16_t              shm_mode;
-    uint16_t              shm_pad1;
-    uint16_t              shm_seq;
-    uint16_t              shm_pad2;
-    uint32_t              shm_unused1;
-    uint32_t              shm_unused2;
-  };
+struct lind_ipc_perm {  /* must be renamed when ABI is exported */
+  int32_t               shm_key;       
+  uint32_t              shm_uid;
+  uint32_t              shm_gid;
+  uint32_t              shm_cuid;
+  uint32_t              shm_cgid;
+  uint16_t              shm_mode;
+  uint16_t              shm_pad1;
+  uint16_t              shm_seq;
+  uint16_t              shm_pad2;
+  uint32_t              shm_unused1;
+  uint32_t              shm_unused2;
+};
 
 struct lind_shmid_ds {  /* must be renamed when ABI is exported */
   struct lind_ipc_perm      shm_perm;
