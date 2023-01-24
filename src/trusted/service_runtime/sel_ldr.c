@@ -382,6 +382,7 @@ void NaClAppDtor(struct NaClApp *nap) {
 
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
+  NaClVmmapDtor(&nap->mem_map);
   NaClAddrSpaceFree(nap);
 
   NaClDescUnref(nap->name_service_conn_cap);
