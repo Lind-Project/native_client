@@ -2383,7 +2383,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
            "%d, %d, %d, %lx)\n",
            nap->cage_id, (uintptr_t)natp, domain, type, protocol, (uintptr_t)fds);
 
-  retval = lind_socketpair (domain, type, protocol, lind_fds, nap->cage_id);
+  retval = lind_socketpair (domain, type, protocol, lindfds, nap->cage_id);
 
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
