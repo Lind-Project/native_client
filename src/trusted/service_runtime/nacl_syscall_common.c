@@ -457,8 +457,6 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
 
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *old_nd;
-  int old_hostfd;
   int ret;
 
   NaClLog(1, "NaClSysDup(0x%08"NACL_PRIxPTR", %d)\n", (uintptr_t)natp, oldfd);
@@ -681,8 +679,6 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  size_t          log_bytes;
-  char const      *ellipsis = "";
   
   NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
            "%d, 0x%08"NACL_PRIxPTR", "
@@ -777,8 +773,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  char const      *ellipsis = "";
-  size_t          log_bytes;
 
   NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
         "%d, 0x%08"NACL_PRIxPTR", "
@@ -848,12 +842,10 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   NaClLog(2, "In NaClSysPWrite(%d, %.*s%s, %"NACL_PRIdS")\n",
           d, (int)log_bytes, (char *)sysaddr, ellipsis, count);
 
-  read_result = lind_pread(d, (void *)sysaddr, count, offset, nap->cage_id);
+  write_result = lind_pwrite(d, (void *)sysaddr, count, offset, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
-
-out:
   return retval;
 }
 
@@ -957,7 +949,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
                     const char            *pathname,
                     struct nacl_abi_stat  *buf) {
   struct NaClApp      *nap = natp->nap;
-  int32_t             retval = -NACL_ABI_EINVAL;
+  int32_t             retval;
   char                path[NACL_CONFIG_PATH_MAX];
   struct lind_stat  result;
 
@@ -966,10 +958,10 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
           (uintptr_t)natp,(uintptr_t)pathname, (uintptr_t)buf);
 
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = NaClStatAclCheck(nap, path);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = lind_xstat(path, &result, nap->cage_id);
   if (!retval) {
@@ -983,7 +975,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
                     struct nacl_abi_stat  *buf) {
   struct NaClApp      *nap = natp->nap;
-  int32_t             retval = -NACL_ABI_EINVAL;
+  int32_t             retval;
   char                path[NACL_CONFIG_PATH_MAX];
   struct lind_stat  result;
 
@@ -992,10 +984,10 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
           (uintptr_t)natp,(uintptr_t)pathname, (uintptr_t)buf);
 
   retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = NaClStatAclCheck(nap, path);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = lind_xstat(path, &result, nap->cage_id);
   if (!retval) {
@@ -1030,7 +1022,7 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
                      uint32_t             pathname) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
   NaClLog(2, "Cage %d Entered NaClSysRmdir(0x%08"NACL_PRIxPTR", "
           "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
@@ -1038,7 +1030,7 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return -NACL_ABI_EACCES;
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = lind_rmdir(path, natp->nap->cage_id);
 
@@ -1050,7 +1042,7 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
   NaClLog(2, "Cage %d Entered NaClSysChdir(0x%08"NACL_PRIxPTR", "
           "%d)\n", nap->cage_id, (uintptr_t) natp, pathname);
@@ -1058,7 +1050,7 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return -NACL_ABI_EACCES;
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = lind_chdir(path, natp->nap->cage_id);
 
@@ -1071,7 +1063,7 @@ int32_t NaClSysChmod(struct NaClAppThread *natp,
                      int                  mode) {
   struct NaClApp *nap = natp->nap;
   char           path[NACL_CONFIG_PATH_MAX];
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
   NaClLog(2, "Cage %d Entered NaClSysChmod(0x%08"NACL_PRIxPTR", "
           "%d, %d)\n", nap->cage_id, (uintptr_t) natp, pathname, mode);
@@ -1079,7 +1071,7 @@ int32_t NaClSysChmod(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return -NACL_ABI_EACCES;
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) return;
+  if (retval) return -NACL_ABI_EINVAL;
 
   retval = lind_chmod(path, mode, natp->nap->cage_id);
 
@@ -1108,7 +1100,7 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       size_t               size) {
   struct NaClApp *nap = natp->nap;
   uintptr_t      sysaddr;
-  int32_t        retval = -NACL_ABI_EINVAL;
+  int32_t        retval;
 
   NaClLog(2, "Cage %d Entered NaClSysGetcwd(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", "
@@ -1140,11 +1132,12 @@ int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
   char           dstpath[NACL_CONFIG_PATH_MAX];
   int32_t        retval;
 
-  if ((retval = CopyPathFromUser(nap, srcpath, sizeof(srcpath), (uintptr_t) from))) return retval;
+  if ((retval = CopyPathFromUser(nap, srcpath, sizeof(srcpath), (uintptr_t) from))) return -NACL_ABI_EINVAL;
   
-  if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) return retval;
+  if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) return -NACL_ABI_EINVAL;
 
-  return lind_link(srcpath, dstpath, nap->cage_id);
+  retval = lind_link(srcpath, dstpath, nap->cage_id);
+  return retval;
 }
 
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
@@ -1152,7 +1145,7 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   char           path[NACL_CONFIG_PATH_MAX];
   int32_t        retval;
 
-  if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) return retval;
+  if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) return -NACL_ABI_EINVAL;
   retval = lind_unlink(path, nap->cage_id);
 
   return retval;
@@ -1164,9 +1157,9 @@ int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const cha
   char           newpathname[NACL_CONFIG_PATH_MAX];
   int32_t        retval;
 
-  if ((retval = CopyPathFromUser(nap, oldpathname, sizeof(oldpathname), (uintptr_t) oldpath))) return retval;
+  if ((retval = CopyPathFromUser(nap, oldpathname, sizeof(oldpathname), (uintptr_t) oldpath))) return -NACL_ABI_EINVAL;
 
-  if ((retval = CopyPathFromUser(nap, newpathname, sizeof(newpathname), (uintptr_t) newpath))) return retval;
+  if ((retval = CopyPathFromUser(nap, newpathname, sizeof(newpathname), (uintptr_t) newpath))) return -NACL_ABI_EINVAL;
 
   retval = lind_rename(oldpathname, newpathname, nap->cage_id);
   return retval;
@@ -1906,7 +1899,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
             "addr 0x%08"NACL_PRIxPTR", desc 0x%08"NACL_PRIxPTR"\n",
             addr, (uintptr_t) entry->desc);
 
-    if (!entry->desc && entry->offset == ENTRY_OFFSET_NOFD) // with no nacl desc or entry offset set to ENTRY_OFFSET_NOFD, this is anonymous
+    if (!entry->desc && entry->offset == ENTRY_OFFSET_NOFD) { // with no nacl desc or entry offset set to ENTRY_OFFSET_NOFD, this is anonymous
       if (mprotect((void *) addr, entry_len, host_prot)) {
         NaClLog(1, "MprotectInternal: "
                 "mprotect on anonymous memory failed, errno = %d\n", errno);
@@ -2383,7 +2376,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  *fds) {
 
   struct NaClApp          *nap = natp->nap;
-  int                     lind_fds[2];
+  int                     lindfds[2];
   int32_t                 retval;
 
   NaClLog(2, "Cage %d Entered NaClSysSocketPair(0x%08"NACL_PRIxPTR", "
@@ -3136,10 +3129,10 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
 int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) {
   struct NaClApp *nap = natp->nap;
   int32_t ret = 0;
-  int lind_fds[2];
+  int lindfds[2];
 
   /* Attempt lind pipe RPC. Return lind pipe fds, if not return NaCl Error */
-  ret = lind_pipe2(lind_fds, flags, nap->cage_id);
+  ret = lind_pipe2(lindfds, flags, nap->cage_id);
 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
@@ -3694,7 +3687,6 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
 
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
   int32_t ret;
-
   struct NaClApp *nap = natp->nap;
 
   NaClLog(2, "Cage %d Entered NaClSysSocket(0x%08"NACL_PRIxPTR", "
@@ -3703,9 +3695,9 @@ int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int prot
   
   ret = lind_socket (domain, type, protocol, nap->cage_id);
 
-  NaClLog(2, "NaClSysSocket: returning %d\n", userfd);
+  NaClLog(2, "NaClSysSocket: returning %d\n", ret);
   
-  return userfd;
+  return ret;
 }
 
 int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flags, const void *buf) {
@@ -3998,7 +3990,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
   
   ret = lind_getsockname(sockfd, sysaddr, sysaddrlen, nap->cage_id);
   NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
-  NaClDescUnref(ndp);
+
   return ret; 
 }
 
@@ -4008,7 +4000,6 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
                         socklen_t * addrlen) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  struct NaClDesc *ndp;
 
   struct sockaddr * sysaddr = (struct sockaddr*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) addr, sizeof(struct sockaddr), NACL_ABI_PROT_WRITE);
   socklen_t * sysaddrlen = (socklen_t*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) addrlen, sizeof(socklen_t), NACL_ABI_PROT_WRITE);
@@ -4308,34 +4299,34 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   NaClLog(2, "Cage %d Entered NaClSysSelect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, nfds, (uintptr_t) readfds, (uintptr_t) writefds, (uintptr_t) exceptfds, (uintptr_t) timeout);
 
-  if(readfds) {
+  if (readfds) {
     sysreadfds = (fd_set*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) readfds, sizeof(fd_set), NACL_ABI_PROT_WRITE);
 
-    if ((void*) kNaClBadAddress == naclreadfds) {
+    if ((void*) kNaClBadAddress == sysreadfds) {
       NaClLog(2, "NaClSysSelect could not translate read fds address, returning %d\n", -NACL_ABI_EFAULT);
       return -NACL_ABI_EFAULT;
     }
   }
   
-  if(writefds) {
+  if (writefds) {
     syswritefds = (fd_set*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) writefds, sizeof(fd_set), NACL_ABI_PROT_WRITE);
 
-    if ((void*) kNaClBadAddress == naclwritefds) {
+    if ((void*) kNaClBadAddress == syswritefds) {
       NaClLog(2, "NaClSysSelect could not translate write fds address, returning %d\n", -NACL_ABI_EFAULT);
       return -NACL_ABI_EFAULT;
     }
   }
 
-  if(exceptfds) {
-    naclexceptfds = (fd_set*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) exceptfds, sizeof(fd_set), NACL_ABI_PROT_WRITE);
+  if (exceptfds) {
+    sysexceptfds = (fd_set*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) exceptfds, sizeof(fd_set), NACL_ABI_PROT_WRITE);
 
-    if ((void*) kNaClBadAddress == naclexceptfds) {
+    if ((void*) kNaClBadAddress == sysexceptfds) {
       NaClLog(2, "NaClSysSelect could not translate except fds address, returning %d\n", -NACL_ABI_EFAULT);
       return -NACL_ABI_EFAULT;
     }
   }
 
-  if(timeout) {
+  if (timeout) {
     nacltimeout = (struct timeval*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) timeout, sizeof(struct timeval), NACL_ABI_PROT_READ);
 
     if ((void*) kNaClBadAddress == nacltimeout) {
@@ -4344,7 +4335,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
     }
   }
 
-  retval = lind_select(max_fd, safeposixreadfds2, safeposixwritefds2, safeposixexceptfds2, nacltimeout, nap->cage_id);
+  retval = lind_select(nfds, sysreadfds, syswritefds, sysexceptfds, nacltimeout, nap->cage_id);
   
   return retval;
 }
