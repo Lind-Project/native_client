@@ -671,6 +671,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   return retval;
 }
 
+// Lind: I/O calls.
+// We've removed the VMHole functions because they are specific to the windows VM concern (see note in sel_ldr.h)
 int32_t NaClSysRead(struct NaClAppThread  *natp,
                     int                   d,
                     void                  *buf,
@@ -1291,6 +1293,13 @@ static int32_t MunmapInternal(struct NaClApp *nap, uintptr_t sysaddr, size_t len
 }
 
 /* Warning: sizeof(nacl_abi_off_t) != sizeof(off_t) on OSX */
+
+// Lind (NR): we've removed any ability for mmap to map executable code for several reasons
+// 1. It made removing the NaClDesc system much easier
+// 2. It relieves us of any worry about a mechanism that obviously raises some security concerns
+// 3. We don't rely on these settings to map the intial program, and we don't anticipate programs where we will neep to map code
+//
+// We've also removed the VMHole functions since they are specific to Windows 
 int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                           void                  *start,
                           size_t                length,
@@ -1376,8 +1385,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
    * Lock the addr space.
    */
   NaClXMutexLock(&nap->mu);
-
-  NaClVmHoleOpeningMu(nap);
 
   holding_app_lock = 1;
 
@@ -1465,17 +1472,12 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
     goto cleanup;
   }
 
-  if (NaClSysCommonAddrRangeContainsExecutablePages(nap,
-                                                           usraddr,
-                                                           length)) {
+  if (NaClSysCommonAddrRangeContainsExecutablePages(nap, usraddr, length)) {
     NaClLog(2, "NaClSysMmap: region contains executable pages\n");
     map_result = -NACL_ABI_EINVAL;
     goto cleanup;
   }
 
-  NaClVmIoPendingCheck_mu(nap,
-                          (uint32_t) usraddr,
-                          (uint32_t) (usraddr + length - 1));
   /*
    * Force NACL_ABI_MAP_FIXED, since we are specifying address in NaCl
    * app address space.
@@ -1633,7 +1635,6 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
 
  cleanup:
   if (holding_app_lock) {
-    NaClVmHoleClosingMu(nap);
     NaClXMutexUnlock(&nap->mu);
   }
 
@@ -1747,8 +1748,6 @@ int32_t NaClSysMunmap(struct NaClAppThread  *natp,
 
   NaClXMutexLock(&nap->mu);
 
-  NaClVmHoleOpeningMu(nap);
-
   holding_app_lock = 1;
 
   /*
@@ -1762,14 +1761,9 @@ int32_t NaClSysMunmap(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  NaClVmIoPendingCheck_mu(nap,
-                          (uint32_t) (uintptr_t) start,
-                          (uint32_t) ((uintptr_t) start + length - 1));
-
   retval = MunmapInternal(nap, sysaddr, length);
 cleanup:
   if (holding_app_lock) {
-    NaClVmHoleClosingMu(nap);
     NaClXMutexUnlock(&nap->mu);
   }
   return retval;
@@ -1899,7 +1893,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
             "addr 0x%08"NACL_PRIxPTR", desc 0x%08"NACL_PRIxPTR"\n",
             addr, (uintptr_t) entry->desc);
 
-    if (!entry->desc && entry->offset == ENTRY_OFFSET_NOFD) { // with no nacl desc or entry offset set to ENTRY_OFFSET_NOFD, this is anonymous
+    if (!entry->desc && entry->offset == ENTRY_OFFSET_NOFD) { // with no nacl desc and an entry offset set to ENTRY_OFFSET_NOFD, this is anonymous
       if (mprotect((void *) addr, entry_len, host_prot)) {
         NaClLog(1, "MprotectInternal: "
                 "mprotect on anonymous memory failed, errno = %d\n", errno);
@@ -1975,10 +1969,6 @@ int32_t NaClSysMprotectInternal(struct NaClApp  *nap,
     retval = -NACL_ABI_EACCES;
     goto cleanup;
   }
-
-  NaClVmIoPendingCheck_mu(nap,
-                          (uint32_t) (uintptr_t) start,
-                          (uint32_t) ((uintptr_t) start + length - 1));
 
   retval = MprotectInternal(nap, sysaddr, length, prot);
   if (!retval &&
@@ -2087,8 +2077,6 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   /* Lock the addr space. */
   NaClXMutexLock(&nap->mu);
-
-
 
   /* Address space calculations */
   if (!usraddr) {
@@ -2243,7 +2231,6 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
   }
 
   map_result = usraddr;
-
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
