@@ -888,7 +888,7 @@ void FatalThreadTeardown(void) {
       }
 
       while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid, true));
-      lindthreadremove(natp->nap->cage_id, child_thread->tid); // remove from rustposix kill map
+      lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
       NaClAppThreadTeardownInner(natp_child, false);
     }
   }
