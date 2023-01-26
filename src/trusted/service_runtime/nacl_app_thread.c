@@ -31,7 +31,6 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
-#include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"

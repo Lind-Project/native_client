@@ -20,7 +20,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 #include "native_client/src/trusted/service_runtime/dyn_array.h"
-
+#include "native_client/src/shared/platform/lind_platform.h"
 
 EXTERN_C_BEGIN
 
