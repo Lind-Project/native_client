@@ -580,7 +580,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->suspend_state = NACL_APP_THREAD_TRUSTED;
   natp->suspended_registers = NULL;
   natp->fault_signal = 0;
-  lindsetthreadkill(natp->nap->cage_id, natp->host_thread->tid, false);
+  lindsetthreadkill(natp->nap->cage_id, &natp_child->host_thread->tid, false);
 
   natp->dynamic_delete_generation = 0;
   return natp;
@@ -887,7 +887,7 @@ void FatalThreadTeardown(void) {
         lindsetthreadkill(nap->cage_id, child_thread->tid, false);
       }
 
-      while (lindcheckthread(natp_child->nap->cage_id, natp_child->host_thread->tid, true));
+      while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid, true));
       NaClAppThreadTeardownInner(natp_child, false);
     }
   }
