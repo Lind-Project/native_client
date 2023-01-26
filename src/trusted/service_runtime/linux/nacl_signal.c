@@ -334,7 +334,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   // we've called thread suspend from the fatal handler, we can safely exit the thread here
   struct NaClThread *host_thread;
-  host_thread = &natp_child->host_thread;
+  host_thread = &natp->host_thread;
   if (sig == SIGUSR1 && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid, true)) {
     lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
     NaClThreadExit();

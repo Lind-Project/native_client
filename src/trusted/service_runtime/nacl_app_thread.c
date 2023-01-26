@@ -423,7 +423,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
   struct NaClThread *host_thread;
-  host_thread = &natp_child->host_thread;
+  host_thread = &natp->host_thread;
   lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
   if (nap->debug_stub_callbacks) {
@@ -584,7 +584,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->fault_signal = 0;
 
   struct NaClThread *host_thread;
-  host_thread = &natp_child->host_thread;
+  host_thread = &natp->host_thread;
   lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
 
   natp->dynamic_delete_generation = 0;
