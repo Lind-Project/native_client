@@ -578,10 +578,6 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->suspended_registers = NULL;
   natp->fault_signal = 0;
 
-  struct NaClThread *host_thread;
-  host_thread = &natp->host_thread;
-  lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
-
   natp->dynamic_delete_generation = 0;
   return natp;
 
@@ -777,6 +773,10 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     NaClAppThreadDelete(natp_child);
     return 0;
   }
+
+  struct NaClThread *host_thread;
+  host_thread = &natp->host_thread;
+  lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
 
   return 1;
 
