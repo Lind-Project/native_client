@@ -775,8 +775,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   }
 
   struct NaClThread *host_thread;
-  host_thread = &natp->host_thread;
-  lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
+  host_thread = &natp_child->host_thread;
+  lindsetthreadkill(natp_child->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
 
   return 1;
 
