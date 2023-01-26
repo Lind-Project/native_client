@@ -421,6 +421,10 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
     }
   }
 
+  struct NaClThread *host_thread;
+  host_thread = &natp->host_thread;
+  lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
+
   NaClAppThreadTeardown(natp);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
