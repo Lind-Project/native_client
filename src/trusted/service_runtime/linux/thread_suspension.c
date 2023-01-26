@@ -71,9 +71,10 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
     }
     if ((state & NACL_APP_THREAD_SUSPENDING) != 0) {
       /* We have been asked to suspend, so wait. */
-      if (natp->kill_flag) {
+      if (lindcheckthread(natp->nap->cage_id, natp->host_thread->tid, true)) {
         while(1) {
-            lindthread_testcancel(natp);
+            lindsetthreadkill(natp->nap->cage_id, natp->host_thread->tid, false);
+            NaClThreadExit();
         }
       }
       FutexWait(&natp->suspend_state, state);

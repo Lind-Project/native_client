@@ -249,7 +249,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-
   NaClSignalStackRegister(natp->signal_stack);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
@@ -423,6 +422,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
+  lindthreadremove(natp->nap->cage_id, natp->host_thread->tid); // remove from rustposix kill map
+
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
     /*
@@ -579,7 +580,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->suspend_state = NACL_APP_THREAD_TRUSTED;
   natp->suspended_registers = NULL;
   natp->fault_signal = 0;
-  natp->kill_flag = false;
+  lindsetthreadkill(natp->nap->cage_id, natp->host_thread->tid, false);
 
   natp->dynamic_delete_generation = 0;
   return natp;
@@ -822,21 +823,6 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  *    launched wtihin that cage.
  */
 
-void lindthread_testcancel(void *natp) {
-
-  struct NaClAppThread *cancel_natp;
-  if (natp == NULL) cancel_natp = NaClTlsGetCurrentThread();
-  else cancel_natp = (struct NaClAppThread *)natp;
-
-  if (cancel_natp == NULL) return;
-
-  if (cancel_natp->kill_flag == true) {
-    cancel_natp->kill_flag = false;
-    NaClThreadExit();
-  }
-}
-
-
 void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
     NaClLog(LOG_FATAL, "%s\n", "Failed to initialize handler cleanup mutex");
@@ -891,16 +877,16 @@ void FatalThreadTeardown(void) {
 
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
     if (natp_child && natp_child != natp_to_teardown) {
-      natp_child->kill_flag = true;
+      lindsetthreadkill(natp_child->nap->cage_id, natp_child->host_thread->tid, true);
       NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
       if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
         struct NaClThread *child_thread;
         child_thread = &natp_child->host_thread;
         NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
-        natp_child->kill_flag = false;
+        lindsetthreadkill(natp_child->nap->cage_id, natp_child->host_thread->tid, false);
       }
 
-      while (natp_child->kill_flag == true);
+      while (lindcheckthread(natp_child->nap->cage_id, natp_child->host_thread->tid, true));
       NaClAppThreadTeardownInner(natp_child, false);
     }
   }
