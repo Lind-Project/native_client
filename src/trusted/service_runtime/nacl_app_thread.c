@@ -422,7 +422,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   NaClLog(1, "[NaClAppThreadTeardown] cage id: %d\n", nap->cage_id);
 
-  lindthreadremove(natp->nap->cage_id, natp->host_thread->tid); // remove from rustposix kill map
+  lindthreadremove(natp->nap->cage_id, &natp->host_thread->tid); // remove from rustposix kill map
 
   if (nap->debug_stub_callbacks) {
     NaClLog(3, " notifying the debug stub of the thread exit\n");
@@ -580,7 +580,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->suspend_state = NACL_APP_THREAD_TRUSTED;
   natp->suspended_registers = NULL;
   natp->fault_signal = 0;
-  lindsetthreadkill(natp->nap->cage_id, &natp_child->host_thread->tid, false);
+  lindsetthreadkill(natp->nap->cage_id, &natp->host_thread->tid, false);
 
   natp->dynamic_delete_generation = 0;
   return natp;
