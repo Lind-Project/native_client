@@ -248,6 +248,10 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
+  struct NaClThread *host_thread;
+  host_thread = &natp_child->host_thread;
+  lindsetthreadkill(natp_child->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
+
   NaClSignalStackRegister(natp->signal_stack);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
@@ -773,10 +777,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     NaClAppThreadDelete(natp_child);
     return 0;
   }
-
-  struct NaClThread *host_thread;
-  host_thread = &natp_child->host_thread;
-  lindsetthreadkill(natp_child->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
 
   return 1;
 
