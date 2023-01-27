@@ -248,10 +248,6 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-  struct NaClThread *host_thread;
-  host_thread = &natp>host_thread;
-  lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
-
   NaClSignalStackRegister(natp->signal_stack);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
@@ -349,11 +345,15 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   }
 
-    /*
-    * After this NaClAppThreadSetSuspendState() call, we should not
-    * claim any mutexes, otherwise we risk deadlock.
-    */
-    NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  struct NaClThread *host_thread;
+  host_thread = &natp>host_thread;
+  lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false); //set up kill table in rustposix
+
+  /*
+  * After this NaClAppThreadSetSuspendState() call, we should not
+  * claim any mutexes, otherwise we risk deadlock.
+  */
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
   /* Not exactly sure what hole exec falls into */
   if (tl_type == THREAD_LAUNCH_FORK) {
