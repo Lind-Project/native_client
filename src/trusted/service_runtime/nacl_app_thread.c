@@ -345,7 +345,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   }
 
-  lindsetthreadkill(natp->nap->cage_id, natp->host_thread->tid, false); //set up kill table in rustposix
+  lindsetthreadkill(natp->nap->cage_id, &(natp->host_thread)->tid, false); //set up kill table in rustposix
 
   /*
   * After this NaClAppThreadSetSuspendState() call, we should not
