@@ -803,6 +803,35 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 }
 
 
+void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
+  struct NaClApp *nap = natp_main->nap;
+
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
+
+  for(int i = 0; i < num_threads; i++) {
+
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp_main) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+
+      lindsetthreadkill(nap->cage_id, child_thread->tid, true);
+      NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
+      if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
+        NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
+        lindsetthreadkill(nap->cage_id, child_thread->tid, false);
+      }
+
+      while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid));
+      lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
+      NaClAppThreadTeardownInner(natp_child, false);
+    }
+  }
+  NaClXMutexUnlock(&nap->threads_mu);
+}
+
+
 /**
  * The following functions are used to reap any cages which have received a fatal signal.
  * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
@@ -868,36 +897,14 @@ void FatalThreadTeardown(void) {
   int status = 137; // Fatal error signal SIGKILL
   struct NaClApp *nap = natp_to_teardown->nap;
 
-  NaClXMutexLock(&nap->threads_mu);
-  int num_threads = NaClGetNumThreads(nap);
+  NaClExitThreadGroup(natp_to_teardown);
 
-  for(int i = 0; i < num_threads; i++) {
-
-    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
-    if (natp_child && natp_child != natp_to_teardown) {
-      struct NaClThread *child_thread;
-      child_thread = &natp_child->host_thread;
-
-      lindsetthreadkill(nap->cage_id, child_thread->tid, true);
-      NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
-      if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
-        NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
-        lindsetthreadkill(nap->cage_id, child_thread->tid, false);
-      }
-
-      while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid));
-      lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
-      NaClAppThreadTeardownInner(natp_child, false);
-    }
-  }
-  
   // properly teadown vmmap/fds before exit
   NaClVmmapDtor(&nap->mem_map);
   NaClAppCloseFDs(nap);
   lind_exit(status, nap->cage_id);
   
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-  NaClXMutexUnlock(&nap->threads_mu);
 
   NaClAppThreadTeardownInner(natp_to_teardown, false);
   natp_to_teardown = NULL;
