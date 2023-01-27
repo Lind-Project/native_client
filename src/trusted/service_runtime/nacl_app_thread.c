@@ -878,7 +878,7 @@ void FatalThreadTeardown(void) {
       struct NaClThread *child_thread;
       child_thread = &natp_child->host_thread;
 
-      lindsetthreadkill(nap->cage_id, child_thread->tid, false);
+      lindsetthreadkill(nap->cage_id, child_thread->tid, true);
       NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
       if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
         NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
