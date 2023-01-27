@@ -73,7 +73,7 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
       struct NaClThread *host_thread;
       host_thread = &natp->host_thread;
       /* We have been asked to suspend, so wait. */
-      if (lindcheckthread(natp->nap->cage_id, host_thread->tid, true)) {
+      if (lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
         while(1) {
             lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
             NaClThreadExit();

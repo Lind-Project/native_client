@@ -155,7 +155,7 @@ union RustArg {
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
 void lindsetthreadkill(unsigned long int cageid, unsigned long int pthreadid, bool kill);   
-bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid, bool is_self);
+bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid);
 void lindthreadremove(unsigned long int cageid, unsigned long int pthreadid);
 void lindrustinit(int verbosity);
 void lindrustfinalize(void);
