@@ -226,6 +226,8 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   return (struct NaClAppThread *) ntcp;
 }
 
+void NaClExitThreadGroup(struct NaClAppThread *natp_main);
+
 void InitFatalThreadTeardown(void);
 
 void DestroyFatalThreadTeardown(void); 
