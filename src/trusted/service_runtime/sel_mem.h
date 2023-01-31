@@ -21,6 +21,7 @@ EXTERN_C_BEGIN
 struct NaClDesc;
 
 #define NACL_MAP_COPY   0x100
+#define ENTRY_OFFSET_NOFD -1
 
 /*
  * Interface is based on setting properties and query properties by
@@ -42,6 +43,7 @@ struct NaClVmmapEntry {
   uintptr_t         page_num;   /* base virtual addr >> NACL_PAGESHIFT */
   size_t            npages;     /* number of pages */
   int               prot;       /* mprotect attribute */
+  int               maxprot;
   int               flags;      /* mapping flags */
   int               shmid;      /* shmid for if it's a shm mapping */
   int               removed;    /* flag set in NaClVmmapUpdate */
@@ -86,6 +88,7 @@ void  NaClVmmapAdd(struct NaClVmmap   *self,
                    uintptr_t          page_num,
                    size_t             npages,
                    int                prot,
+                   int                maxprot,
                    int                flags,
                    struct NaClDesc    *desc,
                    nacl_off64_t       offset,
@@ -99,6 +102,7 @@ void  NaClVmmapAddWithOverwrite(struct NaClVmmap  *self,
                                 uintptr_t         page_num,
                                 size_t            npages,
                                 int               prot,
+                                int               maxprot,
                                 int               flags,
                                 struct NaClDesc   *desc,
                                 nacl_off64_t      offset,
@@ -108,6 +112,7 @@ void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
                                        uintptr_t          page_num,
                                        size_t             npages,
                                        int                prot,
+                                       int                maxprot,
                                        int                flags,
                                        int                shmid,
                                        struct NaClDesc    *desc,

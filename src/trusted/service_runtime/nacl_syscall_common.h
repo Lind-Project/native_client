@@ -12,6 +12,7 @@
 #define NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ 1
 
 #include "native_client/src/include/portability.h"
+#include "native_client/src/shared/platform/lind_stat.h"
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/shared/platform/nacl_host_desc.h"
@@ -259,9 +260,6 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
                             int                   clk_id,
                             uint32_t              tsp);
 
-int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
-                                int32_t              *sap);
-
 int32_t NaClSysAccept(struct NaClAppThread *natp,
                       int sockfd, 
                       struct sockaddr *addr, 
@@ -270,19 +268,6 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
                        int sockfd, 
                        const struct sockaddr *addr, 
                        socklen_t addrlen);
-
-int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
-int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
-int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
-                               size_t                size);
 
 int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr);
@@ -347,9 +332,6 @@ int32_t NaClSysCondDestroy(struct NaClAppThread *natp,
                            int32_t              cond_handle);
 
 int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
-
-int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
-                             uint32_t             descs_out);
 
 int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  domain,

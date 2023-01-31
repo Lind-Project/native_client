@@ -28,7 +28,7 @@ EXTERN_C_BEGIN
 #ifndef SIZE_T_MAX
 # define SIZE_T_MAX (~(size_t)0)
 #endif
-#define LD_FILE "/lib/glibc/runnable-ld.so"
+#define LD_FILE "runnable-ld.so"
 /* 32 bit mask */
 #define UNTRUSTED_ADDR_MASK 0xffffffffu
 

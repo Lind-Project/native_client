@@ -70,7 +70,6 @@ double time_start = 0.0;
 double time_end = 0.0;
 
 volatile sig_atomic_t fork_num;
-int fd_cage_table[CAGE_MAX][FILE_DESC_MAX]; // fd_cage_table[cage_id][userfd] = nacl fd/desc idx
 struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
@@ -383,6 +382,7 @@ void NaClAppDtor(struct NaClApp *nap) {
 
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
+  NaClVmmapDtor(&nap->mem_map);
   NaClAddrSpaceFree(nap);
 
   NaClDescUnref(nap->name_service_conn_cap);
@@ -934,31 +934,6 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
 
-
-  /* Set up cage-id's for initial descriptors */
-  for (int fd = 0; fd < 3; fd++) {
-
-    /* Retrieve NaCl Descriptor based on fd */
-    int host_fd = fd_cage_table[nap->cage_id][fd];
-
-    struct NaClDesc *nd;
-    struct NaClDescIoDesc *self;
-    struct NaClHostDesc *hd;
-    nd = NaClGetDesc(nap, host_fd);
-    if (!nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    self = (struct NaClDescIoDesc *) &nd->base;
-    hd = self->hd;
-
-    hd->cageid = nap->cage_id;
-    hd->d = fd;
-    hd->userfd = fd;
-
-    NaClDescUnref(nd);
-  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
@@ -1576,6 +1551,7 @@ static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicR
                             start >> NACL_PAGESHIFT,
                             region->size >> NACL_PAGESHIFT,
                             PROT_RX,
+                            PROT_RX,
                             NACL_ABI_MAP_PRIVATE,
                             nap_child->text_shm,
                             (region->start & UNTRUSTED_ADDR_MASK) - nap_child->dynamic_text_start,
@@ -1747,15 +1723,11 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
-        if(entry->desc) {
-          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
-          struct NaClHostDesc *hd = self->hd;
-          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
-        }
         NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
                                           entry->page_num,
                                           entry->npages,
                                           entry->prot,
+                                          entry->maxprot,
                                           entry->flags,
                                           entry->shmid,
                                           desc,
@@ -1772,6 +1744,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
+                                  entry->maxprot,
                                   entry->flags,
                                   entry->desc,
                                   entry->offset,
@@ -1814,6 +1787,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             0,
                             NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                             NACL_ABI_PROT_NONE,
+                            NACL_ABI_PROT_NONE,
                             NACL_ABI_MAP_PRIVATE,
                             NULL,
                             0,
@@ -1845,6 +1819,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   NaClVmmapAddWithOverwrite(&nap_child->mem_map,
                             tramp_pnum,
                             tramp_npages,
+                            PROT_RW,
                             PROT_RW,
                             MAP_ANON_PRIV,
                             NULL,
@@ -1905,71 +1880,9 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
   }
 }
 
-/* set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id) {
-  fd_cage_table[cage_id][0] = 0;
-  fd_cage_table[cage_id][1] = 1;
-  fd_cage_table[cage_id][2] = 2;
-
-  /* Initialize unused fd's to -1 */
-  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
-
-  /* set to the next unused (available for dup() etc.) file descriptor */
   nap->num_children = 0;
   nap->cage_id = cage_id;
-}
-
-/* Find next available fd in cagetable */
-
-void CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
-
-  for (int i = 0; i < iterations; i++) {
-    int naclfd = fd_cage_table[nap->cage_id][userfds[i]];
-    NaClSetDesc(nap, naclfd, NULL);
-    fd_cage_table[nap->cage_id][userfds[i]] = -1;
-  }
-
-}
-
-int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd) {
-
-  int userfd = -NACL_ABI_EBADF;
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) {
-      userfd = fd;
-      hd->userfd = userfd;
-      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      fd_cage_table[nap->cage_id][userfd] = naclfd;
-      break;
-    }
-  }
-
-  NaClFastMutexUnlock(&nap->desc_mu);
-
-  return userfd;
-}
-
-int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd) {
-
-  int userfd = -NACL_ABI_EBADF;
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) {
-      userfd = fd;
-      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      fd_cage_table[nap->cage_id][userfd] = naclfd;
-      break;
-    }
-  }
-
-  NaClFastMutexUnlock(&nap->desc_mu);
-
-  return userfd;
 }
 
 /*

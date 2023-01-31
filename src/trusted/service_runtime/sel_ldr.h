@@ -98,7 +98,6 @@ struct NaClZombie {
 };
 
 extern volatile sig_atomic_t fork_num;
-extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
