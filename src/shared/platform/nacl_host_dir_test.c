@@ -51,8 +51,6 @@
 #define MAXLINE 1024  /* 256 = NAME_MAX+1 should suffice */
 #define JOINED_MAX 4096
 
-#define CAGE_TEST_ID	1
-
 struct string_array {
   char    **strings;
   size_t  nelts;
@@ -130,7 +128,7 @@ uint32_t ExtractNames(struct string_array *dest_array,
       ++error_count;
       goto next_entry;
     }
-    if (0 != (rv = NaClHostDescStat(path, &host_stat, CAGE_TEST_ID))) {
+    if (0 != (rv = NaClHostDescStat(path, &host_stat))) {
       fprintf(stderr, "could not stat %s: %d\n", path, rv);
       ++error_count;
       goto next_entry;

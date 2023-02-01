@@ -15,7 +15,6 @@
 #include "native_client/src/include/nacl_compiler_annotations.h"
 #include "native_client/src/include/portability.h"
 #include "native_client/src/shared/platform/nacl_sync.h"
-#include "native_client/src/shared/platform/lind_stat.h"
 
 #if NACL_LINUX || NACL_OSX
 # include "native_client/src/shared/platform/posix/nacl_host_desc_types.h"
@@ -49,9 +48,9 @@ typedef int64_t nacl_off64_t;
  * compatible w/ nacl_off64_t above.
  */
 #if NACL_LINUX
-typedef struct lind_stat nacl_host_stat_t;
+typedef struct stat64 nacl_host_stat_t;
 #elif NACL_OSX
-typedef struct lind_stat nacl_host_stat_t;
+typedef struct stat nacl_host_stat_t;
 #elif NACL_WINDOWS
 typedef struct _stati64 nacl_host_stat_t;
 #elif defined __native_client__
@@ -162,14 +161,7 @@ extern int NaClHostDescUnmapUnsafe(void   *start_addr,
  * These are the flags that are permitted.
  */
 #define NACL_ALLOWED_OPEN_FLAGS \
-  (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND | NACL_ABI_O_CLOEXEC)
-/*
- * Wrapper for creating Pipe descriptor
- * Calls Ctor
- */
-extern int NaClHostDescPipe(struct NaClHostDesc  *d,
-                            int fd,
-                            int flags) NACL_WUR;
+  (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND)
 
 /*
  * Constructor for a NaClHostDesc object.
@@ -308,42 +300,13 @@ extern int NaClHostDescFstat(struct NaClHostDesc  *d,
 extern int NaClHostDescClose(struct NaClHostDesc  *d) NACL_WUR;
 
 extern int NaClHostDescStat(char const        *host_os_pathname,
-                            nacl_host_stat_t  *nasp,
-			    int cageid) NACL_WUR;
-
-/*
- * Create directory
- */
-extern int NaClHostDescMkdir(const char *path, int mode) NACL_WUR;
-
-/*
- * Remove directory
- */
-extern int NaClHostDescRmdir(const char *path) NACL_WUR;
-
-/*
- * Change current working directory
- */
-extern int NaClHostDescChdir(const char *path) NACL_WUR;
-
-/*
- * Get current working directory.
- * This works like the POSIX getcwd(3) function except that it returns
- * an error code rather than the resulting buffer.  The provided path may not
- * be NULL.
- */
-extern int NaClHostDescGetcwd(char *path, size_t len) NACL_WUR;
-
-/*
- * Remove/delete the underlying file.
- * Underlying host-OS functions:  unlink(2) / _unlink
- */
-extern int NaClHostDescUnlink(char const *path) NACL_WUR;
+                            nacl_host_stat_t  *nasp) NACL_WUR;
 
 /*
  * Maps NACI_ABI_ versions of the mmap prot argument to host ABI versions
  * of the bit values
  */
+
 extern int NaClProtMap(int abi_prot);
 
 /*
@@ -353,18 +316,6 @@ extern int NaClProtMap(int abi_prot);
  */
 extern void NaClHostDescCheckValidity(char const *fn_name,
                                       struct NaClHostDesc *d);
-
-#if NACL_WINDOWS
-extern void NaClflProtectAndDesiredAccessMap(int prot,
-                                             int is_private,
-                                             int accmode,
-                                             DWORD *out_flProtect,
-                                             DWORD *out_dwDesiredAccess,
-                                             DWORD *out_flNewProtect,
-                                             char const **out_msg);
-
-extern DWORD NaClflProtectMap(int prot);
-#endif
 
 EXTERN_C_END
 

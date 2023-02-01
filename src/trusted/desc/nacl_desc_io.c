@@ -44,7 +44,7 @@
  * for host-OS descriptors).
  */
 
-extern struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
+static struct NaClDescVtbl const kNaClDescIoDescVtbl;  /* fwd */
 
 static int NaClDescIoDescSubclassCtor(struct NaClDescIoDesc  *self,
                                       struct NaClHostDesc    *hd) {
@@ -63,19 +63,13 @@ int NaClDescIoDescCtor(struct NaClDescIoDesc  *self,
   struct NaClDesc *basep = (struct NaClDesc *) self;
   int rv;
 
-  if (!basep) {
-    return -NACL_ABI_EBADF;
-  }
-  basep->base.vtbl = NULL;
+  basep->base.vtbl = (struct NaClRefCountVtbl const *) NULL;
   if (!NaClDescCtor(basep)) {
     return 0;
   }
   rv = NaClDescIoDescSubclassCtor(self, hd);
   if (!rv) {
     (*NACL_VTBL(NaClRefCount, basep)->Dtor)((struct NaClRefCount *) basep);
-  }
-  if (hd) {
-    NACL_VTBL(NaClDesc, basep)->SetFlags(basep, hd->flags & NACL_ABI_O_ACCMODE);
   }
   return rv;
 }
@@ -172,18 +166,13 @@ struct NaClDesc *NaClDescIoDescFromDescAllocCtor(int desc,
 
 struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
                                           int mode,
-                                          int perms,
-					  int cage_id) {
+                                          int perms) {
   struct NaClHostDesc *nhdp;
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
     NaClLog(LOG_FATAL, "NaClDescIoDescOpen: no memory for %s\n", path);
   }
-  
-  /* Set cageid for HostDesc, important for NaCl Runtime fds */
-  nhdp->cageid = cage_id;
-  
   if (0 != NaClHostDescOpen(nhdp, path, mode, perms)) {
     NaClLog(4,
             "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",
@@ -360,7 +349,7 @@ static int NaClDescIoDescExternalize(struct NaClDesc           *vself,
   return 0;
 }
 
-struct NaClDescVtbl const kNaClDescIoDescVtbl = {
+static struct NaClDescVtbl const kNaClDescIoDescVtbl = {
   {
     NaClDescIoDescDtor,
   },

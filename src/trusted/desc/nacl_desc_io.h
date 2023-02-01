@@ -83,8 +83,7 @@ struct NaClDesc *NaClDescIoDescFromDescAllocCtor(int desc,
 /* a simple factory */
 struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
                                           int mode,
-                                          int perms,
-					  int cage_id) NACL_WUR;
+                                          int perms) NACL_WUR;
 
 uintptr_t NaClDescIoDescMapAnon(struct NaClDescEffector *effp,
                                 void                    *start_addr,
