@@ -823,9 +823,6 @@ void FatalThreadTeardown(void) {
 
   NaClExitThreadGroup(natp_to_teardown);
 
-  // properly teadown vmmap/fds before exit
-  NaClVmmapDtor(&nap->mem_map);
-  NaClAppCloseFDs(nap);
   lind_exit(status, nap->cage_id);
   
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
