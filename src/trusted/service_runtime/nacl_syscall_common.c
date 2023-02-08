@@ -362,7 +362,7 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   struct NaClApp *nap = natp->nap;
 
   // first signal any other threads in group to exit
-  NaClExitThreadGroup(natp);
+  if (nap->num_threads > 1) NaClExitThreadGroup(natp);
 
   /* to close a cage we need to unref the vmmap before officially
    * closing all the fds in the cage. Then we can exit in rustposix
