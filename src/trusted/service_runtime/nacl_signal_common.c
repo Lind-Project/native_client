@@ -146,7 +146,7 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     */
     NaClTlsSetCurrentThread(NULL);
 
-    if (!nap->tearing_down) AddToFatalThreadTeardown(natp);
+    if (!natp->nap->tearing_down) AddToFatalThreadTeardown(natp);
 
     NaClThreadExit();
 
