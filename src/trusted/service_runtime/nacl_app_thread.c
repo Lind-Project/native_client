@@ -198,6 +198,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClXMutexLock(&nap->threads_mu);
     NaClXMutexLock(&nap->children_mu);
     natp->thread_num = thread_idx + 1;
+    nap->num_threads = 1;
     if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
       NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
     }

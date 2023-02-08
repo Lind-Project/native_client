@@ -286,7 +286,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!NaClMutexCtor(&nap->threads_mu)) {
     goto cleanup_name_service;
   }
-  nap->num_threads = 1;
+  nap->num_threads = 0;
   if (!NaClFastMutexCtor(&nap->desc_mu)) {
     goto cleanup_threads_mu;
   }
