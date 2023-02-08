@@ -151,7 +151,6 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
     } else {
       if (!natp->cage_mainthread->tearing_down) AddToFatalThreadTeardown(natp->cage_mainthread);
     }
-    while(NaClGetNumThreads(natp->nap) > 1); // wait until its the last thread
     NaClThreadExit();
 
   } else {
