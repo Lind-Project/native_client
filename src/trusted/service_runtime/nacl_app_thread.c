@@ -842,6 +842,7 @@ void ThreadReaper(void* arg) {
     if (reap) FatalThreadTeardown();
   }
   NaClXMutexUnlock(&reapermut);
+  NaClThreadExit();
 }
 
 void LaunchThreadReaper(void) {
@@ -855,7 +856,6 @@ void DestroyReaper(void) {
   reap = false;
   NaClXCondVarSignal(&reapercv);
   DestroyFatalThreadTeardown();
-  NaClThreadCancel(&reaper);
 }
 
 
