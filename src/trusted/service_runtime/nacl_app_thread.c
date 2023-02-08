@@ -729,6 +729,8 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 
 void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
   struct NaClApp *nap = natp_main->nap;
+  
+  lindcancelinit(nap->cage_id); // start RustPOSIX cancel, signal cvs
 
   NaClXMutexLock(&nap->threads_mu);
   int num_threads = NaClGetNumThreads(nap);
@@ -820,8 +822,6 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 void FatalThreadTeardown(void) {
   int status = 137; // Fatal error signal SIGKILL
   struct NaClApp *nap = natp_to_teardown->nap;
-
-  lindcancelinit(nap->cage_id); // start RustPOSIX cancel, signal cvs
 
   NaClExitThreadGroup(natp_to_teardown);
 
