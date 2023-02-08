@@ -821,6 +821,8 @@ void FatalThreadTeardown(void) {
   int status = 137; // Fatal error signal SIGKILL
   struct NaClApp *nap = natp_to_teardown->nap;
 
+  lindcancelinit(nap->cage_id); // start RustPOSIX cancel, signal cvs
+
   NaClExitThreadGroup(natp_to_teardown);
 
   lind_exit(status, nap->cage_id);
