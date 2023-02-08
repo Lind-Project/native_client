@@ -293,6 +293,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->running = 0;
   nap->exit_status = -1;
+  nap->tearing_down = false;
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   nap->code_seg_sel = 0;

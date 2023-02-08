@@ -376,10 +376,9 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   thread_idx = NaClGetThreadIdx(natp);
 
+  bool last_thread = (NaClGetNumThreads(nap) == 1);
 
-  if (natp->is_cage_mainthread) {
-    // handle children upon exit
-    NaClAppThreadTeardownChildren(natp);
+  if (last_thread) NaClAppThreadTeardownChildren(natp);     // handle children upon exit
 
     /*
     * On x86-64 and ARM, clearing nacl_user entry ensures that we will
@@ -392,7 +391,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   #elif NACL_OSX
     NaClClearMachThreadForThreadIndex(thread_idx);
   #endif
-  }
+
   /*
    * Unset the TLS variable so that if a crash occurs during thread
    * teardown, the signal handler does not dereference a dangling
@@ -415,7 +414,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClSignalStackUnregister();
   }
 
-  if (natp->is_cage_mainthread) {
+  if (last_thread) {
     // we have to wait for NaClWaitForThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
@@ -658,17 +657,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     NaClTlsSetTlsValue2(natp_child, user_tls2);
   }
 
-
-  if (!cage_thread) {
-    natp_child->is_cage_mainthread = true;
-    natp_child->cage_mainthread = natp_child;
-    natp_child->tearing_down = false;
-  } 
-  else {
-    natp_child->is_cage_mainthread = false;
-    natp_child->cage_mainthread = natp_parent->cage_mainthread;
-  }
-
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.
@@ -812,7 +800,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
-    natp->tearing_down = true;
+    natp->nap->tearing_down = true;
     NaClXCondVarSignal(&reapercv);
     NaClXMutexUnlock(&reapermut);
 

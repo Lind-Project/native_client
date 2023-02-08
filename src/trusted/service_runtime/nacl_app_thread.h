@@ -157,11 +157,6 @@ struct NaClAppThread {
    * Protected by mu
    */
   int                       dynamic_delete_generation;
-
-  // We use these for the fault handler
-  bool                              is_cage_mainthread;
-  bool                              tearing_down;
-  struct NaClAppThread              *cage_mainthread;
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
