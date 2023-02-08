@@ -376,7 +376,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   thread_idx = NaClGetThreadIdx(natp);
 
-  bool last_thread = (NaClGetNumThreads(nap) == 1);
+  bool last_thread = (nap->num_threads == 1);
 
   if (last_thread) NaClAppThreadTeardownChildren(natp);     // handle children upon exit
 
