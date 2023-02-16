@@ -228,6 +228,9 @@ static void WaitForUntrustedThreadToSuspend(struct NaClAppThread *natp) {
 
 // Lind: Similar to NaClUntrustedThreadSuspend
 // Here we CaS to trap thread in either trusted or untrusted code,
+// unlike NaClUntrustedThreadSuspend we dont trigger a handler
+// since we don't care about actually suspending the thread,
+// just trapping it in either trusted or untrusted state
 void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
   Atomic32 old_state;
   Atomic32 suspending_state;

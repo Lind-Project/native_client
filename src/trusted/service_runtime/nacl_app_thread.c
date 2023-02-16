@@ -169,6 +169,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
   NaClLog(1, "%s\n", "NaClAppForkThreadLauncher: entered");
 
   // Lind: we need to enable pthread cancellation to deal with untrusted teardowns 
+  // this is basically the earliest in a threads lifetime where we can enable these
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
@@ -380,17 +381,17 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
 
   if (last_thread) NaClAppThreadTeardownChildren(natp);     // handle children upon exit
 
-    /*
-    * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-    * fault if another syscall is made with this thread_idx.  In
-    * particular, thread_idx 0 is never used.
-    */
-    nacl_user[thread_idx] = NULL;
-  #if NACL_WINDOWS
-    nacl_thread_ids[thread_idx] = 0;
-  #elif NACL_OSX
-    NaClClearMachThreadForThreadIndex(thread_idx);
-  #endif
+  /*
+  * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+  * fault if another syscall is made with this thread_idx.  In
+  * particular, thread_idx 0 is never used.
+  */
+  nacl_user[thread_idx] = NULL;
+#if NACL_WINDOWS
+  nacl_thread_ids[thread_idx] = 0;
+#elif NACL_OSX
+  NaClClearMachThreadForThreadIndex(thread_idx);
+#endif
 
   /*
    * Unset the TLS variable so that if a crash occurs during thread
@@ -723,6 +724,8 @@ void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
   NaClXMutexLock(&nap->threads_mu);
   int num_threads = NaClGetNumThreads(nap);
 
+
+  // we loop through each thread in the cage and shut them down via our cancellation mechanisms
   for(int i = 0; i < num_threads; i++) {
 
     struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
@@ -736,6 +739,10 @@ void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
         NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
         lindsetthreadkill(nap->cage_id, child_thread->tid, false);
       }
+
+      // at this point we wait for this thread to die, either in userspace via cancel above
+      // in NaCl via the transition cancel points, or in rustposix via cancelpoint/exit
+      // these each will set the thread table entry to false and we can proceed
 
       while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid));
       lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
