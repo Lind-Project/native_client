@@ -361,9 +361,8 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
                     int                   status) {
   struct NaClApp *nap = natp->nap;
 
-  /* to close a cage we need to unref the vmmap before officially
-   * closing all the fds in the cage. Then we can exit in rustposix
-   */
+  // first signal any other threads in group to exit
+  if (nap->num_threads > 1) NaClExitThreadGroup(natp);
 
   lind_exit(status, nap->cage_id);
 
@@ -397,6 +396,10 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
                (uintptr_t)stack_flag);
     }
   }
+
+  struct NaClThread *host_thread;
+  host_thread = &natp->host_thread;
+  lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
   NaClAppThreadTeardown(natp);
   /* NOTREACHED */
@@ -799,6 +802,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
+
+  if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
+  
   return retval;
 }
 

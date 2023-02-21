@@ -31,9 +31,9 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
-#include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
+#include "native_client/src/trusted/service_runtime/thread_suspension.h"
 
 
 struct NaClMutex ccmut;
@@ -168,6 +168,11 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClLog(1, "%s\n", "NaClAppForkThreadLauncher: entered");
 
+  // Lind: we need to enable pthread cancellation to deal with untrusted teardowns 
+  // this is basically the earliest in a threads lifetime where we can enable these
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
   NaClSignalStackRegister(natp->signal_stack);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
@@ -193,8 +198,8 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     */
     NaClXMutexLock(&nap->threads_mu);
     NaClXMutexLock(&nap->children_mu);
-    nap->num_threads = thread_idx + 1;
     natp->thread_num = thread_idx + 1;
+    nap->num_threads = 1;
     if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
       NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
     }
@@ -265,11 +270,13 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   }
 
-    /*
-    * After this NaClAppThreadSetSuspendState() call, we should not
-    * claim any mutexes, otherwise we risk deadlock.
-    */
-    NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
+
+  /*
+  * After this NaClAppThreadSetSuspendState() call, we should not
+  * claim any mutexes, otherwise we risk deadlock.
+  */
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
   /* Not exactly sure what hole exec falls into */
   if (tl_type == THREAD_LAUNCH_FORK) {
@@ -370,23 +377,22 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   thread_idx = NaClGetThreadIdx(natp);
 
+  bool last_thread = (nap->num_threads == 1);
 
-  if (natp->is_cage_mainthread) {
-    // handle children upon exit
-    NaClAppThreadTeardownChildren(natp);
+  if (last_thread) NaClAppThreadTeardownChildren(natp);     // handle children upon exit
 
-    /*
-    * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-    * fault if another syscall is made with this thread_idx.  In
-    * particular, thread_idx 0 is never used.
-    */
-    nacl_user[thread_idx] = NULL;
-  #if NACL_WINDOWS
-    nacl_thread_ids[thread_idx] = 0;
-  #elif NACL_OSX
-    NaClClearMachThreadForThreadIndex(thread_idx);
-  #endif
-  }
+  /*
+  * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+  * fault if another syscall is made with this thread_idx.  In
+  * particular, thread_idx 0 is never used.
+  */
+  nacl_user[thread_idx] = NULL;
+#if NACL_WINDOWS
+  nacl_thread_ids[thread_idx] = 0;
+#elif NACL_OSX
+  NaClClearMachThreadForThreadIndex(thread_idx);
+#endif
+
   /*
    * Unset the TLS variable so that if a crash occurs during thread
    * teardown, the signal handler does not dereference a dangling
@@ -409,7 +415,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClSignalStackUnregister();
   }
 
-  if (natp->is_cage_mainthread) {
+  if (last_thread) {
     // we have to wait for NaClWaitForThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
@@ -652,17 +658,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     NaClTlsSetTlsValue2(natp_child, user_tls2);
   }
 
-
-  if (!cage_thread) {
-    natp_child->is_cage_mainthread = true;
-    natp_child->cage_mainthread = natp_child;
-    natp_child->tearing_down = false;
-  } 
-  else {
-    natp_child->is_cage_mainthread = false;
-    natp_child->cage_mainthread = natp_parent->cage_mainthread;
-  }
-
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.
@@ -721,6 +716,43 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 }
 
 
+void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
+  struct NaClApp *nap = natp_main->nap;
+  
+  lindcancelinit(nap->cage_id); // start RustPOSIX cancel, signal cvs
+
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
+
+
+  // we loop through each thread in the cage and shut them down via our cancellation mechanisms
+  for(int i = 0; i < num_threads; i++) {
+
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp_main) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+
+      lindsetthreadkill(nap->cage_id, child_thread->tid, true);
+      NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
+      if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
+        NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
+        lindsetthreadkill(nap->cage_id, child_thread->tid, false);
+      }
+
+      // at this point we wait for this thread to die, either in userspace via cancel above
+      // in NaCl via the transition cancel points, or in rustposix via cancelpoint/exit
+      // these each will set the thread table entry to false and we can proceed
+
+      while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid));
+      lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
+      NaClAppThreadTeardownInner(natp_child, false);
+    }
+  }
+  NaClXMutexUnlock(&nap->threads_mu);
+}
+
+
 /**
  * The following functions are used to reap any cages which have received a fatal signal.
  * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
@@ -738,7 +770,6 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  * 2. We need to not only teardown the faulting thread itself, but any other threads that have been
  *    launched wtihin that cage.
  */
-
 
 void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
@@ -776,7 +807,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
-    natp->tearing_down = true;
+    natp->nap->tearing_down = true;
     NaClXCondVarSignal(&reapercv);
     NaClXMutexUnlock(&reapermut);
 
@@ -784,32 +815,16 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 }
 
 void FatalThreadTeardown(void) {
-  struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
-
   struct NaClApp *nap = natp_to_teardown->nap;
 
-  NaClXMutexLock(&nap->threads_mu);
-  int num_threads = NaClGetNumThreads(nap);
+  NaClExitThreadGroup(natp_to_teardown);
 
-  for(int i = 0; i < num_threads; i++) {
-
-    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
-    if (natp_child && natp_child != natp_to_teardown) {
-      struct NaClThread *child_thread;
-      child_thread = &natp_child->host_thread;
-      NaClAppThreadTeardownInner(natp_child, false);
-      NaClThreadCancel(child_thread);
-    }
-  }
-  
   lind_exit(status, nap->cage_id);
+  
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-  thread = &natp_to_teardown->host_thread;
-  NaClXMutexUnlock(&nap->threads_mu);
 
   NaClAppThreadTeardownInner(natp_to_teardown, false);
-  NaClThreadCancel(thread);
   natp_to_teardown = NULL;
   NaClXCondVarSignal(&teardown_cv);
 }
@@ -822,6 +837,7 @@ void ThreadReaper(void* arg) {
     if (reap) FatalThreadTeardown();
   }
   NaClXMutexUnlock(&reapermut);
+  NaClThreadExit();
 }
 
 void LaunchThreadReaper(void) {
@@ -835,7 +851,6 @@ void DestroyReaper(void) {
   reap = false;
   NaClXCondVarSignal(&reapercv);
   DestroyFatalThreadTeardown();
-  NaClThreadCancel(&reaper);
 }
 
 
