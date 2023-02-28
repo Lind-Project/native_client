@@ -692,7 +692,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   if (d < 0) return -NACL_ABI_EBADF;
 
-  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
+  sysaddr = buf + nap->mem_start;
+  //NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
   if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
   
 
@@ -786,7 +787,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   if (d < 0) return -NACL_ABI_EBADF;
   
-  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
+  sysaddr = buf + nap->mem_start;
+  // NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
   /*
    * The maximum length for read and write is INT32_MAX--anything larger and
