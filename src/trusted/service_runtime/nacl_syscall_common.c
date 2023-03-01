@@ -708,7 +708,8 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
-  read_result = lind_read(d, (void *)sysaddr, count, nap->cage_id);
+  read_result = quick_read(d, (void *)sysaddr, count, nap->cage_id);
+  //lind_read(d, (void *)sysaddr, count, nap->cage_id);
   /* This cast is safe because we clamped count above.*/
   
   retval = (int32_t) read_result;
@@ -798,7 +799,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
    */
-  write_result = lind_write(d, (void *)sysaddr, count, nap->cage_id);
+  write_result = quick_write(d, (void *)sysaddr, count, nap->cage_id);
+  //lind_write(d, (void *)sysaddr, count, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
