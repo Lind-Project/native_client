@@ -20,8 +20,7 @@ NaClErrorCode NaClAppLoadFileFromFilename(struct NaClApp *nap,
 
   NaClFileNameForValgrind(filename);
 
-  nd = (struct NaClDesc *) NaClDescIoDescOpen(filename, NACL_ABI_O_RDONLY,
-                                              0666, nap->cage_id);
+  nd = (struct NaClDesc *) NaClDescIoDescOpen(filename, NACL_ABI_O_RDONLY, 0666);
   if (NULL == nd) {
     return LOAD_OPEN_ERROR;
   }

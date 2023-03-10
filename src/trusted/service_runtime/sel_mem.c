@@ -47,6 +47,7 @@
 struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
                                           size_t            npages,
                                           int               prot,
+                                          int               maxprot,
                                           int               flags,
                                           int               shmid,
                                           struct NaClDesc   *desc,
@@ -66,6 +67,7 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
   entry->page_num = page_num;
   entry->npages = npages;
   entry->prot = prot;
+  entry->maxprot = maxprot;
   entry->flags = flags;
   entry->shmid = shmid;
   entry->removed = 0;
@@ -287,6 +289,7 @@ static void NaClVmmapAddShmid(struct NaClVmmap  *self,
                               uintptr_t         page_num,
                               size_t            npages,
                               int               prot,
+                              int               maxprot,
                               int               flags,
                               int               shmid,
                               struct NaClDesc   *desc,
@@ -296,9 +299,9 @@ static void NaClVmmapAddShmid(struct NaClVmmap  *self,
 
   NaClLog(2,
           ("NaClVmmapAddShmid(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIx64")\n"),
-          (uintptr_t) self, page_num, npages, prot, flags,
+          (uintptr_t) self, page_num, npages, prot, maxprot, flags,
           (uintptr_t) desc, offset);
   if (self->nvalid == self->size) {
     size_t                    new_size = 2 * self->size;
@@ -313,7 +316,7 @@ static void NaClVmmapAddShmid(struct NaClVmmap  *self,
     self->size = new_size;
   }
   /* self->nvalid < self->size */
-  entry = NaClVmmapEntryMake(page_num, npages, prot, flags, shmid,
+  entry = NaClVmmapEntryMake(page_num, npages, prot, maxprot, flags, shmid,
       desc, offset, file_size);
 
   self->vmentry[self->nvalid] = entry;
@@ -325,11 +328,12 @@ void NaClVmmapAdd(struct NaClVmmap  *self,
                   uintptr_t         page_num,
                   size_t            npages,
                   int               prot,
+                  int               maxprot,
                   int               flags,
                   struct NaClDesc   *desc,
                   nacl_off64_t      offset,
                   nacl_off64_t      file_size) {
-    NaClVmmapAddShmid(self, page_num, npages, prot, flags, /*shmid=*/ -1, desc, offset, file_size);
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, /*shmid=*/ -1, desc, offset, file_size);
 }
 
 /*
@@ -341,6 +345,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
                             uintptr_t         page_num,
                             size_t            npages,
                             int               prot,
+                            int               maxprot,
                             int               flags,
                             int               shmid,
                             int               remove,
@@ -377,6 +382,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
                         new_region_end_page,
                         ent_end_page - new_region_end_page,
                         ent->prot,
+                        ent->maxprot,
                         ent->flags,
                         ent->shmid,
                         ent->desc,
@@ -406,7 +412,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
   }
 
   if (!remove) {
-    NaClVmmapAddShmid(self, page_num, npages, prot, flags, shmid, desc, offset, file_size);
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, shmid, desc, offset, file_size);
   }
 
   NaClVmmapRemoveMarked(self);
@@ -416,6 +422,7 @@ void NaClVmmapAddWithOverwrite(struct NaClVmmap   *self,
                                uintptr_t          page_num,
                                size_t             npages,
                                int                prot,
+                               int                maxprot,
                                int                flags,
                                struct NaClDesc    *desc,
                                nacl_off64_t       offset,
@@ -424,6 +431,7 @@ void NaClVmmapAddWithOverwrite(struct NaClVmmap   *self,
                   page_num,
                   npages,
                   prot,
+                  maxprot,
                   flags,
                   /* shmid= */ -1,
                   /* remove= */ 0,
@@ -436,6 +444,7 @@ void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
                                        uintptr_t          page_num,
                                        size_t             npages,
                                        int                prot,
+                                       int                maxprot,
                                        int                flags,
                                        int                shmid,
                                        struct NaClDesc    *desc,
@@ -445,6 +454,7 @@ void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
                   page_num,
                   npages,
                   prot,
+                  maxprot,
                   flags,
                   shmid,
                   /* remove= */ 0,
@@ -460,6 +470,7 @@ void NaClVmmapRemove(struct NaClVmmap   *self,
                   page_num,
                   npages,
                   /* prot= */ 0,
+                  /* maxprot= */0,
                   /* flags= */ 0,
                   /* shmid= */ -1,
                   /* remove= */ 1,
@@ -510,6 +521,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
                         new_region_end_page,
                         ent_end_page - new_region_end_page,
                         ent->prot,
+                        ent->maxprot,
                         ent->flags,
                         ent->shmid,
                         ent->desc,
@@ -521,6 +533,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
                         page_num,
                         npages,
                         prot,
+                        ent->maxprot,
                         ent->flags,
                         ent->shmid,
                         ent->desc,
@@ -535,6 +548,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
                         page_num,
                         ent_end_page - page_num,
                         prot,
+                        ent->maxprot,
                         ent->flags,
                         ent->shmid,
                         ent->desc,
@@ -550,6 +564,7 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
                         page_num,
                         npages,
                         prot,
+                        ent->maxprot,
                         ent->flags,
                         ent->shmid,
                         ent->desc,
@@ -619,7 +634,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   for (i = 0; i < self->nvalid; ++i) {
     struct NaClVmmapEntry   *ent = self->vmentry[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
-    int                     flags = NaClVmmapEntryMaxProt(ent);
+    int                     flags = ent->maxprot;
 
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */

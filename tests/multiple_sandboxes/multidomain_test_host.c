@@ -22,7 +22,6 @@
 
 #define SEND_DESC 3
 #define RECEIVE_DESC 3
-#define CAGE_TEST_ID 0
 
 int main(int argc, char **argv) {
   struct NaClApp app[2];
@@ -39,7 +38,7 @@ int main(int argc, char **argv) {
   NaClAllModulesInit();
 
   NaClFileNameForValgrind(argv[1]);
-  nd = (struct NaClDesc *) NaClDescIoDescOpen(argv[1], NACL_ABI_O_RDONLY, 0, CAGE_TEST_ID);
+  nd = (struct NaClDesc *) NaClDescIoDescOpen(argv[1], NACL_ABI_O_RDONLY, 0);
   CHECK(NULL != nd);
 
   for (i = 0; i < 2; i++) {

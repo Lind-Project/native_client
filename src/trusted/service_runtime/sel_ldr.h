@@ -98,7 +98,6 @@ struct NaClZombie {
 };
 
 extern volatile sig_atomic_t fork_num;
-extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
@@ -159,6 +158,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
+  bool                      tearing_down;
 
   /*
    * public, user settable prior to app start.

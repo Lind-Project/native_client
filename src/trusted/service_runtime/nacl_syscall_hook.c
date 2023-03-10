@@ -159,6 +159,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
    * NACLVERBOSITY is set high enough to enable the NaClLog() calls in
    * NaClSwitchToApp(), these calls could deadlock.
    */
+  
   NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
                                NACL_APP_THREAD_UNTRUSTED);
   NaClStackSafetyNowOnUntrustedStack();

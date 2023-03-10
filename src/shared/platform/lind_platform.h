@@ -28,6 +28,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #if NACL_OSX
 # define __SOCKADDR_ARG struct sockaddr
@@ -158,6 +159,10 @@ union RustArg {
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
+void lindcancelinit(unsigned long int cageid);
+void lindsetthreadkill(unsigned long int cageid, unsigned long int pthreadid, bool kill);   
+bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid);
+void lindthreadremove(unsigned long int cageid, unsigned long int pthreadid);
 void lindrustinit(int verbosity);
 void lindrustfinalize(void);
 
@@ -199,7 +204,7 @@ int lind_accept(int sockfd, struct sockaddr *sockaddr, socklen_t *addrlen, int c
 int lind_listen (int sockfd, int backlog, int cageid);
 int lind_getsockopt (int sockfd, int level, int optname, void *optval, socklen_t *optlen, int cageid);
 int lind_setsockopt (int sockfd, int level, int optname, const void *optval, socklen_t optlen, int cageid);
-int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid);
+int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, int cageid);
 int lind_poll (struct pollfd *fds, nfds_t nfds, int timeout, int cageid);
 int lind_epoll_create(int size, int cageid);
 int lind_epoll_ctl(int epfd, int op, int fd, struct epoll_event *event, int cageid);

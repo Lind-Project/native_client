@@ -70,7 +70,15 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
       break;
     }
     if ((state & NACL_APP_THREAD_SUSPENDING) != 0) {
+      struct NaClThread *host_thread;
+      host_thread = &natp->host_thread;
       /* We have been asked to suspend, so wait. */
+      if (lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
+        while(1) {
+            lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
+            NaClThreadExit();
+        }
+      }
       FutexWait(&natp->suspend_state, state);
     } else {
       NaClLog(LOG_FATAL, "NaClAppThreadSetSuspendState: Unexpected state: %i\n",
@@ -216,6 +224,38 @@ static void WaitForUntrustedThreadToSuspend(struct NaClAppThread *natp) {
     }
     break;
   }
+}
+
+// Lind: Similar to NaClUntrustedThreadSuspend
+// Here we CaS to trap thread in either trusted or untrusted code,
+// unlike NaClUntrustedThreadSuspend we dont trigger a handler
+// since we don't care about actually suspending the thread,
+// just trapping it in either trusted or untrusted state
+void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
+  Atomic32 old_state;
+  Atomic32 suspending_state;
+
+  /*
+   * We do not want the thread to enter a NaCl syscall and start
+   * taking locks when pthread_kill() takes effect, so we ask the
+   * thread to suspend even if it is currently running untrusted code.
+   */
+  while (1) {
+    old_state = natp->suspend_state;
+    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
+    suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
+    if (CompareAndSwap(&natp->suspend_state, old_state, suspending_state)
+        != old_state) {
+      continue;  /* Retry */
+    }
+    break;
+  }
+  /*
+   * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
+   * change state itself, so there should be no race condition in this
+   * check.
+   */
+  DCHECK(natp->suspend_state == suspending_state);
 }
 
 void NaClUntrustedThreadSuspend(struct NaClAppThread *natp,

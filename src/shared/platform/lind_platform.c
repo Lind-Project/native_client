@@ -229,7 +229,7 @@ int lind_setsockopt (int sockfd, int level, int optname, const void *optval, soc
     DISPATCH_SYSCALL_5(LIND_safe_net_setsockopt, int, sockfd, int, level, int, optname, cbuf, optval, socklen_t, optlen);
 }
 
-int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid) {
+int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, int cageid) {
     DISPATCH_SYSCALL_5(LIND_safe_net_select, int, nfds, cbuf, readfds, cbuf, writefds, cbuf, exceptfds, timevalstruct, timeout);
 }
 
