@@ -6203,3 +6203,16 @@ earlycleanup_write:
     free(safeposixreadfds);
   return -NACL_ABI_EFAULT;
 }
+
+int32_t NaClSysSigaction(
+    struct NaClAppThread *natp,
+    int32_t sig,
+    const struct sigaction *act,
+    struct sigaction *ocat
+) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  ret = lind_sigaction(sig, act, ocat, nap->cage_id);
+  return ret;
+}
