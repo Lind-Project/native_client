@@ -4337,11 +4337,13 @@ int32_t NaClSysSigaction(
     struct NaClAppThread *natp,
     int32_t sig,
     const struct sigaction *act,
-    struct sigaction *ocat
+    struct sigaction *oact
 ) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
+  const struct sigaction *sysact = (const struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(*act), NACL_ABI_PROT_READ);
+  struct sigaction *sysoact = (struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(*oact), NACL_ABI_PROT_WRITE);
 
-  ret = lind_sigaction(sig, act, ocat, nap->cage_id);
+  ret = lind_sigaction(sig, sysact, sysoact, nap->cage_id);
   return ret;
 }
