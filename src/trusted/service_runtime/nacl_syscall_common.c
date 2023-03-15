@@ -4337,12 +4337,29 @@ int32_t NaClSysSigaction(
     struct NaClAppThread *natp,
     int32_t sig,
     const struct sigaction *act,
-    struct sigaction *oact
-) {
+    struct sigaction *oact) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  const struct sigaction *sysact = (const struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(*act), NACL_ABI_PROT_READ);
-  struct sigaction *sysoact = (struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(*oact), NACL_ABI_PROT_WRITE);
+  const struct sigaction *sysact = NULL;
+  struct sigaction *sysoact = NULL;
+
+  if (act) {
+    sysact = (const struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(struct sigaction), NACL_ABI_PROT_READ);
+
+    if ((void*) kNaClBadAddress == sysact) {
+        NaClLog(2, "NaClSysSigaction could not translate act, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (oact) {
+    sysoact = (struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(struct sigaction), NACL_ABI_PROT_WRITE);
+
+    if ((void*) kNaClBadAddress == sysoact) {
+        NaClLog(2, "NaClSysSigaction could not translate oact, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
 
   ret = lind_sigaction(sig, sysact, sysoact, nap->cage_id);
   return ret;
