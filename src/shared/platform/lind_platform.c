@@ -401,3 +401,7 @@ int lind_exit(int status, int cageid) {
 int lind_sigaction(int sig, const struct sigaction *act, struct sigaction *ocat, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_sys_sigaction, int, sig, constsigactionstruct, act, sigactionstruct, ocat);
 }
+
+int lind_kill(int targetcageid, int sig, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_sys_kill, int, targetcageid, int, sig);
+}

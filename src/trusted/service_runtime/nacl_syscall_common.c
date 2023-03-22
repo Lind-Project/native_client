@@ -4364,3 +4364,8 @@ int32_t NaClSysSigaction(
   ret = lind_sigaction(sig, sysact, sysoact, nap->cage_id);
   return ret;
 }
+
+int32_t NaClSysKill(struct NaClAppThread *natp, int32_t targetcageid, int32_t sig) {
+  struct NaClApp *nap = natp->nap;
+  return lind_kill(targetcageid, sig, nap->cage_id);
+}

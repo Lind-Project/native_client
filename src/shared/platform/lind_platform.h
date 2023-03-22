@@ -127,6 +127,7 @@
 #define LIND_safe_net_getifaddrs        146
 
 #define LIND_safe_sys_sigaction		147
+#define LIND_safe_sys_kill		148
 
 
 union RustArg {
@@ -247,6 +248,7 @@ int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 int lind_exit(int status, int cageid);
 int lind_sigaction(int sig, const struct sigaction *act, struct sigaction *ocat, int cageid);
+int lind_kill(int targetcageid, int sig, int cageid);
 
 
 #endif /* LIND_PLATFORM_H_ */
