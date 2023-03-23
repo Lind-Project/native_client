@@ -244,7 +244,7 @@ void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
   old_state = natp->suspend_state;
   DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
   suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
-  natp->suspend_state = suspending_state);
+  natp->suspend_state = suspending_state;
 
   /*
    * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
