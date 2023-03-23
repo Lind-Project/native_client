@@ -240,16 +240,12 @@ void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
    * taking locks when pthread_kill() takes effect, so we ask the
    * thread to suspend even if it is currently running untrusted code.
    */
-  while (1) {
-    old_state = natp->suspend_state;
-    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
-    suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
-    if (CompareAndSwap(&natp->suspend_state, old_state, suspending_state)
-        != old_state) {
-      continue;  /* Retry */
-    }
-    break;
-  }
+
+  old_state = natp->suspend_state;
+  DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
+  suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
+  natp->suspend_state = suspending_state);
+
   /*
    * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
    * change state itself, so there should be no race condition in this
@@ -268,21 +264,15 @@ void NaClUntrustedThreadSuspend(struct NaClAppThread *natp,
    * taking locks when pthread_kill() takes effect, so we ask the
    * thread to suspend even if it is currently running untrusted code.
    */
-  while (1) {
-    old_state = natp->suspend_state;
-    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
-    suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
-    if (CompareAndSwap(&natp->suspend_state, old_state, suspending_state)
-        != old_state) {
-      continue;  /* Retry */
-    }
-    break;
-  }
-  /*
-   * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
-   * change state itself, so there should be no race condition in this
-   * check.
-   */
+  old_state = natp->suspend_state;
+  DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
+  suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
+  natp->suspend_state = suspending_state;
+
+  /* Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
+  * change state itself, so there should be no race condition in this
+  * check.
+  */
   DCHECK(natp->suspend_state == suspending_state);
 
   if (old_state == NACL_APP_THREAD_UNTRUSTED) {
@@ -309,17 +299,13 @@ void NaClUntrustedThreadSuspend(struct NaClAppThread *natp,
 void NaClUntrustedThreadResume(struct NaClAppThread *natp) {
   Atomic32 old_state;
   Atomic32 new_state;
-  while (1) {
-    old_state = natp->suspend_state;
-    new_state = old_state & ~(NACL_APP_THREAD_SUSPENDING |
-                              NACL_APP_THREAD_SUSPENDED);
-    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) != 0);
-    if (CompareAndSwap(&natp->suspend_state, old_state, new_state)
-        != old_state) {
-      continue;  /* Retry */
-    }
-    break;
-  }
+
+  old_state = natp->suspend_state;
+  new_state = old_state & ~(NACL_APP_THREAD_SUSPENDING |
+                            NACL_APP_THREAD_SUSPENDED);
+  DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) != 0);
+  natp->suspend_state = new_state;
+
 
   /*
    * TODO(mseaborn): A refinement would be to wake up the thread only
