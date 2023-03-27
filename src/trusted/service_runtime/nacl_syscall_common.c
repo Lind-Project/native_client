@@ -60,6 +60,7 @@
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
+#include "native_client/src/trusted/service_runtime/include/sys/sigaction.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/nacl_test_crash.h"
 #include "native_client/src/trusted/service_runtime/internal_errno.h"
@@ -4336,15 +4337,15 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
 int32_t NaClSysSigaction(
     struct NaClAppThread *natp,
     int32_t sig,
-    const struct sigaction *act,
-    struct sigaction *oact) {
+    const struct nacl_abi_sigaction *act,
+    struct nacl_abi_sigaction *oact) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
-  const struct sigaction *sysact = NULL;
-  struct sigaction *sysoact = NULL;
+  const struct nacl_abi_sigaction *sysact = NULL;
+  struct nacl_abi_sigaction *sysoact = NULL;
 
   if (act) {
-    sysact = (const struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(struct sigaction), NACL_ABI_PROT_READ);
+    sysact = (const struct nacl_abi_sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(struct nacl_abi_sigaction), NACL_ABI_PROT_READ);
 
     if ((void*) kNaClBadAddress == sysact) {
         NaClLog(2, "NaClSysSigaction could not translate act, returning %d\n", -NACL_ABI_EFAULT);
@@ -4353,7 +4354,7 @@ int32_t NaClSysSigaction(
   }
 
   if (oact) {
-    sysoact = (struct sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(struct sigaction), NACL_ABI_PROT_WRITE);
+    sysoact = (struct nacl_abi_sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(struct nacl_abi_sigaction), NACL_ABI_PROT_WRITE);
 
     if ((void*) kNaClBadAddress == sysoact) {
         NaClLog(2, "NaClSysSigaction could not translate oact, returning %d\n", -NACL_ABI_EFAULT);

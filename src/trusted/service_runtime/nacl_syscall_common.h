@@ -31,6 +31,7 @@ struct NaClSocketAddress;
 struct NaClDesc;
 struct NaClImcMsgHdr;
 struct nacl_abi_stat;
+struct nacl_abi_sigaction;
 struct rusage;
 struct sockaddr;
 
@@ -417,7 +418,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
 int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);
 int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
-int32_t NaClSysSigaction (struct NaClAppThread *natp, int sig, const struct sigaction *act, struct sigaction *ocat);
+int32_t NaClSysSigaction (struct NaClAppThread *natp, int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat);
 int32_t NaClSysKill (struct NaClAppThread *natp, int targetcageid, int sig);
 EXTERN_C_END
 

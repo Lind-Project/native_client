@@ -154,8 +154,8 @@ union RustArg {
     const struct sockaddr *dispatch_constsockaddrstruct;
     struct lind_shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
-    struct sigaction *dispatch_sigactionstruct;
-    const struct sigaction *dispatch_constsigactionstruct;
+    struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
+    const struct sigaction *dispatch_constnaclabisigactionstruct;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
@@ -247,7 +247,7 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 int lind_exit(int status, int cageid);
-int lind_sigaction(int sig, const struct sigaction *act, struct sigaction *ocat, int cageid);
+int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat, int cageid);
 int lind_kill(int targetcageid, int sig, int cageid);
 
 
