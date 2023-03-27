@@ -240,16 +240,19 @@ void NaClThreadTrapUntrusted(struct NaClAppThread *natp) {
    * taking locks when pthread_kill() takes effect, so we ask the
    * thread to suspend even if it is currently running untrusted code.
    */
-  while (1) {
-    old_state = natp->suspend_state;
-    DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
-    suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
-    if (CompareAndSwap(&natp->suspend_state, old_state, suspending_state)
-        != old_state) {
-      continue;  /* Retry */
-    }
-    break;
-  }
+
+  old_state = natp->suspend_state;
+  DCHECK((old_state & NACL_APP_THREAD_SUSPENDING) == 0);
+  suspending_state = old_state | NACL_APP_THREAD_SUSPENDING;
+
+  /*
+   * Lind - we've removed a CAS instruction here, instead directly setting suspend state
+   * the previous CAS was due to Windows VMHole issues. This is far more performant and safe,
+   * since we're only compiling for Linux and these transitions are always contained within a single thread
+   */
+
+  natp->suspend_state = suspending_state;
+
   /*
    * Once the thread has NACL_APP_THREAD_SUSPENDING set, it may not
    * change state itself, so there should be no race condition in this
