@@ -707,7 +707,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
+   *
+   * We bypass the dispatcher with quick_read to patch directly to RustPOSIX for performance efficiency 
    */
+  
   read_result = quick_read(d, (void *)sysaddr, count, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
@@ -797,6 +800,8 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
+   *
+   * We bypass the dispatcher with quick_write to patch directly to RustPOSIX for performance efficiency 
    */
   write_result = quick_write(d, (void *)sysaddr, count, nap->cage_id);
 
