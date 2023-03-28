@@ -9,7 +9,7 @@ struct nacl_sigset {
 };
 
 struct nacl_abi_sigaction {
-	__sighandler_t __sa_handler;
+	uint32_t __sa_handler;
 	struct nacl_sigset sa_mask;
 	int sa_flags;
 };
