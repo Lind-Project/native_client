@@ -155,7 +155,7 @@ union RustArg {
     struct lind_shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
     struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
-    const struct sigaction *dispatch_constnaclabisigactionstruct;
+    const struct nacl_abi_sigaction *dispatch_constnaclabisigactionstruct;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,

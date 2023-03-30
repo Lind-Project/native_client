@@ -52,6 +52,7 @@ static int s_Signals[] = {
 static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
 
 static NaClSignalHandler g_handler_func;
+uint32_t lindgetsighandler(uint64_t cagenum, int signo);
 
 void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
@@ -192,21 +193,26 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
  * false.
  */
 static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
+                                      int sig,
                                       struct NaClSignalContext *regs) {
   struct NaClApp *nap = natp->nap;
   uintptr_t frame_addr;
   volatile struct NaClExceptionFrame *frame;
   uint32_t new_stack_ptr;
   uintptr_t context_user_addr;
+  uint32_t lind_exception_handler;
 
   if (!NaClSignalCheckSandboxInvariants(regs, natp)) {
     return 0;
   }
-  if (nap->exception_handler == 0) {
+
+  lind_exception_handler = lindgetsighandler(nap->cage_id, sig);
+
+  if (lind_exception_handler == 0) {
     return 0;
   }
   if (natp->exception_flag) {
-    return 0;
+    return 0; // I believe this prevents double faults
   }
 
   natp->exception_flag = 1;
@@ -235,11 +241,11 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
-  regs->prog_ctr = nap->exception_handler;
+  regs->prog_ctr = lind_exception_handler;
   regs->stack_ptr = new_stack_ptr;
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   regs->rdi = context_user_addr; /* Argument 1 */
-  regs->prog_ctr = NaClUserToSys(nap, nap->exception_handler);
+  regs->prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   regs->stack_ptr = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
   /*
@@ -249,12 +255,12 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
    */
   regs->lr = 0;
   regs->r0 = context_user_addr;  /* Argument 1 */
-  regs->prog_ctr = NaClUserToSys(nap, nap->exception_handler);
+  regs->prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   regs->stack_ptr = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_mips
   regs->return_addr = 0;
   regs->a0 = context_user_addr;
-  regs->prog_ctr = NaClUserToSys(nap, nap->exception_handler);
+  regs->prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   regs->stack_ptr = NaClUserToSys(nap, new_stack_ptr);
   /*
    * Per Linux/MIPS convention, PIC functions assume that t9 holds
@@ -348,8 +354,8 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     }
   }
 
-  if (is_untrusted && sig == SIGSEGV) {
-    if (DispatchToUntrustedHandler(natp, &sig_ctx)) {
+  if (is_untrusted) {
+    if (DispatchToUntrustedHandler(natp, sig, &sig_ctx)) {
       NaClSignalContextToHandler(uc, &sig_ctx);
       /* Resume untrusted code using the modified register state. */
       return;
