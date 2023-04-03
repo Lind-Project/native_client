@@ -300,7 +300,8 @@ SYSCALL_LIST = [
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
     ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
     ('NACL_sys_sigaction', 'NaClSysSigaction', ['int sig', 'const struct nacl_abi_sigaction *act', 'struct nacl_abi_sigaction *ocat']),
-    ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig'])
+    ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig']),
+    ('NACL_sys_sigprocmask', 'NaClSysSigprocmask', ['int how', 'const uint64_t *nacl_set', 'uint64_t *nacl_oldset'])
     ]
 
 

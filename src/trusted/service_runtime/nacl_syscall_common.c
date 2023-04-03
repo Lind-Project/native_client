@@ -4370,3 +4370,31 @@ int32_t NaClSysKill(struct NaClAppThread *natp, int32_t targetcageid, int32_t si
   struct NaClApp *nap = natp->nap;
   return lind_kill(targetcageid, sig, nap->cage_id);
 }
+
+int32_t NaClSysSigprocmask(struct NaClAppThread *natp, int32_t how, const uint64_t *nacl_set, uint64_t *nacl_oldset) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const sigset_t *sysset = NULL;
+  sigset_t *sysoldset = NULL;
+
+  if (nacl_set) {
+    sysset = (const sigset_t *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) nacl_set, sizeof(uint64_t), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sysset) {
+        NaClLog(2, "NaClSysSigprocmask could not translate set, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (nacl_oldset) {
+    sysoldset = (sigset_t *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) nacl_oldset, sizeof(uint64_t), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sysoldset) {
+        NaClLog(2, "NaClSysSigprocmask could not translate oldset, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  ret = lind_sigprocmask(how, sysset, sysoldset, nap->cage_id);
+  return ret;
+}

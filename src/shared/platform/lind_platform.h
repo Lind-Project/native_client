@@ -128,6 +128,7 @@
 
 #define LIND_safe_sys_sigaction		147
 #define LIND_safe_sys_kill		148
+#define LIND_safe_sys_sigprocmask	149
 
 
 union RustArg {
@@ -156,6 +157,8 @@ union RustArg {
     int *dispatch_pipearray;
     struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
     const struct sigaction *dispatch_constnaclabisigactionstruct;
+    uint64_t *dispatch_naclsigset;
+    const uint64_t *dispatch_constnaclsigset;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
@@ -249,6 +252,7 @@ int lind_exec(int newcageid, int cageid);
 int lind_exit(int status, int cageid);
 int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat, int cageid);
 int lind_kill(int targetcageid, int sig, int cageid);
+int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid);
 
 
 #endif /* LIND_PLATFORM_H_ */
