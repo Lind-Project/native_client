@@ -156,7 +156,7 @@ union RustArg {
     struct lind_shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
     struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
-    const struct sigaction *dispatch_constnaclabisigactionstruct;
+    const struct nacl_abi_sigaction *dispatch_constnaclabisigactionstruct;
     uint64_t *dispatch_naclsigset;
     const uint64_t *dispatch_constnaclsigset;
 };
