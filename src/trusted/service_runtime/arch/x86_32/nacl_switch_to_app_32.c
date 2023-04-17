@@ -21,7 +21,7 @@
 # define NORETURN_PTR NORETURN
 #endif
 
-static NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
+NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */

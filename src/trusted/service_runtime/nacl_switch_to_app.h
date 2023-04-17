@@ -15,6 +15,12 @@
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 /* get nacl_reg_t */
 
+#if NACL_WINDOWS
+# define NORETURN_PTR
+#else
+# define NORETURN_PTR NORETURN
+#endif
+
 EXTERN_C_BEGIN
 
 struct NaClAppThread;
@@ -31,6 +37,7 @@ extern NORETURN void NaClSwitchSavingStackPtr(
     struct NaClThreadContext *user_context,
     uintptr_t *trusted_stack_ptr_addr,
     void (*NaClSwitch)(struct NaClThreadContext *context));
+extern NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 #if NACL_OSX
 /* Same as NaClSwitchNoSSE but context in %ecx */
 extern NORETURN void NaClSwitchNoSSEViaECX(void);

@@ -93,6 +93,7 @@ elif env.Bit('build_x86_64'):
       'arch/x86/nacl_ldt_x86.c',
       'arch/x86_64/nacl_app_64.c',
       'arch/x86_64/nacl_switch_64.S',
+      'arch/x86_64/nacl_sigreturn.S',
       'arch/x86_64/nacl_switch_to_app_64.c',
       'arch/x86_64/nacl_syscall_64.S',
       'arch/x86_64/nacl_tls_64.c',
