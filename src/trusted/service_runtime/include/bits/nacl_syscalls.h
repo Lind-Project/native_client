@@ -176,6 +176,7 @@
 #define NACL_sys_sigaction		160
 #define NACL_sys_kill			161
 #define NACL_sys_sigprocmask            162
+#define NACL_sys_alarm			163
 
 #define NACL_MAX_SYSCALLS               256
 

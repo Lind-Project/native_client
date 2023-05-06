@@ -409,3 +409,7 @@ int lind_kill(int targetcageid, int sig, int cageid) {
 int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_sys_sigprocmask, int, how, constnaclsigset, nacl_set, naclsigset, nacl_oldset);
 }
+
+unsigned int lind_alarm(unsigned int seconds, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sys_alarm, uint, seconds);
+}

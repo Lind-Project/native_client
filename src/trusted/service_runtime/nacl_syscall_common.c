@@ -4396,3 +4396,9 @@ int32_t NaClSysSigprocmask(struct NaClAppThread *natp, int32_t how, const uint64
   ret = lind_sigprocmask(how, sysset, sysoldset, nap->cage_id);
   return ret;
 }
+
+uint32_t NaClSysAlarm(struct NaClAppThread *natp, uint32_t seconds) {
+  struct NaClApp *nap = natp->nap;
+
+  return lind_alarm(seconds, nap->cage_id);
+}
