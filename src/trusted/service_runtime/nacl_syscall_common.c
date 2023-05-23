@@ -4397,12 +4397,6 @@ int32_t NaClSysSigprocmask(struct NaClAppThread *natp, int32_t how, const uint64
   return ret;
 }
 
-uint32_t NaClSysAlarm(struct NaClAppThread *natp, uint32_t seconds) {
-  struct NaClApp *nap = natp->nap;
-
-  return lind_alarm(seconds, nap->cage_id);
-}
-
 int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const struct itimerval *new_value, struct itimerval *old_value) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;

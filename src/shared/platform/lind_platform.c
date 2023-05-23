@@ -411,10 +411,6 @@ int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, i
     DISPATCH_SYSCALL_3(LIND_safe_sys_sigprocmask, int, how, constnaclsigset, nacl_set, naclsigset, nacl_oldset);
 }
 
-unsigned int lind_alarm(unsigned int seconds, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_sys_alarm, uint, seconds);
-}
-
 int lind_lindsetitimer(int which, const struct itimerval *new_value, struct itimerval *old_value, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_sys_lindsetitimer, int, which, conststructitimerval, new_value, structitimerval, old_value);
 }
