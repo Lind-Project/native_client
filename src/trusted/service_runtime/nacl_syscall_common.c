@@ -4413,7 +4413,7 @@ int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const st
   }
 
   if (old_value) {
-    sys_old_value = (const struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) old_value, sizeof(struct itimerval), NACL_ABI_PROT_WRITE);
+    sys_old_value = (struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) old_value, sizeof(struct itimerval), NACL_ABI_PROT_WRITE);
 
     if ((void *) kNaClBadAddress == sys_old_value) {
       NaClLog(2, "NaclSysLindsetitimer could not translate old_value, returning %d\n", -NACL_ABI_EFAULT);
