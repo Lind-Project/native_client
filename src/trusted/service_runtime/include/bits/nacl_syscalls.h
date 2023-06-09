@@ -120,6 +120,10 @@
 #define NACL_sys_dyncode_modify         105
 #define NACL_sys_dyncode_delete         106
 
+#define NACL_sys_reg_restore            107
+//We need to reserve a second slot as the reg restoration takes more than 32 bytes
+#define __reg_restore_reserved_slot2    108
+
 #define NACL_sys_test_infoleak          109
 #define NACL_sys_test_crash             110
 

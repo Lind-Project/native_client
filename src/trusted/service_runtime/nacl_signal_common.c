@@ -325,11 +325,6 @@ void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
 #endif
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
-  /*
-   * Returning from the exception handler is not possible, so to avoid
-   * any confusion that might arise from jumping to an uninitialised
-   * address, we set the return address to zero.
-   */
-  frame->return_addr = 0;
+  frame->flags_duplicate = regs->flags;
 #endif
 }

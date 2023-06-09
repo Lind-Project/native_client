@@ -254,3 +254,36 @@ ENDMACRO
          */
         tls_syscall NaClGetTlsFastPath1, NaClGetTlsFastPath1RspRestored, NaClGetTlsFastPath1End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE1
         tls_syscall NaClGetTlsFastPath2, NaClGetTlsFastPath2RspRestored, NaClGetTlsFastPath2End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE2
+
+
+.globl NaClTrampolineRegRestore
+.hidden NaClTrampolineRegRestore
+
+NaClTrampolineRegRestore:
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+    nop #align to bundle boundary
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    movl %r14d, %r14d
+    addq %r15, %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+    popfq #now restore flags from the duplicate location
+    jmp *%r14

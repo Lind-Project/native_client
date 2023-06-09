@@ -23,30 +23,22 @@ NaClSwitchFromSignal:
 # error "What OS/compiler is the service runtime being compiled with?"
 #endif
 
-        movl    NACL_SIGNAL_CONTEXT_FLAGS_OFFSET(%r11), %eax
+        movq NACL_SIGNAL_CONTEXT_R15_OFFSET(%r11), %r15
+        xor %rax, %rax
+        xor %rbx, %rbx
+        xor %rcx, %rcx
+        xor %rdx, %rdx
+        xor %rsi, %rsi
+        movq NACL_SIGNAL_CONTEXT_RDI_OFFSET(%r11), %rdi
+        movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp #rbp must not be allowed to be out of range, so we restore it even though it's unnecessary
+        movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
+        xor %r8, %r8
+        xor %r9, %r9
+        xor %r10, %r10
+        xor %r12, %r12
+        xor %r13, %r13
+        xor %r14, %r14
 
-        lahf /*load flags in*/
+        movq    NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %r11
 
-        movq    NACL_SIGNAL_CONTEXT_RAX_OFFSET(%r11), %rax
-        movq    NACL_SIGNAL_CONTEXT_RBX_OFFSET(%r11), %rbx
-        movq    NACL_SIGNAL_CONTEXT_RCX_OFFSET(%r11), %rcx
-        movq    NACL_SIGNAL_CONTEXT_RDX_OFFSET(%r11), %rdx
-        movq    NACL_SIGNAL_CONTEXT_RSI_OFFSET(%r11), %rsi
-        movq    NACL_SIGNAL_CONTEXT_RDI_OFFSET(%r11), %rdi
-        movq    NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
-        movq    NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
-        movq    NACL_SIGNAL_CONTEXT_R8_OFFSET(%r11), %r8
-        movq    NACL_SIGNAL_CONTEXT_R9_OFFSET(%r11), %r9
-        movq    NACL_SIGNAL_CONTEXT_R10_OFFSET(%r11), %r10
-        movq    NACL_SIGNAL_CONTEXT_R12_OFFSET(%r11), %r12
-        movq    NACL_SIGNAL_CONTEXT_R13_OFFSET(%r11), %r13
-        movq    NACL_SIGNAL_CONTEXT_R14_OFFSET(%r11), %r14
-        movq    NACL_SIGNAL_CONTEXT_R15_OFFSET(%r11), %r15
-
-        /* This push/ret trick allows us to clobber r11, it briefly modifies the userspace stack however */
-
-        push    NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11)
-
-        movq    NACL_SIGNAL_CONTEXT_R11_OFFSET(%r11), %r11
-
-        ret
+        jmp *%r11
