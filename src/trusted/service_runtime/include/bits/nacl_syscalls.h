@@ -139,7 +139,6 @@
 #define NACL_sys_waitpid                120
 #define NACL_sys_wait                   121
 #define NACL_sys_wait4                  122
-#define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
 
 #define NACL_sys_gethostname            125
@@ -176,6 +175,7 @@
 
 #define NACL_sys_sigaction		160
 #define NACL_sys_kill			161
+#define NACL_sys_sigprocmask            162
 
 #define NACL_MAX_SYSCALLS               256
 
