@@ -686,10 +686,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
   
-  NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
-           "%d, 0x%08"NACL_PRIxPTR", "
-           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+  // NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
+  //          "%d, 0x%08"NACL_PRIxPTR", "
+  //          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+  //         nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   if (d < 0) return -NACL_ABI_EBADF;
 
@@ -708,10 +708,13 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
+   *
+   * We bypass the dispatcher with quick_read to patch directly to RustPOSIX for performance efficiency 
    */
-  read_result = lind_read(d, (void *)sysaddr, count, nap->cage_id);
-  /* This cast is safe because we clamped count above.*/
   
+  read_result = quick_read(d, (void *)sysaddr, count, nap->cage_id);
+
+  /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   return retval;
 }
@@ -780,10 +783,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   ssize_t         write_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
 
-  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
-        "%d, 0x%08"NACL_PRIxPTR", "
-        "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-        nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+  // NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+  //       "%d, 0x%08"NACL_PRIxPTR", "
+  //       "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+  //       nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
   if (d < 0) return -NACL_ABI_EBADF;
   
@@ -798,8 +801,10 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   /* Lind - we removed the VMIOWillStart and End functions here, which is fine for Linux
    * See note in sel_ldr.h
+   *
+   * We bypass the dispatcher with quick_write to patch directly to RustPOSIX for performance efficiency 
    */
-  write_result = lind_write(d, (void *)sysaddr, count, nap->cage_id);
+  write_result = quick_write(d, (void *)sysaddr, count, nap->cage_id);
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;

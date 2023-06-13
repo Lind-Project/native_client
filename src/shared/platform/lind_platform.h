@@ -166,6 +166,9 @@ union RustArg {
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
+
+int quick_write(int fd, const void *buf, size_t count, int cageid);
+int quick_read(int fd, void *buf, int size, int cageid);
 void lindcancelinit(unsigned long int cageid);
 void lindsetthreadkill(unsigned long int cageid, unsigned long int pthreadid, bool kill);   
 bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid);
