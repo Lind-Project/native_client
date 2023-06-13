@@ -24,6 +24,8 @@
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
+#include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
+#include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 
 
 /*
@@ -46,7 +48,7 @@ static int s_Signals[] = {
   NACL_THREAD_SUSPEND_SIGNAL,
   SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV,
   /* Handle SIGABRT in case someone sends it asynchronously using kill(). */
-  SIGABRT
+  SIGABRT, SIGUSR1, SIGUSR2
 };
 
 static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
@@ -202,9 +204,11 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   uintptr_t context_user_addr;
   uint32_t lind_exception_handler;
 
+  /*
   if (!NaClSignalCheckSandboxInvariants(regs, natp)) {
     return 0;
   }
+  */
 
   lind_exception_handler = lindgetsighandler(nap->cage_id, sig);
 
@@ -218,7 +222,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   natp->exception_flag = 1;
 
   if (natp->exception_stack == 0) {
-    new_stack_ptr = regs->stack_ptr - NACL_STACK_RED_ZONE;
+    new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
   } else {
     new_stack_ptr = natp->exception_stack;
   }
@@ -239,14 +243,16 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
   frame = (struct NaClExceptionFrame *) frame_addr;
   NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
+  frame->return_addr = nap->mem_start + NACL_SYSCALL_START_ADDR
+                       + (NACL_SYSCALL_BLOCK_SIZE * NACL_sys_reg_restore);
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   regs->prog_ctr = lind_exception_handler;
   regs->stack_ptr = new_stack_ptr;
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
-  regs->rdi = context_user_addr; /* Argument 1 */
-  regs->prog_ctr = NaClUserToSys(nap, lind_exception_handler);
-  regs->stack_ptr = NaClUserToSys(nap, new_stack_ptr);
+  natp->user.rdi = context_user_addr; /* Argument 1 */
+  natp->user.prog_ctr = NaClUserToSys(nap, lind_exception_handler);
+  natp->user.rsp = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
   /*
    * Returning from the exception handler is not possible, so to avoid
@@ -354,12 +360,22 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     }
   }
 
-  if (is_untrusted) {
-    if (DispatchToUntrustedHandler(natp, sig, &sig_ctx)) {
-      NaClSignalContextToHandler(uc, &sig_ctx);
-      /* Resume untrusted code using the modified register state. */
-      return;
+  if (DispatchToUntrustedHandler(natp, sig, &sig_ctx)) {
+    NaClSignalContextToHandler(uc, &sig_ctx);
+
+    /* Resume execution of code using the modified register state. */
+    if(is_untrusted) {
+      NaClStackSafetyNowOnUntrustedStack();
+
+      //clobber for restore
+      sig_ctx.prog_ctr = natp->user.prog_ctr;
+      sig_ctx.stack_ptr = natp->user.rsp;
+      sig_ctx.rdi = natp->user.rdi;
     }
+
+    NaClSwitchFromSignal(&sig_ctx);
+
+    NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
   }
 
   if (g_handler_func != NULL) {

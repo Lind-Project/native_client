@@ -32,5 +32,6 @@ extern char NaClGetTlsFastPath1End;
 extern char NaClGetTlsFastPath2;
 extern char NaClGetTlsFastPath2RspRestored;
 extern char NaClGetTlsFastPath2End;
+extern char NaClTrampolineRegRestore;
 
 #endif

@@ -50,6 +50,8 @@ struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
 
+void lind_setmainthreadid(uint64_t cageid);
+
 /*
  * dynamically allocate and initilize a copy
  * of the parents NaClApp structure which is
@@ -209,6 +211,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     NaClVmHoleThreadStackIsSafe(natp->nap);
 
     NaClStackSafetyNowOnUntrustedStack();
+    lind_setmainthreadid(natp->nap->cage_id);
   }
   else {
       /*
