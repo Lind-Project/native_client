@@ -157,11 +157,8 @@ union RustArg {
     int *dispatch_pipearray;
     struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
     const struct nacl_abi_sigaction *dispatch_constnaclabisigactionstruct;
-<<<<<<< HEAD
     uint64_t *dispatch_naclsigset;
     const uint64_t *dispatch_constnaclsigset;
-=======
->>>>>>> sigaction-kill
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
