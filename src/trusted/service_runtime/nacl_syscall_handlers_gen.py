@@ -298,7 +298,9 @@ SYSCALL_LIST = [
     ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct lind_shmid_ds *buf']),
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
-    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode'])
+    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
+    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int d']), 
+    ('NACL_sys_mknod', 'NaClSysMknod', ['uint32_t path', 'int mode', 'unsigned long long dev'])
     ]
 
 

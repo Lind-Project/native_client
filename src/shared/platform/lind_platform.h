@@ -125,11 +125,14 @@
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
 
+#define LIND_safe_fs_mknod              160
+#define LIND_safe_fs_fchdir		161
 
 union RustArg {
     int dispatch_int;
     unsigned int dispatch_uint;
     long unsigned int dispatch_ulong;
+    long long unsigned int dispatch_ulong_long;
     long int dispatch_long;
     size_t dispatch_size_t;
     ssize_t dispatch_ssize_t;
@@ -177,6 +180,10 @@ int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
 int lind_chmod (const char *path, int mode, int cageid);
 int lind_fchmod (int fd, int mode, int cageid);
+
+int lind_fchdir(int fd, int cageid);
+int lind_mknod (const char *path, int mode, unsigned long long dev, int cageid);
+
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);

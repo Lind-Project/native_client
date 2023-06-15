@@ -1071,6 +1071,28 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   return retval;
 }
 
+int32_t NaClSysMknod(struct NaClAppThread *natp,
+                     uint32_t             pathname,
+                     int	 	  mode, 
+		     unsigned long long dev) {
+
+  struct NaClApp *nap = natp->nap;
+  char           path[NACL_CONFIG_PATH_MAX];
+  int32_t        retval;
+
+  NaClLog(2, "Cage %d Entered NaClSysMknod(0x%08"NACL_PRIxPTR", "
+          "%d, %ld, %lld)\n", nap->cage_id, (uintptr_t) natp, pathname, mode, dev);
+  if (!NaClAclBypassChecks) return  -NACL_ABI_EACCES;
+
+  retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
+  if (retval) return -NACL_ABI_EINVAL;
+
+  retval = lind_mknod(path, mode, dev, nap->cage_id);
+
+  NaClLog(2, "NaClSysMknod: returning %d\n", retval);
+  return retval;
+}
+
 int32_t NaClSysChmod(struct NaClAppThread *natp,
                      uint32_t             pathname,
                      int                  mode) {
@@ -1106,6 +1128,21 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
 
   return retval;
 }
+
+int32_t NaClSysFchdir(struct NaClAppThread *natp,
+                     int                   fd) {
+
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFchdir(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd);
+
+  ret = lind_fchdir(fd, nap->cage_id);
+
+  return ret;
+}
+
 
 
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
