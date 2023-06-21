@@ -281,6 +281,7 @@ NaClTrampolineRegRestore:
     nop #align to bundle boundary
     addl $16, %esp # skip restoring r14, r15
     addq %r15, %rsp
+    popq %r14
     movl %r14d, %r14d
     addq %r15, %r14
     addl $24, %esp #skip flags for now, other unused fields

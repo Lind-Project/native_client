@@ -60,6 +60,11 @@ void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
 }
 
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
+bool lindgetpendingsignal(int, int);
+_Thread_local single_stepping = false;
+#endif
+
 /*
  * Returns, via is_untrusted, whether the signal happened while
  * executing untrusted code.
@@ -196,7 +201,8 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
  */
 static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                       int sig,
-                                      struct NaClSignalContext *regs) {
+                                      struct NaClSignalContext *regs,
+                                      int is_untrusted) {
   struct NaClApp *nap = natp->nap;
   uintptr_t frame_addr;
   volatile struct NaClExceptionFrame *frame;
@@ -217,6 +223,14 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   }
   if (natp->exception_flag) {
     return 0; // I believe this prevents double faults
+  }
+
+  if (is_untrusted) {
+    sigset_t newset;
+    sigfillset(&newset);
+    pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
+    pthread_t s = pthread_self();
+    lindsetpendingsignal(natp->nap->cage_id, s, true);
   }
 
   natp->exception_flag = 1;
@@ -346,10 +360,12 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   // we've called thread suspend from the fatal handler, we can safely exit the thread here
   struct NaClThread *host_thread;
-  host_thread = &natp->host_thread;
-  if (sig == SIGUSR1 && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
-    lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
-    NaClThreadExit();
+  if (natp != NULL) {
+    host_thread = &natp->host_thread;
+    if (sig == SIGUSR1 && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
+      lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
+      NaClThreadExit();
+    }
   }
 
   if (sig != SIGINT && sig != SIGQUIT) {
@@ -360,22 +376,24 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     }
   }
 
-  if (DispatchToUntrustedHandler(natp, sig, &sig_ctx)) {
-    NaClSignalContextToHandler(uc, &sig_ctx);
+  if (natp != NULL) {
+    if (DispatchToUntrustedHandler(natp, sig, &sig_ctx, is_untrusted)) {
+      NaClSignalContextToHandler(uc, &sig_ctx);
 
-    /* Resume execution of code using the modified register state. */
-    if(is_untrusted) {
-      NaClStackSafetyNowOnUntrustedStack();
+      /* Resume execution of code using the modified register state. */
+      if (is_untrusted) {
+        NaClStackSafetyNowOnUntrustedStack();
 
-      //clobber for restore
-      sig_ctx.prog_ctr = natp->user.prog_ctr;
-      sig_ctx.stack_ptr = natp->user.rsp;
-      sig_ctx.rdi = natp->user.rdi;
+        //clobber for restore
+        sig_ctx.prog_ctr = natp->user.prog_ctr;
+        sig_ctx.stack_ptr = natp->user.rsp;
+        sig_ctx.rdi = natp->user.rdi;
+      }
+
+      NaClSwitchFromSignal(&sig_ctx);
+
+      NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
     }
-
-    NaClSwitchFromSignal(&sig_ctx);
-
-    NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
   }
 
   if (g_handler_func != NULL) {

@@ -14,12 +14,17 @@
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/cpu_features/arch/x86/cpu_x86.h"
+#include "native_client/src/trusted/service_runtime/nacl_exception.h"
+#include <string.h>
 
 #if NACL_WINDOWS
 # define NORETURN_PTR
 #else
 # define NORETURN_PTR NORETURN
 #endif
+
+bool lindgetpendingsignal(int, int);
+void lindsetpendingsignal(int, int, bool);
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 
@@ -31,6 +36,21 @@ void NaClInitSwitchToApp(struct NaClApp *nap) {
   } else {
     NaClSwitch = NaClSwitchSSE;
   }
+}
+
+static void NaClMaskRestore(struct NaClAppThread* natp) {
+  pthread_t s = pthread_self();
+  struct NaClExceptionFrame* rsp_frame;
+  sigset_t toset;
+  if(!lindgetpendingsignal(natp->nap->cage_id, s)) {
+    return;
+  }
+  lindsetpendingsignal(natp->nap->cage_id, s, false);
+  rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
+  rsp_frame->context.regs.rax = natp->user.rax;
+  memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));
+  memset(&natp->previous_sigmask, 0, sizeof(sigset_t));
+  pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //is this exactly what we want if we call sigprocmask?
 }
 
 NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
@@ -83,6 +103,7 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
   /* This sets up a stack containing a return address that has unwind info. */
   NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitch);
 #else
+  NaClMaskRestore(natp);
   NaClSwitch(context);
 #endif
 }
@@ -96,5 +117,6 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
  */
 
 NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
+  NaClMaskRestore(natp);
   NaClSwitch(&natp->user);
 }
