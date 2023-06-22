@@ -225,7 +225,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     return 0; // I believe this prevents double faults
   }
 
-  if (is_untrusted) {
+  if (!is_untrusted) {
     sigset_t newset;
     sigfillset(&newset);
     pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
