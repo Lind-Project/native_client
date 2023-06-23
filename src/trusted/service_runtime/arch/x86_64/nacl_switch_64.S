@@ -33,12 +33,14 @@
 # define MACROENTRY     DEFINE_GLOBAL_HIDDEN_IDENTIFIER($0):
 # define MACROARG1      $0
 # define MACROARG2      $1
+# define MACROARG3      $2
 #else
-# define MACRO(name)    .macro name arg1, arg2=0
+# define MACRO(name)    .macro name arg1, arg2=0, arg3
 # define ENDMACRO       .endm
 # define MACROENTRY     DEFINE_GLOBAL_HIDDEN_IDENTIFIER(\arg1):
 # define MACROARG1      \arg1
 # define MACROARG2      \arg2
+# define MACROARG3      \arg3
 #endif
 
 
@@ -72,7 +74,9 @@ MACROENTRY
          * been adjusted to one word below there, to insert a dummy
          * return address for the user entry point function.
          */
+.if MACROARG3
         leal    8(%rsp), %edi
+.endif
 
         /*
          * Zero all unused registers.  The 32-bit instructions
@@ -125,8 +129,10 @@ MACROENTRY
         jmp     *%r11
 ENDMACRO
 
-        switcher NaClSwitchSSE, 0
-        switcher NaClSwitchAVX, 1
+        switcher NaClSwitchSSE, 0, 1 
+        switcher NaClSwitchAVX, 1, 1
+        switcher NaClSwitchSSETrustedSignal, 0, 0 
+        switcher NaClSwitchAVXTrustedSignal, 1, 0
 
 
         NACL_RODATA

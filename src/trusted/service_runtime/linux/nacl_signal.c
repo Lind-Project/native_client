@@ -61,8 +61,8 @@ void NaClSignalHandlerSet(NaClSignalHandler func) {
 }
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
-bool lindgetpendingsignal(int, int);
-_Thread_local single_stepping = false;
+void lindsetpendingsignal(int, int, bool);
+_Thread_local bool single_stepping = false;
 #endif
 
 /*
@@ -240,6 +240,11 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   } else {
     new_stack_ptr = natp->exception_stack;
   }
+
+  if (!is_untrusted) {
+    new_stack_ptr -= 8;
+  }
+
   /* Allocate space for the stack frame, and ensure its alignment. */
   new_stack_ptr -=
       sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN;
@@ -388,9 +393,10 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         sig_ctx.prog_ctr = natp->user.prog_ctr;
         sig_ctx.stack_ptr = natp->user.rsp;
         sig_ctx.rdi = natp->user.rdi;
+        NaClSwitchFromSignal(&sig_ctx);
+      } else {
+        NaClSwitchFromSignalTrusted(&sig_ctx);
       }
-
-      NaClSwitchFromSignal(&sig_ctx);
 
       NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
     }

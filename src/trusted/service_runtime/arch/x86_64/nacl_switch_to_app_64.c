@@ -27,23 +27,26 @@ bool lindgetpendingsignal(int, int);
 void lindsetpendingsignal(int, int, bool);
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
+NORETURN_PTR void (*NaClSwitchTrustedSignal)(struct NaClThreadContext *context);
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */
   NaClCPUFeaturesX86 *features = (NaClCPUFeaturesX86 *) nap->cpu_features;
   if (NaClGetCPUFeatureX86(features, NaClCPUFeatureX86_AVX)) {
     NaClSwitch = NaClSwitchAVX;
+    NaClSwitchTrustedSignal = NaClSwitchAVXTrustedSignal;
   } else {
     NaClSwitch = NaClSwitchSSE;
+    NaClSwitchTrustedSignal = NaClSwitchSSETrustedSignal;
   }
 }
 
-static void NaClMaskRestore(struct NaClAppThread* natp) {
+static bool NaClMaskRestore(struct NaClAppThread* natp) {
   pthread_t s = pthread_self();
   struct NaClExceptionFrame* rsp_frame;
   sigset_t toset;
   if(!lindgetpendingsignal(natp->nap->cage_id, s)) {
-    return;
+    return false;
   }
   lindsetpendingsignal(natp->nap->cage_id, s, false);
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
@@ -51,6 +54,23 @@ static void NaClMaskRestore(struct NaClAppThread* natp) {
   memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));
   memset(&natp->previous_sigmask, 0, sizeof(sigset_t));
   pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //is this exactly what we want if we call sigprocmask?
+  return true;
+}
+
+/*
+ * Not really different that NaClStartThreadInApp, since when we start
+ * a thread in x86_64 we do not need to save any extra state (e.g.,
+ * segment registers) as in the x86_32 case.  We do not, however, save
+ * the stack pointer, since o/w we will slowly exhaust the trusted
+ * stack.
+ */
+
+NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
+  if(NaClMaskRestore(natp)) {
+    NaClSwitchTrustedSignal(&natp->user);
+  } else {
+    NaClSwitch(&natp->user);
+  }
 }
 
 NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
@@ -103,20 +123,6 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
   /* This sets up a stack containing a return address that has unwind info. */
   NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitch);
 #else
-  NaClMaskRestore(natp);
-  NaClSwitch(context);
+  NaClSwitchToApp(natp);
 #endif
-}
-
-/*
- * Not really different that NaClStartThreadInApp, since when we start
- * a thread in x86_64 we do not need to save any extra state (e.g.,
- * segment registers) as in the x86_32 case.  We do not, however, save
- * the stack pointer, since o/w we will slowly exhaust the trusted
- * stack.
- */
-
-NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
-  NaClMaskRestore(natp);
-  NaClSwitch(&natp->user);
 }

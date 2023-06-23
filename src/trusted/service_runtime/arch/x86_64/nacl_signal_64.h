@@ -50,6 +50,7 @@ struct NaClSignalContext {
 };
 
 NORETURN void NaClSwitchFromSignal(struct NaClSignalContext* ctx);
+NORETURN void NaClSwitchFromSignalTrusted(struct NaClSignalContext* ctx);
 
 #endif /* !defined(__ASSEMBLER__) */
 
