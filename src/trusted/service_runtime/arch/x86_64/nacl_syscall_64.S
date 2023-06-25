@@ -256,6 +256,10 @@ ENDMACRO
         tls_syscall NaClGetTlsFastPath2, NaClGetTlsFastPath2RspRestored, NaClGetTlsFastPath2End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE2
 
 
+.data
+garbage:
+.quad 0
+.text
 .globl NaClTrampolineRegRestore
 .hidden NaClTrampolineRegRestore
 
@@ -287,4 +291,20 @@ NaClTrampolineRegRestore:
     addl $24, %esp #skip flags for now, other unused fields
     addq %r15, %rsp
     popfq #now restore flags from the duplicate location
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
+    pop garbage(%rip)
     jmp *%r14

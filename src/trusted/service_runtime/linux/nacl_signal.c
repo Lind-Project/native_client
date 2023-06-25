@@ -236,13 +236,13 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   natp->exception_flag = 1;
 
   if (natp->exception_stack == 0) {
-    new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
+     //uuhh account for redzone in untrusted
+    if(is_untrusted)
+	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
+    else
+  	  new_stack_ptr = natp->user.rsp;
   } else {
     new_stack_ptr = natp->exception_stack;
-  }
-
-  if (!is_untrusted) {
-    new_stack_ptr -= 8;
   }
 
   /* Allocate space for the stack frame, and ensure its alignment. */
