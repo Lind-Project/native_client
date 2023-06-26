@@ -175,6 +175,9 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
 void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
                                    const struct NaClSignalContext *regs,
                                    uint32_t context_user_addr);
+void NaClSignalSetUpExceptionFrameTrusted(volatile struct NaClExceptionFrame *frame,
+                                   const struct NaClAppThread *natp,
+                                   uint32_t context_user_addr);
 
 #if NACL_OSX
 

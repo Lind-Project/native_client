@@ -261,7 +261,10 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                                context);
 
   frame = (struct NaClExceptionFrame *) frame_addr;
-  NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
+  if(is_untrusted)
+    NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
+  else
+    NaClSignalSetUpExceptionFrameTrusted(frame, natp, context_user_addr);
   frame->return_addr = nap->mem_start + NACL_SYSCALL_START_ADDR
                        + (NACL_SYSCALL_BLOCK_SIZE * NACL_sys_reg_restore);
 
@@ -270,7 +273,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   regs->stack_ptr = new_stack_ptr;
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   natp->user.rdi = context_user_addr; /* Argument 1 */
-  natp->user.prog_ctr = NaClUserToSys(nap, lind_exception_handler);
+  natp->user.new_prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   natp->user.rsp = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
   /*
@@ -383,8 +386,6 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   if (natp != NULL) {
     if (DispatchToUntrustedHandler(natp, sig, &sig_ctx, is_untrusted)) {
-      NaClSignalContextToHandler(uc, &sig_ctx);
-
       /* Resume execution of code using the modified register state. */
       if (is_untrusted) {
         NaClStackSafetyNowOnUntrustedStack();

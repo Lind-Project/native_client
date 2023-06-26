@@ -182,6 +182,30 @@ void NaClSignalTestCrashOnStartup(void) {
   }
 }
 
+static void NaClUserRegisterStateFromSignalContextTrusted(
+    volatile NaClUserRegisterState *dest,
+    const struct NaClAppThread *src) {
+#define COPY_REG_NATP(reg) dest->reg = src->user.reg
+  COPY_REG_NATP(rax);
+  COPY_REG_NATP(rcx);
+  COPY_REG_NATP(rdx);
+  COPY_REG_NATP(rbx);
+  dest->stack_ptr = src->user.rsp;
+  COPY_REG_NATP(rbp);
+  COPY_REG_NATP(rsi);
+  COPY_REG_NATP(rdi);
+  COPY_REG_NATP(r8);
+  COPY_REG_NATP(r9);
+  COPY_REG_NATP(r10);
+  COPY_REG_NATP(r11);
+  COPY_REG_NATP(r12);
+  COPY_REG_NATP(r13);
+  COPY_REG_NATP(r14);
+  COPY_REG_NATP(r15);
+  dest->flags = 0;
+  dest->prog_ctr = src->user.prog_ctr;
+}
+
 static void NaClUserRegisterStateFromSignalContext(
     volatile NaClUserRegisterState *dest,
     const struct NaClSignalContext *src) {
@@ -326,5 +350,54 @@ void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   frame->flags_duplicate = regs->flags;
+#endif
+}
+void NaClSignalSetUpExceptionFrameTrusted(volatile struct NaClExceptionFrame *frame,
+                                   const struct NaClAppThread *natp,
+                                   uint32_t context_user_addr) {
+  unsigned i;
+
+  /*
+   * Use the end of frame->portable for the size, avoiding padding
+   * added after it within NaClExceptionFrame.
+   */
+  frame->context.size =
+      (uint32_t) ((uintptr_t) (&frame->portable + 1) -
+                  (uintptr_t) &frame->context);
+  frame->context.portable_context_offset =
+      (uint32_t) ((uintptr_t) &frame->portable -
+                  (uintptr_t) &frame->context);
+  frame->context.portable_context_size = sizeof(frame->portable);
+  frame->context.arch = NACL_ELF_E_MACHINE;
+  frame->context.regs_size = sizeof(frame->context.regs);
+
+  /* Avoid memset() here because |frame| is volatile. */
+  for (i = 0; i < NACL_ARRAY_SIZE(frame->context.reserved); i++) {
+    frame->context.reserved[i] = 0;
+  }
+
+  NaClUserRegisterStateFromSignalContextTrusted(&frame->context.regs, natp);
+
+  frame->portable.prog_ctr = (uint32_t) natp->user.prog_ctr;
+  frame->portable.stack_ptr = (uint32_t) natp->user.rsp;
+
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
+  frame->context_ptr = context_user_addr;
+  frame->portable.frame_ptr = (uint32_t) natp->user.ebp;
+#elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
+  UNREFERENCED_PARAMETER(context_user_addr);
+  frame->portable.frame_ptr = (uint32_t) natp->user.rbp;
+#elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
+  UNREFERENCED_PARAMETER(context_user_addr);
+  frame->portable.frame_ptr = natp->user.r11;
+#elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_mips
+  UNREFERENCED_PARAMETER(context_user_addr);
+  frame->portable.frame_ptr = natp->user.frame_ptr;
+#else
+# error Unsupported architecture
+#endif
+
+#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
+  frame->flags_duplicate = 0;
 #endif
 }
