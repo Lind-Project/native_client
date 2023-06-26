@@ -273,6 +273,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   regs->stack_ptr = new_stack_ptr;
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   natp->user.rdi = context_user_addr; /* Argument 1 */
+  natp->user.prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   natp->user.new_prog_ctr = NaClUserToSys(nap, lind_exception_handler);
   natp->user.rsp = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
