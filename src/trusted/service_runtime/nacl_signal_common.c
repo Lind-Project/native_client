@@ -203,7 +203,7 @@ static void NaClUserRegisterStateFromSignalContextTrusted(
   COPY_REG_NATP(r14);
   COPY_REG_NATP(r15);
   dest->flags = 0;
-  dest->prog_ctr = src->user.prog_ctr;
+  dest->prog_ctr = src->user.new_prog_ctr;
 }
 
 static void NaClUserRegisterStateFromSignalContext(
