@@ -113,6 +113,10 @@ int lind_chdir (const char *name, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_chdir, cstr, name);
 }
 
+int lind_fchdir(int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
+}
+
 int lind_mkdir (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_mkdir, cstr, path, int, mode);
 }
@@ -127,10 +131,6 @@ int lind_chmod (const char *path, int mode, int cageid) {
 
 int lind_fchmod(int fd, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fchmod, int, fd, int, mode); 
-}
-
-int lind_fchdir(int fd, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
 }
 
 int lind_mknod(const char *path, int mode, unsigned long long dev, int cageid) {
