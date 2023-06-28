@@ -113,7 +113,7 @@ int lind_chdir (const char *name, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_chdir, cstr, name);
 }
 
-int lind_fchdir(int fd, int cageid) {
+int lind_fchdir (int fd, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
 }
 
