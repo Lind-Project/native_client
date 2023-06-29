@@ -238,9 +238,9 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   if (natp->exception_stack == 0) {
      //uuhh account for redzone in untrusted
     if(is_untrusted)
-	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
+	  new_stack_ptr = regs->stack_ptr - NACL_STACK_RED_ZONE;
     else
-  	  new_stack_ptr = natp->user.rsp;
+	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
   } else {
     new_stack_ptr = natp->exception_stack;
   }

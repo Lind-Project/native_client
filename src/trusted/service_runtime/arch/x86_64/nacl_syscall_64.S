@@ -291,4 +291,5 @@ NaClTrampolineRegRestore:
     addl $24, %esp #skip flags for now, other unused fields
     addq %r15, %rsp
     popfq #now restore flags from the duplicate location
+    leaq 128(%rsp), %rsp
     jmp *%r14
