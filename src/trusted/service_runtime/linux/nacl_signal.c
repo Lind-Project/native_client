@@ -61,7 +61,7 @@ void NaClSignalHandlerSet(NaClSignalHandler func) {
 }
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
-void lindsetpendingsignal(int, int, bool);
+void lindsetpendingsignal(unsigned long int cageid, unsigned long int pthreadid, bool toggle);
 _Thread_local bool single_stepping = false;
 #endif
 
