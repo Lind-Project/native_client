@@ -23,8 +23,8 @@
 # define NORETURN_PTR NORETURN
 #endif
 
-bool lindgetpendingsignal(int, int);
-void lindsetpendingsignal(int, int, bool);
+bool lindgetpendingsignal(unsigned long int cageid, unsigned long int pthreadid);
+void lindsetpendingsignal(unsigned long int cageid, unsigned long int pthreadid, bool toggle);
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 NORETURN_PTR void (*NaClSwitchTrustedSignal)(struct NaClThreadContext *context);
