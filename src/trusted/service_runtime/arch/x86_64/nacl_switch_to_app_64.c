@@ -50,7 +50,7 @@ static bool NaClMaskRestore(struct NaClAppThread* natp) {
   }
   lindsetpendingsignal(natp->nap->cage_id, s, false);
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
-  rsp_frame->context.regs.rax = natp->user.rax;
+  rsp_frame->context.regs.rax = natp->user.sysret;
   memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));
   memset(&natp->previous_sigmask, 0, sizeof(sigset_t));
   pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //is this exactly what we want if we call sigprocmask?
