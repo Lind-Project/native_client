@@ -23,9 +23,6 @@
 # define NORETURN_PTR NORETURN
 #endif
 
-bool lindgetpendingsignal(unsigned long int cageid, unsigned long int pthreadid);
-void lindsetpendingsignal(unsigned long int cageid, unsigned long int pthreadid, bool toggle);
-
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 NORETURN_PTR void (*NaClSwitchTrustedSignal)(struct NaClThreadContext *context);
 
@@ -42,13 +39,13 @@ void NaClInitSwitchToApp(struct NaClApp *nap) {
 }
 
 static bool NaClMaskRestore(struct NaClAppThread* natp) {
-  pthread_t s = pthread_self();
   struct NaClExceptionFrame* rsp_frame;
   sigset_t toset;
-  if(!lindgetpendingsignal(natp->nap->cage_id, s)) {
+  natp->signatpflag = false;
+  if(!natp->pendingsignal) {
     return false;
   }
-  lindsetpendingsignal(natp->nap->cage_id, s, false);
+  natp->pendingsignal = false;
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
   rsp_frame->context.regs.rax = natp->user.sysret;
   memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));

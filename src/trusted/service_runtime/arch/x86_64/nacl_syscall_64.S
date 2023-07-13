@@ -212,6 +212,7 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegRegsSaved):
         hlt
         /* noret */
 #endif
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegEnd):
 
         /*
          * untrusted stack after call to NaClSyscallCSegHook:

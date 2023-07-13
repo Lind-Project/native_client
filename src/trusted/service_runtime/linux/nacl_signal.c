@@ -56,14 +56,14 @@ static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
 static NaClSignalHandler g_handler_func;
 uint32_t lindgetsighandler(uint64_t cagenum, int signo);
 
+extern void NaClSyscallCSegHook(void*);
+extern void NaClSyscallCSegHookInitialized(void); //These are not real function pointers but we just need the address
+extern void NaClSyscallSeg(void);
+extern void NaClSyscallSegEnd(void);
+
 void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
 }
-
-#if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
-void lindsetpendingsignal(unsigned long int cageid, unsigned long int pthreadid, bool toggle);
-_Thread_local bool single_stepping = false;
-#endif
 
 /*
  * Returns, via is_untrusted, whether the signal happened while
@@ -229,14 +229,50 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     sigset_t newset;
     sigfillset(&newset);
     pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
-    pthread_t s = pthread_self();
-    lindsetpendingsignal(natp->nap->cage_id, s, true);
+    natp->pendingsignal = true;
+
+    if (!natp->signatpflag) {
+      /* we need to handle the signal differently when the syscall is entering or exiting
+       * if it's entering and the natp has not been initialized yet we need to manually
+       * initialize the natp from values on the user stack. If it's exiting and has already
+       * copied out some of the key values (i.e. the stack pointer) from the natp to user
+       * registers then we need to re-copy everything back from the natp to user registers.
+       * We can know whether it's iu the relevant syscall entry code by statically checking
+       * the rip address 
+       */
+      void *pc = (void*) natp->user.prog_ctr; //pointer to function pointer for compiler warning suppression
+      if(pc >= (void*) &NaClSyscallSeg && pc < (void*) &NaClSyscallSegEnd) {
+        //syscall start, manually populate natp for callee saved registers
+        if(natp->user.rbx != regs->rbx)
+          natp->user.rbx = regs->rbx;
+
+        if(natp->user.rbp != regs->rbp)
+          natp->user.rbp = regs->rbp;
+
+        if(natp->user.rsp != regs->stack_ptr + 8)
+          natp->user.rsp = regs->stack_ptr + 8; //to correspond to the lea in NaClSyscallSeg
+
+        if(natp->user.r12 != regs->r12)
+          natp->user.r12 = regs->r12;
+
+        if(natp->user.r13 != regs->r13)
+          natp->user.r13 = regs->r13;
+
+        if(natp->user.r14 != regs->r14)
+          natp->user.r14 = regs->r14;
+      } else if (!(pc >= (void*) &NaClSyscallCSegHook && pc < (void*) &NaClSyscallCSegHookInitialized)) {
+        //syscall end, re-run register copy-out
+        regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
+        regs->rdi = (uintptr_t) natp;
+        regs->stack_ptr = natp->user.trusted_stack_ptr; //in case rsp is restored, making sure we stay on the trusted stack
+      } //otherwise we are in syscall start but everything is already known to be ok
+    }
   }
 
   natp->exception_flag = 1;
 
   if (natp->exception_stack == 0) {
-     //uuhh account for redzone in untrusted
+    //account for redzone in untrusted
     if(is_untrusted)
 	  new_stack_ptr = regs->stack_ptr - NACL_STACK_RED_ZONE;
     else

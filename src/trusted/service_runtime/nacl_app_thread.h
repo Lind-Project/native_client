@@ -82,6 +82,9 @@ struct NaClAppThread {
    */
   struct NaClThreadContext  user;
 
+  bool                      signatpflag; //is the natp set up to receive signals?
+  bool                      pendingsignal;
+
   struct NaClMutex          mu;
 
   /*

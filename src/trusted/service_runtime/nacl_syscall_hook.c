@@ -89,12 +89,16 @@ static void HandleStackContext(struct NaClAppThread *natp,
 }
 
 NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
+  //The NaClAppThreadFromThreadContext function is inline so signal catching is fine
   struct NaClAppThread      *natp = NaClAppThreadFromThreadContext(ntcp);
   struct NaClApp            *nap;
   uint32_t                  tramp_ret;
   size_t                    sysnum;
   uintptr_t                 sp_user;
   uint32_t                  sysret;
+
+  natp->signatpflag = true;
+  asm("\t.global NaClSyscallCSegHookInitialized\n\tNaClSyscallCSegHookInitialized:\n");
 
   /*
    * Mark the thread as running on a trusted stack as soon as possible
