@@ -349,9 +349,7 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
-    (void) fd;
-    (void) operation;
-    DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_flock, int, fd, int, operation);
 }
 
 int lind_pipe(int* pipefds, int cageid) {
