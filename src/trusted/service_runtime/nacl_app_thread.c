@@ -467,6 +467,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
 
   natp->signatpflag = false;
   natp->pendingsignal = false;
+  natp->single_stepping_signum = 0;
 
   natp->thread_num = -1;  /* illegal index */
   natp->host_thread_is_defined = 0;

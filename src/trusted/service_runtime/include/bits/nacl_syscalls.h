@@ -111,6 +111,7 @@
 #define NACL_sys_exception_stack        88
 #define NACL_sys_exception_clear_flag   89
 
+
 #define NACL_sys_sem_create             100
 #define NACL_sys_sem_wait               101
 #define NACL_sys_sem_post               102
@@ -119,10 +120,6 @@
 #define NACL_sys_dyncode_create         104
 #define NACL_sys_dyncode_modify         105
 #define NACL_sys_dyncode_delete         106
-
-#define NACL_sys_reg_restore            107
-//We need to reserve a second slot as the reg restoration takes more than 32 bytes
-#define __reg_restore_reserved_slot2    108
 
 #define NACL_sys_test_infoleak          109
 #define NACL_sys_test_crash             110
@@ -180,6 +177,12 @@
 
 #define NACL_sys_sigaction		160
 #define NACL_sys_kill			161
+
+#define NACL_sys_reg_restore            250
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore_reserved_slot2    251
+#define __reg_restore_reserved_slot3    252
+
 
 #define NACL_MAX_SYSCALLS               256
 

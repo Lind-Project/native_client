@@ -225,7 +225,36 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     return 0; // I believe this prevents double faults
   }
 
-  if (!is_untrusted) {
+  if(sig == SIGTRAP && natp->single_stepping_signum) {
+    if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
+      regs->flags &= ~0x100; //get rid of the trap flag
+      sig = natp->single_stepping_signum; //overwrite SIGTRAP
+      natp->single_stepping_signum = 0;
+      pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //reset the sigmask
+    }
+  }
+  if (is_untrusted) {
+    /* Untrusted faults need to be caught on addresses aligned on 32 byte boundaries in code
+     * this is to allow us to mask off addresses to 32 byte and to ensure that we don't need
+     * to return to the middle of a pseudo instruction which could cause errors with rsp and
+     * also would present a huge security vulnerability in NaCl's security model. As all jmp
+     * and call targets must be 32 byte aligned there is no chance of an infinite loop.
+     * There is a possibility that the 32 byte aligned address we reach next is in trusted,
+     * but there need be no specific handling of it.
+     */
+    if(regs->prog_ctr & 31) {
+      if(!natp->single_stepping_signum)  {
+        //We block all signals as we can't recieve other signals after the 32 byte boundary
+        sigset_t newset;
+        sigfillset(&newset);
+        sigdelset(&newset, SIGTRAP);
+        natp->single_stepping_signum = sig;
+        pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
+        regs->flags |= 0x100; //set the trap flag on return
+      }
+      return -1;
+    }
+  } else {
     sigset_t newset;
     sigfillset(&newset);
     pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
@@ -421,21 +450,28 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 
   if (natp != NULL) {
-    if (DispatchToUntrustedHandler(natp, sig, &sig_ctx, is_untrusted)) {
-      /* Resume execution of code using the modified register state. */
-      if (is_untrusted) {
-        NaClStackSafetyNowOnUntrustedStack();
+    switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, is_untrusted)) {
+      case -1:
+        NaClSignalContextToHandler(uc, &sig_ctx);
+        return;
+      case 0:
+        break;
+      default:
+        /* Resume execution of code using the modified register state. */
+        if (is_untrusted) {
+            NaClStackSafetyNowOnUntrustedStack();
 
-        //clobber for restore
-        sig_ctx.prog_ctr = natp->user.new_prog_ctr;
-        sig_ctx.stack_ptr = natp->user.rsp;
-        sig_ctx.rdi = natp->user.rdi;
-        NaClSwitchFromSignal(&sig_ctx);
-      } else {
-        NaClSwitchFromSignalTrusted(&sig_ctx);
-      }
+            //clobber for restore
+            sig_ctx.prog_ctr = natp->user.new_prog_ctr;
+            sig_ctx.stack_ptr = natp->user.rsp;
+            sig_ctx.rdi = natp->user.rdi;
+            NaClSwitchFromSignal(&sig_ctx);
+        } else {
+            NaClSwitchFromSignalTrusted(&sig_ctx);
+        }
 
-      NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
+        NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");
+        break;
     }
   }
 

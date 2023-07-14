@@ -264,6 +264,7 @@ garbage:
 .globl NaClTrampolineRegRestore
 .hidden NaClTrampolineRegRestore
 
+.align 32
 NaClTrampolineRegRestore:
     addl $64, %esp /* skip unused fields */
     addq %r15, %rsp
@@ -283,14 +284,16 @@ NaClTrampolineRegRestore:
     popq %r11
     popq %r12
     popq %r13
-    nop #align to bundle boundary
+.align 32
     addl $16, %esp # skip restoring r14, r15
     addq %r15, %rsp
     popq %r14
-    movl %r14d, %r14d
-    addq %r15, %r14
     addl $24, %esp #skip flags for now, other unused fields
     addq %r15, %rsp
+.align 32
+    andl $0xffffffe0, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
     leaq 136(%rsp), %rsp
     jmp *%r14
