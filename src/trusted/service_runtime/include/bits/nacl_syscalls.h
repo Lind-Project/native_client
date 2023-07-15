@@ -173,7 +173,7 @@
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
-#define NACL_sys_mknod                  160
+
 #define NACL_sys_fchdir                 161
 
 #define NACL_MAX_SYSCALLS               256
