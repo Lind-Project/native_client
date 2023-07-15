@@ -22,7 +22,7 @@
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
     arg2.dispatch_ulong = 0; \
-    arg3.dispatch_ulong = 0; \
+    arg3.dispatch_ulong_long = 0; \
     arg4.dispatch_ulong = 0; \
     arg5.dispatch_ulong = 0; \
     arg6.dispatch_ulong = 0 //no semicolon here to force macro caller to place one for neatness
@@ -131,6 +131,10 @@ int lind_chmod (const char *path, int mode, int cageid) {
 
 int lind_fchmod(int fd, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fchmod, int, fd, int, mode); 
+}
+
+int lind_mknod(const char *path, int mode, unsigned long long dev, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_mknod, cstr, path, int, mode, ulong_long, dev);
 }
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
@@ -345,9 +349,7 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
-    (void) fd;
-    (void) operation;
-    DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_flock, int, fd, int, operation);
 }
 
 int lind_pipe(int* pipefds, int cageid) {
