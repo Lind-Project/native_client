@@ -176,8 +176,6 @@
 #define NACL_sys_mknod                  160
 #define NACL_sys_fchdir                 161
 
-#define NACL_sys_fchdir                 161
-
 #define NACL_MAX_SYSCALLS               256
 
 #endif
