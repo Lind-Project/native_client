@@ -242,7 +242,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
      * There is a possibility that the 32 byte aligned address we reach next is in trusted,
      * but there need be no specific handling of it.
      */
-    if(regs->prog_ctr & 31) {
+    if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGILL) {
       if(!natp->single_stepping_signum)  {
         //We block all signals as we can't recieve other signals after the 32 byte boundary
         sigset_t newset;
@@ -430,6 +430,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     NaClSetGs(natp->user.trusted_gs);
   }
 #endif
+
 
   // we've called thread suspend from the fatal handler, we can safely exit the thread here
   struct NaClThread *host_thread;

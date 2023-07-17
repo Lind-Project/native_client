@@ -87,9 +87,11 @@ void NaClSignalContextToHandler(void *raw_ctx,
   mctx->gregs[REG_EFL] = sig_ctx->flags;
 
   /* Linux stores CS, GS, FS, PAD into one 64b word. */
+  /* Somehow changing the padding word */
   mctx->gregs[REG_CSGSFS] = ((uint64_t) (sig_ctx->cs & 0xFFFF))
                           | (((uint64_t) (sig_ctx->gs & 0xFFFF)) << 16)
-                          | (((uint64_t) (sig_ctx->fs & 0xFFFF)) << 32);
+                          | (((uint64_t) (sig_ctx->fs & 0xFFFF)) << 32)
+                          | (((uint64_t) (mctx->gregs[REG_CSGSFS] >> 48 & 0xFFFF)) << 48);
 
   /*
    * We do not support modification of DS & SS in 64b, so
