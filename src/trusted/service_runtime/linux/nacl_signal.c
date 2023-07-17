@@ -215,6 +215,17 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     return 0;
   }
   */
+  // This must be before the lindgetsighandler call
+  if(sig == SIGTRAP && natp->single_stepping_signum) {
+    if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
+      regs->flags &= ~0x100; //get rid of the trap flag
+      sig = natp->single_stepping_signum; //overwrite SIGTRAP
+      natp->single_stepping_signum = 0;
+      pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //reset the sigmask
+    } else {
+      return -1;
+    }
+  }
 
   lind_exception_handler = lindgetsighandler(nap->cage_id, sig);
 
@@ -225,14 +236,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     return 0; // I believe this prevents double faults
   }
 
-  if(sig == SIGTRAP && natp->single_stepping_signum) {
-    if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
-      regs->flags &= ~0x100; //get rid of the trap flag
-      sig = natp->single_stepping_signum; //overwrite SIGTRAP
-      natp->single_stepping_signum = 0;
-      pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //reset the sigmask
-    }
-  }
   if (is_untrusted) {
     /* Untrusted faults need to be caught on addresses aligned on 32 byte boundaries in code
      * this is to allow us to mask off addresses to 32 byte and to ensure that we don't need
