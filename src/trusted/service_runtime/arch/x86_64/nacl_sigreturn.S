@@ -69,11 +69,14 @@ NaClSwitchFromSignalTrusted:
         movq NACL_SIGNAL_CONTEXT_RDX_OFFSET(%r11), %rdx
         movq NACL_SIGNAL_CONTEXT_RDI_OFFSET(%r11), %rdi
         movq NACL_SIGNAL_CONTEXT_RSI_OFFSET(%r11), %rsi
-        movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
         movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
-        pushq NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11)
+        movq NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %rbp
+        movq %rbp, -160(%rsp)
+        movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
+        subq $128, %rsp
         pushq NACL_SIGNAL_CONTEXT_FLAGS_OFFSET(%r11)
         pushq NACL_SIGNAL_CONTEXT_R11_OFFSET(%r11)
         popq %r11
         popfq
-        ret # we are free to hijack the trusted stack safely
+        leaq 128(%rsp), %rsp
+        jmp *-160(%rsp)
