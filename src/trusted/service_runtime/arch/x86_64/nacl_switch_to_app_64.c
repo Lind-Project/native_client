@@ -24,17 +24,14 @@
 #endif
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
-NORETURN_PTR void (*NaClSwitchTrustedSignal)(struct NaClThreadContext *context);
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */
   NaClCPUFeaturesX86 *features = (NaClCPUFeaturesX86 *) nap->cpu_features;
   if (NaClGetCPUFeatureX86(features, NaClCPUFeatureX86_AVX)) {
     NaClSwitch = NaClSwitchAVX;
-    NaClSwitchTrustedSignal = NaClSwitchAVXTrustedSignal;
   } else {
     NaClSwitch = NaClSwitchSSE;
-    NaClSwitchTrustedSignal = NaClSwitchSSETrustedSignal;
   }
 }
 
@@ -63,11 +60,8 @@ static bool NaClMaskRestore(struct NaClAppThread* natp) {
  */
 
 NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
-  if(NaClMaskRestore(natp)) {
-    NaClSwitchTrustedSignal(&natp->user);
-  } else {
-    NaClSwitch(&natp->user);
-  }
+  NaClMaskRestore(natp);
+  NaClSwitch(&natp->user);
 }
 
 NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,

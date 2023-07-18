@@ -221,7 +221,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       regs->flags &= ~0x100; //get rid of the trap flag
       sig = natp->single_stepping_signum; //overwrite SIGTRAP
       natp->single_stepping_signum = 0;
-      pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //reset the sigmask
     } else {
       return -1;
     }
@@ -248,11 +247,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGILL) {
       if(!natp->single_stepping_signum)  {
         //We block all signals as we can't recieve other signals after the 32 byte boundary
-        sigset_t newset;
-        sigfillset(&newset);
-        sigdelset(&newset, SIGTRAP);
         natp->single_stepping_signum = sig;
-        pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
         regs->flags |= 0x100; //set the trap flag on return
       }
       return -1;

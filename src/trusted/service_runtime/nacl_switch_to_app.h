@@ -32,8 +32,6 @@ void NaClInitSwitchToApp(struct NaClApp *nap);
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
 extern NORETURN void NaClSwitchAVX(struct NaClThreadContext *context);
 extern NORETURN void NaClSwitchSSE(struct NaClThreadContext *context);
-extern NORETURN void NaClSwitchAVXTrustedSignal(struct NaClThreadContext *context);
-extern NORETURN void NaClSwitchSSETrustedSignal(struct NaClThreadContext *context);
 extern NORETURN void NaClSwitchNoSSE(struct NaClThreadContext *context);
 extern NORETURN void NaClSwitchSavingStackPtr(
     struct NaClThreadContext *user_context,
