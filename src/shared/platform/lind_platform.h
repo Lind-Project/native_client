@@ -125,15 +125,16 @@
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
+#define LIND_safe_sys_sigaction		    147
+#define LIND_safe_sys_kill		        148
 
-#define LIND_safe_sys_sigaction		147
-#define LIND_safe_sys_kill		148
-
+#define LIND_safe_fs_fchdir		        161
 
 union RustArg {
     int dispatch_int;
     unsigned int dispatch_uint;
     long unsigned int dispatch_ulong;
+    long long unsigned int dispatch_ulong_long;
     long int dispatch_long;
     size_t dispatch_size_t;
     ssize_t dispatch_ssize_t;
@@ -160,6 +161,9 @@ union RustArg {
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
                union RustArg arg3, union RustArg arg4, union RustArg arg5, union RustArg arg6);
+
+int quick_write(int fd, const void *buf, size_t count, int cageid);
+int quick_read(int fd, void *buf, int size, int cageid);
 void lindcancelinit(unsigned long int cageid);
 void lindsetthreadkill(unsigned long int cageid, unsigned long int pthreadid, bool kill);   
 bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid);
@@ -180,6 +184,9 @@ int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
 int lind_chmod (const char *path, int mode, int cageid);
 int lind_fchmod (int fd, int mode, int cageid);
+
+int lind_fchdir(int fd, int cageid);
+
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);

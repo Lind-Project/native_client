@@ -113,6 +113,10 @@ int lind_chdir (const char *name, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_chdir, cstr, name);
 }
 
+int lind_fchdir (int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
+}
+
 int lind_mkdir (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_mkdir, cstr, path, int, mode);
 }
@@ -341,9 +345,7 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
-    (void) fd;
-    (void) operation;
-    DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_flock, int, fd, int, operation);
 }
 
 int lind_pipe(int* pipefds, int cageid) {

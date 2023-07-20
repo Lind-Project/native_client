@@ -171,12 +171,15 @@
 #define NACL_sys_getpeername            145
 #define NACL_sys_getifaddrs             146
 
+#define NACL_sys_sigaction		        147
+#define NACL_sys_kill			        148
+
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
+#define NACL_sys_fchdir                 161
 
-#define NACL_sys_sigaction		160
-#define NACL_sys_kill			161
+
 
 #define NACL_sys_reg_restore            250
 //We need to reserve more slots as the reg restoration takes more than 32 bytes

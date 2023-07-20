@@ -299,8 +299,12 @@ SYSCALL_LIST = [
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
     ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
+<<<<<<< HEAD
     ('NACL_sys_sigaction', 'NaClSysSigaction', ['int sig', 'const struct nacl_abi_sigaction *act', 'struct nacl_abi_sigaction *ocat']),
     ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig'])
+=======
+    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int d']) 
+>>>>>>> develop
     ]
 
 
