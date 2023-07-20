@@ -46,7 +46,7 @@ static int s_Signals[] = {
 #endif
   SIGSYS, /* Used to support a seccomp-bpf sandbox. */
   NACL_THREAD_SUSPEND_SIGNAL,
-  SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV,
+  SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV, SIGCHLD, SIGALRM, SIGPIPE,
   /* Handle SIGABRT in case someone sends it asynchronously using kill(). */
   SIGABRT, SIGUSR1, SIGUSR2
 };
@@ -475,6 +475,11 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         break;
     }
   }
+  
+  if (sig == SIGCHLD) {
+        NaClSignalContextToHandler(uc, &sig_ctx);
+        return;
+  }
 
   if (g_handler_func != NULL) {
     g_handler_func(sig, &sig_ctx, is_untrusted);
@@ -492,6 +497,9 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   // Lind: If we segfault on a user address (presumably because it was unmapped between check and use), we can call that an untrusted fault
   if ((sig == SIGSEGV) && ((uintptr_t)info->si_addr & ~(natp->nap->addr_bits))) is_untrusted = true;
+
+  // Lind: if we get SIGPIPE set to one of the cage threads its interal and we can shutdown gracefully
+  if ((sig == SIGPIPE) && (natp != NULL)) is_untrusted = true;
 
   NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
