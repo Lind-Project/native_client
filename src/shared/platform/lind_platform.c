@@ -407,3 +407,7 @@ int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_ab
 int lind_kill(int targetcageid, int sig, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_sys_kill, int, targetcageid, int, sig);
 }
+
+int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sys_sigprocmask, int, how, constnaclsigset, nacl_set, naclsigset, nacl_oldset);
+}

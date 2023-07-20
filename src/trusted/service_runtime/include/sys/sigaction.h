@@ -4,13 +4,9 @@
 #include <signal.h>
 #include <stdint.h>
 
-struct nacl_sigset {
-	unsigned long int val[16];
-};
-
 struct nacl_abi_sigaction {
 	uint32_t __sa_handler;
-	struct nacl_sigset sa_mask;
+	uint64_t sa_mask;
 	int sa_flags;
 };
 
