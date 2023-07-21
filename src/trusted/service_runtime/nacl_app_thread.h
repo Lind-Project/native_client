@@ -160,9 +160,6 @@ struct NaClAppThread {
    */
   int                       dynamic_delete_generation;
 
-  /* Sigmask to restore for return from trusted */
-  sigset_t                  previous_sigmask;
-
   int                       single_stepping_signum; //0 to indicate none
   bool                      pendingsignal; 
 };

@@ -56,10 +56,16 @@ static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
 static NaClSignalHandler g_handler_func;
 uint32_t lindgetsighandler(uint64_t cagenum, int signo);
 
-extern void NaClSyscallCSegHook(void*);
-extern void NaClSyscallCSegHookInitialized(void); //These are not real function pointers but we just need the address
+extern char NaClSyscallCSegHook;
+extern char NaClSyscallCSegHookInitialized; //These are not real function pointers but we just need the address
 extern void NaClSyscallSeg(void);
-extern void NaClSyscallSegEnd(void);
+extern char NaClSyscallSegEnd;
+extern char NaClGetTlsFastPath1;
+extern char NaClGetTlsFastPath1RspRestored;
+extern char NaClGetTlsFastPath1End;
+extern char NaClGetTlsFastPath2;
+extern char NaClGetTlsFastPath2RspRestored;
+extern char NaClGetTlsFastPath2End;
 
 void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
@@ -202,7 +208,7 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
 static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                       int sig,
                                       struct NaClSignalContext *regs,
-                                      int is_untrusted) {
+                                      int* is_untrusted) {
   struct NaClApp *nap = natp->nap;
   uintptr_t frame_addr;
   volatile struct NaClExceptionFrame *frame;
@@ -235,7 +241,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     return 0; // I believe this prevents double faults
   }
 
-  if (is_untrusted) {
+  if (*is_untrusted) {
     /* Untrusted faults need to be caught on addresses aligned on 32 byte boundaries in code
      * this is to allow us to mask off addresses to 32 byte and to ensure that we don't need
      * to return to the middle of a pseudo instruction which could cause errors with rsp and
@@ -244,7 +250,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
      * There is a possibility that the 32 byte aligned address we reach next is in trusted,
      * but there need be no specific handling of it.
      */
-    if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGILL) {
+    if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGFPE) {
       if(!natp->single_stepping_signum)  {
         //We block all signals as we can't recieve other signals after the 32 byte boundary
         natp->single_stepping_signum = sig;
@@ -253,9 +259,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       return -1;
     }
   } else {
-    sigset_t newset;
-    sigfillset(&newset);
-    pthread_sigmask(SIG_BLOCK, &newset, &natp->previous_sigmask);
     natp->pendingsignal = true;
 
     if (!natp->signatpflag) {
@@ -267,8 +270,34 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
        * We can know whether it's iu the relevant syscall entry code by statically checking
        * the rip address 
        */
-      void *pc = (void*) natp->user.prog_ctr; //pointer to function pointer for compiler warning suppression
-      if(pc >= (void*) &NaClSyscallSeg && pc < (void*) &NaClSyscallSegEnd) {
+      char *pc = (void*) regs->prog_ctr; //pointer to function pointer for compiler warning suppression
+      if (pc >= &NaClGetTlsFastPath1 &&
+          pc < &NaClGetTlsFastPath1End) {
+        *is_untrusted = -1;
+        natp->user.rbx = regs->rbx;
+        natp->user.rbp = regs->rbp;
+        natp->user.rsp = regs->stack_ptr;
+        natp->user.r12 = regs->r12;
+        natp->user.r13 = regs->r13;
+        natp->user.r14 = regs->r14;
+        if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath1RspRestored) {
+          natp->user.rsp += 8;  /* Pop user return address */
+        }
+        natp->pendingsignal = false;
+      } else if (pc >= &NaClGetTlsFastPath2 &&
+        pc < &NaClGetTlsFastPath2End) {
+        *is_untrusted = -1;
+        natp->user.rbx = regs->rbx;
+        natp->user.rbp = regs->rbp;
+        natp->user.rsp = regs->stack_ptr;
+        natp->user.r12 = regs->r12;
+        natp->user.r13 = regs->r13;
+        natp->user.r14 = regs->r14;
+        if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath2RspRestored) {
+          natp->user.rsp += 8;  /* Pop user return address */
+        }
+        natp->pendingsignal = false;
+      } else if(pc >= (char*) &NaClSyscallSeg && pc < &NaClSyscallSegEnd) {
         //syscall start, manually populate natp for callee saved registers
         if(natp->user.rbx != regs->rbx)
           natp->user.rbx = regs->rbx;
@@ -277,7 +306,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
           natp->user.rbp = regs->rbp;
 
         if(natp->user.rsp != regs->stack_ptr + 8)
-          natp->user.rsp = regs->stack_ptr + 8; //to correspond to the lea in NaClSyscallSeg
+          natp->user.rsp = regs->stack_ptr; //to correspond to the lea in NaClSyscallSeg
 
         if(natp->user.r12 != regs->r12)
           natp->user.r12 = regs->r12;
@@ -287,7 +316,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
         if(natp->user.r14 != regs->r14)
           natp->user.r14 = regs->r14;
-      } else if (!(pc >= (void*) &NaClSyscallCSegHook && pc < (void*) &NaClSyscallCSegHookInitialized)) {
+      } else if (!(pc >= &NaClSyscallCSegHook && pc < &NaClSyscallCSegHookInitialized)) {
         //syscall end, re-run register copy-out
         regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
         regs->rdi = (uintptr_t) natp;
@@ -300,8 +329,10 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
   if (natp->exception_stack == 0) {
     //account for redzone in untrusted
-    if(is_untrusted)
+    if(*is_untrusted > 0)
 	  new_stack_ptr = regs->stack_ptr - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
+    else if(*is_untrusted == -1)
+	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
     else
 	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
   } else {
@@ -324,7 +355,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                                context);
 
   frame = (struct NaClExceptionFrame *) frame_addr;
-  if(is_untrusted)
+  if(*is_untrusted > 0)
     NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
   else
     NaClSignalSetUpExceptionFrameTrusted(frame, natp, context_user_addr);
@@ -449,7 +480,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 
   if (natp != NULL) {
-    switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, is_untrusted)) {
+    switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, &is_untrusted)) {
       case -1:
         NaClSignalContextToHandler(uc, &sig_ctx);
         return;
@@ -457,7 +488,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         break;
       default:
         /* Resume execution of code using the modified register state. */
-        if (is_untrusted) {
+        if (is_untrusted > 0) {
             NaClStackSafetyNowOnUntrustedStack();
 
             //clobber for restore

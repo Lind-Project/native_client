@@ -37,7 +37,6 @@ void NaClInitSwitchToApp(struct NaClApp *nap) {
 
 static bool NaClMaskRestore(struct NaClAppThread* natp) {
   struct NaClExceptionFrame* rsp_frame;
-  sigset_t toset;
   natp->signatpflag = false;
   if(!natp->pendingsignal) {
     return false;
@@ -45,9 +44,6 @@ static bool NaClMaskRestore(struct NaClAppThread* natp) {
   natp->pendingsignal = false;
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
   rsp_frame->context.regs.rax = natp->user.sysret;
-  memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));
-  memset(&natp->previous_sigmask, 0, sizeof(sigset_t));
-  pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //is this exactly what we want if we call sigprocmask?
   return true;
 }
 
