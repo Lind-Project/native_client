@@ -50,7 +50,7 @@ struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
 
-void rustposix_thread_init();
+void rustposix_thread_init(uint64_t cageid);
 
 /*
  * dynamically allocate and initilize a copy
