@@ -476,7 +476,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     }
   }
   
-  if (sig == SIGCHLD) {
+  if (sig == SIGCHLD || sig == SIGUSR2) {
         NaClSignalContextToHandler(uc, &sig_ctx);
         return;
   }
