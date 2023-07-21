@@ -24,23 +24,19 @@
 #endif
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
-NORETURN_PTR void (*NaClSwitchTrustedSignal)(struct NaClThreadContext *context);
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */
   NaClCPUFeaturesX86 *features = (NaClCPUFeaturesX86 *) nap->cpu_features;
   if (NaClGetCPUFeatureX86(features, NaClCPUFeatureX86_AVX)) {
     NaClSwitch = NaClSwitchAVX;
-    NaClSwitchTrustedSignal = NaClSwitchAVXTrustedSignal;
   } else {
     NaClSwitch = NaClSwitchSSE;
-    NaClSwitchTrustedSignal = NaClSwitchSSETrustedSignal;
   }
 }
 
 static bool NaClMaskRestore(struct NaClAppThread* natp) {
   struct NaClExceptionFrame* rsp_frame;
-  sigset_t toset;
   natp->signatpflag = false;
   if(!natp->pendingsignal) {
     return false;
@@ -48,9 +44,6 @@ static bool NaClMaskRestore(struct NaClAppThread* natp) {
   natp->pendingsignal = false;
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
   rsp_frame->context.regs.rax = natp->user.sysret;
-  memcpy(&toset, &natp->previous_sigmask, sizeof(sigset_t));
-  memset(&natp->previous_sigmask, 0, sizeof(sigset_t));
-  pthread_sigmask(SIG_SETMASK, &natp->previous_sigmask, NULL); //is this exactly what we want if we call sigprocmask?
   return true;
 }
 
@@ -63,11 +56,8 @@ static bool NaClMaskRestore(struct NaClAppThread* natp) {
  */
 
 NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
-  if(NaClMaskRestore(natp)) {
-    NaClSwitchTrustedSignal(&natp->user);
-  } else {
-    NaClSwitch(&natp->user);
-  }
+  NaClMaskRestore(natp);
+  NaClSwitch(&natp->user);
 }
 
 NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,

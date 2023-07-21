@@ -186,18 +186,18 @@ static void NaClUserRegisterStateFromSignalContextTrusted(
     volatile NaClUserRegisterState *dest,
     const struct NaClAppThread *src) {
 #define COPY_REG_NATP(reg) dest->reg = src->user.reg
-  COPY_REG_NATP(rax);
-  COPY_REG_NATP(rcx);
-  COPY_REG_NATP(rdx);
+  dest->rax = 0;
+  dest->rcx = 0;
+  dest->rdx = 0;
+  dest->rdi = 0;
+  dest->rsi = 0;
+  dest->r8 = 0;
+  dest->r9 = 0;
+  dest->r10 = 0;
+  dest->r11 = 0;
   COPY_REG_NATP(rbx);
   dest->stack_ptr = src->user.rsp;
   COPY_REG_NATP(rbp);
-  COPY_REG_NATP(rsi);
-  COPY_REG_NATP(rdi);
-  COPY_REG_NATP(r8);
-  COPY_REG_NATP(r9);
-  COPY_REG_NATP(r10);
-  COPY_REG_NATP(r11);
   COPY_REG_NATP(r12);
   COPY_REG_NATP(r13);
   COPY_REG_NATP(r14);

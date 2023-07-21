@@ -30,6 +30,7 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
+#include "native_client/src/trusted/service_runtime/nacl_exception.h"
 
 
 /*
@@ -67,13 +68,19 @@ static void HandleStackContext(struct NaClAppThread *natp,
    * for control to have reached here, because nacl_syscall*.S writes
    * to the stack.
    */
-  sp_user = NaClGetThreadCtxSp(&natp->user);
+  if(natp->pendingsignal) {
+    sp_user = NaClGetThreadCtxSp(&natp->user) + sizeof(struct NaClExceptionFrame) + 136;
+  } else {
+    //TODO: Race condition if there is signal right here
+    sp_user = NaClGetThreadCtxSp(&natp->user);
+  }
   sp_sys = NaClUserToSysStackAddr(nap, sp_user);
   /*
    * Get the trampoline return address.  This just tells us which
    * trampoline was called (and hence the syscall number); we never
    * return to the trampoline.
    */
+
   tramp_ret = *(volatile uint32_t *) (sp_sys + NACL_TRAMPRET_FIX);
   /*
    * Get the user return address (where we return to after the system
@@ -82,7 +89,15 @@ static void HandleStackContext(struct NaClAppThread *natp,
    */
   user_ret = *(volatile uintptr_t *) (sp_sys + NACL_USERRET_FIX);
   user_ret = (nacl_reg_t) NaClSandboxCodeAddr(nap, (uintptr_t) user_ret);
-  natp->user.new_prog_ctr = user_ret;
+
+
+  if(natp->pendingsignal) {
+    struct NaClExceptionFrame *sigframe = (void*) natp->user.rsp;
+    sigframe->context.regs.prog_ctr = user_ret;
+  } else {
+    //TODO: Race condition if there is signal right here
+    natp->user.new_prog_ctr = user_ret;
+  }
 
   *tramp_ret_out = tramp_ret;
   *sp_user_out = sp_user;
