@@ -237,6 +237,9 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   if (lind_exception_handler == 0) {
     return 0;
   }
+  if (lind_exception_handler == 1) {
+    return -1;
+  }
   if (natp->exception_flag) {
     return 0; // I believe this prevents double faults
   }
@@ -505,7 +508,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
     }
   }
   
-  if (sig == SIGCHLD || sig == SIGUSR2) {
+  if (sig == SIGCHLD) {
         NaClSignalContextToHandler(uc, &sig_ctx);
         return;
   }
