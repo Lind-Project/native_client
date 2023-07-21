@@ -50,6 +50,8 @@ struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
 
+void rustposix_thread_init();
+
 /*
  * dynamically allocate and initilize a copy
  * of the parents NaClApp structure which is
@@ -269,6 +271,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
 
   }
+  rustposix_thread_init(natp->nap->cage_id);
 
   lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
 
