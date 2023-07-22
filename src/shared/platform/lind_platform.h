@@ -20,6 +20,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <sys/shm.h>
+#include <sys/time.h>
 #include <signal.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
@@ -128,9 +129,9 @@
 #define LIND_safe_sys_sigaction		    147
 #define LIND_safe_sys_kill		        148
 #define LIND_safe_sys_sigprocmask	    149
+#define LIND_safe_sys_lindsetitimer	    150
 
 #define LIND_safe_fs_fchdir		        161
-
 
 union RustArg {
     int dispatch_int;
@@ -161,6 +162,8 @@ union RustArg {
     const struct nacl_abi_sigaction *dispatch_constnaclabisigactionstruct;
     uint64_t *dispatch_naclsigset;
     const uint64_t *dispatch_constnaclsigset;
+    struct itimerval *dispatch_structitimerval;
+    const struct itimerval *dispatch_conststructitimerval;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
@@ -261,6 +264,7 @@ int lind_exit(int status, int cageid);
 int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat, int cageid);
 int lind_kill(int targetcageid, int sig, int cageid);
 int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid);
+int lind_lindsetitimer(int which, const struct itimerval *new_value, struct itimerval *old_value, int cageid);
 
 
 #endif /* LIND_PLATFORM_H_ */

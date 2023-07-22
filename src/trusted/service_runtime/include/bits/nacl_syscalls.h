@@ -173,6 +173,7 @@
 #define NACL_sys_sigaction		        147
 #define NACL_sys_kill			        148
 #define NACL_sys_sigprocmask            149
+#define NACL_sys_lindsetitimer		    150
 
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
@@ -183,7 +184,6 @@
 //We need to reserve more slots as the reg restoration takes more than 32 bytes
 #define __reg_restore_reserved_slot2    251
 #define __reg_restore_reserved_slot3    252
-
 
 #define NACL_MAX_SYSCALLS               256
 

@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <sys/time.h>
 
 #include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -410,4 +411,8 @@ int lind_kill(int targetcageid, int sig, int cageid) {
 
 int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_sys_sigprocmask, int, how, constnaclsigset, nacl_set, naclsigset, nacl_oldset);
+}
+
+int lind_lindsetitimer(int which, const struct itimerval *new_value, struct itimerval *old_value, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sys_lindsetitimer, int, which, conststructitimerval, new_value, structitimerval, old_value);
 }

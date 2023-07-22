@@ -4408,3 +4408,31 @@ int32_t NaClSysSigprocmask(struct NaClAppThread *natp, int32_t how, const uint64
   ret = lind_sigprocmask(how, sysset, sysoldset, nap->cage_id);
   return ret;
 }
+
+int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const struct itimerval *new_value, struct itimerval *old_value) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const struct itimerval *sys_new_value = NULL;
+  struct itimerval *sys_old_value = NULL;
+
+  if (new_value) {
+    sys_new_value = (const struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) new_value, sizeof(struct itimerval), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sys_new_value) {
+      NaClLog(2, "NaclSysLindsetitimer could not translate new_value, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (old_value) {
+    sys_old_value = (struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) old_value, sizeof(struct itimerval), NACL_ABI_PROT_WRITE);
+
+    if ((void *) kNaClBadAddress == sys_old_value) {
+      NaClLog(2, "NaclSysLindsetitimer could not translate old_value, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+  }
+
+  ret = lind_lindsetitimer(which, sys_new_value, sys_old_value, nap->cage_id);
+  return ret;
+}
