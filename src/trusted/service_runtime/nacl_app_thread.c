@@ -269,8 +269,8 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
 
   }
-  
-  rustposix_thread_init(natp->nap->cage_id, (uint64_t)&natp->pendingsignal);
+
+  rustposix_thread_init(natp->nap->cage_id);
 
   lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
 

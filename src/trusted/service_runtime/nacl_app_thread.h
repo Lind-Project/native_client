@@ -27,7 +27,7 @@ EXTERN_C_BEGIN
 struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
 
-void rustposix_thread_init(uint64_t cageid, uint64_t signalflag);
+void rustposix_thread_init(uint64_t cageid);
 
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
