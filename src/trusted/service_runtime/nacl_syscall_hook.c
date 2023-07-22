@@ -58,6 +58,7 @@ static void HandleStackContext(struct NaClAppThread *natp,
   uintptr_t      sp_sys;
   uint32_t       tramp_ret;
   nacl_reg_t     user_ret;
+  uintptr_t      old_sp_user;
 
   /*
    * sp_sys points to the top of the user stack where return addresses
@@ -68,11 +69,12 @@ static void HandleStackContext(struct NaClAppThread *natp,
    * for control to have reached here, because nacl_syscall*.S writes
    * to the stack.
    */
+  old_sp_user = NaClGetThreadCtxSp(&natp->user);
   if(natp->pendingsignal) {
     sp_user = NaClGetThreadCtxSp(&natp->user) + sizeof(struct NaClExceptionFrame) + 136;
   } else {
-    //TODO: Race condition if there is signal right here
-    sp_user = NaClGetThreadCtxSp(&natp->user);
+    //No race condition here as it doesn't matter if the natp->user.rsp value changed
+    sp_user = old_sp_user;
   }
   sp_sys = NaClUserToSysStackAddr(nap, sp_user);
   /*
