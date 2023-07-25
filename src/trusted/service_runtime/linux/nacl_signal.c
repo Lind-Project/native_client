@@ -469,19 +469,15 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   struct NaClThread *host_thread;
   if (natp != NULL) {
     host_thread = &natp->host_thread;
-    if (sig == SIGUSR1 && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
+    if (sig == NACL_THREAD_SUSPEND_SIGNAL && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
       lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
       NaClThreadExit();
     }
   }
 
-  if (sig != SIGINT && sig != SIGQUIT) {
-    if (NaClThreadSuspensionSignalHandler(sig, &sig_ctx, is_untrusted, natp)) {
-      NaClSignalContextToHandler(uc, &sig_ctx);
-      /* Resume untrusted code using possibly modified register state. */
-      return;
-    }
-  }
+  // Lind: we removed the NaClThreadSuspensionSignalHandler function here
+  // since we don't need to deal with the VMhole issue on Linux, the only time we use
+  // NACL_THREAD_SUSPEND_SIGNAL is for the reaper/untrusted teardown which is handled above
 
   if (natp != NULL) {
     switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, &is_untrusted)) {
