@@ -4370,3 +4370,9 @@ int32_t NaClSysKill(struct NaClAppThread *natp, int32_t targetcageid, int32_t si
   struct NaClApp *nap = natp->nap;
   return lind_kill(targetcageid, sig, nap->cage_id);
 }
+
+int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp) {
+  sigset_t s;
+  sigemptyset(&s);
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
+}

@@ -182,6 +182,8 @@
 //We need to reserve more slots as the reg restoration takes more than 32 bytes
 #define __reg_restore_reserved_slot2    251
 #define __reg_restore_reserved_slot3    252
+#define __reg_restore_reserved_slot4    253
+#define NACL_sys_sigmask_sigreturn      255
 
 
 #define NACL_MAX_SYSCALLS               256
