@@ -259,8 +259,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       return -1;
     }
   } else {
-    natp->pendingsignal = true;
-
     if (!natp->signatpflag) {
       /* we need to handle the signal differently when the syscall is entering or exiting
        * if it's entering and the natp has not been initialized yet we need to manually
@@ -283,7 +281,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath1RspRestored) {
           natp->user.rsp += 8;  /* Pop user return address */
         }
-        natp->pendingsignal = false;
       } else if (pc >= &NaClGetTlsFastPath2 &&
         pc < &NaClGetTlsFastPath2End) {
         *is_untrusted = -1;
@@ -296,7 +293,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath2RspRestored) {
           natp->user.rsp += 8;  /* Pop user return address */
         }
-        natp->pendingsignal = false;
       } else if(pc >= (char*) &NaClSyscallSeg && pc < &NaClSyscallSegEnd) {
         //syscall start, manually populate natp for callee saved registers
         if(natp->user.rbx != regs->rbx)
@@ -316,12 +312,17 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
         if(natp->user.r14 != regs->r14)
           natp->user.r14 = regs->r14;
+        natp->pendingsignal = true;
       } else if (!(pc >= &NaClSyscallCSegHook && pc < &NaClSyscallCSegHookInitialized)) {
         //syscall end, re-run register copy-out
         regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
         regs->rdi = (uintptr_t) natp;
         regs->stack_ptr = natp->user.trusted_stack_ptr; //in case rsp is restored, making sure we stay on the trusted stack
-      } //otherwise we are in syscall start but everything is already known to be ok
+        natp->pendingsignal = true;
+      } else {
+        //otherwise we are in syscall start but everything is already known to be ok
+        natp->pendingsignal = true;
+      }
     }
   }
 
