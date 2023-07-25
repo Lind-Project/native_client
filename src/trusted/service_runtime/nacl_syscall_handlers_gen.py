@@ -302,7 +302,7 @@ SYSCALL_LIST = [
     ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig']),
     ('NACL_sys_sigprocmask', 'NaClSysSigprocmask', ['int how', 'const uint64_t *nacl_set', 'uint64_t *nacl_oldset']),
     ('NACL_sys_lindsetitimer', 'NaClSysLindsetitimer', ['int which', 'const struct itimerval *new_value', 'struct itimerval *old_value']),
-    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int d']) 
+    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int d']),
     ('NACL_sys_sigmask_sigreturn', 'NaClSysSigmaskSigreturn', [])
     ]
 
