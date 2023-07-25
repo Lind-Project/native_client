@@ -4436,3 +4436,11 @@ int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const st
   ret = lind_lindsetitimer(which, sys_new_value, sys_old_value, nap->cage_id);
   return ret;
 }
+
+int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp) {
+  sigset_t s;
+  sigemptyset(&s);
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
+  natp->exception_flag = 0;
+  return 0;
+}

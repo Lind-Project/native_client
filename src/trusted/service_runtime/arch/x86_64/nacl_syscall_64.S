@@ -266,6 +266,12 @@ garbage:
 
 .align 32
 NaClTrampolineRegRestore:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call
+.align 32
     addl $64, %esp /* skip unused fields */
     addq %r15, %rsp
     popq %rax
