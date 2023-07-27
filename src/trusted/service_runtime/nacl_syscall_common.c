@@ -4440,7 +4440,7 @@ int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const st
 int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp) {
   sigset_t s;
   sigemptyset(&s);
-  pthread_sigmask(SIG_SETMASK, &s, NULL);
   natp->exception_flag = 0;
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
   return 0;
 }
