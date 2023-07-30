@@ -11,6 +11,8 @@
 
 .globl NaClSwitchFromSignal
 .hidden NaClSwitchFromSignal
+.globl NaClSwitchFromSignalTls
+.hidden NaClSwitchFromSignalTls
 .globl NaClSwitchFromSignalTrusted
 .hidden NaClSwitchFromSignalTrusted
 
@@ -42,6 +44,33 @@ NaClSwitchFromSignal:
         xor %r14, %r14
 
         movq    NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %r11
+
+        jmp *%r11
+
+NaClSwitchFromSignalTls:
+#if NACL_WINDOWS
+        /* On Windows, 1st params in %rcx, %rdx. */
+        movq %rcx, %rdi
+        movq %rdx, %rsi
+#elif !(NACL_LINUX || NACL_OSX)
+# error "What OS/compiler is the service runtime being compiled with?"
+#endif
+        mov NACL_THREAD_CONTEXT_OFFSET_NEW_PROG_CTR(%rsi), %r11
+        mov NACL_THREAD_CONTEXT_OFFSET_R15(%rsi), %r15
+        mov NACL_THREAD_CONTEXT_OFFSET_RBP(%rsi), %rbp
+        mov NACL_THREAD_CONTEXT_OFFSET_RSP(%rsi), %rsp
+
+        xor %rax, %rax
+        xor %rbx, %rbx
+        xor %rcx, %rcx
+        xor %rdx, %rdx
+        xor %rsi, %rsi
+        xor %r8, %r8
+        xor %r9, %r9
+        xor %r10, %r10
+        xor %r12, %r12
+        xor %r13, %r13
+        xor %r14, %r14
 
         jmp *%r11
 
