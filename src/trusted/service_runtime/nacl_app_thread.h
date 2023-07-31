@@ -83,6 +83,7 @@ struct NaClAppThread {
   struct NaClThreadContext  user;
 
   bool                      signatpflag; //is the natp set up to receive signals?
+  bool                      pendingsignal; 
 
   struct NaClMutex          mu;
 
@@ -161,7 +162,6 @@ struct NaClAppThread {
   int                       dynamic_delete_generation;
 
   int                       single_stepping_signum; //0 to indicate none
-  bool                      pendingsignal; 
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);

@@ -304,7 +304,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         //syscall start, manually populate natp for callee saved registers
         natp->user.rbx = regs->rbx;
         natp->user.rbp = regs->rbp;
-        if(NaClIsUserAddr(natp->nap, regs->prog_ctr))
+        if(NaClIsUserAddr(natp->nap, regs->stack_ptr))
           natp->user.rsp = regs->stack_ptr + 8; //to correspond to the lea in NaClSyscallSeg
         natp->user.r12 = regs->r12;
         natp->user.r13 = regs->r13;

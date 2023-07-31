@@ -152,9 +152,18 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallThreadCaptureFault):
         /*
          * Record the value of %rsp that we will restore when
          * returning to untrusted code from the syscall.
+         * Because the signal handler can clobber RSP in the
+         * thread context we must use that value if present
          */
         leaq    8(%rsp), %rcx
+        xchgq   %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx) 
+        cmpb    $0, NACL_THREAD_PENDING_SIGNAL_OFFSET(%rdx)
+        je NaClSyscallSegSPSet
+        cmpq    %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx)
+        jbe NaClSyscallSegSPSet
         movq    %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx)
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegSPSet):
+        
         movq    %r12, NACL_THREAD_CONTEXT_OFFSET_R12(%rdx)
         movq    %r13, NACL_THREAD_CONTEXT_OFFSET_R13(%rdx)
         /* r15 need not be saved, since it is immutable from user code */
