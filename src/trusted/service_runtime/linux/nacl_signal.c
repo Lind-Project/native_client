@@ -259,6 +259,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       return -1;
     }
   } else {
+    natp->pendingsignal = true;
     if (!natp->signatpflag) {
       /* we need to handle the signal differently when the syscall is entering or exiting
        * if it's entering and the natp has not been initialized yet we need to manually
@@ -301,43 +302,27 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         }
       } else if(pc >= (char*) &NaClSyscallSeg && pc < &NaClSyscallSegEnd) {
         //syscall start, manually populate natp for callee saved registers
-        if(natp->user.rbx != regs->rbx)
-          natp->user.rbx = regs->rbx;
-
-        if(natp->user.rbp != regs->rbp)
-          natp->user.rbp = regs->rbp;
-
-        if(natp->user.rsp != regs->stack_ptr + 8)
-          natp->user.rsp = regs->stack_ptr; //to correspond to the lea in NaClSyscallSeg
-
-        if(natp->user.r12 != regs->r12)
-          natp->user.r12 = regs->r12;
-
-        if(natp->user.r13 != regs->r13)
-          natp->user.r13 = regs->r13;
-
-        if(natp->user.r14 != regs->r14)
-          natp->user.r14 = regs->r14;
-        natp->pendingsignal = true;
+        natp->user.rbx = regs->rbx;
+        natp->user.rbp = regs->rbp;
+        if(NaClIsUserAddr(natp->nap, regs->prog_ctr))
+          natp->user.rsp = regs->stack_ptr + 8; //to correspond to the lea in NaClSyscallSeg
+        natp->user.r12 = regs->r12;
+        natp->user.r13 = regs->r13;
       } else if (!(pc >= &NaClSyscallCSegHook && pc < &NaClSyscallCSegHookInitialized)) {
         //syscall end, re-run register copy-out
         regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
         regs->rdi = (uintptr_t) natp;
         regs->stack_ptr = natp->user.trusted_stack_ptr; //in case rsp is restored, making sure we stay on the trusted stack
-        natp->pendingsignal = true;
-      } else {
-        //otherwise we are in syscall start but everything is already known to be ok
-        natp->pendingsignal = true;
-      }
+      } //otherwise we are in syscall start but everything is already known to be ok
+
       if(*is_untrusted == -1) {
         natp->user.rbp = regs->rbp;
         natp->user.rbx = regs->rbx;
         natp->user.rsp = regs->stack_ptr;
         natp->user.r12 = regs->r12;
         natp->user.r13 = regs->r13;
+        natp->pendingsignal = false;
       }
-    } else {
-      natp->pendingsignal = true;
     }
   }
 

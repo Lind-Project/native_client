@@ -146,6 +146,7 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSeg):
 
         /* only save the callee saved registers */
 DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallThreadCaptureFault):
+
         movq    %rbx, NACL_THREAD_CONTEXT_OFFSET_RBX(%rdx)
         movq    %rbp, NACL_THREAD_CONTEXT_OFFSET_RBP(%rdx)
         /*
@@ -156,8 +157,8 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallThreadCaptureFault):
         movq    %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx)
         movq    %r12, NACL_THREAD_CONTEXT_OFFSET_R12(%rdx)
         movq    %r13, NACL_THREAD_CONTEXT_OFFSET_R13(%rdx)
-        movq    %r14, NACL_THREAD_CONTEXT_OFFSET_R14(%rdx)
         /* r15 need not be saved, since it is immutable from user code */
+        /* r14 need not be saved, since it is not specified  in user code behavior */
 
         /*
          * Save the x87 FPU control word.  This is callee-saved,
