@@ -262,69 +262,69 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       return -1;
     }
   } else {
+    natp->pendingsignal = true;
     if (!natp->signatpflag) {
       /* we need to handle the signal differently when the syscall is entering or exiting
        * if it's entering and the natp has not been initialized yet we need to manually
        * initialize the natp from values on the user stack. If it's exiting and has already
        * copied out some of the key values (i.e. the stack pointer) from the natp to user
        * registers then we need to re-copy everything back from the natp to user registers.
-       * We can know whether it's iu the relevant syscall entry code by statically checking
-       * the rip address 
+       * We can know whether it's in the relevant syscall entry code by statically checking
+       * the rip address.
+       * Additionally, because the return mechanism is different for the tls case we need
+       * to essentially manually perform the operation and then return to user control by
+       * manually setting registers and the program counter.
        */
-      char *pc = (void*) regs->prog_ctr; //pointer to function pointer for compiler warning suppression
+      char *pc = (void*) regs->prog_ctr;
       if (pc >= &NaClGetTlsFastPath1 &&
           pc < &NaClGetTlsFastPath1End) {
         *is_untrusted = -1;
-        natp->user.rbx = regs->rbx;
-        natp->user.rbp = regs->rbp;
-        natp->user.rsp = regs->stack_ptr;
-        natp->user.r12 = regs->r12;
-        natp->user.r13 = regs->r13;
-        natp->user.r14 = regs->r14;
+        natp->user.rax = (uintptr_t) natp->user.tls_value1;
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath1RspRestored) {
-          natp->user.rsp += 8;  /* Pop user return address */
+          natp->user.rcx = *(uintptr_t*) regs->stack_ptr;
+          regs->stack_ptr += 8;  /* Pop user return address */
+        } else {
+          if (regs->prog_ctr == (uintptr_t) &NaClGetTlsFastPath1RspRestored)
+            natp->user.rcx = regs->rcx;
+          else
+            natp->user.rcx = regs->rcx - 31;
         }
       } else if (pc >= &NaClGetTlsFastPath2 &&
-        pc < &NaClGetTlsFastPath2End) {
+                 pc < &NaClGetTlsFastPath2End) {
         *is_untrusted = -1;
-        natp->user.rbx = regs->rbx;
-        natp->user.rbp = regs->rbp;
-        natp->user.rsp = regs->stack_ptr;
-        natp->user.r12 = regs->r12;
-        natp->user.r13 = regs->r13;
-        natp->user.r14 = regs->r14;
+        natp->user.rax = (uintptr_t) natp->user.tls_value2;
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath2RspRestored) {
-          natp->user.rsp += 8;  /* Pop user return address */
+          natp->user.rcx = *(uintptr_t*) regs->stack_ptr;
+          regs->stack_ptr += 8;  /* Pop user return address */
+        } else {
+          if (regs->prog_ctr == (uintptr_t) &NaClGetTlsFastPath2RspRestored)
+            natp->user.rcx = regs->rcx;
+          else
+            natp->user.rcx = regs->rcx - 31;
+          natp->user.rcx = regs->rcx;
         }
       } else if(pc >= (char*) &NaClSyscallSeg && pc < &NaClSyscallSegEnd) {
         //syscall start, manually populate natp for callee saved registers
-        if(natp->user.rbx != regs->rbx)
-          natp->user.rbx = regs->rbx;
-
-        if(natp->user.rbp != regs->rbp)
-          natp->user.rbp = regs->rbp;
-
-        if(natp->user.rsp != regs->stack_ptr + 8)
-          natp->user.rsp = regs->stack_ptr; //to correspond to the lea in NaClSyscallSeg
-
-        if(natp->user.r12 != regs->r12)
-          natp->user.r12 = regs->r12;
-
-        if(natp->user.r13 != regs->r13)
-          natp->user.r13 = regs->r13;
-
-        if(natp->user.r14 != regs->r14)
-          natp->user.r14 = regs->r14;
-        natp->pendingsignal = true;
+        natp->user.rbx = regs->rbx;
+        natp->user.rbp = regs->rbp;
+        if(NaClIsUserAddr(natp->nap, regs->stack_ptr))
+          natp->user.rsp = regs->stack_ptr + 8; //to correspond to the lea in NaClSyscallSeg
+        natp->user.r12 = regs->r12;
+        natp->user.r13 = regs->r13;
       } else if (!(pc >= &NaClSyscallCSegHook && pc < &NaClSyscallCSegHookInitialized)) {
         //syscall end, re-run register copy-out
         regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
         regs->rdi = (uintptr_t) natp;
         regs->stack_ptr = natp->user.trusted_stack_ptr; //in case rsp is restored, making sure we stay on the trusted stack
-        natp->pendingsignal = true;
-      } else {
-        //otherwise we are in syscall start but everything is already known to be ok
-        natp->pendingsignal = true;
+      } //otherwise we are in syscall start but everything is already known to be ok
+
+      if(*is_untrusted == -1) {
+        natp->user.rbp = regs->rbp;
+        natp->user.rbx = regs->rbx;
+        natp->user.rsp = regs->stack_ptr;
+        natp->user.r12 = regs->r12;
+        natp->user.r13 = regs->r13;
+        natp->pendingsignal = false;
       }
     }
   }
@@ -359,10 +359,15 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                                context);
 
   frame = (struct NaClExceptionFrame *) frame_addr;
-  if(*is_untrusted > 0)
+  if (*is_untrusted > 0) {
     NaClSignalSetUpExceptionFrame(frame, regs, context_user_addr);
-  else
+  } else {
     NaClSignalSetUpExceptionFrameTrusted(frame, natp, context_user_addr);
+    if(*is_untrusted == -1) {
+      frame->context.regs.rax = natp->user.rax;
+      frame->context.regs.prog_ctr = NaClUserToSysAddr(natp->nap, natp->user.rcx & 0xffffffe0);
+    }
+  }
   frame->return_addr = nap->mem_start + NACL_SYSCALL_START_ADDR
                        + (NACL_SYSCALL_BLOCK_SIZE * NACL_sys_reg_restore);
 
@@ -372,6 +377,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   natp->user.rdi = context_user_addr; /* Argument 1 */
   natp->user.new_prog_ctr = NaClUserToSys(nap, lind_exception_handler);
+  //TODO: I don't think this is handled correctly for the exception stack case
   natp->user.rsp = NaClUserToSys(nap, new_stack_ptr);
 #elif NACL_ARCH(NACL_BUILD_ARCH) == NACL_arm
   /*
@@ -489,15 +495,18 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
       default:
         /* Resume execution of code using the modified register state. */
         if (is_untrusted > 0) {
-            NaClStackSafetyNowOnUntrustedStack();
+          NaClStackSafetyNowOnUntrustedStack();
 
-            //clobber for restore
-            sig_ctx.prog_ctr = natp->user.new_prog_ctr;
-            sig_ctx.stack_ptr = natp->user.rsp;
-            sig_ctx.rdi = natp->user.rdi;
-            NaClSwitchFromSignal(&sig_ctx);
+          //clobber for restore
+          sig_ctx.prog_ctr = natp->user.new_prog_ctr;
+          sig_ctx.stack_ptr = natp->user.rsp;
+          sig_ctx.rdi = sig;
+          NaClSwitchFromSignal(&sig_ctx);
+        } else if (is_untrusted == -1) {
+          //Hijack and return to untrusted
+          NaClSwitchFromSignalTls(sig, &natp->user);
         } else {
-            NaClSwitchFromSignalTrusted(&sig_ctx);
+          NaClSwitchFromSignalTrusted(&sig_ctx);
         }
 
         NaClLog(LOG_FATAL, "Couldn't switch control after signal handling activated\n");

@@ -11,6 +11,9 @@
 #ifndef __NATIVE_CLIENT_SERVICE_RUNTIME_ARCH_X86_64_NACL_SIGNAL_64_H__
 #define __NATIVE_CLIENT_SERVICE_RUNTIME_ARCH_X86_64_NACL_SIGNAL_64_H__ 1
 
+/* allow in case of assembler */
+#include "native_client/src/trusted/service_runtime/arch/x86_64/sel_rt_64.h"
+
 #if !defined(__ASSEMBLER__)
 #include "native_client/src/include/portability.h"
 
@@ -51,6 +54,7 @@ struct NaClSignalContext {
 
 NORETURN void NaClSwitchFromSignal(struct NaClSignalContext* ctx);
 NORETURN void NaClSwitchFromSignalTrusted(struct NaClSignalContext* ctx);
+NORETURN void NaClSwitchFromSignalTls(int sig, struct NaClThreadContext* ctx);
 
 #endif /* !defined(__ASSEMBLER__) */
 

@@ -57,8 +57,9 @@ static void HandleStackContext(struct NaClAppThread *natp,
   uintptr_t      sp_user;
   uintptr_t      sp_sys;
   uint32_t       tramp_ret;
-  nacl_reg_t     user_ret;
+  register nacl_reg_t     user_ret; //must be a register for the xchg
   uintptr_t      old_sp_user;
+  uintptr_t     *prog_ctr_location;
 
   /*
    * sp_sys points to the top of the user stack where return addresses
@@ -92,14 +93,20 @@ static void HandleStackContext(struct NaClAppThread *natp,
   user_ret = *(volatile uintptr_t *) (sp_sys + NACL_USERRET_FIX);
   user_ret = (nacl_reg_t) NaClSandboxCodeAddr(nap, (uintptr_t) user_ret);
 
+  prog_ctr_location = &natp->user.new_prog_ctr;
 
+  asm volatile ("xchgq %0, %1": "+r" (user_ret), "+m" (*prog_ctr_location));
   if(natp->pendingsignal) {
-    struct NaClExceptionFrame *sigframe = (void*) natp->user.rsp;
-    sigframe->context.regs.prog_ctr = user_ret;
-  } else {
-    //TODO: Race condition if there is signal right here
-    natp->user.new_prog_ctr = user_ret;
-  }
+    nacl_reg_t user_ret_copy = (nacl_reg_t) NaClSandboxCodeAddr(nap, 
+                               *(volatile uintptr_t *) (sp_sys + NACL_USERRET_FIX));
+    //If this check is true, signal happned before the xchg, revert and correct
+    if(user_ret_copy == *prog_ctr_location) {
+      struct NaClExceptionFrame *sigframe;
+      *prog_ctr_location = user_ret;
+      sigframe = (void*) natp->user.rsp;
+      sigframe->context.regs.prog_ctr = user_ret_copy;
+    } //else it happened after the xchg
+  } //Else no korrection needed
 
   *tramp_ret_out = tramp_ret;
   *sp_user_out = sp_user;

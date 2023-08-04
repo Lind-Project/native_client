@@ -112,6 +112,8 @@ static INLINE uintptr_t NaClGetThreadCtxSp(struct NaClThreadContext *th_ctx) {
 #define NACL_THREAD_CONTEXT_OFFSET_TRUSTED_STACK_PTR 0xa8
 #define NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE1    0xb0
 #define NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE2    0xb4
+#define NACL_THREAD_CONTEXT_END_OFFSET           0xb8
+#define NACL_THREAD_PENDING_SIGNAL_OFFSET        0xb9
 
 #if !defined(__ASSEMBLER__)
 
