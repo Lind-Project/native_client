@@ -4214,8 +4214,8 @@ int32_t NaClSysFcntlSet (struct NaClAppThread *natp,
 int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
   struct NaClApp *nap = natp->nap;
 
-  printf("Printing Sigmask for Cage %d, thread id %p\n", nap->cage_id, natp->host_thread.tid);
-  print_sigset();
+  // printf("Printing Sigmask for Cage %d, thread id %p\n", nap->cage_id, natp->host_thread.tid);
+  // print_sigset();
 
   int retval = 0;
   struct pollfd *fds_sysaddr;
@@ -4302,8 +4302,8 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   fd_set *sysexceptfds = NULL;
   struct timeval* nacltimeout = NULL;
 
-  // printf("Printing Sigmask for Cage %d, thread id %p\n", nap->cage_id, natp->host_thread.tid);
-  // print_sigset();
+  printf("Printing Sigmask for Cage %d, thread id %p\n", nap->cage_id, natp->host_thread.tid);
+  print_sigset();
 
 
   NaClLog(2, "Cage %d Entered NaClSysSelect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
