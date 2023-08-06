@@ -72,6 +72,8 @@ void print_sigset(void) {
 
   sigset_t set;
   int sig;
+  sigemptyset(&set);
+
   pthread_sigmask(SIG_SETMASK, NULL, &set);
 
   for (sig = 1; sig < NSIG; sig++) {
