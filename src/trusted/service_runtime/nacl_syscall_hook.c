@@ -142,9 +142,6 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
 
   nap = natp->nap;
 
-  printf("Printing Sigmask for Cage %d, thread id %p", nap->cage_id, natp->host_thread.tid);
-  print_sigset();
-
   /*
    * held until syscall args are copied, which occurs in the generated
    * code.
