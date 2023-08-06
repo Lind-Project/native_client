@@ -653,6 +653,8 @@ void NaClSignalHandlerInit(void) {
                           s_Signals[a], strerror(errno));
     }
   }
+  printf("printing sigset post handler init: \n");
+  print_sigset();
 }
 
 void NaClSignalHandlerFini(void) {
