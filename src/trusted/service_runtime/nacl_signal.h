@@ -75,6 +75,7 @@ enum PosixSignals {
 # define NACL_THREAD_SUSPEND_SIGNAL SIGUSR1
 #endif
 
+void print_sigset();
 
 /*
  * Prototype for a signal handler.  The handler will receive the POSIX
