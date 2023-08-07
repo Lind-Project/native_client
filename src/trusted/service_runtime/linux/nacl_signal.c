@@ -210,24 +210,6 @@ extern char NaClGetTlsFastPath2;
 extern char NaClGetTlsFastPath2RspRestored;
 extern char NaClGetTlsFastPath2End;
 
-
-void print_sigset(void) {
-
-  sigset_t set;
-  int sig;
-  sigemptyset(&set);
-
-  pthread_sigmask(SIG_SETMASK, NULL, &set);
-
-  for (sig = 1; sig < NSIG; sig++) {
-    if (sigismember(sigset, sig)) {
-      printf("Signal present: %d (%s)\n", sig, strsignal(sig));
-    }
-  }
-
-}
-
-
 void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
 }
