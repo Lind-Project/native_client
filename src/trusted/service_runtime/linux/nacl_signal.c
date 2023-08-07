@@ -756,6 +756,7 @@ void NaClSignalHandlerInit(void) {
   unsigned int a;
 
   AssertNoOtherSignalHandlers();
+  
   memset(&sa, 0, sizeof(sa));
   sigemptyset(&sa.sa_mask);
   sa.sa_sigaction = SignalCatch;
