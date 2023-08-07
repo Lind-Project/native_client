@@ -757,9 +757,6 @@ void NaClSignalHandlerInit(void) {
 
   AssertNoOtherSignalHandlers();
 
-  printf("printing sigset pre handler init: \n");
-  print_sigset();
-
   memset(&sa, 0, sizeof(sa));
   sigemptyset(&sa.sa_mask);
   sa.sa_sigaction = SignalCatch;
@@ -786,8 +783,6 @@ void NaClSignalHandlerInit(void) {
                           s_Signals[a], strerror(errno));
     }
   }
-  printf("printing sigset post handler init: \n");
-  print_sigset();
 }
 
 void NaClSignalHandlerFini(void) {
