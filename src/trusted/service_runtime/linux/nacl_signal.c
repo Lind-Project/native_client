@@ -34,6 +34,129 @@
  */
 
 /*
+ * On the overall architecture of the untrusted signal handling system:
+ *
+ * When a a caught signal is recieved, we want to allow untrusted signal
+ * handlers to run. This involves a large number of considerations for different
+ * cases and the general architecture of that whole system is layed out here.
+ *
+ * The signal handler SignalCatch is registered in the function NaClSignalHandlerInit
+ * which sets a sigmask containing all NaCl handled signals on signal receipt.
+ *
+ * This SignalCatch function is used in various contexts, including plenty of cases
+ * which are not supposed to be handled in untrusted, such as NaCl internal signals
+ * and signals to threads which execute no untrusted code. It sets up the sig_ctx
+ * field which contains the register state of the program when the signal was received
+ * as well as the is_untrusted variable by checking whether the instruction pointer
+ * when the signal was received was in trusted or untrusted code. Other than some
+ * checks for a signal that is not user-generated, the next point of interest in the
+ * execution of untrusted signal handlers is the function DispatchToUntrustedHandler.
+ *
+ * Before we get too deep into that, it is worth making a point on NaCl's security model
+ * which requires that all jump targets be 32 byte aligned. This serves the practial
+ * purpose of preventing the user from jumping into the middle of an instruction. Because
+ * we may, after running a signal handler, return to the point of last execution as specified
+ * by a field on the stack, and because the user can modify this at will, it is important
+ * for us security-wise to return to 32 byte aligned addresses. However, this may lead to
+ * incorrect behavior when the signal is not received on an instruction that is 32 byte aligned.
+ * Thus, we need to ensure that all handled signals are received only on 32 byte aligned
+ * addresses, although there is no direct way to do this. We had to get creative with how to
+ * accomplish this. We set the TRAP flag in x86 (0x100 in EFLAGS) when we recieve a signal at
+ * an untrusted instruction of an offset not divisible by 32, thus causing every subsequent
+ * instruction to raise a SIGTRAP signal, allowing us to essentially single-step the processor
+ * until we reach a 32 byte aligned instruction address, at which point we unset the TRAP flag
+ * and are able to run the untrusted signal handler as if the signal were recieved there.
+ * No instructions or pseudo-instructions can be allowed to cross a 32 byte alignment boundary.
+ * Also all jump targets are 32 byte aligned and this means that at any point in untrusted we must
+ * be able to reach a 32 byte aligned address in normal execution very quickly--either the next
+ * 32 byte aligned address from sequential execution or the next jump target must be 32 byte
+ * aligned. We don't need to do this for signals caught in trusted code as we don't execute
+ * the signal handler until we return from trusted, and the point in untrusted we wish to
+ * return to from the signal handler is the point where trusted was going to return to anyway
+ * which means that it must have been 32 byte aligned. It is possible that we catch a signal
+ * first in untrusted and the next 32 byte aligned address is in trusted code, however that
+ * situation poses no problem, and aside from the unsetting of the trap flag is handled
+ * like a normal signal received in trusted code.
+ * Because single stepping uses the trap flag it is incredibly difficult to pair well with
+ * gdb and especially rr and so you should be aware that any programs which end up single
+ * stepping may be a lot harder to debug, and weird behavior may happen within a debugger.
+ *
+ * DispatchToUntrustedHandler performs the majority of setup work for the execution of
+ * an untrusted handler, finding the register state that we want to set in order to execute
+ * the untrusted handler and allow returning from it. The first thing we do is check if we
+ * are still single stepping, if so we check if we've reached a 32 byte aligned address and
+ * if so stop single stepping--unset the TRAP flag in untrusted and the bookkeeping in the natp.
+ * Otherwise we return and indicate by return code to SignalCatch that we wish to return from it
+ * immediately after copying out register state--this will cause the sigreturn syscall to be
+ * executed which importantly restores the flags register from the copied out values including
+ * the trap flag which remains there.
+ *
+ * If there is no untrusted handler in the signal received, return and indicate that SignalCatch
+ * treat the signal as unhandled which for us means terminate. This should change in the future
+ * when we actually handle signal disposition. This untrusted handler is stored as an address in
+ * rust.
+ * If we're in untrusted we need to check if we need to activate single stepping mode which is
+ * handled by setting the SIGTRAP flag in the user space registers, and doing some natp bookkeeping.
+ * Then we return as discussed 2 paragraphs ago.
+ *
+ * If the signal is received while executing trusted code however, we need to handle a wide number
+ * of cases. This is because there are quite a large number of edge cases in trusted code. The first
+ * is simply if we receive a signal in the first few instructions of a syscall, we can not rely on
+ * the natp being properly populated. Second, if we receive a signal in the last few instructions
+ * of a syscall, we may have already made some decisions on what to spit out to untrusted which may
+ * have been made differently had the signal ocurred already so we need to rerun the system call
+ * exit code.
+ * The other two special cases involve the functions NaClGetTlsFastPath1 and 2. These funcitons
+ * have a special pathway into trusted code from any other syscall, and thus must be handled
+ * separately. Additionally, they modify the stack pointer halfway through so we must account
+ * for that as well. All of these special cases are signified by the lack of the natp->signatpflag
+ * which is a flag that is set whenever the natp in a normal syscall is prepared for a signal
+ * receive and has not yet had any parts of it copied out. We determine which case is which of
+ * the four aforemntioned special cases by statically checking the address of the instruction
+ * pointer against the known bounds of these functions.
+ * For all but the tls syscall cases we must set the natp->signalpending flag which signifies that
+ * we must be aware that a signal handler is the next untrusted code to be executed on exit from
+ * trusted code, and decisions are made based on it in NaClSwitchToApp.
+ *
+ * After we handle those special cases we must deposit the untrusted registers on the stack for
+ * restoration upon return from the signal handler. However, we must respect the redzone of the
+ * stack as well as allocate enough space to store these registers in the struct NaClExceptionFrame.
+ * when the signal is caught in untrusted code the registers we want to restore are in the regs
+ * variablle copied out from the ucontext field. However, when the signal is caught in trusted code,
+ * we only want to restore the callee save registers in the natp. We also may want to send the
+ * return value of the syscall in rax back to untrusted upon signal handler return. After this,
+ * practically all the relevant information is set up for signal handling, and we return to
+ * SignalCatch.
+ *
+ * SignalCatch, if the DispatchToUntrustedHandler returned at the end of all that successfully,
+ * does different things for untrusted and trusted code. For the tls fast path function cases it
+ * does something yet different and just puts the untrusted handler address into the register
+ * whose value is the address returned to at the end of the tls fast path functions and restores
+ * all relevant registers' values to what they are in the regs field and return execution to where
+ * the signal was received by restoring the callee saved registers and rip. For untrusted code we
+ * restore only the registers relevant to the handler--these being rip and rsp for obvious reasons
+ * and rdi to store the first argument, the signal number. We don't support the extended signal
+ * return arguments in lind yet so we don't need to handle a siginfo_t or anything. For trusted
+ * code we restore every single register and then return execution to the point in trusted we
+ * were stopped at.
+ *
+ * In trusted, when the syscall a signal was received in wishes to return, it calls NaClSwitchToApp
+ * which in turn calls NaClmaskRestore which in case the pendingsignal flag is set unsets it and
+ * modifies the rax value to be restored on signal handler return based on the syscall return value.
+ *
+ *
+ * For what happens on return from an untrusted signal handler see the comment above the function
+ * NaClTrampolineRegRestore in arch/x86_64/nacl_syscall_64.S
+ *
+ * - Jonathan Singer
+ *
+ * One rare bug remains, when we are signaled in untrusted (whether after single stepping or not)
+ * and the last untrusted instruction executed is an indirect call (or probably jmp), we end up
+ * seg faulting somewhere down the line. I bet the stack is somehow somewhat wonky in this case
+ * but sadly I have to leave this bug unsolved before I leave.
+ */
+
+/*
  * The signals listed here should either be handled by NaCl (or otherwise
  * trusted) or have handlers that are expected to crash.
  * Signals for which handlers are expected to crash should be listed
