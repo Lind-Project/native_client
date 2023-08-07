@@ -566,7 +566,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   __asm__("cld");
 #endif
 
-  //See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation'
+  //See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation
   NaClSignalContextFromHandler(&sig_ctx, uc);
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
@@ -630,7 +630,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 
   if (natp != NULL) {
-    //For an explanation of the below switch, see the  "SignalCatch: Restoration to previous point of execution'
+    //For an explanation of the below switch, see the  "SignalCatch: Restoration to previous point of execution:
     //section of the explanatory comment at the top of this file
     switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, &is_untrusted)) {
       case -1:
@@ -743,7 +743,7 @@ static void AssertNoOtherSignalHandlers(void) {
   }
 }
 
-//See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation'
+//See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation
 void NaClSignalHandlerInit(void) {
   struct sigaction sa;
   unsigned int a;
