@@ -34,12 +34,17 @@
  */
 
 /*
- * The overall architecture of the untrusted signal handling system:
+ * ----------------------------------------------------------------------------------------------- *
+ *                The overall architecture of the untrusted signal handling system:                *
+ * ----------------------------------------------------------------------------------------------- *
  *
  * When a a caught signal is recieved, we want to allow untrusted signal
  * handlers to run. This involves a large number of considerations for different
- * cases and the general architecture of that whole system is layed out here.
+ * cases and the general architecture of that whole system is laid out here.
  *
+ *
+ * Sigaction & SignalCatch
+ * -----------------------
  * The signal handler SignalCatch is registered in the function NaClSignalHandlerInit
  * which sets a sigmask containing all NaCl handled signals on signal receipt.
  *
@@ -52,6 +57,9 @@
  * checks for a signal that is not user-generated, the next point of interest in the
  * execution of untrusted signal handlers is the function DispatchToUntrustedHandler.
  *
+ *
+ * 32 byte alignment & single stepping
+ * -----------------------------------
  * Before we get too deep into that, it is worth making a point on NaCl's security model
  * which requires that all jump targets be 32 byte aligned. This serves the practial
  * purpose of preventing the user from jumping into the middle of an instruction. Because
@@ -81,6 +89,9 @@
  * gdb and especially rr and so you should be aware that any programs which end up single
  * stepping may be a lot harder to debug, and weird behavior may happen within a debugger.
  *
+ *
+ * DispatchToUntrustedHandler: Initial
+ * -----------------------------------
  * DispatchToUntrustedHandler performs the majority of setup work for the execution of
  * an untrusted handler, finding the register state that we want to set in order to execute
  * the untrusted handler and allow returning from it. The first thing we do is check if we
@@ -97,8 +108,11 @@
  * rust.
  * If we're in untrusted we need to check if we need to activate single stepping mode which is
  * handled by setting the SIGTRAP flag in the user space registers, and doing some natp bookkeeping.
- * Then we return as discussed 2 paragraphs ago.
+ * Then we return as discussed in the 32 byte alignment & single stepping section
  *
+ *
+ * DispatchToUntrustedHandler: Trusted special cases
+ * -------------------------------------------------
  * If the signal is received while executing trusted code however, we need to handle a wide number
  * of cases. This is because there are quite a large number of edge cases in trusted code. The first
  * is simply if we receive a signal in the first few instructions of a syscall, we can not rely on
@@ -118,16 +132,22 @@
  * we must be aware that a signal handler is the next untrusted code to be executed on exit from
  * trusted code, and decisions are made based on it in NaClSwitchToApp.
  *
+ *
+ * DispatchToUntrustedHandler: Stack handling
+ * ------------------------------------------
  * After we handle those special cases we must deposit the untrusted registers on the stack for
  * restoration upon return from the signal handler. However, we must respect the redzone of the
  * stack as well as allocate enough space to store these registers in the struct NaClExceptionFrame.
  * when the signal is caught in untrusted code the registers we want to restore are in the regs
- * variablle copied out from the ucontext field. However, when the signal is caught in trusted code,
+ * variable copied out from the ucontext field. However, when the signal is caught in trusted code,
  * we only want to restore the callee save registers in the natp. We also may want to send the
  * return value of the syscall in rax back to untrusted upon signal handler return. After this,
  * practically all the relevant information is set up for signal handling, and we return to
  * SignalCatch.
  *
+ *
+ * SignalCatch: Restoration to previous point of execution
+ * -------------------------------------------------------
  * SignalCatch, if the DispatchToUntrustedHandler returned at the end of all that successfully,
  * does different things for untrusted and trusted code. For the tls fast path function cases it
  * does something yet different and just puts the untrusted handler address into the register
@@ -326,7 +346,8 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
  * untrusted exception handler.  If we can, it modifies the register
  * state to call the handler and writes a stack frame into into
  * untrusted address space, and returns true.  Otherwise, it returns
- * false.
+ * false. See the DispatchToUntrustedHandler sections in the explanatory
+ * comment above.
  */
 static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                       int sig,
@@ -345,6 +366,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   }
   */
   // This must be before the lindgetsighandler call
+  // See the "32 byte alignment & single stepping" section in the explanatory comment at the top of this file
   if(sig == SIGTRAP && natp->single_stepping_signum) {
     if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
       regs->flags &= ~0x100; //get rid of the trap flag
@@ -365,17 +387,9 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   }
 
   if (*is_untrusted) {
-    /* Untrusted faults need to be caught on addresses aligned on 32 byte boundaries in code
-     * this is to allow us to mask off addresses to 32 byte and to ensure that we don't need
-     * to return to the middle of a pseudo instruction which could cause errors with rsp and
-     * also would present a huge security vulnerability in NaCl's security model. As all jmp
-     * and call targets must be 32 byte aligned there is no chance of an infinite loop.
-     * There is a possibility that the 32 byte aligned address we reach next is in trusted,
-     * but there need be no specific handling of it.
-     */
+    // See the "32 byte alignment & single stepping" section in the explanatory comment at the top of this file
     if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGFPE) {
       if(!natp->single_stepping_signum)  {
-        //We block all signals as we can't recieve other signals after the 32 byte boundary
         natp->single_stepping_signum = sig;
         regs->flags |= 0x100; //set the trap flag on return
       }
@@ -384,7 +398,10 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   } else {
     natp->pendingsignal = true;
     if (!natp->signatpflag) {
-      /* we need to handle the signal differently when the syscall is entering or exiting
+      /* See the "DispatchToUntrustedHandler: Trusted special cases" section in the 
+       * explanatory comment at the top of this file
+       *
+       * we need to handle the signal differently when the syscall is entering or exiting
        * if it's entering and the natp has not been initialized yet we need to manually
        * initialize the natp from values on the user stack. If it's exiting and has already
        * copied out some of the key values (i.e. the stack pointer) from the natp to user
@@ -451,6 +468,8 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
   natp->exception_flag = 1;
 
+  // For the rest of the function see the "DispatchToUntrustedHandler: Stack handling" 
+  // section of the explanatory comment at the top of this file
   if (natp->exception_stack == 0) {
     //account for redzone in untrusted
     if(*is_untrusted > 0)
@@ -547,6 +566,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   __asm__("cld");
 #endif
 
+  //See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation'
   NaClSignalContextFromHandler(&sig_ctx, uc);
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
@@ -610,6 +630,8 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 
   if (natp != NULL) {
+    //For an explanation of the below switch, see the  "SignalCatch: Restoration to previous point of execution'
+    //section of the explanatory comment at the top of this file
     switch (DispatchToUntrustedHandler(natp, sig, &sig_ctx, &is_untrusted)) {
       case -1:
         NaClSignalContextToHandler(uc, &sig_ctx);
@@ -721,6 +743,7 @@ static void AssertNoOtherSignalHandlers(void) {
   }
 }
 
+//See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation'
 void NaClSignalHandlerInit(void) {
   struct sigaction sa;
   unsigned int a;

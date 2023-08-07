@@ -268,6 +268,10 @@ ENDMACRO
 
 
 /*
+ * --------------------------------------------------------------------------------------------------------------------------
+ * Returning from an untrusted signal handler
+ * --------------------------------------------------------------------------------------------------------------------------
+ * 
  * This function's address is put onto the stack immediately under the signal handler's stack frame such that it is called
  * as soon as the untrusted signal handler returns. This function is loaded into the trampoline at NaClPatchRegTrampolineCall
  * called from sel_ldr.c, and lives in cage memory. First it calls into another trampoline entry for NaClSysSigmaskSigreturn
