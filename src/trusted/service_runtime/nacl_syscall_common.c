@@ -4443,6 +4443,10 @@ int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const st
   return ret;
 }
 
+/*
+ * For what happens on return from an untrusted signal handler see the comment above the function
+ * NaClTrampolineRegRestore in arch/x86_64/nacl_syscall_64.S
+ */
 int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp) {
   sigset_t s;
   sigemptyset(&s);

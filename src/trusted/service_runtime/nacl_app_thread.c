@@ -175,6 +175,10 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
+  sigset_t s; // clear the sigmask in case of fork/jmp out of a signal handler
+  sigemptyset(&s);
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
+
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
   NaClLog(1, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   NaClLog(1, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));

@@ -267,10 +267,31 @@ ENDMACRO
         tls_syscall NaClGetTlsFastPath2, NaClGetTlsFastPath2RspRestored, NaClGetTlsFastPath2End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE2
 
 
-.data
-garbage:
-.quad 0
-.text
+/*
+ * --------------------------------------------------------------------------------------------------------------------------
+ * Returning from an untrusted signal handler
+ * --------------------------------------------------------------------------------------------------------------------------
+ * 
+ * This function's address is put onto the stack immediately under the signal handler's stack frame such that it is called
+ * as soon as the untrusted signal handler returns. This function is loaded into the trampoline at NaClPatchRegTrampolineCall
+ * called from sel_ldr.c, and lives in cage memory. First it calls into another trampoline entry for NaClSysSigmaskSigreturn
+ * which resets the sigprocmask of the thread which was set by sigaction, and also unsets some natp bookkeeping.
+ *
+ * After that it restores all registers to the values they should be in untrusted. However this created an issue--
+ * when we wanted to restore to the previous untrusted state we had to be at a point where every register contains
+ * the correct value for the untrusted state except for the instruction pointer. The question then arises, where is
+ * the instruction pointer to be restored from? The answer is either a static address, on the untrusted stack, a fixed
+ * trusted address, or nowhere. It may be possible to store some sort of protected thread local stack data structure
+ * for addreses of received signals but as the fixed trusted address can't handle multiple signals called on top of
+ * each other and the untrusted address leaves us very vulnerable to TOCTTOUs, we decided that we had little choice
+ * but to reserve the r14 register expressly for this purpose--any use of it within untrusted code is undefined.
+ * The rip and rsp values are importantly masked to 32 byte aligned addresses, see the comment at the top of
+ * linux/nacl_signal.c for more information, and the flags register is masked on the stack although this is pretty useless
+ * We make sure to restore the flags as it's crucial that things like OF and SF are restored.
+ *
+ * - Jonathan Singer
+ */
+
 .globl NaClTrampolineRegRestore
 .hidden NaClTrampolineRegRestore
 
@@ -280,7 +301,8 @@ NaClTrampolineRegRestore:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
     addq %r15, %rsp
