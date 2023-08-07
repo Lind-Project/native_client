@@ -34,7 +34,7 @@
  */
 
 /*
- * On the overall architecture of the untrusted signal handling system:
+ * The overall architecture of the untrusted signal handling system:
  *
  * When a a caught signal is recieved, we want to allow untrusted signal
  * handlers to run. This involves a large number of considerations for different
