@@ -76,7 +76,6 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
-extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -386,9 +385,6 @@ int NaClSelLdrMain(int argc, char **argv) {
         *redir_qend = entry;
         redir_qend = &entry->next;
         break;
-      case 'k':
-        use_lkm = false;
-        break;
       case 'l':
         log_file = optarg;
         break;
@@ -585,12 +581,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
 #if NACL_LINUX
-
-  if(use_lkm) //in case we haven't forced not using the lkm with -k
-    CheckForLkm();
-  if(!use_lkm) {
-    fprintf(stderr, "Not using the CoW Loadable kernel module!\n");
-  }
   NaClSignalHandlerInit();
 #endif
   /*
