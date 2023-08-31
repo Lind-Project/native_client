@@ -487,9 +487,6 @@ struct NaClApp {
   const struct NaClValidatorInterface *validator;
 };
 
-
-void CheckForLkm(void);
-
 void InitializeShmtable(void);
 void clear_shmentry(int shmid);
 
