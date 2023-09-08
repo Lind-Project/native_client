@@ -300,7 +300,7 @@ int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts,
                        timespecstruct, ts, int, mutex_handle);
 }
 
-int lind_sem_wait (unsigned int sem, int pshared, int value, int cageid) {
+int lind_sem_init (unsigned int sem, int pshared, int value, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_sem_wait, uint, sem, int, pshared, int, value);
 }
 
