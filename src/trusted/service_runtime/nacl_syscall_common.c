@@ -2752,8 +2752,8 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
 
   lindsval = lind_sem_getvalue(sem, nap->cage_id);
 
-  if (!NaClCopyOutToUser(nap, (intptr_t)sval, lindsval, sizeof(lindsval))) return -NACL_ABI_EFAULT;
-
+  *sval = (int32_t)lindsval;
+S
   return 0;
 }
 
