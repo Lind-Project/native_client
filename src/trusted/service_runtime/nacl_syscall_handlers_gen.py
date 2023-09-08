@@ -230,7 +230,7 @@ SYSCALL_LIST = [
     ('NACL_sys_sem_init', 'NaClSysSemInit', ['uint32_t sem', 'int32_t pshared', 'int32_t value']),
     ('NACL_sys_sem_wait', 'NaClSysSemWait', ['uint32_t sem']),
     ('NACL_sys_sem_trywait', 'NaClSysSemTryWait', ['uint32_t sem']),
-    ('NACL_sys_sem_timedwait', 'NaClSysSemTimedWait', ['uint32_t sem'], ['struct nacl_abi_timespec *ts']),
+    ('NACL_sys_sem_timedwait', 'NaClSysSemTimedWait', ['uint32_t sem', 'struct nacl_abi_timespec *ts']),
     ('NACL_sys_sem_post', 'NaClSysSemPost', ['uint32_t sem']),
     ('NACL_sys_sem_destroy', 'NaClSysSemDestroy', ['uint32_t sem']),
     ('NACL_sys_sem_getvalue', 'NaClSysSemGetValue', ['uint32_t sem', 'int32_t *sval']),
