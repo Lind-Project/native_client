@@ -324,8 +324,8 @@ int lind_sem_destroy (unsigned int sem, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
 }
 
-int lind_sem_getvalue (unsigned int sem, int *sval, int cageid) {
-    DISPATCH_SYSCALL_2(LIND_safe_sem_wait, uint, sem, intptr, sval);
+int lind_sem_getvalue (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
 }
 
 int lind_getcwd (char *buf, size_t size, int cageid) {

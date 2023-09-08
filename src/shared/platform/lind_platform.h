@@ -246,7 +246,7 @@ int lind_sem_trywait (unsigned int sem, int cageid);
 int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid);
 int lind_sem_post (unsigned int sem, int cageid);
 int lind_sem_destroy (unsigned int sem, int cageid);
-int lind_sem_getvalue (unsigned int sem, int *sval, int cageid);
+int lind_sem_getvalue (unsigned int sem, int cageid);
 int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);

@@ -2737,25 +2737,24 @@ int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
            ", %d\n",
            (uintptr_t)natp, sem);
 
-  return lind_sem_detroy(sem, nap->cage_id);
+  return lind_sem_destroy(sem, nap->cage_id);
 }
 
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
                            uint32_t              sem,
                            int32_t              *sval) {
   struct NaClApp  *nap = natp->nap;
-  int *syssval;
-  int retval;
+  int lindsval;
+
   NaClLog(2, "Entered NaClSysSemGetvalue(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
 
+  lindsval = lind_sem_getvalue(sem, nap->cage_id);
 
-  retval = lind_sem_getvalue(sem, syssval, nap->cage_id);
+  if (!NaClCopyOutToUser(nap, (intptr_t)sval, lindsval, sizeof(lindsval))) return -NACL_ABI_EFAULT;
 
-  if (!NaClCopyOutToUser(nap, (intptr_t)sval, syssval, sizeof(syssval))) return -NACL_ABI_EFAULT;
-
-
+  return 0;
 }
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,

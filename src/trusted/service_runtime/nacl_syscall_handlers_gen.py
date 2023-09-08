@@ -227,7 +227,7 @@ SYSCALL_LIST = [
      ['int32_t cond_handle', 'int32_t mutex_handle',
       'struct nacl_abi_timespec *ts']),
     ('NACL_sys_socketpair', 'NaClSysSocketPair', ['int domain', 'int type', 'int protocol', 'int *fds']),
-    ('NACL_sys_sem_init', 'NaClSysSemCreate', ['uint32_t sem', 'int32_t pshared', 'int32_t value']),
+    ('NACL_sys_sem_init', 'NaClSysSemInit', ['uint32_t sem', 'int32_t pshared', 'int32_t value']),
     ('NACL_sys_sem_wait', 'NaClSysSemWait', ['uint32_t sem']),
     ('NACL_sys_sem_trywait', 'NaClSysSemTryWait', ['uint32_t sem']),
     ('NACL_sys_sem_timedwait', 'NaClSysSemTimedWait', ['uint32_t sem'], ['struct nacl_abi_timespec *ts']),
