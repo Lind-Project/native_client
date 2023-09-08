@@ -109,6 +109,14 @@
 #define LIND_safe_cond_signal           79
 #define LIND_safe_cond_timedwait        80
 
+#define LIND_safe_sem_init               91
+#define LIND_safe_sem_wait               92
+#define LIND_safe_sem_trywait            93
+#define LIND_safe_sem_timedwait          94
+#define LIND_safe_sem_post               95
+#define LIND_safe_sem_destroy            96
+#define LIND_safe_sem_getvalue           97
+
 #define LIND_safe_net_gethostname       125
 
 #define LIND_safe_fs_pread              126
@@ -130,6 +138,7 @@
 union RustArg {
     int dispatch_int;
     unsigned int dispatch_uint;
+    int *dispatch_intptr;
     long unsigned int dispatch_ulong;
     long long unsigned int dispatch_ulong_long;
     long int dispatch_long;
@@ -231,6 +240,13 @@ int lind_cond_wait (int cond_handle, int mutex_handle, int cageid);
 int lind_cond_broadcast (int cond_handle, int cageid);
 int lind_cond_signal (int cond_handle, int cageid);
 int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid);
+int lind_sem_wait (unsigned int sem, int pshared, int value, int cageid);
+int lind_sem_wait (unsigned int sem, int cageid);
+int lind_sem_trywait (unsigned int sem, int cageid);
+int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid);
+int lind_sem_post (unsigned int sem, int cageid);
+int lind_sem_destroy (unsigned int sem, int cageid);
+int lind_sem_getvalue (unsigned int sem, int *sval, int cageid);
 int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);

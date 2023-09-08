@@ -300,6 +300,34 @@ int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts,
                        timespecstruct, ts, int, mutex_handle);
 }
 
+int lind_sem_wait (unsigned int sem, int pshared, int value, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sem_wait, uint, sem, int, pshared, int, value);
+}
+
+int lind_sem_wait (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+}
+
+int lind_sem_trywait (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_trywait, uint, sem);
+}
+
+int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_sem_timedwait, uint, sem, timespecstruct, abs);
+}
+
+int lind_sem_post (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+}
+
+int lind_sem_destroy (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+}
+
+int lind_sem_getvalue (unsigned int sem, int *sval, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_sem_wait, uint, sem, intptr, sval);
+}
+
 int lind_getcwd (char *buf, size_t size, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_getcwd, mutcbuf, buf, size_t, size);
 }

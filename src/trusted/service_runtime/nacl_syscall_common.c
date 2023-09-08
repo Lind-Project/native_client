@@ -2660,128 +2660,102 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts) {
   struct NaClApp           *nap = natp->nap;
-  int32_t                  retval = -NACL_ABI_EINVAL;
   struct nacl_abi_timespec trusted_ts;
 
   NaClLog(2, "Entered NaClSysCondTimedWaitAbs(0x%08"NACL_PRIxPTR
            ", %d, %d, 0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, cond_handle, mutex_handle, (uintptr_t)ts);
 
-  if (!NaClCopyInFromUser(nap, &trusted_ts,
-                          (uintptr_t) ts, sizeof(trusted_ts))) {
-    retval = -NACL_ABI_EFAULT;
-    goto cleanup;
-  }
+  if (!NaClCopyInFromUser(nap, &trusted_ts, (uintptr_t) ts, sizeof(trusted_ts))) { return -NACL_ABI_EFAULT; }
 
-  retval = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
+  return lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
-cleanup:
-  return retval;
 }
 
-//TODO: semaphores currently do not have a proper implementation as the desc numbers cannot be
-//cloned on fork and thus we can't really implement them in lind as is. We must do a proper
-//implementation of semaphores as not desc associated in order for this to work properly.
-//However, this is irrelevant for now, as semaphores are not hooked in through glibc
-int32_t NaClSysSemCreate(struct NaClAppThread *natp,
-                         int32_t              init_value) {
-  struct NaClApp           *nap = natp->nap;
-  int32_t                  retval = -NACL_ABI_EINVAL;
-  struct NaClDescSemaphore *desc;
+int32_t NaClSysSemInit(struct NaClAppThread *natp,
+                         uint32_t             sem,
+                         int32_t              pshared,
+                         int32_t              value) {
+  struct NaClApp  *nap = natp->nap;
+  NaClLog(2, "Entered NaClSysSemInit(0x%08"NACL_PRIxPTR
+           ", %d, %d, %d\n",
+           (uintptr_t)natp, sem, pshared, value);
 
-  NaClLog(3,
-          ("Entered NaClSysSemCreate(0x%08"NACL_PRIxPTR
-           ", %d)\n"),
-          (uintptr_t) natp, init_value);
+  return lind_sem_init(sem, pshared, value, nap->cage_id);
 
-  desc = malloc(sizeof(*desc));
-
-  if (!desc || !NaClDescSemaphoreCtor(desc, init_value)) {
-    retval = -NACL_ABI_ENOMEM;
-    goto cleanup;
-  }
-
-  retval = NaClSetAvail(nap, (struct NaClDesc *) desc);
-  desc = NULL;
-cleanup:
-  free(desc);
-  return retval;
 }
-
 
 int32_t NaClSysSemWait(struct NaClAppThread *natp,
-                       int32_t              sem_handle) {
+                       uint32_t              sem) {
   struct NaClApp  *nap = natp->nap;
-  int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
-
   NaClLog(2, "Entered NaClSysSemWait(0x%08"NACL_PRIxPTR
-           ", %d)\n",
-          (uintptr_t)natp, sem_handle);
+           ", %d\n",
+           (uintptr_t)natp, sem);
 
-  desc = NaClGetDesc(nap, sem_handle);
+  return lind_sem_wait(sem, nap->cage_id);
+ }
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
+                            uint32_t              sem) {
+  struct NaClApp  *nap = natp->nap;
+  NaClLog(2, "Entered NaClSysSemTryWait(0x%08"NACL_PRIxPTR
+           ", %d\n",
+           (uintptr_t)natp, sem);
 
-  /*
-   * TODO(gregoryd): we have to decide on the syscall API: do we
-   * switch to read/write/ioctl API or do we stay with the more
-   * detailed API. Anyway, using a single syscall for waiting on all
-   * synchronization objects makes sense.
-   */
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->SemWait)(desc);
-  NaClDescUnref(desc);
-cleanup:
-  return retval;
+  return lind_sem_trywait(sem, nap->cage_id);
+}
+
+int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
+                            uint32_t              sem,
+                            struct nacl_abi_timespec *abs) {
+  struct NaClApp  *nap = natp->nap;
+  struct nacl_abi_timespec trusted_abs;
+
+  NaClLog(2, "Entered NaClSysSemTimedWait(0x%08"NACL_PRIxPTR
+           ", %d, 0x%08"NACL_PRIxPTR")\n",
+           (uintptr_t)natp, sem, (uintptr_t)abs);
+
+  if (!NaClCopyInFromUser(nap, &trusted_abs, (uintptr_t) abs, sizeof(trusted_abs))) { return -NACL_ABI_EFAULT; }
+
+  return lind_sem_timedwait(sem, (struct timespec*) &trusted_abs, nap->cage_id); 
 }
 
 int32_t NaClSysSemPost(struct NaClAppThread *natp,
-                       int32_t              sem_handle) {
+                       uint32_t              sem) {
   struct NaClApp  *nap = natp->nap;
-  int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
-
   NaClLog(2, "Entered NaClSysSemPost(0x%08"NACL_PRIxPTR
-           ", %d)\n",
-           (uintptr_t)natp, sem_handle);
+           ", %d\n",
+           (uintptr_t)natp, sem);
 
-  desc = NaClGetDesc(nap, sem_handle);
+  return lind_sem_post(sem, nap->cage_id);
+}
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
+                          uint32_t              sem) {
+  struct NaClApp  *nap = natp->nap;
+  NaClLog(2, "Entered NaClSysSemDestroy(0x%08"NACL_PRIxPTR
+           ", %d\n",
+           (uintptr_t)natp, sem);
 
-  retval = ((struct NaClDescVtbl const *) desc->base.vtbl)->Post(desc);
-  NaClDescUnref(desc);
-cleanup:
-  return retval;
+  return lind_sem_detroy(sem, nap->cage_id);
 }
 
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
-                           int32_t              sem_handle) {
+                           uint32_t              sem,
+                           int32_t              *sval) {
   struct NaClApp  *nap = natp->nap;
-  int32_t         retval = -NACL_ABI_EINVAL;
-  struct NaClDesc *desc;
+  int *syssval;
+  int retval;
+  NaClLog(2, "Entered NaClSysSemGetvalue(0x%08"NACL_PRIxPTR
+           ", %d\n",
+           (uintptr_t)natp, sem);
 
-  NaClLog(2, "Entered NaClSysSemGetValue(0x%08"NACL_PRIxPTR
-           ", %d)\n",
-           (uintptr_t)natp, sem_handle);
 
-  desc = NaClGetDesc(nap, sem_handle);
+  retval = lind_sem_getvalue(sem, syssval, nap->cage_id);
 
-  if (!desc) {
-    retval = -NACL_ABI_EBADF;
-    goto cleanup;
-  }
+  if (!NaClCopyOutToUser(nap, (intptr_t)sval, syssval, sizeof(syssval))) return -NACL_ABI_EFAULT;
 
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->GetValue)(desc);
-  NaClDescUnref(desc);
-cleanup:
-  return retval;
+
 }
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
