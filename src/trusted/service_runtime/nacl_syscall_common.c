@@ -2752,9 +2752,14 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
 
   lindsval = lind_sem_getvalue(sem, nap->cage_id);
 
-  *sval = (int32_t)lindsval;
-S
-  return 0;
+  // if we return a value, thats the sem value, lets set the user sval to it and return 0
+  // otherwise return the errno
+  if (lindsval > 0) {
+    *sval = (int32_t)lindsval;
+    lindsval = 0;
+  } 
+
+  return lindsval;
 }
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
