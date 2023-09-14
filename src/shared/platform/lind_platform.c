@@ -301,7 +301,7 @@ int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts,
 }
 
 int lind_sem_init (unsigned int sem, int pshared, int value, int cageid) {
-    DISPATCH_SYSCALL_3(LIND_safe_sem_wait, uint, sem, int, pshared, int, value);
+    DISPATCH_SYSCALL_3(LIND_safe_sem_init, uint, sem, int, pshared, int, value);
 }
 
 int lind_sem_wait (unsigned int sem, int cageid) {
@@ -317,15 +317,15 @@ int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid) {
 }
 
 int lind_sem_post (unsigned int sem, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+    DISPATCH_SYSCALL_1(LIND_safe_sem_post, uint, sem);
 }
 
 int lind_sem_destroy (unsigned int sem, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+    DISPATCH_SYSCALL_1(LIND_safe_sem_destroy, uint, sem);
 }
 
 int lind_sem_getvalue (unsigned int sem, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+    DISPATCH_SYSCALL_1(LIND_safe_sem_getvalue, uint, sem);
 }
 
 int lind_getcwd (char *buf, size_t size, int cageid) {
