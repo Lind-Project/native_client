@@ -8,7 +8,7 @@
 #include "native_client/src/untrusted/nacl/syscall_bindings_trampoline.h"
 
 static int nacl_irt_sem_create(int *sem_handle, int32_t value) {
-  int rv = NACL_SYSCALL(sem_create)(value);
+  int rv = NACL_SYSCALL(sem_init)(value);
   if (rv < 0)
     return -rv;
   *sem_handle = rv;
