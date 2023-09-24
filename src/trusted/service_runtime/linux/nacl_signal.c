@@ -348,6 +348,11 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
  * untrusted address space, and returns true.  Otherwise, it returns
  * false. See the DispatchToUntrustedHandler sections in the explanatory
  * comment above.
+ * 
+ * Note: struct NaClSignalContext *regs is:
+ * untrusted: the untrusted registers
+ * trusted: the trusted registers (untrusted registers are stored in natp->user at this point)
+ * trusted also has edges cases where this isn't true (see edge cases below)
  */
 static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
                                       int sig,
@@ -359,12 +364,9 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   uint32_t new_stack_ptr;
   uintptr_t context_user_addr;
   uint32_t lind_exception_handler;
-
-  /*
-  if (!NaClSignalCheckSandboxInvariants(regs, natp)) {
-    return 0;
-  }
-  */
+  
+  // Single stepping to 32-byte boundary if we have set SIGTRAP
+  // if we reach boundary: unset SIGTRAP, otherwise return
   // This must be before the lindgetsighandler call
   // See the "32 byte alignment & single stepping" section in the explanatory comment at the top of this file
   if(sig == SIGTRAP && natp->single_stepping_signum) {
@@ -377,7 +379,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     }
   }
 
-  lind_exception_handler = lindgetsighandler(nap->cage_id, sig);
+  lind_exception_handler = lindgetsighandler(nap->cage_id, sig); // retrive handler address from RustPOSIX
 
   if (lind_exception_handler == 0) {
     return 0;
@@ -416,10 +418,15 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
        * manually setting registers and the program counter.
        */
       char *pc = (void*) regs->prog_ctr;
+
       if (pc >= &NaClGetTlsFastPath1 &&
           pc < &NaClGetTlsFastPath1End) {
+        
+        // Case 1: TLSFastPath1
+        // we just emulate the tls_syscall function (assembly in nacl_syscall_64.S) here instead of interuppting it
+
         *is_untrusted = -1;
-        natp->user.rax = (uintptr_t) natp->user.tls_value1;
+        natp->user.rax = (uintptr_t) natp->user.tls_value1; 
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath1RspRestored) {
           natp->user.rcx = *(uintptr_t*) regs->stack_ptr;
           regs->stack_ptr += 8;  /* Pop user return address */
@@ -429,8 +436,12 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
           else
             natp->user.rcx = regs->rcx - 31;
         }
+
       } else if (pc >= &NaClGetTlsFastPath2 &&
                  pc < &NaClGetTlsFastPath2End) {
+
+        // Case 2: TLSFastPath2 (same logic as fastpath 1)
+
         *is_untrusted = -1;
         natp->user.rax = (uintptr_t) natp->user.tls_value2;
         if (regs->prog_ctr < (uintptr_t) &NaClGetTlsFastPath2RspRestored) {
@@ -443,8 +454,13 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
             natp->user.rcx = regs->rcx - 31;
           natp->user.rcx = regs->rcx;
         }
+
       } else if(pc >= (char*) &NaClSyscallSeg && pc < &NaClSyscallSegEnd) {
+
+        // Case 3: Syscall Entry
+
         //syscall start, manually populate natp for callee saved registers
+        // we don't know where we've split the regs population but it doesnt hurt to set values twice, so we do that here
         natp->user.rbx = regs->rbx;
         natp->user.rbp = regs->rbp;
         if(NaClIsUserAddr(natp->nap, regs->stack_ptr))
@@ -452,13 +468,19 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         natp->user.r12 = regs->r12;
         natp->user.r13 = regs->r13;
       } else if (!(pc >= &NaClSyscallCSegHook && pc < &NaClSyscallCSegHookInitialized)) {
+
+        // Case 4: Syscall Exit
+
         //syscall end, re-run register copy-out
+        // we just need to set rip/rdi/rsp to make sure we run NaClSwitchToApp properly
+        // NaClSwitch will handle the rest of the register switching
         regs->prog_ctr = (uintptr_t) &NaClSwitchToApp;
         regs->rdi = (uintptr_t) natp;
         regs->stack_ptr = natp->user.trusted_stack_ptr; //in case rsp is restored, making sure we stay on the trusted stack
       } //otherwise we are in syscall start but everything is already known to be ok
 
       if(*is_untrusted == -1) {
+        // Complete TLSFastPath register switching
         natp->user.rbp = regs->rbp;
         natp->user.rbx = regs->rbx;
         natp->user.rsp = regs->stack_ptr;
