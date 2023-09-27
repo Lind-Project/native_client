@@ -150,7 +150,7 @@ typedef int (*TYPE_nacl_cond_timed_wait_abs) (int condvar,
 /* semaphore */
 /* ============================================================ */
 
-typedef int (*TYPE_nacl_sem_create) (int32_t value);
+typedef int (*TYPE_nacl_sem_init) (int32_t value);
 typedef int (*TYPE_nacl_sem_wait) (int sem);
 typedef int (*TYPE_nacl_sem_post) (int sem);
 
