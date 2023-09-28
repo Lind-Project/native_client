@@ -2343,7 +2343,7 @@ cleanup:
 
 }
 
-int32_t NaClSysShmctl(struct NaClAppThread        *natp,
+int32_t NaClSys (struct NaClAppThread        *natp,
                       int                         shmid,
                       int                         cmd,
                       struct lind_shmid_ds        *buf) {
@@ -2365,6 +2365,9 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
       return -NACL_ABI_EFAULT;
     }
     bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(*bufsysaddr), NACL_ABI_PROT_READ);
+    if (bufsysaddr == NULL) {
+      return -NACL_ABI_EFAULT;
+    }
   } else bufsysaddr = NULL;
 
   retval = lind_shmctl(shmid, cmd, bufsysaddr, nap->cage_id);
