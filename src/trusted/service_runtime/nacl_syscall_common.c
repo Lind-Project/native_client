@@ -2343,7 +2343,7 @@ cleanup:
 
 }
 
-int32_t NaClSys (struct NaClAppThread        *natp,
+int32_t NaClSysShmctl (struct NaClAppThread        *natp,
                       int                         shmid,
                       int                         cmd,
                       struct lind_shmid_ds        *buf) {
