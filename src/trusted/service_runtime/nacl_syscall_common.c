@@ -871,8 +871,6 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
                      nacl_abi_off_t       *offp,
                      int                  whence) {
   struct NaClApp  *nap = natp->nap;
-  nacl_abi_off_t  offset;
-  nacl_off64_t    retval64;
   int32_t         retval = -NACL_ABI_EINVAL;
 
 
@@ -882,24 +880,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
   if (d < 0) return -NACL_ABI_EBADF;
 
-  if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) return -NACL_ABI_EFAULT;
 
-  NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
-
-  retval64 = lind_lseek(d, offset, whence, nap->cage_id);
-
-  if (NaClOff64IsNegErrno(&retval64)) {
-    retval = (int32_t) retval64;
-  } else {
-    if (NaClCopyOutToUser(nap, (uintptr_t) offp, &retval64, sizeof(retval64))) {
-      retval = 0;
-    } else {
-      NaClLog(LOG_FATAL,
-              "NaClSysLseek: in/out ptr became invalid at copyout?\n");
-    }
-  }
-
-  return retval;
+  return lind_lseek(d, offset, whence, nap->cage_id);
 }
 
 int32_t NaClSysIoctl(struct NaClAppThread *natp,
