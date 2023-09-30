@@ -868,7 +868,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
  */
 int32_t NaClSysLseek(struct NaClAppThread *natp,
                      int                  d,
-                     off_t                offset,
+                     nacl_abi_off_t       offset,
                      int                  whence) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
