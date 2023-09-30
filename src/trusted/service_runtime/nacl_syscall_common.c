@@ -874,9 +874,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
 
 
-  NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
-           " 0x%08"NACL_PRIxPTR", %d)\n",
-          (uintptr_t) natp, d, (uintptr_t) offp, whence);
+  NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d, %d, %d)\n",
+          (uintptr_t) natp, d, offset, whence);
 
   if (d < 0) return -NACL_ABI_EBADF;
 
