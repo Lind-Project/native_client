@@ -2360,14 +2360,14 @@ int32_t NaClSysShmctl (struct NaClAppThread        *natp,
   }
 
   if (cmd == IPC_STAT) {
-    if ((void*) kNaClBadAddress == bufsysaddr) {
-      NaClLog(2, "NaClSysShmCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
-      return -NACL_ABI_EFAULT;
-    }
     if (buf == NULL) {
       return -NACL_ABI_EFAULT;
     }
     bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(*bufsysaddr), NACL_ABI_PROT_READ);
+    if ((void*) kNaClBadAddress == bufsysaddr) {
+      NaClLog(2, "NaClSysShmCtl could not translate buffer address, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
   } else bufsysaddr = NULL;
 
   retval = lind_shmctl(shmid, cmd, bufsysaddr, nap->cage_id);
