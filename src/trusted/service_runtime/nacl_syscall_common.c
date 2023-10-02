@@ -2360,7 +2360,7 @@ int32_t NaClSysShmctl (struct NaClAppThread        *natp,
   }
 
   if (cmd == IPC_STAT) {
-    if (((uintptr_t)buf << 32) == NULL) {
+    if (!buf) {
       return -NACL_ABI_EFAULT;
     }
     bufsysaddr = (struct lind_shmid_ds*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, sizeof(*bufsysaddr), NACL_ABI_PROT_READ);
