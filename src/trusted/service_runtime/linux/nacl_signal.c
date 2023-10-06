@@ -510,7 +510,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   /* Allocate space for the stack frame, and ensure its alignment. */
   new_stack_ptr -=
       sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN;
-  // new_stack_ptr = new_stack_ptr & ~NACL_STACK_ALIGN_MASK;
+  new_stack_ptr = new_stack_ptr & ~NACL_STACK_ALIGN_MASK;
   new_stack_ptr -= NACL_STACK_ARGS_SIZE;
   new_stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
   frame_addr = NaClUserToSysAddrRange(nap, new_stack_ptr,
