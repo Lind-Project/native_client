@@ -301,7 +301,7 @@ NaClTrampolineRegRestore:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -347,7 +347,7 @@ NaClTrampolineRegRestore1:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -393,7 +393,7 @@ NaClTrampolineRegRestore2:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -439,7 +439,7 @@ NaClTrampolineRegRestore3:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -485,7 +485,7 @@ NaClTrampolineRegRestore4:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -531,7 +531,7 @@ NaClTrampolineRegRestore5:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -577,7 +577,7 @@ NaClTrampolineRegRestore6:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -623,7 +623,7 @@ NaClTrampolineRegRestore7:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -669,7 +669,7 @@ NaClTrampolineRegRestore8:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -715,7 +715,7 @@ NaClTrampolineRegRestore9:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -761,7 +761,7 @@ NaClTrampolineRegRestore10:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -807,7 +807,7 @@ NaClTrampolineRegRestore11:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -853,7 +853,7 @@ NaClTrampolineRegRestore12:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -899,7 +899,7 @@ NaClTrampolineRegRestore13:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -945,7 +945,7 @@ NaClTrampolineRegRestore14:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
@@ -991,7 +991,7 @@ NaClTrampolineRegRestore15:
 # we must return to a 32 byte address,so pad with nops
 .nops 23
     lea 130(%rip), %rax
-    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+    call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
     addl $64, %esp /* skip unused fields */
