@@ -380,7 +380,7 @@ NaClTrampolineRegRestore1:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 137(%rsp), %rsp
     jmp *%r14
 
 // offset 2
@@ -426,7 +426,7 @@ NaClTrampolineRegRestore2:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 138(%rsp), %rsp
     jmp *%r14
 
 // offset 3
@@ -472,7 +472,7 @@ NaClTrampolineRegRestore3:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 139(%rsp), %rsp
     jmp *%r14
 
 // offset 1
@@ -518,7 +518,7 @@ NaClTrampolineRegRestore4:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 140(%rsp), %rsp
     jmp *%r14
 
 // offset 1
@@ -564,10 +564,10 @@ NaClTrampolineRegRestore5:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 141(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 6
 .globl NaClTrampolineRegRestore6
 .hidden NaClTrampolineRegRestore6
 
@@ -610,10 +610,10 @@ NaClTrampolineRegRestore6:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 142(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 7
 .globl NaClTrampolineRegRestore7
 .hidden NaClTrampolineRegRestore7
 
@@ -656,10 +656,10 @@ NaClTrampolineRegRestore7:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 143(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 8
 .globl NaClTrampolineRegRestore8
 .hidden NaClTrampolineRegRestore8
 
@@ -702,10 +702,10 @@ NaClTrampolineRegRestore8:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 144(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 9
 .globl NaClTrampolineRegRestore9
 .hidden NaClTrampolineRegRestore9
 
@@ -748,10 +748,10 @@ NaClTrampolineRegRestore9:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 145(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 10
 .globl NaClTrampolineRegRestore10
 .hidden NaClTrampolineRegRestore10
 
@@ -794,10 +794,10 @@ NaClTrampolineRegRestore10:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 146(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 11
 .globl NaClTrampolineRegRestore11
 .hidden NaClTrampolineRegRestore11
 
@@ -840,10 +840,10 @@ NaClTrampolineRegRestore11:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 147(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 12
 .globl NaClTrampolineRegRestore12
 .hidden NaClTrampolineRegRestore12
 
@@ -886,10 +886,10 @@ NaClTrampolineRegRestore12:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 148(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 13
 .globl NaClTrampolineRegRestore13
 .hidden NaClTrampolineRegRestore13
 
@@ -932,10 +932,10 @@ NaClTrampolineRegRestore13:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 149(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 14
 .globl NaClTrampolineRegRestore14
 .hidden NaClTrampolineRegRestore14
 
@@ -978,10 +978,10 @@ NaClTrampolineRegRestore14:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 150(%rsp), %rsp
     jmp *%r14
 
-// offset 1
+// offset 15
 .globl NaClTrampolineRegRestore15
 .hidden NaClTrampolineRegRestore15
 
@@ -1024,5 +1024,5 @@ NaClTrampolineRegRestore15:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    leaq 151(%rsp), %rsp
     jmp *%r14
