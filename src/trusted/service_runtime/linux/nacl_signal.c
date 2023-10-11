@@ -508,7 +508,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   }
 
   /* Allocate space for the stack frame, and ensure its alignment. */
-  new_stack_ptr_pad -= new_stack_ptr_rz - (sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN);
+  new_stack_ptr_pad = new_stack_ptr_rz - (sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN);
   new_stack_ptr_align = new_stack_ptr_pad & ~NACL_STACK_ALIGN_MASK;
   stack_offset = new_stack_ptr_pad - new_stack_ptr_align; // we need to grab the offset here to direct to the correct return function
 

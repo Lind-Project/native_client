@@ -595,12 +595,14 @@ void  NaClLoadTrampoline(struct NaClApp *nap) {
                              + (NACL_SYSCALL_BLOCK_SIZE *
                                 NACL_sys_second_tls_get));
   NaClPatchOneTrampoline(nap, nap->mem_start + NACL_SYSCALL_START_ADDR + NACL_SYSCALL_BLOCK_SIZE * NACL_sys_sigmask_sigreturn);
-
+  
   for (int i = 0; i < 16; i++) { // install all restore functions for offset 0 -15
       NaClPatchRegTrampolineCall(nap->mem_start + NACL_SYSCALL_START_ADDR
                              + (NACL_SYSCALL_BLOCK_SIZE *
                                 NACL_sys_reg_restore + (4 * i))); // each of these takes up 4 trampoline slots
   }
+
+#endif
 
   NACL_TEST_INJECTION(ChangeTrampolines, (nap));
 }
