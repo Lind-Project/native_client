@@ -300,7 +300,7 @@ NaClTrampolineRegRestore:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -346,7 +346,7 @@ NaClTrampolineRegRestore1:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -392,7 +392,7 @@ NaClTrampolineRegRestore2:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -438,7 +438,7 @@ NaClTrampolineRegRestore3:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -484,7 +484,7 @@ NaClTrampolineRegRestore4:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -530,7 +530,7 @@ NaClTrampolineRegRestore5:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -576,7 +576,7 @@ NaClTrampolineRegRestore6:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -622,7 +622,7 @@ NaClTrampolineRegRestore7:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -668,7 +668,7 @@ NaClTrampolineRegRestore8:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -714,7 +714,7 @@ NaClTrampolineRegRestore9:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -760,7 +760,7 @@ NaClTrampolineRegRestore10:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -806,7 +806,7 @@ NaClTrampolineRegRestore11:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -852,7 +852,7 @@ NaClTrampolineRegRestore12:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -898,7 +898,7 @@ NaClTrampolineRegRestore13:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -944,7 +944,7 @@ NaClTrampolineRegRestore14:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
@@ -990,7 +990,7 @@ NaClTrampolineRegRestore15:
 # restore sigprocmask using custom syscall
 # we must return to a 32 byte address,so pad with nops
 .nops 23
-    lea 130(%rip), %rax
+    lea 2050(%rip), %rax
     call *%rax # 2048 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
 # we do this as an indirect call so that the call being at the end of a 32 byte section is easier
 .align 32
