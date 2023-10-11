@@ -182,11 +182,102 @@
 #define NACL_sys_epoll_wait             159
 #define NACL_sys_fchdir                 161
 
-#define NACL_sys_reg_restore            250
+#define NACL_sys_reg_restore            190
 //We need to reserve more slots as the reg restoration takes more than 32 bytes
-#define __reg_restore_reserved_slot2    251
-#define __reg_restore_reserved_slot3    252
-#define __reg_restore_reserved_slot4    253
+#define __reg_restore_reserved_slot2    191
+#define __reg_restore_reserved_slot3    192
+#define __reg_restore_reserved_slot4    193
+
+#define NACL_sys_reg_restore1            194
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore1_reserved_slot2    195
+#define __reg_restore1_reserved_slot3    196
+#define __reg_restore1_reserved_slot4    197
+
+#define NACL_sys_reg_restore2            198
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore2_reserved_slot2    199
+#define __reg_restore2_reserved_slot3    200
+#define __reg_restore2_reserved_slot4    201
+
+#define NACL_sys_reg_restore3            202
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore3_reserved_slot2    203
+#define __reg_restore3_reserved_slot3    204
+#define __reg_restore3_reserved_slot4    205
+
+#define NACL_sys_reg_restore4            206
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore4_reserved_slot2    207
+#define __reg_restore4_reserved_slot3    208
+#define __reg_restore4_reserved_slot4    209
+
+#define NACL_sys_reg_restore5            210
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore5_reserved_slot2    211
+#define __reg_restore5_reserved_slot3    212
+#define __reg_restore5_reserved_slot4    213
+
+#define NACL_sys_reg6_restore6           214
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore6_reserved_slot2    215
+#define __reg_restore6_reserved_slot3    216
+#define __reg_restore6_reserved_slot4    217
+
+#define NACL_sys_reg_restore7            218
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore7_reserved_slot2    219
+#define __reg_restore7_reserved_slot3    220
+#define __reg_restore7_reserved_slot4    221
+
+#define NACL_sys_reg_restore8            222
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore8_reserved_slot2    223
+#define __reg_restore8_reserved_slot3    224
+#define __reg_restore8_reserved_slot4    225
+
+#define NACL_sys_reg_restore9            226
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore9_reserved_slot2    227
+#define __reg_restore9_reserved_slot3    228
+#define __reg_restore9_reserved_slot4    229
+
+#define NACL_sys_reg_restore10            230
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore10_reserved_slot2    231
+#define __reg_restore10_reserved_slot3    232
+#define __reg_restore10_reserved_slot4    233
+
+#define NACL_sys_reg_restore11            234
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore11_reserved_slot2    235
+#define __reg_restore11_reserved_slot3    236
+#define __reg_restore11_reserved_slot4    237
+
+#define NACL_sys_reg_restore12            238
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore12_reserved_slot2    239
+#define __reg_restore12_reserved_slot3    240
+#define __reg_restore12_reserved_slot4    241
+
+#define NACL_sys_reg_restore13            242
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore13_reserved_slot2    243
+#define __reg_restore13_reserved_slot3    244
+#define __reg_restore13_reserved_slot4    245
+
+#define NACL_sys_reg_restore14            246
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore14_reserved_slot2    247
+#define __reg_restore14_reserved_slot3    248
+#define __reg_restore14_reserved_slot4    249
+
+#define NACL_sys_reg_restore15            250
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore15_reserved_slot2    251
+#define __reg_restore15_reserved_slot3    252
+#define __reg_restore15_reserved_slot4    253
+
 #define NACL_sys_sigmask_sigreturn      255
 
 #define NACL_MAX_SYSCALLS               256

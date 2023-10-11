@@ -336,3 +336,693 @@ NaClTrampolineRegRestore:
     popfq #now restore flags from the duplicate location
     leaq 136(%rsp), %rsp
     jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore1
+.hidden NaClTrampolineRegRestore1
+
+.align 32
+NaClTrampolineRegRestore1:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 2
+.globl NaClTrampolineRegRestore2
+.hidden NaClTrampolineRegRestore2
+
+.align 32
+NaClTrampolineRegRestore2:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 3
+.globl NaClTrampolineRegRestore3
+.hidden NaClTrampolineRegRestore3
+
+.align 32
+NaClTrampolineRegRestore3:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore4
+.hidden NaClTrampolineRegRestore4
+
+.align 32
+NaClTrampolineRegRestore4:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore5
+.hidden NaClTrampolineRegRestore5
+
+.align 32
+NaClTrampolineRegRestore5:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore6
+.hidden NaClTrampolineRegRestore6
+
+.align 32
+NaClTrampolineRegRestore6:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore7
+.hidden NaClTrampolineRegRestore7
+
+.align 32
+NaClTrampolineRegRestore7:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore8
+.hidden NaClTrampolineRegRestore8
+
+.align 32
+NaClTrampolineRegRestore8:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore9
+.hidden NaClTrampolineRegRestore9
+
+.align 32
+NaClTrampolineRegRestore9:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore10
+.hidden NaClTrampolineRegRestore10
+
+.align 32
+NaClTrampolineRegRestore10:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore11
+.hidden NaClTrampolineRegRestore11
+
+.align 32
+NaClTrampolineRegRestore11:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore12
+.hidden NaClTrampolineRegRestore12
+
+.align 32
+NaClTrampolineRegRestore12:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore13
+.hidden NaClTrampolineRegRestore13
+
+.align 32
+NaClTrampolineRegRestore13:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore14
+.hidden NaClTrampolineRegRestore14
+
+.align 32
+NaClTrampolineRegRestore14:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14
+
+// offset 1
+.globl NaClTrampolineRegRestore15
+.hidden NaClTrampolineRegRestore15
+
+.align 32
+NaClTrampolineRegRestore15:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    leaq 136(%rsp), %rsp
+    jmp *%r14

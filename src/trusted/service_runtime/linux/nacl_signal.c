@@ -361,7 +361,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   struct NaClApp *nap = natp->nap;
   uintptr_t frame_addr;
   volatile struct NaClExceptionFrame *frame;
-  uint32_t new_stack_ptr;
+  uint32_t new_stack_ptr, new_stack_ptr_rz, new_stack_ptr_pad, new_stack_ptr_align, stack_offset;
   uintptr_t context_user_addr;
   uint32_t lind_exception_handler;
   
@@ -498,21 +498,21 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   if (natp->exception_stack == 0) {
     //account for redzone in untrusted
     if(*is_untrusted > 0)
-	  new_stack_ptr = regs->stack_ptr - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
+	  new_stack_ptr_rz = regs->stack_ptr - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
     else if(*is_untrusted == -1)
-	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
+	  new_stack_ptr_rz = natp->user.rsp - NACL_STACK_RED_ZONE - 8; //the -8 to standardize things between trusted and untrusted
     else
-	  new_stack_ptr = natp->user.rsp - NACL_STACK_RED_ZONE;
+	  new_stack_ptr_rz = natp->user.rsp - NACL_STACK_RED_ZONE;
   } else {
-    new_stack_ptr = natp->exception_stack;
+    new_stack_ptr_rz = natp->exception_stack;
   }
 
   /* Allocate space for the stack frame, and ensure its alignment. */
-  new_stack_ptr -=
-      sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN;
-  new_stack_ptr = new_stack_ptr & ~NACL_STACK_ALIGN_MASK;
-  new_stack_ptr -= NACL_STACK_ARGS_SIZE;
-  new_stack_ptr -= NACL_STACK_PAD_BELOW_ALIGN;
+  new_stack_ptr_pad -= new_stack_ptr_rz - (sizeof(struct NaClExceptionFrame) - NACL_STACK_PAD_BELOW_ALIGN);
+  new_stack_ptr_align = new_stack_ptr_pad & ~NACL_STACK_ALIGN_MASK;
+  stack_offset = new_stack_ptr_pad - new_stack_ptr_align; // we need to grab the offset here to direct to the correct return function
+
+  new_stack_ptr = new_stack_ptr_align - (NACL_STACK_ARGS_SIZE + NACL_STACK_PAD_BELOW_ALIGN);
   frame_addr = NaClUserToSysAddrRange(nap, new_stack_ptr,
                                       sizeof(struct NaClExceptionFrame));
   if (frame_addr == kNaClBadAddress) {
@@ -533,7 +533,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
     }
   }
   frame->return_addr = nap->mem_start + NACL_SYSCALL_START_ADDR
-                       + (NACL_SYSCALL_BLOCK_SIZE * NACL_sys_reg_restore);
+                       + (NACL_SYSCALL_BLOCK_SIZE * (NACL_sys_reg_restore +(4 * stack_offset)));
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   regs->prog_ctr = lind_exception_handler;
