@@ -310,7 +310,6 @@ NaClTrampolineRegRestore:
     popq %rcx
     popq %rdx
     popq %rbx
-    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
     popq %rsi #use a scratch register for rbp too
     movl %esi, %ebp
     addq %r15, %rbp
@@ -334,5 +333,5 @@ NaClTrampolineRegRestore:
     addq %r15, %r14
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
-    leaq 136(%rsp), %rsp
+    popq %rsp
     jmp *%r14
