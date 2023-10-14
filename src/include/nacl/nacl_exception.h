@@ -61,7 +61,6 @@ struct NaClUserRegisterStateX8664 {
   uint64_t rcx;
   uint64_t rdx;
   uint64_t rbx;
-  uint64_t stack_ptr;  /* rsp */
   uint64_t rbp;
   uint64_t rsi;
   uint64_t rdi;
@@ -75,6 +74,7 @@ struct NaClUserRegisterStateX8664 {
   uint64_t r15;
   uint64_t prog_ctr;  /* rip */
   uint32_t flags;
+  uint64_t stack_ptr;  /* rsp */
 };
 
 struct NaClUserRegisterStateARM {
