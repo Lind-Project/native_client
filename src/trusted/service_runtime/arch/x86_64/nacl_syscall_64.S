@@ -325,7 +325,7 @@ NaClTrampolineRegRestore:
     addl $16, %esp # skip restoring r14, r15
     addq %r15, %rsp
     popq %r14
-    addl $16, %esp #skip flags for now, other unused fields
+    addl $24, %esp #skip flags for now, other unused fields
     addq %r15, %rsp
 .align 32
 #    andl $0xffffffe0, %r14d
@@ -334,4 +334,6 @@ NaClTrampolineRegRestore:
     andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
     popfq #now restore flags from the duplicate location
     popq %rsp
+    movl %esp, %esp
+    lea (%rsp, %r15), %rsp
     jmp *%r14
