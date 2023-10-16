@@ -28,6 +28,7 @@ struct NaClExceptionFrame {
   struct NaClExceptionPortableContext portable;
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64
   nacl_reg_t flags_duplicate;
+  nacl_reg_t sp_duplicate;
 #endif
 };
 

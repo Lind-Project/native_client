@@ -310,6 +310,7 @@ NaClTrampolineRegRestore:
     popq %rcx
     popq %rdx
     popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
     popq %rsi #use a scratch register for rbp too
     movl %esi, %ebp
     addq %r15, %rbp
@@ -325,7 +326,7 @@ NaClTrampolineRegRestore:
     addl $16, %esp # skip restoring r14, r15
     addq %r15, %rsp
     popq %r14
-    addl $32, %esp #skip flags for now, other unused fields
+    addl $24, %esp #skip flags for now, other unused fields
     addq %r15, %rsp
 .align 32
 #    andl $0xffffffe0, %r14d

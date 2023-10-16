@@ -350,6 +350,7 @@ void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   frame->flags_duplicate = regs->flags;
+  frame->sp_duplicate = regs->stack_ptr;
 #endif
 }
 void NaClSignalSetUpExceptionFrameTrusted(volatile struct NaClExceptionFrame *frame,
@@ -399,5 +400,6 @@ void NaClSignalSetUpExceptionFrameTrusted(volatile struct NaClExceptionFrame *fr
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   frame->flags_duplicate = 0;
+  frame->sp_duplicate = (uint32_t) natp->user.rsp;
 #endif
 }
