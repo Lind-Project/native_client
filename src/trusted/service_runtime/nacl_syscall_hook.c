@@ -279,6 +279,7 @@ const char *syscall_names[] = {
   char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     syscall_name = syscall_names[sysnum];
+    printf("calling %s(", syscall_name);
   } else {
     printf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
     exit(-1);
@@ -307,7 +308,6 @@ const char *syscall_names[] = {
   };
   
   uintptr_t nextArgPtr = natp->usr_syscall_args;
-  printf("calling %s(", syscall_name);
   if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
       switch (syscallArgTypes[sysnum].types[i]) {
