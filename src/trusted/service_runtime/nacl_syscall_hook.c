@@ -32,6 +32,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
 
 
+
 /*
  * HandleStackContext() fetches some of the inputs to the NaCl syscall
  * from the untrusted stack.  It updates NaClThreadContext so that the
@@ -124,62 +125,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   NaClLog(4, "Entering syscall %"NACL_PRIuS
           ": return address 0x%08"NACL_PRIxNACL_REG"\n",
           sysnum, natp->user.new_prog_ctr);
-
-//#ifdef TRACE
-  // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
-  if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != null) {
-    printf("Invoking system call: %s\n", syscall_names[sysnum]);
-  } else {
-    printf("Invoking unknown system call with sysnum: %d\n", sysnum);
-  }
-//#endif
-
-  /*
-   * usr_syscall_args is used by Decoder functions in
-   * nacl_syscall_handlers.c which is automatically generated file and
-   * placed in the
-   * scons-out/.../gen/native_client/src/trusted/service_runtime/
-   * directory.  usr_syscall_args must point to the first argument of
-   * a system call. System call arguments are placed on the untrusted
-   * user stack.
-   *
-   * We save the user address for user syscall arguments fetching and
-   * for VM range locking.
-   */
-  natp->usr_syscall_args = NaClRawUserStackAddrNormalize(sp_user +
-                                                         NACL_SYSARGS_FIX);
-
-  if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
-    NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
-    sysret = -NACL_ABI_EINVAL;
-  } else {
-    sysret = (*(nap->syscall_table[sysnum].handler))(natp);
-    /* Implicitly drops lock */
-  }
-  NaClLog(4,
-          ("Returning from syscall %"NACL_PRIdS": return value %"NACL_PRId32
-           " (0x%"NACL_PRIx32")\n"),
-          sysnum, sysret, sysret);
-  natp->user.sysret = sysret;
-
-  /*
-   * After this NaClAppThreadSetSuspendState() call, we should not
-   * claim any mutexes, otherwise we risk deadlock.  Note that if
-   * NACLVERBOSITY is set high enough to enable the NaClLog() calls in
-   * NaClSwitchToApp(), these calls could deadlock.
-   */
-  
-  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
-                               NACL_APP_THREAD_UNTRUSTED);
-  NaClStackSafetyNowOnUntrustedStack();
-
-  NaClSwitchToApp(natp);
-  /* NOTREACHED */
-
-  fprintf(stderr, "NORETURN NaClSwitchToApp returned!?!\n");
-  NaClAbort();
-}
-
+          
 //#ifdef TRACE
 const char *syscall_names[] = {
     [1] = "null",
@@ -312,3 +258,58 @@ const char *syscall_names[] = {
     [161] = "fchdir",
 };
 //#endif
+//#ifdef TRACE
+  // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
+  if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != null) {
+    printf("Invoking system call: %s\n", syscall_names[sysnum]);
+    exit
+  } else {
+    printf("Invoking unknown system call with sysnum: %d\n", sysnum);
+  }
+//#endif
+
+  /*
+   * usr_syscall_args is used by Decoder functions in
+   * nacl_syscall_handlers.c which is automatically generated file and
+   * placed in the
+   * scons-out/.../gen/native_client/src/trusted/service_runtime/
+   * directory.  usr_syscall_args must point to the first argument of
+   * a system call. System call arguments are placed on the untrusted
+   * user stack.
+   *
+   * We save the user address for user syscall arguments fetching and
+   * for VM range locking.
+   */
+  natp->usr_syscall_args = NaClRawUserStackAddrNormalize(sp_user +
+                                                         NACL_SYSARGS_FIX);
+
+  if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
+    NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
+    sysret = -NACL_ABI_EINVAL;
+  } else {
+    sysret = (*(nap->syscall_table[sysnum].handler))(natp);
+    /* Implicitly drops lock */
+  }
+  NaClLog(4,
+          ("Returning from syscall %"NACL_PRIdS": return value %"NACL_PRId32
+           " (0x%"NACL_PRIx32")\n"),
+          sysnum, sysret, sysret);
+  natp->user.sysret = sysret;
+
+  /*
+   * After this NaClAppThreadSetSuspendState() call, we should not
+   * claim any mutexes, otherwise we risk deadlock.  Note that if
+   * NACLVERBOSITY is set high enough to enable the NaClLog() calls in
+   * NaClSwitchToApp(), these calls could deadlock.
+   */
+  
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED,
+                               NACL_APP_THREAD_UNTRUSTED);
+  NaClStackSafetyNowOnUntrustedStack();
+
+  NaClSwitchToApp(natp);
+  /* NOTREACHED */
+
+  fprintf(stderr, "NORETURN NaClSwitchToApp returned!?!\n");
+  NaClAbort();
+}
