@@ -306,8 +306,8 @@ const char *syscall_names[] = {
     [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_INT, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_NOARG}},
   };
   
-  uintptr_t nextArgPtr = nap->usr_syscall_args;
-  if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid {
+  uintptr_t nextArgPtr = natp->usr_syscall_args;
+  if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
       switch (syscallArgTypes[sysnum].types[i]) {
         case ARG_INT:
