@@ -303,7 +303,7 @@ const char *syscall_names[] = {
 
   
   // parse and output the arguments
-  const SyscallArgTypesEntry syscallArgTypes[] {
+  const SyscallArgTypesEntry syscallArgTypes[] = {
     [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_INT, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_NOARG}},
   };
   
