@@ -23,6 +23,7 @@
 #include "native_client/src/trusted/service_runtime/nacl_copy.h"
 #include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_handlers.h"
+#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 
@@ -257,14 +258,16 @@ const char *syscall_names[] = {
     [159] = "epoll_wait",
     [161] = "fchdir",
 };
+
 //#endif
 //#ifdef TRACE
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
+  char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
-    printf("Invoking system call: %s\n", syscall_names[sysnum]);
-    exit(0);
+    syscall_name = syscall_names[sysnum];
   } else {
-    printf("Invoking unknown system call with sysnum: %zu\n", sysnum);
+    printf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
+    exit(-1);
   }
 //#endif
 
@@ -282,6 +285,31 @@ const char *syscall_names[] = {
    */
   natp->usr_syscall_args = NaClRawUserStackAddrNormalize(sp_user +
                                                          NACL_SYSARGS_FIX);
+
+  
+  // parse and output the arguments
+  const SyscallArgTypesEntry syscallArgTypes[] {
+    [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_INT, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_NOARG}},
+  };
+  
+  uintptr_t nextArgPtr = nap->usr_syscall_args;
+  if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid {
+    for(int i = 0; i < MAX_ARGS; i++) {
+      switch (syscallArgTypes[sysnum].types[i]) {
+        case ARG_INT:
+          printf("%d, ", *(int*)nextArgPtr);
+          nextArgPtr += sizeof(int);
+          break;
+        case ARG_CHAR_P:
+          printf("%s, ", *(char**)nextArgPtr);
+          nextArgPtr += sizeof(char*);
+          break;
+        case ARG_NOARG:
+          break;
+      }
+    }
+    printf("\n");
+  }
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
     NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
@@ -312,4 +340,44 @@ const char *syscall_names[] = {
 
   fprintf(stderr, "NORETURN NaClSwitchToApp returned!?!\n");
   NaClAbort();
+}
+
+typedef enum {
+    ARG_NOARG,
+    ARG_INT,
+    ARG_CHAR_P,
+    // Add other types as needed
+} ArgType;
+
+typedef struct {
+    bool isValid;
+    int nArgs;
+    ArgType types[MAX_ARGS];
+} SyscallArgTypesEntry;
+
+#define MAX_ARGS 6
+
+void parse_args(void* stack_ptr, const ArgType* arg_types, int num_args) {
+    uintptr_t ptr = (uintptr_t)stack_ptr;
+
+    for (int i = 0; i < num_args && i < MAX_ARGS; i++) {
+        switch (arg_types[i]) {
+            case ARG_INT:
+                printf("Arg %d (int): %d\n", i + 1, *(int*)ptr);
+                ptr += sizeof(int);
+                break;
+            case ARG_DOUBLE:
+                printf("Arg %d (double): %f\n", i + 1, *(double*)ptr);
+                ptr += sizeof(double);
+                break;
+            case ARG_CHAR:
+                printf("Arg %d (char): %c\n", i + 1, *(char*)ptr);
+                ptr += sizeof(char);
+                break;
+            // Handle other types
+            default:
+                printf("Unknown type\n");
+                break;
+        }
+    }
 }
