@@ -262,9 +262,9 @@ const char *syscall_names[] = {
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     printf("Invoking system call: %s\n", syscall_names[sysnum]);
-    exit;
+    os.exit;
   } else {
-    printf("Invoking unknown system call with sysnum: %d\n", sysnum);
+    printf("Invoking unknown system call with sysnum: %zu\n", sysnum);
   }
 //#endif
 
