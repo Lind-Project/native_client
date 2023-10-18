@@ -125,7 +125,7 @@ NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   NaClLog(4, "Entering syscall %"NACL_PRIuS
           ": return address 0x%08"NACL_PRIxNACL_REG"\n",
           sysnum, natp->user.new_prog_ctr);
-          
+
 //#ifdef TRACE
 const char *syscall_names[] = {
     [1] = "null",
@@ -260,9 +260,9 @@ const char *syscall_names[] = {
 //#endif
 //#ifdef TRACE
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
-  if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != null) {
+  if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     printf("Invoking system call: %s\n", syscall_names[sysnum]);
-    exit
+    exit;
   } else {
     printf("Invoking unknown system call with sysnum: %d\n", sysnum);
   }
