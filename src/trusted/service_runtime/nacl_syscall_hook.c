@@ -308,23 +308,23 @@ const char *syscall_names[] = {
   };
   
   uintptr_t nextArgPtr = natp->usr_syscall_args;
-  if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
-    for(int i = 0; i < MAX_ARGS; i++) {
-      switch (syscallArgTypes[sysnum].types[i]) {
-        case ARG_INT:
-          printf("%d, ", *(int*)nextArgPtr);
-          nextArgPtr += sizeof(int);
-          break;
-        case ARG_CHAR_P:
-          printf("%s, ", *(char**)nextArgPtr);
-          nextArgPtr += sizeof(char*);
-          break;
-        case ARG_NOARG:
-          break;
-      }
-    }
-    printf(")\n");
-  }
+  // if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
+  //   for(int i = 0; i < MAX_ARGS; i++) {
+  //     switch (syscallArgTypes[sysnum].types[i]) {
+  //       case ARG_INT:
+  //         printf("%d, ", *(int*)nextArgPtr);
+  //         nextArgPtr += sizeof(int);
+  //         break;
+  //       case ARG_CHAR_P:
+  //         printf("%s, ", *(char**)nextArgPtr);
+  //         nextArgPtr += sizeof(char*);
+  //         break;
+  //       case ARG_NOARG:
+  //         break;
+  //     }
+  //   }
+  //   printf(")\n");
+  // }
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
     NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
