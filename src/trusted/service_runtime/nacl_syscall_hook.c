@@ -307,6 +307,7 @@ const char *syscall_names[] = {
   };
   
   uintptr_t nextArgPtr = natp->usr_syscall_args;
+  printf("calling %s(", syscall_name);
   if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
       switch (syscallArgTypes[sysnum].types[i]) {
@@ -322,7 +323,7 @@ const char *syscall_names[] = {
           break;
       }
     }
-    printf("\n");
+    printf(")\n");
   }
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
