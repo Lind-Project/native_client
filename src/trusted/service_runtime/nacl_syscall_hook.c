@@ -90,6 +90,7 @@ static void HandleStackContext(struct NaClAppThread *natp,
   *sp_user_out = sp_user;
 }
 
+#define MAX_ARGS 6
 typedef enum {
     ARG_NOARG,
     ARG_INT,
@@ -102,8 +103,6 @@ typedef struct {
     int nArgs;
     ArgType types[MAX_ARGS];
 } SyscallArgTypesEntry;
-
-#define MAX_ARGS 6
 
 NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   struct NaClAppThread      *natp = NaClAppThreadFromThreadContext(ntcp);
