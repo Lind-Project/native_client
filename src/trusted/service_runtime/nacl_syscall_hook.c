@@ -90,6 +90,21 @@ static void HandleStackContext(struct NaClAppThread *natp,
   *sp_user_out = sp_user;
 }
 
+typedef enum {
+    ARG_NOARG,
+    ARG_INT,
+    ARG_CHAR_P,
+    // Add other types as needed
+} ArgType;
+
+typedef struct {
+    bool isValid;
+    int nArgs;
+    ArgType types[MAX_ARGS];
+} SyscallArgTypesEntry;
+
+#define MAX_ARGS 6
+
 NORETURN void NaClSyscallCSegHook(struct NaClThreadContext *ntcp) {
   struct NaClAppThread      *natp = NaClAppThreadFromThreadContext(ntcp);
   struct NaClApp            *nap;
@@ -340,44 +355,4 @@ const char *syscall_names[] = {
 
   fprintf(stderr, "NORETURN NaClSwitchToApp returned!?!\n");
   NaClAbort();
-}
-
-typedef enum {
-    ARG_NOARG,
-    ARG_INT,
-    ARG_CHAR_P,
-    // Add other types as needed
-} ArgType;
-
-typedef struct {
-    bool isValid;
-    int nArgs;
-    ArgType types[MAX_ARGS];
-} SyscallArgTypesEntry;
-
-#define MAX_ARGS 6
-
-void parse_args(void* stack_ptr, const ArgType* arg_types, int num_args) {
-    uintptr_t ptr = (uintptr_t)stack_ptr;
-
-    for (int i = 0; i < num_args && i < MAX_ARGS; i++) {
-        switch (arg_types[i]) {
-            case ARG_INT:
-                printf("Arg %d (int): %d\n", i + 1, *(int*)ptr);
-                ptr += sizeof(int);
-                break;
-            case ARG_DOUBLE:
-                printf("Arg %d (double): %f\n", i + 1, *(double*)ptr);
-                ptr += sizeof(double);
-                break;
-            case ARG_CHAR:
-                printf("Arg %d (char): %c\n", i + 1, *(char*)ptr);
-                ptr += sizeof(char);
-                break;
-            // Handle other types
-            default:
-                printf("Unknown type\n");
-                break;
-        }
-    }
 }
