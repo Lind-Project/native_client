@@ -169,11 +169,6 @@
  * NaClTrampolineRegRestore in arch/x86_64/nacl_syscall_64.S
  *
  * - Jonathan Singer
- *
- * One rare bug remains, when we are signaled in untrusted (whether after single stepping or not)
- * and the last untrusted instruction executed is an indirect call (or probably jmp), we end up
- * seg faulting somewhere down the line. I bet the stack is somehow somewhat wonky in this case
- * but sadly I have to leave this bug unsolved before I leave.
  */
 
 /*
