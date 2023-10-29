@@ -278,17 +278,14 @@ const char *syscall_names[] = {
   FILE *log_file = fopen("nacl_trace.txt", "a");  // Open for appending
   if (log_file == NULL) {
       perror("Error opening nacl_trace.txt"); exit(-1);
-  } else {
-      fprintf(log_file, "calling %s(", syscall_name);
-      fclose(log_file);  // Close the file
   }
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
   char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     syscall_name = syscall_names[sysnum];
-    printf("calling %s(", syscall_name);
+    fprintf(log_file, "calling %s(", syscall_name);
   } else {
-    printf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
+    fprintf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
     exit(-1);
   }
 //#endif
