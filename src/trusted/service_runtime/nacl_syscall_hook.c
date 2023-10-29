@@ -311,7 +311,7 @@ const char *syscall_names[] = {
     [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_INT, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_NOARG}},
   };
   
-  uintptr_t nextArgPtr = natp->usr_syscall_args;
+  uintptr_t nextArgPtr = sp_user + NACL_SYSARGS_FIX;
   if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
       switch (syscallArgTypes[sysnum].types[i]) {
