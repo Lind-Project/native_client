@@ -275,6 +275,8 @@ const char *syscall_names[] = {
 
 //#endif
 //#ifdef TRACE
+  FILE *log_file = freopen("nacl_trace.txt", "a", stdout);
+  if (log_file == NULL) { perror("Error opening nacl_trace.txt"); exit(-1); }
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
   char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
