@@ -283,7 +283,7 @@ const char *syscall_names[] = {
   char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     syscall_name = syscall_names[sysnum];
-    fprintf(log_file, "calling %s(", syscall_name);
+    fprintf(log_file, "calling %s\n(", syscall_name);
   } else {
     fprintf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
     exit(-1);
@@ -312,23 +312,23 @@ const char *syscall_names[] = {
   };
   
   uintptr_t nextArgPtr = natp->usr_syscall_args;
-  // if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
-  //   for(int i = 0; i < MAX_ARGS; i++) {
-  //     switch (syscallArgTypes[sysnum].types[i]) {
-  //       case ARG_INT:
-  //         printf("%d, ", *(int*)nextArgPtr);
-  //         nextArgPtr += sizeof(int);
-  //         break;
-  //       case ARG_CHAR_P:
-  //         printf("%s, ", *(char**)nextArgPtr);
-  //         nextArgPtr += sizeof(char*);
-  //         break;
-  //       case ARG_NOARG:
-  //         break;
-  //     }
-  //   }
-  //   printf(")\n");
-  // }
+  if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
+    for(int i = 0; i < MAX_ARGS; i++) {
+      switch (syscallArgTypes[sysnum].types[i]) {
+        case ARG_INT:
+          fprintf(log_file, "%d, ", *(int*)nextArgPtr);
+          nextArgPtr += sizeof(int);
+          break;
+        case ARG_CHAR_P:
+          fprintf(log_file, "%s, ", *(char**)nextArgPtr);
+          nextArgPtr += sizeof(char*);
+          break;
+        case ARG_NOARG:
+          break;
+      }
+    }
+    fprintf(log_file, ")\n");
+  }
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
     NaClLog(2, "INVALID system call %"NACL_PRIdS"\n", sysnum);
