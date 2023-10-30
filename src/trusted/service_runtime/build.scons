@@ -383,10 +383,10 @@ env.EnsureRequiredBuildWarnings()
 # Bootstrap loader used on Linux.
 if (env.Bit('linux') and not env.Bit('android')
     and not env.Bit('built_elsewhere')):
+  bootstrap_env = env.Clone()
   if os.environ.get('TRACING_ENABLED') == '1':
     print("Coulson's flag added")
     bootstrap_env.Append(CCFLAGS=['-DTRACING=1'])
-  bootstrap_env = env.Clone()
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
                                    '-pedantic', '$COVERAGE_CCFLAGS'],
