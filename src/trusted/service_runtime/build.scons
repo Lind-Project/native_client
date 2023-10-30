@@ -381,6 +381,9 @@ if env.Bit('linux') and env.Bit('target_x86_64'):
 env.EnsureRequiredBuildWarnings()
 
 # Bootstrap loader used on Linux.
+if os.environ.get('TRACING_ENABLED') == '1':
+    print("Coulson's flag added")
+    bootstrap_env.Append(CCFLAGS=['-DTRACING=1'])
 if (env.Bit('linux') and not env.Bit('android')
     and not env.Bit('built_elsewhere')):
   bootstrap_env = env.Clone()
