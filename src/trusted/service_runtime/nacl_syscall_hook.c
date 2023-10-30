@@ -31,6 +31,7 @@
 #include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_app_thread.h"
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
 
 
@@ -323,8 +324,8 @@ const char *syscall_names[] = {
         uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
         uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(sys_path), user_path);
         if (retval != 0) {
-            fprintf(log_file, "tracer parsing user path error!");
-            exit(-1);
+          fprintf(log_file, "tracer parsing user path error!");
+          exit(-1);
         }
         fprintf(log_file, "%s, ", sys_path);
         nextArgPtr += sizeof(uint32_t);
