@@ -277,21 +277,18 @@ const char *syscall_names[] = {
 
 //#endif
 //#ifdef TRACE
-  FILE *log_file = fopen("nacl_trace.txt", "a");  // Open for appending
-  if (log_file == NULL) {
-      perror("Error opening nacl_trace.txt"); exit(-1);
-  }
+  // FILE *log_file = fopen("nacl_trace.txt", "a");  // Open for appending
+  // if (log_file == NULL) {
+  //     perror("Error opening nacl_trace.txt"); exit(-1);
+  // }
   // the first condition below is checking that the given sysnum is within the number of elements inside syscall_names array
   char* syscall_name = NULL;
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     syscall_name = syscall_names[sysnum];
-    fprintf(log_file, "calling %s\n(", syscall_name);
-    printf("calling %s\n(", syscall_name);
-    printf("calling %s\n(", syscall_name);
-    printf("calling %s\n(", syscall_name);
-    printf("calling %s\n(", syscall_name);
+    // fprintf(log_file, "calling %s\n(", syscall_name);
+    printf("calling %s(\n", syscall_name);
   } else {
-    fprintf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
+    printf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
     exit(-1);
   }
 //#endif
@@ -321,23 +318,23 @@ const char *syscall_names[] = {
   if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
       if (syscallArgTypes[sysnum].types[i] == ARG_INT) {
-        fprintf(log_file, "%d, ", *(int*)nextArgPtr);
+        printf("%d, ", *(int*)nextArgPtr);
         nextArgPtr += sizeof(int);
       } else if (syscallArgTypes[sysnum].types[i] == ARG_CHAR_P) {
         char sys_path[4096] = {0};
         uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
         uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(sys_path), user_path);
         if (retval != 0) {
-          fprintf(log_file, "tracer parsing user path error!");
+          printf("tracer parsing user path error!");
           exit(-1);
         }
-        fprintf(log_file, "%s, ", sys_path);
+        printf("%s, ", sys_path);
         nextArgPtr += sizeof(uint32_t);
       } else if (syscallArgTypes[sysnum].types[i] == ARG_NOARG) {
           nextArgPtr += sizeof(uint32_t);
       }
     }
-    fprintf(log_file, ")\n");
+    printf(")\n");
   }
 
   if (NACL_UNLIKELY(sysnum >= NACL_MAX_SYSCALLS)) {
