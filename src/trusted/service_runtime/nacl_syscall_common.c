@@ -4617,10 +4617,11 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     NaClLog(2, "Open ACL check rejected \"%s\".\n", path);
     return retval;
   }
-  // tracing
-  printf("NaClSysOpen(%s, %d, %d)\n", path, flags, mode);
 
   userfd = lind_open(path, flags, mode, nap->cage_id);
+
+  // tracing
+  printf("NaClSysOpen(%s, %d, %d) = %\n", path, flags, mode, userfd);
 
   return userfd;
 }
