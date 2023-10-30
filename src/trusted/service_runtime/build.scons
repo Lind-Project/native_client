@@ -24,6 +24,7 @@ else:
 if os.environ.get('TRACING_ENABLED') == '1':
     print("Coulson's flag added")
     env.Append(CCFLAGS=['-DTRACING=1'])
+    env.Append(CFLAGS=['-DTRACING=1'])
 
 
 # TODO GENERATED CODE

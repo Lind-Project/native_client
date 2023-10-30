@@ -4353,7 +4353,6 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   
   return retval;
 }
-
 #endif
 
 // ----------------------------------------------------------
