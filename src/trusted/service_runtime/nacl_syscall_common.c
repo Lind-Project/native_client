@@ -344,6 +344,7 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
 
   pid = lind_getpid(nap->cage_id);
   NaClLog(1, "NaClSysGetpid: returning %d\n", pid);
+  printf("Untrace getpid called.\n");
 
   return pid;
 }
@@ -4353,13 +4354,11 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   
   return retval;
 }
-#endif
 
+#else
 // ----------------------------------------------------------
 // START OF TRACED VERSION
 // ----------------------------------------------------------
-
-#ifdef TRACING
 
 int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   int32_t pid;

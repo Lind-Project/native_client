@@ -25,6 +25,8 @@ if os.environ.get('TRACING_ENABLED') == '1':
     print("Coulson's flag added")
     env.Append(CCFLAGS=['-DTRACING=1'])
     env.Append(CFLAGS=['-DTRACING=1'])
+    env.Append(CPPFLAGS=['-DTRACING=1'])
+    env.Append(CXXFLAGS=['-DTRACING=1'])
 
 
 # TODO GENERATED CODE
@@ -388,6 +390,9 @@ if (env.Bit('linux') and not env.Bit('android')
   if os.environ.get('TRACING_ENABLED') == '1':
     print("Coulson's flag added")
     bootstrap_env.Append(CCFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
                                    '-pedantic', '$COVERAGE_CCFLAGS'],
