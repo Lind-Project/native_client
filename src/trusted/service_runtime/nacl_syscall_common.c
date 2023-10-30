@@ -511,7 +511,7 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
   return NaClSysDup2(natp, oldfd, newfd);
 }
 
-static uint32_t CopyPathFromUser(struct NaClApp *nap,
+uint32_t CopyPathFromUser(struct NaClApp *nap,
                                  char           *dest,
                                  size_t         num_bytes,
                                  uintptr_t      src) {
@@ -3095,7 +3095,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 /* convenience typedef */
 typedef int clock_func(nacl_clockid_t, struct nacl_abi_timespec *);
 
-int NaClIsValidClockId(int clk_id) {
+static int NaClIsValidClockId(int clk_id) {
   int ret = 0;
   switch (clk_id) {
   case NACL_ABI_CLOCK_REALTIME:
