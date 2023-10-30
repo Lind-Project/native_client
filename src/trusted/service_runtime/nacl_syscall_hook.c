@@ -286,6 +286,10 @@ const char *syscall_names[] = {
   if (sysnum < sizeof(syscall_names)/sizeof(syscall_names[0]) && syscall_names[sysnum] != NULL) {
     syscall_name = syscall_names[sysnum];
     fprintf(log_file, "calling %s\n(", syscall_name);
+    printf("calling %s\n(", syscall_name);
+    printf("calling %s\n(", syscall_name);
+    printf("calling %s\n(", syscall_name);
+    printf("calling %s\n(", syscall_name);
   } else {
     fprintf("Fatal: Calling an sysnum that doesn't exist: %zu\n", sysnum);
     exit(-1);
