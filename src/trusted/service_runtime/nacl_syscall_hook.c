@@ -323,8 +323,8 @@ const char *syscall_names[] = {
         case ARG_CHAR_P:
           char sys_path[4096] = {0};
           uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
-          uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(path), user_path);
-          if retval != 0 {fprintf(log_file, "tracer parsing user path error!"); exit(-1);}
+          uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(sys_path), user_path);
+          if (retval != 0) {fprintf(log_file, "tracer parsing user path error!"); exit(-1);}
           fprintf(log_file, "%s, ", sys_path);
           nextArgPtr += sizeof(uint32_t);
           break;
