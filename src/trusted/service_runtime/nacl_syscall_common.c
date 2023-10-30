@@ -4371,6 +4371,7 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   
   // tracing
   printf("getpid() = %d\n", pid);
+  exit(-1);
 
   return pid;
 }
