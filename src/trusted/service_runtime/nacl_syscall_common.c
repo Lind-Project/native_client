@@ -3095,7 +3095,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 /* convenience typedef */
 typedef int clock_func(nacl_clockid_t, struct nacl_abi_timespec *);
 
-static int NaClIsValidClockId(int clk_id) {
+int NaClIsValidClockId(int clk_id) {
   int ret = 0;
   switch (clk_id) {
   case NACL_ABI_CLOCK_REALTIME:
