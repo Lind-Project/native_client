@@ -549,7 +549,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   int                  userfd;
 
 
-
+  printf("Untraced open is called\n");
+  exit(-1);
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
           (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
