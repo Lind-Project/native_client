@@ -4573,7 +4573,7 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   int                  userfd;
 
   // tracing
-  printf("NaClSysOpen(%s, %d, %d)\n", pathname, flags, mode);
+  printf("start converting NaClSysOpen args\n");
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
@@ -4617,6 +4617,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
     NaClLog(2, "Open ACL check rejected \"%s\".\n", path);
     return retval;
   }
+  // tracing
+  printf("NaClSysOpen(%s, %d, %d)\n", path, flags, mode);
 
   userfd = lind_open(path, flags, mode, nap->cage_id);
 
