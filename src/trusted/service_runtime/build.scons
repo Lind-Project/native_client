@@ -21,6 +21,9 @@ if env.Bit('windows'):
 else:
   syscall_impl = 'posix/nacl_syscall_impl.c'
 
+if os.environ.get('TRACING_ENABLED') == '1':
+    env.Append(CCFLAGS=['-DTRACING=1'])
+
 
 # TODO GENERATED CODE
 GENERATED='${TARGET_ROOT}/gen/native_client/src/trusted/service_runtime'
