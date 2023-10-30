@@ -550,7 +550,6 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
 
 
   printf("Untraced open is called\n");
-  exit(-1);
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
           (uintptr_t)natp, (uintptr_t)pathname, flags, mode);
@@ -4370,7 +4369,6 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   
   // tracing
   printf("getpid() = %d\n", pid);
-  exit(-1);
 
   return pid;
 }
@@ -4574,7 +4572,8 @@ int32_t NaClSysOpen(struct NaClAppThread  *natp,
   const size_t         tls_end_idx = strlen(tls_prefix);
   int                  userfd;
 
-
+  // tracing
+  printf("NaClSysOpen(%s, %d, %d)\n", pathname, flags, mode);
 
   NaClLog(2, "NaClSysOpen(0x%08"NACL_PRIxPTR", "
           "0x%08"NACL_PRIxPTR", 0x%x, 0x%x)\n",
