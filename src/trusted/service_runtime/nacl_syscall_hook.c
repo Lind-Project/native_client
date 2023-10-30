@@ -315,22 +315,21 @@ const char *syscall_names[] = {
   uintptr_t nextArgPtr = sp_user + NACL_SYSARGS_FIX;
   if (sysnum < sizeof(syscallArgTypes)/sizeof(syscallArgTypes[0]) && syscallArgTypes[sysnum].isValid) {
     for(int i = 0; i < MAX_ARGS; i++) {
-      switch (syscallArgTypes[sysnum].types[i]) {
-        case ARG_INT:
-          fprintf(log_file, "%d, ", *(int*)nextArgPtr);
-          nextArgPtr += sizeof(int);
-          break;
-        case ARG_CHAR_P:
-          char sys_path[4096] = {0};
-          uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
-          uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(sys_path), user_path);
-          if (retval != 0) {fprintf(log_file, "tracer parsing user path error!"); exit(-1);}
-          fprintf(log_file, "%s, ", sys_path);
+      if (syscallArgTypes[sysnum].types[i] == ARG_INT) {
+        fprintf(log_file, "%d, ", *(int*)nextArgPtr);
+        nextArgPtr += sizeof(int);
+      } else if (syscallArgTypes[sysnum].types[i] == ARG_CHAR_P) {
+        char sys_path[4096] = {0};
+        uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
+        uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(sys_path), user_path);
+        if (retval != 0) {
+            fprintf(log_file, "tracer parsing user path error!");
+            exit(-1);
+        }
+        fprintf(log_file, "%s, ", sys_path);
+        nextArgPtr += sizeof(uint32_t);
+      } else if (syscallArgTypes[sysnum].types[i] == ARG_NOARG) {
           nextArgPtr += sizeof(uint32_t);
-          break;
-        case ARG_NOARG:
-          nextArgPtr += sizeof(uint32_t);
-          break;
       }
     }
     fprintf(log_file, ")\n");
