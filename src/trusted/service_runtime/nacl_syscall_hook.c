@@ -95,6 +95,7 @@ typedef enum {
     ARG_NOARG,
     ARG_INT,
     ARG_CHAR_P,
+    ARG_MODE,
     // Add other types as needed
 } ArgType;
 
@@ -308,7 +309,7 @@ const char *syscall_names[] = {
   
   // parse and output the arguments
   const SyscallArgTypesEntry syscallArgTypes[] = {
-    [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_INT, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_NOARG}},
+    [NACL_sys_open] = {.isValid = true, .nArgs = 2, .types = {ARG_CHAR_P, ARG_NOARG, ARG_NOARG, ARG_NOARG, ARG_INT, ARG_NOARG}},
   };
   
   uintptr_t nextArgPtr = sp_user + NACL_SYSARGS_FIX;
@@ -320,10 +321,15 @@ const char *syscall_names[] = {
           nextArgPtr += sizeof(int);
           break;
         case ARG_CHAR_P:
-          fprintf(log_file, "%s, ", *(char**)nextArgPtr);
-          nextArgPtr += sizeof(char*);
+          char sys_path[4096] = {0};
+          uintptr_t user_path = (uintptr_t)(*(uint32_t *)nextArgPtr);
+          uint32_t retval = CopyPathFromUser(nap, sys_path, sizeof(path), user_path);
+          if retval != 0 {fprintf(log_file, "tracer parsing user path error!"); exit(-1);}
+          fprintf(log_file, "%s, ", sys_path);
+          nextArgPtr += sizeof(uint32_t);
           break;
         case ARG_NOARG:
+          nextArgPtr += sizeof(uint32_t);
           break;
       }
     }
