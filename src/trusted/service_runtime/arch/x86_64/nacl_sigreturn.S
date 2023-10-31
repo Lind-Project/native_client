@@ -103,9 +103,6 @@ NaClSwitchFromSignalTrusted:
         movq NACL_SIGNAL_CONTEXT_RSI_OFFSET(%r11), %rsi
         movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
         movq NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %rbp
-
-        /* 128 and 160 here are the distances between rip and rbp, and rbp and the flags respectively */
-
         movq %rbp, -160(%rsp)
         movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
         subq $128, %rsp
@@ -115,3 +112,6 @@ NaClSwitchFromSignalTrusted:
         popfq
         leaq 128(%rsp), %rsp
         jmp *-160(%rsp)
+
+        /* The value 128 above corresponds to the size of the red zone
+           we store the program counter past the red zone (160 bytes) to not clobber anything */
