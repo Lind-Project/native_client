@@ -338,4 +338,4 @@ NaClTrampolineRegRestore:
     movl %esp, %esp
     lea (%rsp, %r15), %rsp
     jmp *%r14
-DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClTrampolineRegRestore_end):
+    
