@@ -136,9 +136,8 @@ void  NaClPatchRegTrampolineCall(uintptr_t  target_addr) {
 
   patch_info.dst = target_addr;
   patch_info.src = (uintptr_t) &NaClTrampolineRegRestore;
-  patch_info.nbytes = 128;
-
-  NaClApplyPatchToMemory(&patch_info);
+  patch_info.nbytes = ((uintptr_t) &NaClTrampolineRegRestore_end
+                       - (uintptr_t) &NaClTrampolineRegRestore);
 }
 
 void NaClPatchOneTrampoline(struct NaClApp *nap, uintptr_t target_addr) {

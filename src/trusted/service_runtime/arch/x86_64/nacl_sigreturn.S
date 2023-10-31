@@ -27,15 +27,18 @@ NaClSwitchFromSignal:
 # error "What OS/compiler is the service runtime being compiled with?"
 #endif
 
+        /* Restore registers from the saved context */
+        movq NACL_SIGNAL_CONTEXT_RDI_OFFSET(%r11), %rdi
+        movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
+        movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
         movq NACL_SIGNAL_CONTEXT_R15_OFFSET(%r11), %r15
+
+        /* Clear general purpose registers */
         xor %rax, %rax
         xor %rbx, %rbx
         xor %rcx, %rcx
         xor %rdx, %rdx
         xor %rsi, %rsi
-        movq NACL_SIGNAL_CONTEXT_RDI_OFFSET(%r11), %rdi
-        movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp #rbp must not be allowed to be out of range, so we restore it even though it's unnecessary
-        movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
         xor %r8, %r8
         xor %r9, %r9
         xor %r10, %r10
@@ -43,8 +46,8 @@ NaClSwitchFromSignal:
         xor %r13, %r13
         xor %r14, %r14
 
+        /* Jump to the saved program counter */
         movq    NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %r11
-
         jmp *%r11
 
 NaClSwitchFromSignalTls:
@@ -100,6 +103,9 @@ NaClSwitchFromSignalTrusted:
         movq NACL_SIGNAL_CONTEXT_RSI_OFFSET(%r11), %rsi
         movq NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET(%r11), %rsp
         movq NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET(%r11), %rbp
+
+        /* 128 and 160 here are the distances between rip and rbp, and rbp and the flags respectively */
+
         movq %rbp, -160(%rsp)
         movq NACL_SIGNAL_CONTEXT_RBP_OFFSET(%r11), %rbp
         subq $128, %rsp
