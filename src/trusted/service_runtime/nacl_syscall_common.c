@@ -346,7 +346,7 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   NaClLog(1, "NaClSysGetpid: returning %d\n", pid);
   
   #ifdef TRACING
-  NaClStraceGetpid(int32_t pid);
+  NaClStraceGetpid(pid);
   #endif
 
   return pid;
@@ -357,7 +357,7 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
   struct NaClApp *nap = natp->nap;
 
   ppid = lind_getppid(nap->cage_id);
-  NaClLog(1, "NaClSysGetpid: returning %d\n", ppid);
+  NaClLog(1, "NaClSysGetppid: returning %d\n", ppid);
 
   return ppid;
 }
