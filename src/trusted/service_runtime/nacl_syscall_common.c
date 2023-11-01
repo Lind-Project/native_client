@@ -616,7 +616,7 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
   ret = lind_close(d, nap->cage_id);
 
   #ifdef TRACING
-  NaClSraceClose(d, ret);
+  NaClStraceClose(d, ret);
   #endif
 
   return ret;
