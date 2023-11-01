@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 
 void NaClStraceGetpid(int pid) {
     printf("getpid() = %d\n", pid);
