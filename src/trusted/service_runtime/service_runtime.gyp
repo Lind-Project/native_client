@@ -53,6 +53,7 @@
           'nacl_signal_common.c',
           'nacl_stack_safety.c',
           'nacl_syscall_common.c',
+          'nacl_syscall_strace.c',
           'nacl_syscall_hook.c',
           'nacl_text.c',
           'nacl_valgrind_hooks.c',
