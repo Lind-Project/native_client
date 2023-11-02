@@ -3245,6 +3245,9 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
 
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
   ret = NaClSysExecv(natp, path, argv);
+  if ret < 0 {
+    NaClEnvCleanserDtor(&env_cleanser);
+  }
 
 fail:
   for (char **pp = new_envp; pp && *pp; pp++) {
