@@ -349,7 +349,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   cleanup_effp_free:
   free(nap->effp);
   cleanup_mem_io_regions:
-  NaClIntervalMultisetDelete(nap->mem_io_regions);
+  // Mem-leak fix attempt, maybe we should use the IntervalRangeTreeDtor instead of MultisetDelete
+  // NaClIntervalMultisetDelete(nap->mem_io_regions);
+  NaClIntervalRangeTreeDtor((struct NaClIntervalRangeTree *)nap->mem_io_regions);
   nap->mem_io_regions = NULL;
   cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);
