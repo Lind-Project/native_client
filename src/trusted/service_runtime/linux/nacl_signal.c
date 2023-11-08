@@ -209,6 +209,28 @@ void NaClSignalHandlerSet(NaClSignalHandler func) {
   g_handler_func = func;
 }
 
+void PrintNaClSignalRegisters(const struct NaClSignalContext *ctx) {
+    printf("rax: 0x%016llx\n", ctx->rax);
+    printf("rbx: 0x%016llx\n", ctx->rbx);
+    printf("rcx: 0x%016llx\n", ctx->rcx);
+    printf("rdx: 0x%016llx\n", ctx->rdx);
+    printf("rsi: 0x%016llx\n", ctx->rsi);
+    printf("rdi: 0x%016llx\n", ctx->rdi);
+    printf("rbp: 0x%016llx\n", ctx->rbp);
+    printf("stack_ptr: 0x%016llx\n", ctx->stack_ptr);
+    printf("r8: 0x%016llx\n", ctx->r8);
+    printf("r9: 0x%016llx\n", ctx->r9);
+    printf("r10: 0x%016llx\n", ctx->r10);
+    printf("r11: 0x%016llx\n", ctx->r11);
+    printf("r12: 0x%016llx\n", ctx->r12);
+    printf("r13: 0x%016llx\n", ctx->r13);
+    printf("r14: 0x%016llx\n", ctx->r14);
+    printf("r15: 0x%016llx\n", ctx->r15);
+    printf("prog_ctr: 0x%016llx\n", ctx->prog_ctr);
+}
+
+
+
 /*
  * Returns, via is_untrusted, whether the signal happened while
  * executing untrusted code.
@@ -565,6 +587,8 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86
   regs->flags &= ~NACL_X86_DIRECTION_FLAG;
 #endif
+
+  PrintNaClSignalRegisters(regs);
 
   return 1;
 }
