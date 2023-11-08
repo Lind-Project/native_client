@@ -250,6 +250,57 @@ void PrintUserRegisters(const struct NaClAppThread *natp) {
     printf("new_prog_ctr: 0x%016llx\n", natp->user.new_prog_ctr);
 }
 
+// A large prime number for the hash modulo operation
+#define HASH_PRIME 0xFFFFFFFFFFFFFFC5ull
+
+uint64_t HashNaClSignalRegisters(const struct NaClSignalContext *ctx) {
+    uint64_t sum = 0;
+    sum += ctx->rax;
+    sum += ctx->rbx;
+    sum += ctx->rcx;
+    sum += ctx->rdx;
+    sum += ctx->rsi;
+    sum += ctx->rdi;
+    sum += ctx->rbp;
+    sum += ctx->stack_ptr;
+    sum += ctx->r8;
+    sum += ctx->r9;
+    sum += ctx->r10;
+    sum += ctx->r11;
+    sum += ctx->r12;
+    sum += ctx->r13;
+    sum += ctx->r14;
+    sum += ctx->r15;
+    sum += ctx->prog_ctr;
+    // Apply a simple hash function by taking the sum modulo a large prime number
+    return sum % HASH_PRIME;
+}
+
+uint64_t HashUserRegisters(const struct NaClAppThread *natp) {
+    uint64_t sum = 0;
+    sum += natp->user.rax;
+    sum += natp->user.rbx;
+    sum += natp->user.rcx;
+    sum += natp->user.rdx;
+    sum += natp->user.rbp;
+    sum += natp->user.rsi;
+    sum += natp->user.rdi;
+    sum += natp->user.rsp;
+    sum += natp->user.r8;
+    sum += natp->user.r9;
+    sum += natp->user.r10;
+    sum += natp->user.r11;
+    sum += natp->user.r12;
+    sum += natp->user.r13;
+    sum += natp->user.r14;
+    sum += natp->user.r15;
+    sum += natp->user.prog_ctr;
+    sum += natp->user.new_prog_ctr;
+    // Apply a simple hash function by taking the sum modulo a large prime number
+    return sum % HASH_PRIME;
+}
+
+
 
 
 
@@ -612,6 +663,13 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 
   PrintNaClSignalRegisters(regs);
   PrintUserRegisters(natp);
+
+  uint64_t signal_hash = HashNaClSignalRegisters(regs);
+  printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+
+  uint64_t user_hash = HashUserRegisters(natp);
+  printf("Hash of NaClAppThread user registers: 0x%016llx\n", user_hash);
+
 
   return 1;
 }
