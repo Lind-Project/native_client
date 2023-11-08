@@ -229,6 +229,28 @@ void PrintNaClSignalRegisters(const struct NaClSignalContext *ctx) {
     printf("prog_ctr: 0x%016llx\n", ctx->prog_ctr);
 }
 
+void PrintUserRegisters(const struct NaClAppThread *natp) {
+    printf("rax: 0x%016llx\n", natp->user.rax);
+    printf("rbx: 0x%016llx\n", natp->user.rbx);
+    printf("rcx: 0x%016llx\n", natp->user.rcx);
+    printf("rdx: 0x%016llx\n", natp->user.rdx);
+    printf("rbp: 0x%016llx\n", natp->user.rbp);
+    printf("rsi: 0x%016llx\n", natp->user.rsi);
+    printf("rdi: 0x%016llx\n", natp->user.rdi);
+    printf("rsp: 0x%016llx\n", natp->user.rsp);
+    printf("r8: 0x%016llx\n", natp->user.r8);
+    printf("r9: 0x%016llx\n", natp->user.r9);
+    printf("r10: 0x%016llx\n", natp->user.r10);
+    printf("r11: 0x%016llx\n", natp->user.r11);
+    printf("r12: 0x%016llx\n", natp->user.r12);
+    printf("r13: 0x%016llx\n", natp->user.r13);
+    printf("r14: 0x%016llx\n", natp->user.r14);
+    printf("r15: 0x%016llx\n", natp->user.r15);
+    printf("prog_ctr: 0x%016llx\n", natp->user.prog_ctr);
+    printf("new_prog_ctr: 0x%016llx\n", natp->user.new_prog_ctr);
+}
+
+
 
 
 /*
@@ -589,6 +611,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
 #endif
 
   PrintNaClSignalRegisters(regs);
+  PrintUserRegisters(natp);
 
   return 1;
 }
