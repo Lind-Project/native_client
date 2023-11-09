@@ -688,7 +688,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
   if (!is_untrusted) {
-    printf("----------Exiting Handler--------------\n");
+    printf("----------Entering Handler--------------\n");
 
     PrintNaClSignalRegisters(&sig_ctx);
 
