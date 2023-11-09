@@ -227,6 +227,7 @@ void PrintNaClSignalRegisters(const struct NaClSignalContext *ctx) {
     printf("r14: 0x%016llx\n", ctx->r14);
     printf("r15: 0x%016llx\n", ctx->r15);
     printf("prog_ctr: 0x%016llx\n", ctx->prog_ctr);
+    fflush(stdout);
 }
 
 void PrintUserRegisters(const struct NaClAppThread *natp) {
@@ -248,6 +249,7 @@ void PrintUserRegisters(const struct NaClAppThread *natp) {
     printf("r15: 0x%016llx\n", natp->user.r15);
     printf("prog_ctr: 0x%016llx\n", natp->user.prog_ctr);
     printf("new_prog_ctr: 0x%016llx\n", natp->user.new_prog_ctr);
+    fflush(stdout);
 }
 
 // A large prime number for the hash modulo operation
