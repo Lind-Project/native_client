@@ -688,10 +688,15 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
   if (!is_untrusted) {
+    printf("----------Exiting Handler--------------\n")
+
     PrintNaClSignalRegisters(&sig_ctx);
 
     uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
     printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+    printf("--------------------------\n")
+    fflush(stdout);
+
   }
 
 
@@ -776,10 +781,13 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         } else {
 
             if (!is_untrusted) {
+              printf("----------Exiting Handler--------------\n")
               PrintNaClSignalRegisters(&sig_ctx);
 
               uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
               printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+              printf("--------------------------------------\n");
+              fflush(stdout);
             }
           NaClSwitchFromSignalTrusted(&sig_ctx);
         }
