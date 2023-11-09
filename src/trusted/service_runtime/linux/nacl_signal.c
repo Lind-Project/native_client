@@ -661,16 +661,6 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   regs->flags &= ~NACL_X86_DIRECTION_FLAG;
 #endif
 
-  PrintNaClSignalRegisters(regs);
-  PrintUserRegisters(natp);
-
-  uint64_t signal_hash = HashNaClSignalRegisters(regs);
-  printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
-
-  uint64_t user_hash = HashUserRegisters(natp);
-  printf("Hash of NaClAppThread user registers: 0x%016llx\n", user_hash);
-
-
   return 1;
 }
 
@@ -694,6 +684,15 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   //See the "Sigaction & SignalCatch" of the explanatory comment at the top of this file for an explanation
   NaClSignalContextFromHandler(&sig_ctx, uc);
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
+
+  if (!is_untrusted) {
+    PrintNaClSignalRegisters(&sig_ctx);
+
+    uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
+    printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+  }
+
+
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   /*
@@ -773,6 +772,13 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
           //Hijack and return to untrusted
           NaClSwitchFromSignalTls(sig, &natp->user);
         } else {
+
+            if (!is_untrusted) {
+              PrintNaClSignalRegisters(&sig_ctx);
+
+              uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
+              printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+            }
           NaClSwitchFromSignalTrusted(&sig_ctx);
         }
 
