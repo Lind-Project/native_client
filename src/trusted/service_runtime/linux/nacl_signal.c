@@ -689,7 +689,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
 
   printf("----------Entering Handler--------------\n");
-  if (!is_untrusted) { printf("trusted signal\n") } else {
+  if (!is_untrusted) { printf("trusted signal\n"); } else {
     printf("untrusted signal\n");
   }
 
@@ -769,7 +769,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
       default:
 
         printf("----------Exiting Handler--------------\n");
-        if (!is_untrusted) { printf("trusted signal\n") } else {
+        if (!is_untrusted) { printf("trusted signal\n"); } else {
           printf("untrusted signal\n");
         }
 
