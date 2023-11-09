@@ -701,12 +701,11 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   //          "%d, 0x%08"NACL_PRIxPTR", "
   //          "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
   //         nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
-
   if (d < 0) return -NACL_ABI_EBADF;
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_WRITE);
+
   if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
-  
 
   /*
    * The maximum length for read and write is INT32_MAX--anything larger and
@@ -727,6 +726,9 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
+  #ifdef TRACING
+  NaClStraceRead(d, buf, count, retval);
+  #endif
   return retval;
 }
 

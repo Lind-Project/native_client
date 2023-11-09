@@ -17,3 +17,7 @@ void NaClStraceOpen(char* path, int flags, int mode, int fd) {
 void NaClStraceClose(int d, int ret) {
     printf("close(%d) = %d\n", d, ret);
 }
+
+void NaClStraceRead(int d, void *buf, size_t count, int ret) {
+    printf("read(%d, %p, %zu) = %d", d, buf, count, ret);
+}
