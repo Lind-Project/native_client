@@ -687,17 +687,18 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   NaClSignalContextFromHandler(&sig_ctx, uc);
   GetCurrentThread(&sig_ctx, &is_untrusted, &natp);
 
-  if (!is_untrusted) {
-    printf("----------Entering Handler--------------\n");
 
-    PrintNaClSignalRegisters(&sig_ctx);
-
-    uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
-    printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
-    printf("--------------------------\n");
-    fflush(stdout);
-
+  printf("----------Entering Handler--------------\n");
+  if (!is_untrusted) { printf("trusted signal\n") } else {
+    printf("untrusted signal\n");
   }
+
+  PrintNaClSignalRegisters(&sig_ctx);
+
+  uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
+  printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+  printf("--------------------------------------\n");
+  fflush(stdout);
 
 
 
@@ -766,6 +767,19 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
       case 0:
         break;
       default:
+
+        printf("----------Exiting Handler--------------\n");
+        if (!is_untrusted) { printf("trusted signal\n") } else {
+          printf("untrusted signal\n");
+        }
+
+        PrintNaClSignalRegisters(&sig_ctx);
+
+        uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
+        printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
+        printf("--------------------------------------\n");
+        fflush(stdout);
+      
         /* Resume execution of code using the modified register state. */
         if (is_untrusted > 0) {
           NaClStackSafetyNowOnUntrustedStack();
@@ -780,15 +794,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
           NaClSwitchFromSignalTls(sig, &natp->user);
         } else {
 
-            if (!is_untrusted) {
-              printf("----------Exiting Handler--------------\n");
-              PrintNaClSignalRegisters(&sig_ctx);
 
-              uint64_t signal_hash = HashNaClSignalRegisters(&sig_ctx);
-              printf("Hash of NaClSignalContext registers: 0x%016llx\n", signal_hash);
-              printf("--------------------------------------\n");
-              fflush(stdout);
-            }
           NaClSwitchFromSignalTrusted(&sig_ctx);
         }
 
