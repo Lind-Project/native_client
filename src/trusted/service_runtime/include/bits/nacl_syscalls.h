@@ -178,6 +178,7 @@
 #define NACL_sys_epoll_wait             159
 
 #define NACL_sys_fchdir                 161
+#define NACL_sys_fsync                  162
 
 #define NACL_MAX_SYSCALLS               256
 
