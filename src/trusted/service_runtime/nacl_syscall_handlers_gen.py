@@ -302,7 +302,8 @@ SYSCALL_LIST = [
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
     ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
     ('NACL_sys_fchdir', 'NaClSysFchdir', ['int fd']),
-    ('NACL_sys_fsync', 'NaClSysFsync', ['int fd'])
+    ('NACL_sys_fsync', 'NaClSysFsync', ['int fd']),
+    ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd'])
     ]
 
 

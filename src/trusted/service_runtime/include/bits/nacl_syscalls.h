@@ -179,6 +179,7 @@
 
 #define NACL_sys_fchdir                 161
 #define NACL_sys_fsync                  162
+#define NACL_sys_fdatasync              163
 
 #define NACL_MAX_SYSCALLS               256
 

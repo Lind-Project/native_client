@@ -1127,10 +1127,24 @@ int32_t NaClSysFsync(struct NaClAppThread *natp,
   int32_t ret;
   struct NaClApp *nap = natp->nap;
 
-  NaClLog(2, "Cage %d Entered NaClSysFchdir(0x%08"NACL_PRIxPTR", %d)\n",
+  NaClLog(2, "Cage %d Entered NaClSysFsync(0x%08"NACL_PRIxPTR", %d)\n",
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fsync(fd, nap->cage_id);
+
+  return ret;
+}
+
+int32_t NaClSysFdatasync(struct NaClAppThread *natp,
+                     int                   fd) {
+
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysFdatasync(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd);
+
+  ret = lind_fdatasync(fd, nap->cage_id);
 
   return ret;
 }

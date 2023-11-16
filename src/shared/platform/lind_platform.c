@@ -121,6 +121,10 @@ int lind_fsync (int fd, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_fsync, int, fd);
 }
 
+int lind_fdatasync (int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fdatasync, int, fd);
+}
+
 int lind_mkdir (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_mkdir, cstr, path, int, mode);
 }
