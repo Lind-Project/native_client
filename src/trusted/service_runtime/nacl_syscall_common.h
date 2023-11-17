@@ -170,6 +170,12 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
 int32_t NaClSysFchdir(struct NaClAppThread *natp,
 		     int 	           fd);
 
+int32_t NaClSysFsync(struct NaClAppThread *natp,
+		     int 	           fd);
+
+int32_t NaClSysFdatasync(struct NaClAppThread *natp,
+		     int 	           fd);
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size);
