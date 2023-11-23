@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "sys/types.h"
-#include <cstdint>
+#include <stdint.h>
 
 
 void NaClStraceGetpid(int pid);
