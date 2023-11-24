@@ -897,6 +897,9 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
+  #ifdef TRACING
+  NaClStracePWrite(d, buf, count, offset,ret);
+  #endif
   return retval;
 }
 
@@ -936,6 +939,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
+  #ifdef TRACING
+  NaClStraceLseek(d, offp, whence,offset);
+  #endif
 
   return retval;
 }

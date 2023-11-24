@@ -55,3 +55,11 @@ void NaClStraceWrite(int d, void *buf, int count, size_t ret){
     printf("write(%d, %p, %d) = %zu\n", d, buf, count, ret);
 
 }
+void NaClStracePWrite(int d, void *buf, int count,off_t offset, size_t ret){
+    printf("pwrite(%d, %p, %d, %jd) = %zu\n", d, buf, count, (intmax_t)offset, ret);
+
+}
+void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
+    printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);;
+
+}
