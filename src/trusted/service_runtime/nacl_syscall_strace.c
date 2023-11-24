@@ -33,3 +33,11 @@ void NaClStraceDup(int oldfd,int ret){
     printf("dup(%d) = %d\n", oldfd, ret);
 
 }
+void NaClStraceDup2(int oldfd,int newfd,int ret){
+    printf("dup2(%d, %d) = %d\n", oldfd, newfd, ret);
+
+}
+void NaClStraceDup3(int oldfd,int newfd,int flags,int ret){
+    printf("dup3(%d, %d, %d) = %d\n", oldfd, newfd, flags, ret);
+
+}

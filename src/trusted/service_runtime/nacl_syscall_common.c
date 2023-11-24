@@ -499,6 +499,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   if ((newfd < 0) || (oldfd < 0)) return -NACL_ABI_EBADF;
 
   ret = lind_dup2(oldfd, newfd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceDup2(oldfd,newfd,ret);
+  #endif
 
   return ret;
 }
@@ -521,6 +524,9 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
    * TODO: implement dup3 flags -jp
    */
   UNREFERENCED_PARAMETER(flags);
+  #ifdef TRACING
+  NaClStraceDup3(oldfd,newfd,flags,ret);
+  #endif
 
   return NaClSysDup2(natp, oldfd, newfd);
 }
