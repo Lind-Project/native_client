@@ -151,8 +151,7 @@ void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
 
 }
 void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval) {
-    printf("SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n",
-           domain, type, protocol, fds, lindfds, retval);
+    printf("SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n",domain, type, protocol, (void *)fds, (void *)lindfds, retval);
 }
 void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
     printf("tls_init(%u, %lu) = %d\n", thread_ptr, sys_tls, retval);
