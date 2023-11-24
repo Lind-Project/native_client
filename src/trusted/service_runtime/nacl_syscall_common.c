@@ -972,6 +972,9 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   retval = lind_ioctl(d ,request, (void *) sysaddr, nap->cage_id);
   
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceIoctl(d, request, retval);
+  #endif
   return retval;
 }
 
@@ -998,7 +1001,9 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) nasp, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
-
+  #ifdef TRACING
+  NaClStraceFstat(d, retval);
+  #endif
   return retval;
 }
 
@@ -1024,6 +1029,9 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
+  #ifdef TRACING
+  NaClStraceStat(path, retval);
+  #endif
 
   return retval;
 }
@@ -1072,6 +1080,9 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceMkdir(path, mode,retval);
+  #endif
   return retval;
 }
 

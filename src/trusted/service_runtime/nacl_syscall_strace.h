@@ -15,3 +15,7 @@ void NaClStraceDup3(int oldfd,int newfd,int flags,int ret);
 void NaClStraceGetdents(int d,void *drip,int  count,size_t ret,ssize_t getdents_ret,uintptr_t sysaddr);
 void NaClStracePread(int d, void *buf, int count,  size_t log_bytes,int32_t ret);
 void NaClStraceWrite(int d, void *buf, int count, size_t ret);
+void NaClStraceIoctl(int d, unsigned long request, size_t ret);
+void NaClStraceFstat(int d, size_t retval);
+void NaClStraceStat(char* path, size_t retval);
+void NaClStraceMkdir(char* path, int mode,size_t retval);

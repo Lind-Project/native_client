@@ -60,6 +60,21 @@ void NaClStracePWrite(int d, void *buf, int count,off_t offset, size_t ret){
 
 }
 void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
-    printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);;
+    printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
+
+}
+void NaClStraceIoctl(int d, unsigned long request, size_t ret){
+    printf("ioctl(%d, %lu) = %zu\n", d, request, ret);
+
+}
+void NaClStraceFstat(int d, size_t retval){
+    printf("fstat(%d) = %zu\n", d, retval);
+}
+void NaClStraceStat(char* path, size_t retval){
+    printf("stat(%s) = %zu\n", path, retval);
+
+}
+void NaClStraceMkdir(char* path, int mode,size_t retval){
+    printf("mkdir(%s, %d) = %zu\n", path, mode, retval);
 
 }
