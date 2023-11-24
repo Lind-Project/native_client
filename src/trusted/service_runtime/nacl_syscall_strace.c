@@ -25,10 +25,10 @@ void NaClStraceExit(int status){
     printf("exit() = %d\n", status);
 
 }
-void NaClStraceThreadExit(int stack_flag,uint32_t  zero){
-    printf("thread_exit(%d, %u) = void\n", stack_flag, zero);
-
+void NaClStraceThreadExit(int32_t *stack_flag, uint32_t zero) {
+    printf("thread_exit(%d, %u) = void\n", stack_flag ? *stack_flag : 0, zero);
 }
+
 void NaClStraceDup(int oldfd,int ret){
     printf("dup(%d) = %d\n", oldfd, ret);
 
