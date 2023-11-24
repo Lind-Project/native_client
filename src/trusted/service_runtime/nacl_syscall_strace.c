@@ -46,3 +46,12 @@ void NaClStraceGetdents(int d,void *drip,int  count,size_t ret,ssize_t getdents_
 
 
 }
+void NaClStracePread(int d, void *buf, int count,  size_t log_bytes,int32_t ret){
+    printf("pread(%d, %p, %d, %zu) = %d\n", d, buf, count, log_bytes, ret);
+}
+
+
+void NaClStraceWrite(int d, void *buf, int count, size_t ret){
+    printf("write(%d, %p, %d) = %zu\n", d, buf, count, ret);
+
+}
