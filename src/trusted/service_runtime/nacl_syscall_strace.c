@@ -127,3 +127,26 @@ void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t 
     printf("mprotect_internal(%u, %zu, %d, %p) = %d, Holding App Lock: %d\n", start, length, prot, (void*)sysaddr, retval, holding_app_lock);
     
 }
+void NaClStraceMprotect(uint32_t start,size_t length,int prot){
+    printf("mprotect(%u, %zu, %d) = void\n", start, length, prot);
+
+}
+void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
+    printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
+}
+void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
+    printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
+}
+void NaClStraceShmdt(int shmid,void *shmaddr,int shmflg){
+    printf("shmat(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
+
+}
+// void NaClStraceSyst(void *shmaddr,int shmid,uintptr_t sysaddr,int length){
+//     printf("syst(%p, %d, %lu, %d) = void\n", shmaddr, shmid, sysaddr, length);
+//}
+
+
+void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
+    printf("shmctl(%d, %d) = %d\n", shmid, cmd, retval);
+
+}

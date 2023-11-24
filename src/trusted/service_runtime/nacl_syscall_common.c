@@ -2118,6 +2118,9 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
+  #ifdef TRACING
+  NaClStraceMprotect(start,length,prot);
+  #endif
 
   return NaClSysMprotectInternal(nap, start, length, prot);
 }
@@ -2154,6 +2157,9 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
         NaClLog(LOG_FATAL, "NaClSysShmget: shmid returned by lind does not exist!\n");
     }
   }
+  #ifdef TRACING
+  NaClStraceShmget(key,size,shmflg,retval,alloc_rounded_size);
+  #endif
 
   return retval;
 }
@@ -2368,6 +2374,9 @@ cleanup:
                        "0x%"NACL_PRIxPTR"\n", map_result);
   }
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
+  #ifdef TRACING
+  NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
+  #endif
 
 
   return map_result;     
@@ -2432,6 +2441,9 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
+  #ifdef TRACING
+  NaClStraceShmdt(*shmaddr, shmid, sysaddr, length);
+  #endif
 
   return retval;
 
@@ -2472,6 +2484,9 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
     shmtable[shmid].rmid = true;
     if (!shmtable[shmid].count) clear_shmentry(shmid); // if we dont have any entries attached we can clear it now
   }
+  #ifdef TRACING
+  NaClStraceShmctl(shmid, cmd, retval);
+  #endif
 
   return retval;
 }
