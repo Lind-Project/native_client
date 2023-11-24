@@ -21,3 +21,7 @@ void NaClStraceClose(int d, int ret) {
 void NaClStraceRead(int d, void *buf, size_t count, int ret) {
     printf("read(%d, %p, %zu) = %d", d, buf, count, ret);
 }
+void NaClStraceExit(int status){
+    printf("exit() = %d\n", status);
+
+}
