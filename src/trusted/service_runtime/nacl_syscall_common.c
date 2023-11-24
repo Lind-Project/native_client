@@ -1221,6 +1221,9 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
   retval = lind_getcwd((void *) sysaddr, size, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceGetcwd(buf,size,sysaddr,retval);
+  #endif
   return retval;
 }
 
@@ -1235,6 +1238,9 @@ int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
   if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) return -NACL_ABI_EINVAL;
 
   retval = lind_link(srcpath, dstpath, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceLink(from,to);
+  #endif
   return retval;
 }
 
@@ -1245,6 +1251,9 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
 
   if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) return -NACL_ABI_EINVAL;
   retval = lind_unlink(path, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceUnlink(pathname,retval);
+  #endif
 
   return retval;
 }
@@ -1260,6 +1269,9 @@ int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const cha
   if ((retval = CopyPathFromUser(nap, newpathname, sizeof(newpathname), (uintptr_t) newpath))) return -NACL_ABI_EINVAL;
 
   retval = lind_rename(oldpathname, newpathname, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceRename(oldpath, newpath, retval);
+  #endif
   return retval;
 }
 
@@ -1283,6 +1295,9 @@ int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
   UNREFERENCED_PARAMETER(length);
   usraddr = NaClTruncAllocPage(usraddr);
   return usraddr < nap->dynamic_text_end;
+  #ifdef TRACING
+  NaClStraceCommon(usraddr, length);
+  #endif
 }
 
 int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
