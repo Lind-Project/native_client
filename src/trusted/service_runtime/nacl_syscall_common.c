@@ -410,6 +410,9 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
   lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
   NaClAppThreadTeardown(natp);
+  #ifdef TRACING
+  NaClStraceThreadExit(stack_flag,zero);
+  #endif
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 }

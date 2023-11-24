@@ -25,3 +25,7 @@ void NaClStraceExit(int status){
     printf("exit() = %d\n", status);
 
 }
+void NaClStraceThreadExit(int stack_flag,uint32_t  zero){
+    printf("thread_exit(%d, %u) = void\n", stack_flag, zero);
+
+}
