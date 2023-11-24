@@ -26,5 +26,5 @@ void NaClStraceFchmod(int fd,int mode,int retval);
 void NaClStraceFchdir(int fd,int32_t retval);
 void NaClStraceLink(char* from,char* to);
 void NaClStraceUnlink(char* pathname,int32_t retval);
-void NaClStraceRename(uintptr_t usraddr, size_t length);
+void NaClStraceRename(const char *oldpath, const char *newpath, int32_t retval);
 void NaClStraeCommon(uintptr_t usraddr, size_t length);

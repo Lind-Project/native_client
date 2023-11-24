@@ -96,10 +96,10 @@ void NaClStraceFchmod(int fd,int mode,int retval){
 void NaClStraceFchdir(int fd,int32_t retval){
     printf("fchdir(%d) = %d\n", fd, retval);
 }
-void NaClStraceGetcwd(char buf,size_t size,uintptr_t sysaddr,int32_t retval){
-    printf("getcwd(%p, %zu) = %d, Sysaddr: %p\n", buf, size, retval, (void*)sysaddr);
-
+void NaClStraceGetcwd(char buf, size_t size, uintptr_t sysaddr, int32_t retval) {
+    printf("getcwd(%p, %zu) = %d, Sysaddr: %p\n", (void *)&buf, size, retval, (void *)sysaddr);
 }
+
 void NaClStraceLink(char* from,char* to){
     printf("link(%s, %s) = void\n", from, to);
 
