@@ -12,3 +12,4 @@ void NaClStraceThreadExit(int stack_flag,uint32_t  zero);
 void NaClStraceDup(int oldfd,int ret);
 void NaClStraceDup2(int oldfd,int newfd,int ret);
 void NaClStraceDup3(int oldfd,int newfd,int flags,int ret);
+void NaClStraceGetdents(int d,void *drip,int  count,size_t ret,ssize_t getdents_ret,uintptr_t sysaddr);

@@ -697,6 +697,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   } else {
     NaClLog(4, "getdents returned %d\n", retval);
   }
+  #ifdef TRACING
+  NaClStraceGetdents(d, count,dirp,getdents_ret,sysaddr,ret);
+  #endif
 
   return retval;
 }

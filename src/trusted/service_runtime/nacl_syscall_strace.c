@@ -41,3 +41,8 @@ void NaClStraceDup3(int oldfd,int newfd,int flags,int ret){
     printf("dup3(%d, %d, %d) = %d\n", oldfd, newfd, flags, ret);
 
 }
+void NaClStraceGetdents(int d,void *drip,int  count,size_t ret,ssize_t getdents_ret,uintptr_t sysaddr){
+    printf("getdents(%d, %p, %d) = %zu, Getdents Ret: %zd, Sysaddr: %p\n", d, drip, count, ret, getdents_ret, (void*)sysaddr);
+
+
+}
