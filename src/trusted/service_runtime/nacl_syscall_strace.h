@@ -38,3 +38,6 @@ void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_
 void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size);
 void NaClStraceShmdt(int shmid,void *shmaddr,int shmflg);
 void NaClStraceShmctl(int shmid,int cmd, int32_t retval);
+void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval);
+void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls);
+void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr,uint32_t second_thread_ptr,int32_t retval,uintptr_t sys_tls,uintptr_t sys_stack);

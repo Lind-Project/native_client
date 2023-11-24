@@ -2510,6 +2510,9 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceSocketPair(domain, type, protocol,*fds,lindfds,retval);
+  #endif
 
   return retval;
 }
@@ -2541,6 +2544,9 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   NaClTlsSetTlsValue1(natp, thread_ptr);
   retval = 0;
 cleanup:
+  #ifdef TRACING
+  NaClStraceTlsInit(thread_ptr, retval, sys_tls);
+  #endif
   return retval;
 }
 
@@ -2596,6 +2602,9 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
                                       second_thread_ptr);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceThreadCreate(*prog_ctr, stack_ptr, thread_ptr,second_thread_ptr,retval,sys_tls,sys_stack);
+  #endif
   return retval;
 }
 
@@ -2610,6 +2619,9 @@ int32_t NaClSysTlsGet(struct NaClAppThread *natp) {
 int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
                             uint32_t             new_value) {
   NaClTlsSetTlsValue2(natp, new_value);
+  #ifdef TRACING
+  NaClStraceSecondTlsSet(new_value);
+  #endif
   return 0;
 }
 

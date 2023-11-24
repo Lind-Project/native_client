@@ -150,3 +150,20 @@ void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
     printf("shmctl(%d, %d) = %d\n", shmid, cmd, retval);
 
 }
+void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval) {
+    printf("SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n",
+           domain, type, protocol, fds, lindfds, retval);
+}
+void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
+    printf("tls_init(%u, %lu) = %d\n", thread_ptr, sys_tls, retval);
+}
+void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr,uint32_t second_thread_ptr,int32_t retval,uintptr_t sys_tls,uintptr_t sys_stack){
+    printf("thread_create(%p, %u, %u, %u, %lu, %lu) = %d\n", prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, sys_tls, sys_stack, retval);
+}
+// void NaClStraceTlsGet(struct NaClAppThread *natp) {
+//     printf("TlsGet(natp=%p)\n", natp);
+// }
+
+void NaClStraceSecondTlsSet(uint32_t new_value) {
+    printf("SecondTlsSet(new_value=%u)\n", new_value);
+}
