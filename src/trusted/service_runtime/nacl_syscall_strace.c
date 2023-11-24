@@ -166,3 +166,20 @@ void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_
 void NaClStraceSecondTlsSet(uint32_t new_value) {
     printf("SecondTlsSet(new_value=%u)\n", new_value);
 }
+void NaClStraceMutexCreate(int32_t retval){
+    printf("mutex_create() = %d\n", retval);
+
+}
+void NaClStraceMutexLock(int32_t mutex_handle, int32_t retval) {
+    printf("mutex_lock(%d) = %d\n", mutex_handle, retval);
+
+}
+void NaClStraceMutexUnLock(int32_t mutex_handle, int32_t retval) {
+    printf("mutex_unlock(%d) = %d\n", mutex_handle, retval);
+}
+void NaClStraceMutexTrylock(int32_t mutex_handle, int32_t retval){
+    printf("mutex_trylock(%d) = %d\n", mutex_handle, retval);
+}
+void NaClStraceMutexDestroy(int32_t mutex_handle,int32_t retval){
+    printf("mutex_destroy(%d) = %d\n", mutex_handle, retval);
+}

@@ -2653,6 +2653,9 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   NaClLog(3,
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
+  #ifdef TRACING
+  NaClStraceMutexCreate(retval);
+  #endif 
   return retval;
 }
 
@@ -2665,6 +2668,9 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_lock(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexLock(mutex_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2678,6 +2684,9 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_unlock(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexUnLock(mutex_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2691,6 +2700,9 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_trylock(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexTrylock(mutex_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2704,6 +2716,9 @@ int32_t NaClSysMutexDestroy(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_destroy(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexDestroy(mutex_handle,retval);
+  #endif
 
   return retval;
 }
