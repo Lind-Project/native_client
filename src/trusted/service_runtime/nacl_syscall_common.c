@@ -374,6 +374,9 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
+  #ifdef TRACING
+  NaClStraceExit(status);
+  #endif
 
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
