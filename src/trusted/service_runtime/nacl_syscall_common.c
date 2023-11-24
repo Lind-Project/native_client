@@ -478,6 +478,9 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   if (oldfd < 0) return -NACL_ABI_EBADF;
 
   ret = lind_dup(oldfd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceDup(oldfd,ret);
+  #endif
 
   return ret;
 }

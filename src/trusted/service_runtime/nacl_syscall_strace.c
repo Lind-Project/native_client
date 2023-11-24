@@ -29,3 +29,7 @@ void NaClStraceThreadExit(int stack_flag,uint32_t  zero){
     printf("thread_exit(%d, %u) = void\n", stack_flag, zero);
 
 }
+void NaClStraceDup(int oldfd,int ret){
+    printf("dup(%d) = %d\n", oldfd, ret);
+
+}
