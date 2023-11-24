@@ -59,10 +59,10 @@ void NaClStracePWrite(int d, void *buf, int count,off_t offset, size_t ret){
     printf("pwrite(%d, %p, %d, %jd) = %zu\n", d, buf, count, (intmax_t)offset, ret);
 
 }
-void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
-    printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
+// void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
+//     printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
 
-}
+// }
 void NaClStraceIoctl(int d, unsigned long request, size_t ret){
     printf("ioctl(%d, %lu) = %zu\n", d, request, ret);
 
@@ -77,4 +77,22 @@ void NaClStraceStat(char* path, size_t retval){
 void NaClStraceMkdir(char* path, int mode,size_t retval){
     printf("mkdir(%s, %d) = %zu\n", path, mode, retval);
 
+}
+void NaClStraceRmdir(uint32_t path, int32_t retval){
+    printf("rmdir(%u) = %d\n", path, retval);
+}
+void NaClStraceChdir(uint32_t path, int32_t retval){
+    printf("chdir(%u) = %d\n", path, retval);
+
+}
+void NaClStraceChmod(uint32_t path,int mode,int32_t retval){
+    printf("chmod(%u, %d) = %d\n", path, mode, retval);
+
+}
+void NaClStraceFchmod(int fd,int mode,int retval){
+    printf("fchmod(%d, %d) = %d\n", fd, mode, retval);
+
+}
+void NaClStraceFchdir(int fd,int32_t retval){
+    printf("fchdir(%d) = %d\n", fd, retval);
 }

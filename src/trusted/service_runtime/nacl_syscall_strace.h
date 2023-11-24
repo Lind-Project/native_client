@@ -19,3 +19,8 @@ void NaClStraceIoctl(int d, unsigned long request, size_t ret);
 void NaClStraceFstat(int d, size_t retval);
 void NaClStraceStat(char* path, size_t retval);
 void NaClStraceMkdir(char* path, int mode,size_t retval);
+void NaClStraceRmdir(uint32_t path, int32_t retval);
+void NaClStraceChdir(uint32_t path, int32_t retval);
+void NaClStraceChmod(uint32_t path,int mode, int32_t retval);
+void NaClStraceFchmod(int fd,int mode,int retval);
+void NaClStraceFchdir(int fd,int32_t retval);

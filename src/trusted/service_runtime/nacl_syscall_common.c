@@ -939,9 +939,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
-  #ifdef TRACING
-  NaClStraceLseek(d, offp, whence,offset);
-  #endif
+  // #ifdef TRACING
+  // NaClStraceLseek(d, offp, whence,offset);
+  // #endif
 
   return retval;
 }
@@ -1103,6 +1103,9 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   retval = lind_rmdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysRmdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceRmdir(path,retval);
+  #endif
   return retval;
 }
 
@@ -1123,6 +1126,9 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   retval = lind_chdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysChdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceChdir(path,retval);
+  #endif
   return retval;
 }
 
@@ -1144,6 +1150,9 @@ int32_t NaClSysChmod(struct NaClAppThread *natp,
   retval = lind_chmod(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysChmod: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceChmod(path,mode,retval);
+  #endif
   return retval;
 }
 
@@ -1158,6 +1167,9 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return  -NACL_ABI_EACCES;
 
   retval = lind_fchmod(fd, mode, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFchmod(fd,mode,retval);
+  #endif
 
   return retval;
 }
@@ -1172,6 +1184,9 @@ int32_t NaClSysFchdir(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fchdir(fd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFchdir(fd,retval);
+  #endif
 
   return ret;
 }
