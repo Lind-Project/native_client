@@ -183,3 +183,25 @@ void NaClStraceMutexTrylock(int32_t mutex_handle, int32_t retval){
 void NaClStraceMutexDestroy(int32_t mutex_handle,int32_t retval){
     printf("mutex_destroy(%d) = %d\n", mutex_handle, retval);
 }
+void NaClStraceCondCreate(int32_t retval){
+    printf("cond_create() = %d\n", retval);
+}
+void NaClStraceCondWait(int32_t cond_handle,int32_t mutex_handle,int32_t retval){
+    printf("cond_wait(%d, %d) = %d\n", cond_handle, mutex_handle, retval);
+}
+void NaClStraceCondSignal(int32_t cond_handle,int32_t retval){
+    printf("cond_signal(%d) = %d\n", cond_handle, retval);
+}
+void NaClStraceCondBroadcast(int32_t cond_handle, int32_t retval) {
+    printf("CondBroadcast(cond_handle=%d, retval=%d)\n", cond_handle, retval);
+}
+void NaClStraceCondDestroy(int32_t cond_handle,int32_t retval){
+    printf("cond_destroy(%d) = %d\n", cond_handle, retval);
+}
+void NaClStraceCondTimedWaitAbs(int32_t cond_handle,int32_t mutex_handle,int32_t retval){
+    printf("cond_timedwaitabs(%d, %d) = %d\n", cond_handle, mutex_handle, retval);
+}   
+void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
+    printf("sem_create(%d) = %d\n", init_value, retval);
+
+}

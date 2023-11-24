@@ -99,7 +99,7 @@
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
-int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
+int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
 }
 
@@ -2735,6 +2735,9 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
 
   NaClLog(2, "NaClSysCondCreate(0x%08"NACL_PRIxPTR") = %d\n",
            (uintptr_t)natp, retval);
+  #ifdef TRACING
+  NaClStraceCondCreate(retval);
+  #endif
   return retval;
 }
 
@@ -2748,6 +2751,9 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle, mutex_handle);
 
   retval = lind_cond_wait(cond_handle, mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondWait(cond_handle,mutex_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2761,6 +2767,9 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_signal(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondSignal(cond_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2774,6 +2783,9 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_broadcast(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondBroadcast(cond_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2787,6 +2799,9 @@ int32_t NaClSysCondDestroy(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_destroy(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondDestroy(cond_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2812,6 +2827,9 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   retval = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceCondTimedWaitAbs(cond_handle,mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2841,6 +2859,9 @@ int32_t NaClSysSemCreate(struct NaClAppThread *natp,
   desc = NULL;
 cleanup:
   free(desc);
+  #ifdef TRACING
+  NaClStraceSemCreate(init_value,retval);
+  #endif
   return retval;
 }
 
