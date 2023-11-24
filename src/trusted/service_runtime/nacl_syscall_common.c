@@ -376,10 +376,10 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClAppThreadTeardown(natp);
 
   /* NOTREACHED */
-  return -NACL_ABI_EINVAL;
   #ifdef TRACING
   NaClStraceExit(status);
   #endif
+  return -NACL_ABI_EINVAL;
 
 }
 
