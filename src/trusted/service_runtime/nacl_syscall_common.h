@@ -176,6 +176,12 @@ int32_t NaClSysFsync(struct NaClAppThread *natp,
 int32_t NaClSysFdatasync(struct NaClAppThread *natp,
 		     int 	           fd);
 
+int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,
+		     int 	           fd,
+		     long long 		   offset,
+		     long long 		   nbytes,
+                     uint32_t		   flags);
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size);

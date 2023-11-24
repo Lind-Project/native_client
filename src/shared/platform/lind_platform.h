@@ -136,12 +136,14 @@
 #define LIND_safe_fs_fchdir		161
 #define LIND_safe_fs_fsync		162
 #define LIND_safe_fs_fdatasync		163
+#define LIND_safe_fs_sync_file_range	164
 
 union RustArg {
     int dispatch_int;
     unsigned int dispatch_uint;
     int *dispatch_intptr;
     long unsigned int dispatch_ulong;
+    long long int dispatch_long_long;
     long long unsigned int dispatch_ulong_long;
     long int dispatch_long;
     size_t dispatch_size_t;
@@ -194,6 +196,7 @@ int lind_fchmod (int fd, int mode, int cageid);
 int lind_fchdir(int fd, int cageid);
 int lind_fsync(int fd, int cageid);
 int lind_fdatasync(int fd, int cageid);
+int lind_sync_file_range(int fd, long long offset, long long nbytes, unsigned int flags, int cageid);
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);

@@ -21,8 +21,8 @@
 #define BLANKARGS \
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
-    arg2.dispatch_ulong = 0; \
-    arg3.dispatch_ulong = 0; \
+    arg2.dispatch_long_long = 0; \
+    arg3.dispatch_long_long = 0; \
     arg4.dispatch_ulong = 0; \
     arg5.dispatch_ulong = 0; \
     arg6.dispatch_ulong = 0 //no semicolon here to force macro caller to place one for neatness
@@ -123,6 +123,10 @@ int lind_fsync (int fd, int cageid) {
 
 int lind_fdatasync (int fd, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_fdatasync, int, fd);
+}
+
+int lind_sync_file_range (int fd, long long offset, long long nbytes, unsigned int flags, int cageid) {
+    DISPATCH_SYSCALL_4(LIND_safe_fs_sync_file_range, int, fd, long_long, offset, long_long, nbytes, uint, flags);
 }
 
 int lind_mkdir (const char *path, int mode, int cageid) {
