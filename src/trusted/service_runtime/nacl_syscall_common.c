@@ -1809,6 +1809,9 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceMmap(start,length,prot,flags,d,retval);
+  #endif
   return retval;
 }
 
@@ -1877,6 +1880,9 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
+  #ifdef TRACING
+  NaClStraceMunmap(start,length,retval,sysaddr,alloc_rounded_length);
+  #endif
   return retval;
 }
 
@@ -2093,6 +2099,9 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
+  #ifdef TRACING
+  NaClStraceMprotectInternal(start,length,prot,sysaddr,retval,holding_app_lock);
+  #endif
   return retval;
 }
 

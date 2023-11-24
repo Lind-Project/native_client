@@ -28,3 +28,6 @@ void NaClStraceLink(char* from,char* to);
 void NaClStraceUnlink(char* pathname,int32_t retval);
 void NaClStraceRename(const char *oldpath, const char *newpath, int32_t retval);
 void NaClStraeCommon(uintptr_t usraddr, size_t length);
+void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t retval);
+void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length);
+void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock);

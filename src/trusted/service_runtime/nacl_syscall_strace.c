@@ -115,3 +115,15 @@ void NaClStraceCommon(uintptr_t usraddr, size_t length) {
 void NaClStraceRename(const char *oldpath, const char *newpath, int32_t retval) {
     printf("rename(oldpath: \"%s\", newpath: \"%s\") = %d\n", oldpath, newpath, retval);
 }
+void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t retval){
+    printf("mmap(%p, %zu, %d, %d, %d) = %d\n", start, length, prot, flags, d, retval);
+
+}
+void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length){
+   printf("munmap(%p, %zu) = %d, Sysaddr: %p, Alloc Rounded Length: %zu\n", start, length, retval, (void*)sysaddr, alloc_rounded_length);
+
+}
+void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock){
+    printf("mprotect_internal(%u, %zu, %d, %p) = %d, Holding App Lock: %d\n", start, length, prot, (void*)sysaddr, retval, holding_app_lock);
+    
+}
