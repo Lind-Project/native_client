@@ -135,9 +135,9 @@ void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_
 void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
     printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
 }
-void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg) {
-    printf("shmdt(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
-}
+// void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg) {
+//     printf("shmdt(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
+// }
 
 // void NaClStraceSyst(void *shmaddr,int shmid,uintptr_t sysaddr,int length){
 //     printf("syst(%p, %d, %lu, %d) = void\n", shmaddr, shmid, sysaddr, length);

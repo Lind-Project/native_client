@@ -2442,9 +2442,9 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
-  #ifdef TRACING
-  NaClStraceShmdt(*shmaddr, shmid, sysaddr, length);
-  #endif
+  // #ifdef TRACING
+  // NaClStraceShmdt(*shmaddr, shmid, sysaddr, length);
+  // #endif
 
   return retval;
 
@@ -2512,7 +2512,7 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
   #ifdef TRACING
-  NaClStraceSocketPair(domain, type, protocol,*fds,lindfds,retval);
+  NaClStraceSocketPair(domain, type, protocol, fds, lindfds, retval);
   #endif
 
   return retval;

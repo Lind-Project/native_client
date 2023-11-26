@@ -36,7 +36,7 @@ void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t 
 void NaClStraceMprotect(uint32_t start,size_t length,int prot);
 void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size);
 void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size);
-void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg);
+//void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg);
 void NaClStraceShmctl(int shmid,int cmd, int32_t retval);
 void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval);
 void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls);
