@@ -2375,9 +2375,9 @@ cleanup:
                        "0x%"NACL_PRIxPTR"\n", map_result);
   }
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
-  #ifdef TRACING
-  NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
-  #endif
+  // #ifdef TRACING
+  // NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
+  // #endif
 
 
   return map_result;     
@@ -2603,9 +2603,9 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
                                       second_thread_ptr);
 
 cleanup:
-  #ifdef TRACING
-  NaClStraceThreadCreate(*prog_ctr, stack_ptr, thread_ptr,second_thread_ptr,retval,sys_tls,sys_stack);
-  #endif
+  // #ifdef TRACING
+  // NaClStraceThreadCreate(*prog_ctr, stack_ptr, thread_ptr,second_thread_ptr,retval,sys_tls,sys_stack);
+  // #endif
   return retval;
 }
 
@@ -2631,6 +2631,9 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
  * NaClGetTlsFastPath2 (see nacl_syscall_64.S).
  */
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
+  #ifdef TRACING
+  NaClStraceSecondTlsGet((uintptr_t) natp);
+  #endif
   return NaClTlsGetTlsValue2(natp);
 }
 
