@@ -804,7 +804,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   #ifdef TRACING
-  NaClStracePread(d, buf, count, log_bytes,ret);
+  NaClStracePread(d, buf, count, log_bytes);
   #endif
   return retval;
 }
@@ -846,7 +846,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
   #ifdef TRACING
-  NaClStraceWrite(d, buf, count, ret);
+  NaClStraceWrite(d, buf, count);
   #endif
   
   return retval;
@@ -899,7 +899,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
   #ifdef TRACING
-  NaClStracePWrite(d, buf, count, offset,ret);
+  NaClStracePWrite(d, buf, count, offset);
   #endif
   return retval;
 }
@@ -1186,7 +1186,7 @@ int32_t NaClSysFchdir(struct NaClAppThread *natp,
 
   ret = lind_fchdir(fd, nap->cage_id);
   #ifdef TRACING
-  NaClStraceFchdir(fd,retval);
+  NaClStraceFchdir(fd);
   #endif
 
   return ret;

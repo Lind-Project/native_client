@@ -45,17 +45,17 @@ void NaClStraceGetdents(int d, void *drip, size_t count, size_t ret, ssize_t get
     printf("getdents(%d, %p, %zu) = %zu, Getdents Ret: %zd, Sysaddr: %p\n", d, drip, count, ret, getdents_ret, (void *)sysaddr);
 }
 
-void NaClStracePread(int d, void *buf, int count,  size_t log_bytes,int32_t ret){
-    printf("pread(%d, %p, %d, %zu) = %d\n", d, buf, count, log_bytes, ret);
+void NaClStracePread(int d, void *buf, int count,  size_t log_bytes){
+    printf("pread(%d, %p, %d, %zu) = %d\n", d, buf, count, log_bytes);
 }
 
 
-void NaClStraceWrite(int d, void *buf, int count, size_t ret){
-    printf("write(%d, %p, %d) = %zu\n", d, buf, count, ret);
-
+void NaClStraceWrite(int d, void *buf, int count) {
+    printf("write(%d, %p, %d)\n", d, buf, count);
 }
-void NaClStracePWrite(int d, void *buf, int count,off_t offset, size_t ret){
-    printf("pwrite(%d, %p, %d, %jd) = %zu\n", d, buf, count, (intmax_t)offset, ret);
+
+void NaClStracePWrite(int d, void *buf, int count,off_t offset){
+    printf("pwrite(%d, %p, %d, %jd)\n", d, buf, count, (intmax_t)offset);
 
 }
 // void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
@@ -77,23 +77,21 @@ void NaClStraceMkdir(char* path, int mode,size_t retval){
     printf("mkdir(%s, %d) = %zu\n", path, mode, retval);
 
 }
-void NaClStraceRmdir(uint32_t path, int32_t retval){
-    printf("rmdir(%u) = %d\n", path, retval);
+void NaClStraceRmdir(const char *path, int32_t retval) {
+    printf("rmdir(%s) = %d\n", path, retval);
 }
-void NaClStraceChdir(uint32_t path, int32_t retval){
-    printf("chdir(%u) = %d\n", path, retval);
-
+void NaClStraceChdir(const char *path, int32_t retval) {
+    printf("chdir(%s) = %d\n", path, retval);
 }
-void NaClStraceChmod(uint32_t path,int mode,int32_t retval){
-    printf("chmod(%u, %d) = %d\n", path, mode, retval);
-
+void NaClStraceChmod(const char *path, int mode, int32_t retval) {
+    printf("chmod(%s, %d) = %d\n", path, mode, retval);
 }
 void NaClStraceFchmod(int fd,int mode,int retval){
     printf("fchmod(%d, %d) = %d\n", fd, mode, retval);
 
 }
-void NaClStraceFchdir(int fd,int32_t retval){
-    printf("fchdir(%d) = %d\n", fd, retval);
+void NaClStraceFchdir(int fd){
+    printf("fchdir(%d) =\n", fd);
 }
 void NaClStraceGetcwd(char buf, size_t size, uintptr_t sysaddr, int32_t retval) {
     printf("getcwd(%p, %zu) = %d, Sysaddr: %p\n", (void *)&buf, size, retval, (void *)sysaddr);
