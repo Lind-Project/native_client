@@ -135,10 +135,10 @@ void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_
 void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
     printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
 }
-void NaClStraceShmdt(int shmid,void *shmaddr,int shmflg){
-    printf("shmat(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
-
+void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg) {
+    printf("shmdt(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
 }
+
 // void NaClStraceSyst(void *shmaddr,int shmid,uintptr_t sysaddr,int length){
 //     printf("syst(%p, %d, %lu, %d) = void\n", shmaddr, shmid, sysaddr, length);
 //}
@@ -149,14 +149,16 @@ void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
 
 }
 void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval) {
-    printf("SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n",domain, type, protocol, (void *)fds, (void *)lindfds, retval);
+    printf("SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n", domain, type, protocol, (void *)fds, (void *)lindfds, retval);
 }
+
 void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
     printf("tls_init(%u, %lu) = %d\n", thread_ptr, sys_tls, retval);
 }
-void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr,uint32_t second_thread_ptr,int32_t retval,uintptr_t sys_tls,uintptr_t sys_stack){
-    printf("thread_create(%p, %u, %u, %u, %lu, %lu) = %d\n", prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, sys_tls, sys_stack, retval);
+void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval, uintptr_t sys_tls, uintptr_t sys_stack) {
+    printf("thread_create(%p, %u, %u, %u, %lu, %lu) = %d\n", *(void **)prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, sys_tls, sys_stack, retval);
 }
+
 // void NaClStraceTlsGet(struct NaClAppThread *natp) {
 //     printf("TlsGet(natp=%p)\n", natp);
 // }
