@@ -54,10 +54,10 @@ void NaClStraceWrite(int d, void *buf, int count) {
     printf("write(%d, %p, %d)\n", d, buf, count);
 }
 
-void NaClStracePWrite(int d, void *buf, int count,off_t offset){
+void NaClStracePWrite(int d, const void *buf, int count, off_t offset) {
     printf("pwrite(%d, %p, %d, %jd)\n", d, buf, count, (intmax_t)offset);
-
 }
+
 // void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
 //     printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
 
@@ -93,9 +93,10 @@ void NaClStraceFchmod(int fd,int mode,int retval){
 void NaClStraceFchdir(int fd){
     printf("fchdir(%d) =\n", fd);
 }
-void NaClStraceGetcwd(char buf, size_t size, uintptr_t sysaddr, int32_t retval) {
-    printf("getcwd(%p, %zu) = %d, Sysaddr: %p\n", (void *)&buf, size, retval, (void *)sysaddr);
+void NaClStraceGetcwd(char *buf, size_t size, uintptr_t sysaddr, int32_t retval) {
+    printf("getcwd(%p, %zu) = %d, Sysaddr: %p\n", (void *)buf, size, retval, (void *)sysaddr);
 }
+
 
 void NaClStraceLink(char* from,char* to){
     printf("link(%s, %s) = void\n", from, to);
