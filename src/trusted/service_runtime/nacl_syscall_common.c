@@ -2886,7 +2886,6 @@ int32_t NaClSysSemCreate(struct NaClAppThread *natp,
   desc = NULL;
 cleanup:
   free(desc);
-  c
   return retval;
 }
 
