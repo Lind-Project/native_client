@@ -54,4 +54,4 @@ void NaClStraceCondBroadcast(int32_t cond_handle, int32_t retval);
 void NaClStraceCondDestroy(int32_t cond_handle,int32_t retval);
 void NaClStraceCondTimedWaitAbs(int32_t cond_handle,int32_t mutex_handle,int32_t retval);
 void NaClStraceSemCreate(int32_t init_value, int32_t retval);
-// void NaClStraceSecondTlsGet(uintptr_t natp);
+void NaClStraceSecondTlsGet(uintptr_t natp);

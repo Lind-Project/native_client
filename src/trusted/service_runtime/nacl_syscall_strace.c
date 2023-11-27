@@ -206,5 +206,7 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
 
 }
 // void NaClStraceSecondTlsGet(uintptr_t natp) {
-//     printf("SecondTlsGet(%d, 0x%08" NACL_PRIxPTR ")\n", natp);
+//     printf("SecondTlsGet(0x%08" NACL_PRIxPTR ")\n", natp);
+    
+    
 // }
