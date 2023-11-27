@@ -359,6 +359,9 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
   ppid = lind_getppid(nap->cage_id);
   NaClLog(1, "NaClSysGetppid: returning %d\n", ppid);
 
+  #ifdef TRACING
+  NaClStraceGetpid(ppid);
+  #endif
   return ppid;
 }
 
@@ -374,6 +377,9 @@ int32_t NaClSysExit(struct NaClAppThread  *natp,
   NaClLog(1, "Exit syscall handler: %d\n", status);
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
   NaClAppThreadTeardown(natp);
+  #ifdef TRACING
+  NaClStraceExit(status);
+  #endif
 
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
@@ -407,6 +413,9 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
   lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
   NaClAppThreadTeardown(natp);
+  #ifdef TRACING
+  NaClStraceThreadExit(stack_flag,zero);
+  #endif
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 }
@@ -460,6 +469,9 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   }
 
  done:
+  #ifdef TRACING
+  NaClStraceNameService(desc_addr,desc,retval);
+  #endif
   return retval;
 }
 
@@ -472,6 +484,9 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
   if (oldfd < 0) return -NACL_ABI_EBADF;
 
   ret = lind_dup(oldfd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceDup(oldfd,ret);
+  #endif
 
   return ret;
 }
@@ -490,6 +505,9 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
   if ((newfd < 0) || (oldfd < 0)) return -NACL_ABI_EBADF;
 
   ret = lind_dup2(oldfd, newfd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceDup2(oldfd,newfd,ret);
+  #endif
 
   return ret;
 }
@@ -512,6 +530,9 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
    * TODO: implement dup3 flags -jp
    */
   UNREFERENCED_PARAMETER(flags);
+  #ifdef TRACING
+  NaClStraceDup3(oldfd,newfd,flags,ret);
+  #endif
 
   return NaClSysDup2(natp, oldfd, newfd);
 }
@@ -682,6 +703,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
   } else {
     NaClLog(4, "getdents returned %d\n", retval);
   }
+  #ifdef TRACING
+  NaClStraceGetdents(d, count,dirp,getdents_ret,sysaddr,ret);
+  #endif
 
   return retval;
 }
@@ -727,7 +751,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   #ifdef TRACING
-  NaClStraceRead(d, buf, count, retval);
+  NaClStraceRead(d, buf, count, ret);
   #endif
   return retval;
 }
@@ -784,6 +808,9 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
+  #ifdef TRACING
+  NaClStracePread(d, buf, count, log_bytes,ret);
+  #endif
   return retval;
 }
 
@@ -823,8 +850,11 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t)write_result;
 
   if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
+  #ifdef TRACING
+  NaClStraceWrite(d, sysaddr, count, ret);
+  #endif
   
-  return retval;
+  return retval;   
 }
 
 int32_t NaClSysPwrite(struct NaClAppThread *natp,
@@ -873,6 +903,9 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
+  #ifdef TRACING
+  NaClStracePWrite(d, buf, count, offset,ret);
+  #endif
   return retval;
 }
 
@@ -912,6 +945,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
+  #ifdef TRACING
+  NaClStraceLseek(d, offp, whence,offset);
+  #endif
 
   return retval;
 }
@@ -934,6 +970,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   if (kNaClBadAddress == sysaddr) {
     NaClLog(2, "NaClSysIoctl could not translate buffer address, returning%d\n", -NACL_ABI_EFAULT);
     return -NACL_ABI_EFAULT;
+    
   }
 
   // Further checks might be necessary for ioctl calls with structs or arrays
@@ -942,6 +979,9 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   retval = lind_ioctl(d ,request, (void *) sysaddr, nap->cage_id);
   
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceIoctl(d, request, retval);
+  #endif
   return retval;
 }
 
@@ -968,6 +1008,10 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) nasp, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
+  #ifdef TRACING
+  NaClStraceFstat(d, retval);
+  #endif
+  
 
   return retval;
 }
@@ -994,6 +1038,10 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
+  #ifdef TRACING
+  NaClStraceStat(path, retval);
+  #endif
+  
 
   return retval;
 }
@@ -1020,6 +1068,9 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
+  #ifdef TRACING
+  NaClStraceLStat(path, retva);
+  #endif
 
   return retval;
 }
@@ -1042,6 +1093,10 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceMkdir(path, mode,retval);
+  #endif
+
   return retval;
 }
 
@@ -1062,6 +1117,9 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   retval = lind_rmdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysRmdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceRmdir(path,retval);
+  #endif
   return retval;
 }
 
@@ -1082,6 +1140,9 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   retval = lind_chdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysChdir: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceChdir(path,retval);
+  #endif
   return retval;
 }
 
@@ -1103,6 +1164,9 @@ int32_t NaClSysChmod(struct NaClAppThread *natp,
   retval = lind_chmod(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysChmod: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceChmod(path,mode,retval);
+  #endif
   return retval;
 }
 
@@ -1117,6 +1181,9 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return  -NACL_ABI_EACCES;
 
   retval = lind_fchmod(fd, mode, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFchmod(fd,mode,retval);
+  #endif
 
   return retval;
 }
@@ -1131,6 +1198,9 @@ int32_t NaClSysFchdir(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fchdir(fd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFchdir(fd,retval);
+  #endif
 
   return ret;
 }
@@ -1165,6 +1235,9 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
   retval = lind_getcwd((void *) sysaddr, size, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceGetcwd(buf,size,sysaddr,retval);
+  #endif
   return retval;
 }
 
@@ -1179,6 +1252,9 @@ int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
   if ((retval = CopyPathFromUser(nap, dstpath, sizeof(dstpath), (uintptr_t) to))) return -NACL_ABI_EINVAL;
 
   retval = lind_link(srcpath, dstpath, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceLink(from,to);
+  #endif
   return retval;
 }
 
@@ -1189,7 +1265,9 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
 
   if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) return -NACL_ABI_EINVAL;
   retval = lind_unlink(path, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceUnlink(pathname,retval);
+  #endif
   return retval;
 }
 
@@ -1204,6 +1282,10 @@ int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const cha
   if ((retval = CopyPathFromUser(nap, newpathname, sizeof(newpathname), (uintptr_t) newpath))) return -NACL_ABI_EINVAL;
 
   retval = lind_rename(oldpathname, newpathname, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceRename(oldpath, newpath, retval);
+  #endif
+
   return retval;
 }
 
@@ -1226,6 +1308,11 @@ int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
    */
   UNREFERENCED_PARAMETER(length);
   usraddr = NaClTruncAllocPage(usraddr);
+  #ifdef TRACING
+// Include the appropriate function name and parameters in the tracing call.
+  NaClStraceCommon(usraddr, length);
+  #endif
+
   return usraddr < nap->dynamic_text_end;
 }
 
@@ -1243,6 +1330,9 @@ int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
     /* 32-bit systems only, rounding caused uint32_t overflow */
     return 0;
   }
+  #ifdef TRACING
+  NaClStraeCommon(usraddr,length);
+  #endif
   return (nap->dynamic_text_start <= usraddr &&
           usr_region_end <= nap->dynamic_text_end);
 }
@@ -1691,7 +1781,9 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
                        "0x%"NACL_PRIxPTR"\n", map_result);
   }
   NaClLog(3, "NaClSysMmap: returning 0x%08"NACL_PRIxPTR"\n", map_result);
-
+  #ifdef TRACING
+  NaClStraceMmapIntern(start,length,prot,flags,d,allowed_flags,usraddr,usrpage,sysaddr,endaddr);
+  #endif
   return (int32_t) map_result;
 }
 
@@ -1738,6 +1830,9 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceMmap(start,length,prot,flags,d,retval);
+  #endif
   return retval;
 }
 
@@ -1806,6 +1901,9 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
+  #ifdef TRACING
+  NaClStraceMunmap(start,length,retval,sysaddr,alloc_rounded_length);
+  #endif
   return retval;
 }
 
@@ -2022,6 +2120,9 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
+  #ifdef TRACING
+  NaClStraceMprotectInternal(start,length,prot,sysaddr,retval,holding_app_lock);
+  #endif
   return retval;
 }
 
@@ -2038,6 +2139,9 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
+  #ifdef TRACING
+  NaClStraceMprotect(start,length,prot);
+  #endif
 
   return NaClSysMprotectInternal(nap, start, length, prot);
 }
@@ -2074,6 +2178,9 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
         NaClLog(LOG_FATAL, "NaClSysShmget: shmid returned by lind does not exist!\n");
     }
   }
+  #ifdef TRACING
+  NaClStraceShmget(key,size,shmflg,retval,alloc_rounded_size);
+  #endif
 
   return retval;
 }
@@ -2289,7 +2396,9 @@ cleanup:
   }
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
 
-
+  #ifdef TRACING
+  NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
+  #endif
   return map_result;     
 }
 
@@ -2316,6 +2425,9 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, "shmdt: region not user addresses\n");
     retval = -NACL_ABI_EFAULT;
+    #ifdef TRACING
+    NaClStraceShmdt(*shmaddr, shmid, sysaddr, length);
+    #endif
     return retval;
   }
 
@@ -2352,6 +2464,9 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
+  #ifdef TRACING
+  NaClStraceSyst(   *natp, *shmaddr, *shmaddr, shmflg);
+  #endif
 
   return retval;
 
@@ -2392,6 +2507,9 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
     shmtable[shmid].rmid = true;
     if (!shmtable[shmid].count) clear_shmentry(shmid); // if we dont have any entries attached we can clear it now
   }
+  #ifdef TRACING
+  NaClStraceShmctl(shmid, cmd, retval);
+  #endif
 
   return retval;
 }
@@ -2415,6 +2533,9 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
+  #ifdef TRACING
+  NaClStraceSocketPair(domain, type, protocol,*fds,lindfds,retval);
+  #endif
 
   return retval;
 }
@@ -2446,6 +2567,9 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   NaClTlsSetTlsValue1(natp, thread_ptr);
   retval = 0;
 cleanup:
+  #ifdef TRACING
+  NaClStraceTlsInit(thread_ptr, retval, sys_tls);
+  #endif
   return retval;
 }
 
@@ -2501,6 +2625,9 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
                                       second_thread_ptr);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceThreadCreate(*prog_ctr, stack_ptr, thread_ptr,second_thread_ptr,retval,sys_tls,sys_stack);
+  #endif
   return retval;
 }
 
@@ -2509,12 +2636,19 @@ cleanup:
  * NaClGetTlsFastPath1 (see nacl_syscall_64.S).
  */
 int32_t NaClSysTlsGet(struct NaClAppThread *natp) {
+  #ifdef TRACING
+  NaClStraceTlsGet(natp);
+  #endif
+  
   return NaClTlsGetTlsValue1(natp);
 }
 
 int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
                             uint32_t             new_value) {
   NaClTlsSetTlsValue2(natp, new_value);
+  #ifdef TRACING
+  NaClStraceSecondTlsSet(new_value);
+  #endif
   return 0;
 }
 
@@ -2530,6 +2664,9 @@ int NaClSysThreadNice(struct NaClAppThread *natp,
                       int                  nice) {
   /* Note: implementation of nacl_thread_nice is OS dependent. */
   UNREFERENCED_PARAMETER(natp);
+  #ifdef TRACING
+  NaClStraceThreadNice(nice);
+  #endif
   return nacl_thread_nice(nice);
 }
 
@@ -2546,6 +2683,9 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   NaClLog(3,
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
+  #ifdef TRACING
+  NaClStraceMutexCreate(retval);
+  #endif        
   return retval;
 }
 
@@ -2558,7 +2698,9 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_lock(mutex_handle, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceMutexLock(mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2571,7 +2713,9 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_unlock(mutex_handle, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceMutexUnLock(mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2584,7 +2728,9 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_trylock(mutex_handle, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceMutexTrylock(mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2597,7 +2743,9 @@ int32_t NaClSysMutexDestroy(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_destroy(mutex_handle, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceMutexDestroy(mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2613,6 +2761,9 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
 
   NaClLog(2, "NaClSysCondCreate(0x%08"NACL_PRIxPTR") = %d\n",
            (uintptr_t)natp, retval);
+  #ifdef TRACING
+  NaClStraceCondCreate(retval);
+  #endif
   return retval;
 }
 
@@ -2626,6 +2777,9 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle, mutex_handle);
 
   retval = lind_cond_wait(cond_handle, mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondWait(cond_handle,mutex_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2639,6 +2793,10 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_signal(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondSignal(cond_handle,retval);
+  #endif
+
 
   return retval;
 }
@@ -2652,6 +2810,9 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_broadcast(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondBroadcast(cond_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2665,6 +2826,9 @@ int32_t NaClSysCondDestroy(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_destroy(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondDestroy(cond_handle,retval);
+  #endif
 
   return retval;
 }
@@ -2690,6 +2854,9 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   retval = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
 cleanup:
+  #ifdef TRACING
+  NaClStraceCondTimedWaitAbs(cond_handle,mutex_handle,retval);
+  #endif
   return retval;
 }
 
@@ -2719,6 +2886,7 @@ int32_t NaClSysSemCreate(struct NaClAppThread *natp,
   desc = NULL;
 cleanup:
   free(desc);
+  c
   return retval;
 }
 
