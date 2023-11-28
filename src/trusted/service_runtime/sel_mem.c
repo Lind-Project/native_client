@@ -969,7 +969,7 @@ void NaClVmmapCacheInsert(struct NaClVmmap *self, struct NaClVmmapEntry *new_ent
 
 void NaClVmmapCacheClear(struct NaClVmmap *self) {
   struct NaClVmmapCache *cache = &(self->cache);
-  for (int i = 0; i < NACL_VMMAP_CACHE_SIZE; ++i) {
+  for (int i = 0; i < NACL_VMMAP_CACHE_SIZE; i++) {
       cache->entries[i] = NULL;
   }
   cache->next_evict = 0;
