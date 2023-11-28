@@ -207,11 +207,11 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
     printf("sem_create(%d) = %d\n", init_value, retval);
 
 }
-// void NaClStraceSecondTlsGet(uintptr_t natp) {
-//     printf("SecondTlsGet(0x%08" NACL_PRIxPTR ")\n", natp);
-    
-    
-// }
+
+void NaClStraceSecondTlsGet(uintptr_t natp) {
+    // this is not used in x86 anyway
+    printf("SecondTlsGet(some natp)\n");
+}
 
 void NaClStraceSemWait(int32_t sem_handle, int ret) {
     printf("semwait(%d) = %d", sem_handle, ret);
