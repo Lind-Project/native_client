@@ -52,12 +52,25 @@ struct NaClVmmapEntry {
   nacl_off64_t      file_size;  /* backing store size */
 };
 
-struct NaClVmmap {
-  struct NaClVmmapEntry **vmentry;       /* must not overlap */
-  size_t                nvalid, size;
-  int                   is_sorted;
-  struct NaClVmmapEntry *cached_entry;
+#define NACL_VMMAP_CACHE_SIZE 4
+// because the cache size should be small, the contents
+// are not sorted, and the cache enforces a FIFO rule
+struct NaClVmmapCache {
+    struct NaClVmmapEntry *entries[NACL_VMMAP_CACHE_SIZE];
+    int next_evict = 0;
+    int n_cached = 0; // how many entries cached in the array
 };
+
+struct NaClVmmap {
+    struct NaClVmmapEntry **vmentry;      
+    size_t nvalid, size;
+    int is_sorted;
+    struct NaClVmmapCache cache;
+};
+
+void NaClVmmapCacheInsert(struct NaClVmmap *self, struct NaClVmmapEntry *new_entry);
+
+void NaClVmmapCacheClear(struct NaClVmmap *self);
 
 void NaClVmmapDebug(struct NaClVmmap  *self,
                     char              *msg);
