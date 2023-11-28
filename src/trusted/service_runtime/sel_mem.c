@@ -667,7 +667,7 @@ int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
   }
 
   // Caching entries to improve I/O speed
-  NaClVmmapCache cache = self->cache;
+  struct NaClVmmapCache cache = self->cache;
   for (int i = 0; i < cache.n_cached; i++) {
     struct NaClVmmapEntry   *ent = cache.entries[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
