@@ -227,11 +227,13 @@ SYSCALL_LIST = [
      ['int32_t cond_handle', 'int32_t mutex_handle',
       'struct nacl_abi_timespec *ts']),
     ('NACL_sys_socketpair', 'NaClSysSocketPair', ['int domain', 'int type', 'int protocol', 'int *fds']),
-    ('NACL_sys_sem_create', 'NaClSysSemCreate', ['int32_t init_value']),
-    ('NACL_sys_sem_wait', 'NaClSysSemWait', ['int32_t sem_handle']),
-    ('NACL_sys_sem_post', 'NaClSysSemPost', ['int32_t sem_handle']),
-    ('NACL_sys_sem_get_value', 'NaClSysSemGetValue',
-     ['int32_t sem_handle']),
+    ('NACL_sys_sem_init', 'NaClSysSemInit', ['uint32_t sem', 'int32_t pshared', 'int32_t value']),
+    ('NACL_sys_sem_wait', 'NaClSysSemWait', ['uint32_t sem']),
+    ('NACL_sys_sem_trywait', 'NaClSysSemTryWait', ['uint32_t sem']),
+    ('NACL_sys_sem_timedwait', 'NaClSysSemTimedWait', ['uint32_t sem', 'struct nacl_abi_timespec *ts']),
+    ('NACL_sys_sem_post', 'NaClSysSemPost', ['uint32_t sem']),
+    ('NACL_sys_sem_destroy', 'NaClSysSemDestroy', ['uint32_t sem']),
+    ('NACL_sys_sem_getvalue', 'NaClSysSemGetValue', ['uint32_t sem', 'int32_t *sval']),
     ('NACL_sys_sched_yield', 'NaClSysSchedYield', []),
     ('NACL_sys_sysconf', 'NaClSysSysconf', ['int32_t name', 'int32_t *result']),
     ('NACL_sys_dyncode_create', 'NaClSysDyncodeCreate',
@@ -299,7 +301,9 @@ SYSCALL_LIST = [
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
     ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
-    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int d']) 
+    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int fd']),
+    ('NACL_sys_fsync', 'NaClSysFsync', ['int fd']),
+    ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd'])
     ]
 
 

@@ -111,10 +111,13 @@
 #define NACL_sys_exception_stack        88
 #define NACL_sys_exception_clear_flag   89
 
-#define NACL_sys_sem_create             100
-#define NACL_sys_sem_wait               101
-#define NACL_sys_sem_post               102
-#define NACL_sys_sem_get_value          103
+#define NACL_sys_sem_init               91
+#define NACL_sys_sem_wait               92
+#define NACL_sys_sem_trywait            93
+#define NACL_sys_sem_timedwait          94
+#define NACL_sys_sem_post               95
+#define NACL_sys_sem_destroy            96
+#define NACL_sys_sem_getvalue           97
 
 #define NACL_sys_dyncode_create         104
 #define NACL_sys_dyncode_modify         105
@@ -175,6 +178,8 @@
 #define NACL_sys_epoll_wait             159
 
 #define NACL_sys_fchdir                 161
+#define NACL_sys_fsync                  162
+#define NACL_sys_fdatasync              163
 
 #define NACL_MAX_SYSCALLS               256
 
