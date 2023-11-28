@@ -57,8 +57,8 @@ struct NaClVmmapEntry {
 // are not sorted, and the cache enforces a FIFO rule
 struct NaClVmmapCache {
     struct NaClVmmapEntry *entries[NACL_VMMAP_CACHE_SIZE];
-    int next_evict = 0;
-    int n_cached = 0; // how many entries cached in the array
+    int next_evict;
+    int n_cached; // how many entries cached in the array
 };
 
 struct NaClVmmap {
