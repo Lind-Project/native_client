@@ -21,7 +21,7 @@ void NaClStraceClose(int d, int ret) {
 }
 
 void NaClStraceRead(int d, void *buf, size_t count, int ret) {
-    printf("read(%d, %p, %zu) = %d", d, buf, count, ret);
+    printf("read(%d, %p, %zu) = %d\n", d, buf, count, ret);
 }
 void NaClStraceExit(int status){
     printf("exit() = %d\n", status);
@@ -214,15 +214,15 @@ void NaClStraceSecondTlsGet(uintptr_t natp) {
 }
 
 void NaClStraceSemWait(int32_t sem_handle, int ret) {
-    printf("semwait(%d) = %d", sem_handle, ret);
+    printf("semwait(%d) = %d\n", sem_handle, ret);
 }
 
 void NaClStraceSemPost(int32_t sem_handle, int ret) {
-    printf("sempost(%d) = %d",sem_handle, ret);
+    printf("sempost(%d) = %d\n",sem_handle, ret);
 }
 
 void NaClStraceSemGetValue(int32_t sem_handle, int ret) {
-    printf("semgetvalue(%d) = %d", sem_handle, ret);
+    printf("semgetvalue(%d) = %d\n", sem_handle, ret);
 }
 
 void NaClStraceNanosleep(uintptr_t req, uintptr_t rem, int ret) {
@@ -230,215 +230,215 @@ void NaClStraceNanosleep(uintptr_t req, uintptr_t rem, int ret) {
 }
 
 void NaClStraceSchedYield(int ret) {
-    printf("schedyield() = %d", ret);
+    printf("schedyield() = %d\n", ret);
 }
 
 void NaClStraceExceptionHandler(uint32_t             handler_addr,
                                 uint32_t             old_handler, int ret) {
-                                    printf("exceptionhandler(%u, %u) = %d", handler_addr, old_handler, ret);
+                                    printf("exceptionhandler(%u, %u) = %d\n", handler_addr, old_handler, ret);
                                 }
 
 void NaClStraceExceptionStack(uint32_t stack_addr, uint32_t stack_size, int ret) {
-    printf("exceptionstack(%u, %u) = %d", stack_addr, stack_size, ret);
+    printf("exceptionstack(%u, %u) = %d\n", stack_addr, stack_size, ret);
 }
 
 void NaClStraceExceptionClearFlag(int ret) {
-    printf("exceptionclearflag() = %d", ret);
+    printf("exceptionclearflag() = %d\n", ret);
 }
 
 void NaClStraceTestInfoLeak(int ret) {
-    printf("testinfoleak() = %d",ret);
+    printf("testinfoleak() = %d\n",ret);
 }
 
 void NaClStraceTestCrash(int crash_type, int ret) {
-    printf("testcrash(%d) = %d", crash_type, ret);
+    printf("testcrash(%d) = %d\n", crash_type, ret);
 }
 
 void NaClStraceGetTimeOfDay(uintptr_t tv, uintptr_t tz, int ret) {
-    printf("gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", tv, tz, ret);
+    printf("gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", tv, tz, ret);
 }
 
 void NaClStraceClockGetCommon(int                   clk_id,
                               uint32_t              ts_addr,
                               uintptr_t            *time_func, 
                               int ret) {
-                                printf("clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d",
+                                printf("clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d\n",
                                 clk_id, ts_addr, time_func, ret
                                 );
                               }
 
 void NaClStracePipe2(uint32_t *pipedes, int flags, int ret) {
-    printf("pipe2(0x%08"NACL_PRIxPTR", %d) = %d",
+    printf("pipe2(0x%08"NACL_PRIxPTR", %d) = %d\n",
     (uintptr_t) pipedes, flags, ret
     );
 }
 
 void NaClStraceFork(int ret) {
-    printf("fork() = %d",
+    printf("fork() = %d\n",
     ret
     );
 }
 
 void NaClStraceExecve(char const *path, char *const *argv, char *const *envp, int ret) {
-    printf("execve(%s, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d",
+    printf("execve(%s, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n",
     path, (uintptr_t)argv, (uintptr_t)envp, ret
     );
 }
 
 void NaClStraceExecv(char const *path, char *const *argv, int ret) {
-    printf("execv(%s, 0x%08"NACL_PRIxPTR") = %d",
+    printf("execv(%s, 0x%08"NACL_PRIxPTR") = %d\n",
     path, (uintptr_t) argv, ret
     );
 }
 
 void NaClStraceWaitpid(int pid, uint32_t *stat_loc, int options, int ret) {
-    printf("waitpid(%d, %d, %d) = %d",
+    printf("waitpid(%d, %d, %d) = %d\n",
     pid, *stat_loc, options, ret
     );
 }
 
 void NaClStraceGethostname(char *name, size_t len, int ret) {
-    printf("gethostname(%s, %lu) = %d",
+    printf("gethostname(%s, %lu) = %d\n",
     name, len, ret
     );
 }
 
 void NaClStraceGetifaddrs(char *buf, size_t len, int ret) {
-    printf("getifaddrs(%s, %lu) = %d",
+    printf("getifaddrs(%s, %lu) = %d\n",
     buf, len, ret
     );
 }
 
 void NaClStraceSocket(int domain, int type, int protocol, int ret) {
-    printf("socket(%d, %d, %d) = %d",
+    printf("socket(%d, %d, %d) = %d\n",
     domain, type, protocol, ret
     );
 }
 
 void NaClStraceSend(int sockfd, size_t len, int flags, const void *buf, int ret) {
-    printf("send(%d, %ld, %d, 0x%08"NACL_PRIxPTR") = %d",
+    printf("send(%d, %ld, %d, 0x%08"NACL_PRIxPTR") = %d\n",
     sockfd, len, flags, (uintptr_t) buf, ret
     );
 }
 
 void NaClStraceSendto(int sockfd, const void *buf, size_t len,
     int flags, uintptr_t dest_addr, socklen_t addrlen, int ret) {
-        printf("sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d",
+        printf("sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d\n",
         sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret
         );
     }
 
 void NaClStraceRecv(int sockfd, size_t len, int flags, void *buf, int ret) {
-    printf("recv(%d, %ld, %d, 0x%08"NACL_PRIxPTR") = %d", sockfd, len, flags, (uintptr_t)buf, ret);
+    printf("recv(%d, %ld, %d, 0x%08"NACL_PRIxPTR") = %d\n", sockfd, len, flags, (uintptr_t)buf, ret);
 }
 
 void NaClStraceRecvfrom(int sockfd, void *buf, size_t len, int flags,
     uintptr_t src_addr, socklen_t *addrlen, int ret) {
-        printf("recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", sockfd, buf, len, flags, src_addr,
+        printf("recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, buf, len, flags, src_addr,
             (uintptr_t)addrlen, ret);
     }
 
 void NaClStraceShutdown(int sockfd, int how, int ret) {
-    printf("shutdown(%d, %d) = %d", sockfd, how, ret);
+    printf("shutdown(%d, %d) = %d\n", sockfd, how, ret);
 }
 
 void NaClStraceGetuid(int ret) {
-    printf("getuid() = %d", ret);
+    printf("getuid() = %d\n", ret);
 }
 
 void NaClStraceGeteuid(int ret) {
-    printf("geteuid() = %d", ret);
+    printf("geteuid() = %d\n", ret);
 }
 
 void NaClStraceGetgid(int ret) {
-    printf("getgid() = %d", ret);
+    printf("getgid() = %d\n", ret);
 }
 
 void NaClStraceGetegid(int ret) {
-    printf("getegid() = %d", ret);
+    printf("getegid() = %d\n", ret);
 }
 
 void NaClStraceFlock(int fd, int operation, int ret) {
-    printf("flock(%d, %d) = %d", fd, operation, ret);
+    printf("flock(%d, %d) = %d\n", fd, operation, ret);
 }
 
 void NaClStraceGetsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen, int ret) {
-    printf("getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret);
+    printf("getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret);
 }
 
 void NaClStraceSetsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen, int ret) {
-    printf("setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d", sockfd, level, optname, (uintptr_t)optval, optlen, ret);
+    printf("setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d\n", sockfd, level, optname, (uintptr_t)optval, optlen, ret);
 }
 
 void NaClStraceFstatfs(int d, uintptr_t buf, int ret) {
-    printf("fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d", d, buf, ret);
+    printf("fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d\n", d, buf, ret);
 }
 
 void NaClStraceStatfs(const char *pathname, uintptr_t buf, int ret) {
-    printf("statfs(%s, 0x%08"NACL_PRIxPTR") = %d", pathname, buf, ret);
+    printf("statfs(%s, 0x%08"NACL_PRIxPTR") = %d\n", pathname, buf, ret);
 }
 
 void NaClStraceGetsockname(int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
-    printf("getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", sockfd, addr, (uintptr_t)addrlen, ret);
+    printf("getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, addr, (uintptr_t)addrlen, ret);
 }
 
 void NaClStraceGetpeername(int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
-    printf("getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", sockfd, addr, (uintptr_t)addrlen, ret);
+    printf("getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, addr, (uintptr_t)addrlen, ret);
 }
 
 void NaClStraceAccess(const char *file, int mode, int ret) {
-    printf("access(%s, %d) = %d");
+    printf("access(%s, %d) = %d\n");
 }
 
 void NaClStraceTruncate(uint32_t file, int length, int ret) {
-    printf("truncate(%u, %d) = %d", file, length, ret);
+    printf("truncate(%u, %d) = %d\n", file, length, ret);
 }
 
 void NaClStraceFtruncate(int fd, int length, int ret) {
-    printf("ftruncate(%d, %d) = %d", fd, length, ret);
+    printf("ftruncate(%d, %d) = %d\n", fd, length, ret);
 }
 
 void NaClStraceConnect(int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    printf("connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d", sockfd, addr, addrlen, ret);
+    printf("connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n", sockfd, addr, addrlen, ret);
 }
 
 void NaClStraceAccept(int sockfd, uintptr_t addr, socklen_t *addrlen, int ret) {
-    printf("accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", sockfd, addr, (uintptr_t)addrlen, ret);
+    printf("accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, addr, (uintptr_t)addrlen, ret);
 }
 
 void NaClStraceBind(int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    printf("bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d");
+    printf("bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n");
 }
 
 void NaClStraceListen(int sockfd, int backlog, int ret) {
-    printf("listen(%d, %d) = %d", sockfd, backlog, ret);
+    printf("listen(%d, %d) = %d\n", sockfd, backlog, ret);
 }
 
 void NaClStraceFcntlGet(int fd, int cmd, int ret) {
-    printf("fcntlget(%d, %d) = %d", fd, cmd, ret);
+    printf("fcntlget(%d, %d) = %d\n", fd, cmd, ret);
 }
 
 void NaClStraceFcntlSet(int fd, int cmd, long set_op, int ret) {
-    printf("fcntlset(%d, %d, %ld) = %d", fd, cmd, set_op, ret);
+    printf("fcntlset(%d, %d, %ld) = %d\n", fd, cmd, set_op, ret);
 }
 
 void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    printf("poll(0x%08"NACL_PRIxPTR", %d, %d) = %d");
+    printf("poll(0x%08"NACL_PRIxPTR", %d, %d) = %d\n");
 }
 
 void NaClStraceEpollCreate(int size, int ret) {
-    printf("epollcreate(%d) = %d", size, ret);
+    printf("epollcreate(%d) = %d\n", size, ret);
 }
 
 void NaClStraceEpollCtl(int epfd, int op, int fd, uintptr_t event, int ret) {
-    printf("epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d", epfd, op, fd, event, ret);
+    printf("epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", epfd, op, fd, event, ret);
 }
 
 void NaClStraceEpollWait(int epfd, uintptr_t events,int maxevents, int timeout, int ret) {
-    printf("epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d", epfd, events, maxevents, timeout, ret);
+    printf("epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d\n", epfd, events, maxevents, timeout, ret);
 }
 
 void NaClStraceSelect(int nfds, fd_set * readfds, fd_set * writefds, 
                                 fd_set * exceptfds, uintptr_t timeout, int ret) {
-    printf("select(%d, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d", nfds, readfds, writefds, exceptfds, timeout);
+    printf("select(%d, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", nfds, readfds, writefds, exceptfds, timeout);
                        }
