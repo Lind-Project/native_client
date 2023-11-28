@@ -120,11 +120,11 @@ void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t r
 
 }
 void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length){
-   printf("munmap(%p, %zu) = %d, Sysaddr: %p, Alloc Rounded Length: %zu\n", start, length, retval, (void*)sysaddr, alloc_rounded_length);
+   printf("munmap(%p, %zu) = %d, Sysaddr: %p, alloc_rounded_ength: %zu\n", start, length, retval, (void*)sysaddr, alloc_rounded_length);
 
 }
 void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock){
-    printf("mprotect_internal(%u, %zu, %d, %p) = %d, Holding App Lock: %d\n", start, length, prot, (void*)sysaddr, retval, holding_app_lock);
+    printf("mprotect_internal(%u, %zu, %d, %p) = %d, holding_app_lock: %d\n", start, length, prot, (void*)sysaddr, retval, holding_app_lock);
     
 }
 void NaClStraceMprotect(uint32_t start,size_t length,int prot){
@@ -135,7 +135,7 @@ void NaClStraceMprotect(uint32_t start,size_t length,int prot){
 //     printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
 // }
 void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
-    printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
+    printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, alloc_rounded_ength: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
 }
 // void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg) {
 //     printf("shmdt(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
