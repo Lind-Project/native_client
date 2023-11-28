@@ -533,6 +533,7 @@ static uint32_t CopyPathFromUser(struct NaClApp *nap,
 }
 
 int32_t NaClSysOpenat(struct NaClAppThread  *natp,
+                    int                   dirfd,
                     char                  *pathname,
                     int                   flags,
                     int                   mode) {
