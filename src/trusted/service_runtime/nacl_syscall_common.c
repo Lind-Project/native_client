@@ -532,6 +532,24 @@ static uint32_t CopyPathFromUser(struct NaClApp *nap,
   return 0;
 }
 
+int32_t NaClSysOpenat(struct NaClAppThread  *natp,
+                    char                  *pathname,
+                    int                   flags,
+                    int                   mode) {
+/*openat System Call:
+Usage: The openat system call, introduced in POSIX.1-2008, 
+is an extension of open that allows more control over how the file is opened.
+Syntax: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+Path Resolution:
+ - If pathname is an absolute path, dirfd is ignored, and openat behaves like open.
+ - If pathname is a relative path, it is interpreted relative to the directory 
+referred to by the file descriptor dirfd.
+Special dirfd Values:
+ - If dirfd is the special value AT_FDCWD, then pathname is interpreted relative to 
+ the current working directory of the process, making openat behave like open.*/
+ return 0;
+}
+
 int32_t NaClSysOpen(struct NaClAppThread  *natp,
                     char                  *pathname,
                     int                   flags,
