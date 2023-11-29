@@ -1151,8 +1151,8 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp,
 
 int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,
                      int                   fd,
-		     long long 		   offset,
-		     long long 		   nbytes, 
+		     off_t 		   offset,
+		     off_t 		   nbytes, 
 		     uint32_t 	           flags) {
 
   int32_t ret;

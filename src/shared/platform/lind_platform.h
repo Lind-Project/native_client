@@ -143,7 +143,6 @@ union RustArg {
     unsigned int dispatch_uint;
     int *dispatch_intptr;
     long unsigned int dispatch_ulong;
-    long long int dispatch_long_long;
     long long unsigned int dispatch_ulong_long;
     long int dispatch_long;
     size_t dispatch_size_t;
@@ -196,7 +195,7 @@ int lind_fchmod (int fd, int mode, int cageid);
 int lind_fchdir(int fd, int cageid);
 int lind_fsync(int fd, int cageid);
 int lind_fdatasync(int fd, int cageid);
-int lind_sync_file_range(int fd, long long offset, long long nbytes, unsigned int flags, int cageid);
+int lind_sync_file_range(int fd, off_t offset, off_t nbytes, unsigned int flags, int cageid);
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
