@@ -181,6 +181,9 @@
 #define NACL_sys_fsync                  162
 #define NACL_sys_fdatasync              163
 
+/* TODO(aw): check num */
+#define NACL_sys_pread64                200
+
 #define NACL_MAX_SYSCALLS               256
 
 #endif

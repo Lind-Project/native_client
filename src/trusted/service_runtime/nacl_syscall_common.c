@@ -537,17 +537,19 @@ int32_t NaClSysOpenat(struct NaClAppThread  *natp,
                     char                  *pathname,
                     int                   flags,
                     int                   mode) {
-/*openat System Call:
-Usage: The openat system call, introduced in POSIX.1-2008, 
-is an extension of open that allows more control over how the file is opened.
-Syntax: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-Path Resolution:
- - If pathname is an absolute path, dirfd is ignored, and openat behaves like open.
- - If pathname is a relative path, it is interpreted relative to the directory 
-referred to by the file descriptor dirfd.
-Special dirfd Values:
- - If dirfd is the special value AT_FDCWD, then pathname is interpreted relative to 
- the current working directory of the process, making openat behave like open.*/
+/*  openat System Call:
+  Usage: The openat system call, introduced in POSIX.1-2008, 
+  is an extension of open that allows more control over how the file is opened.
+  Syntax: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+  Path Resolution:
+  - If pathname is an absolute path, dirfd is ignored, and openat behaves like open.
+  - If pathname is a relative path, it is interpreted relative to the directory 
+      referred to by the file descriptor dirfd.
+      Special dirfd Values:
+  - If dirfd is the special value AT_FDCWD, then pathname is interpreted relative to 
+  the current working directory of the process, making openat behave like open.
+*/
+  
  return 0;
 }
 
@@ -791,6 +793,24 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
   retval = (int32_t) read_result;
   return retval;
 }
+
+int32_t NaClSysPread64(struct NaClAppThread  *natp, //will make NaCl logs like read
+                     int                   d,
+                     void                  *buf,
+                     size_t                count,
+                     off_t                 offset) { 
+  struct NaClApp  *nap = natp->nap;
+  int32_t         retval = -NACL_ABI_EINVAL;
+
+  NaClLog(2, "Cage %d Entered NaClSysPRead64(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  retval = NaClSysPread(natp, d, buf, count, offset);
+  return retval;
+}
+
 
 int32_t NaClSysWrite(struct NaClAppThread *natp,
                      int                  d,

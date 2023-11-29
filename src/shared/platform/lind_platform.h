@@ -137,6 +137,8 @@
 #define LIND_safe_fs_fsync		162
 #define LIND_safe_fs_fdatasync		163
 
+#define LIND_safe_fs_openat             257
+
 union RustArg {
     int dispatch_int;
     unsigned int dispatch_uint;
@@ -197,6 +199,7 @@ int lind_fdatasync(int fd, int cageid);
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
+int lind_openat (int dirfd, const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
 int lind_read (int fd, void *buf, int size, int cageid);
 int lind_write (int fd, const void *buf, size_t count, int cageid);

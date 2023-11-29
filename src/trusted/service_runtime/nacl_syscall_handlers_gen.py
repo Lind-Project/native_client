@@ -153,6 +153,8 @@ SYSCALL_LIST = [
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_pread', 'NaClSysPread',
      ['int d', 'void *buf', 'size_t count', 'off_t offset']),
+    ('NACL_sys_pread64', 'NaClSysPread64',
+     ['int d', 'void *buf', 'size_t count', 'off_t offset']),
     ('NACL_sys_write', 'NaClSysWrite',
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_pwrite', 'NaClSysPwrite',
