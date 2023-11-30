@@ -59,6 +59,7 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval);
 void NaClStraceSecondTlsGet(uintptr_t natp);
 void NaClStraceSemWait(int32_t sem_handle, int ret);
 void NaClStraceSemPost(int32_t sem_handle, int ret);
+void NaClStraceSemDestroy(int32_t sem_handle, int ret);
 void NaClStraceSemGetValue(int32_t sem_handle, int ret);
 void NaClStraceNanosleep(uintptr_t req, uintptr_t rem, int ret);
 void NaClStraceSchedYield(int ret);
