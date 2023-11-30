@@ -57,7 +57,7 @@ void NaClStraceCondDestroy(int32_t cond_handle,int32_t retval);
 void NaClStraceCondTimedWaitAbs(int32_t cond_handle,int32_t mutex_handle,int32_t retval);
 void NaClStraceSemCreate(int32_t init_value, int32_t retval);
 void NaClStraceSecondTlsGet(uintptr_t natp);
-void NaClStraceSemInit(int32_t sem, int32_t pshared, int32_t value, int retval)
+void NaClStraceSemInit(int32_t sem, int32_t pshared, int32_t value, int retval);
 void NaClStraceSemWait(int32_t sem_handle, int ret);
 void NaClStraceSemPost(int32_t sem_handle, int ret);
 void NaClStraceSemDestroy(int32_t sem_handle, int ret);
