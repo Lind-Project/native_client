@@ -217,6 +217,10 @@ void NaClStraceSemWait(int32_t sem_handle, int ret) {
     printf("semwait(%d) = %d\n", sem_handle, ret);
 }
 
+void NaClStraceSemDestroy(int32_t sem_handle, int ret) {
+    printf("semdestory(%d) = %d\n", sem_handle, ret);
+}
+
 void NaClStraceSemPost(int32_t sem_handle, int ret) {
     printf("sempost(%d) = %d\n",sem_handle, ret);
 }

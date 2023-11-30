@@ -2647,9 +2647,6 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
  * NaClGetTlsFastPath2 (see nacl_syscall_64.S).
  */
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
-  #ifdef TRACING
-  NaClStraceSecondTlsGet((uintptr_t) natp);
-  #endif
   return NaClTlsGetTlsValue2(natp);
 }
 
@@ -2810,15 +2807,6 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   if (!NaClCopyInFromUser(nap, &trusted_ts, (uintptr_t) ts, sizeof(trusted_ts))) { return -NACL_ABI_EFAULT; }
 
   return lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
-
-<<<<<<< HEAD
-cleanup:
-  #ifdef TRACING
-  NaClStraceCondTimedWaitAbs(cond_handle,mutex_handle,retval);
-  #endif
-  return retval;
-=======
->>>>>>> develop
 }
 
 int32_t NaClSysSemInit(struct NaClAppThread *natp,
@@ -2829,20 +2817,11 @@ int32_t NaClSysSemInit(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemInit(0x%08"NACL_PRIxPTR
            ", %d, %d, %d\n",
            (uintptr_t)natp, sem, pshared, value);
-
-  return lind_sem_init(sem, pshared, value, nap->cage_id);
-
-<<<<<<< HEAD
-  retval = NaClSetAvail(nap, (struct NaClDesc *) desc);
-  desc = NULL;
-cleanup:
-  free(desc);
+  int retval = lind_sem_init(sem, pshared, value, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemCreate(init_value,retval);
+  NaClStraceSemCreate(init_value, retval);
   #endif
   return retval;
-=======
->>>>>>> develop
 }
 
 int32_t NaClSysSemWait(struct NaClAppThread *natp,
@@ -2861,24 +2840,11 @@ int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemTryWait(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-
-<<<<<<< HEAD
-  /*
-   * TODO(gregoryd): we have to decide on the syscall API: do we
-   * switch to read/write/ioctl API or do we stay with the more
-   * detailed API. Anyway, using a single syscall for waiting on all
-   * synchronization objects makes sense.
-   */
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->SemWait)(desc);
-  NaClDescUnref(desc);
-cleanup:
+  int retval = 
   #ifdef TRACING
   NaClStraceSemWait(sem_handle, retval);
   #endif
-  return retval;
-=======
   return lind_sem_trywait(sem, nap->cage_id);
->>>>>>> develop
 }
 
 int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
@@ -2912,18 +2878,11 @@ int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemDestroy(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-
-<<<<<<< HEAD
-  retval = ((struct NaClDescVtbl const *) desc->base.vtbl)->Post(desc);
-  NaClDescUnref(desc);
-cleanup:
+  int retval = lind_sem_destroy(sem, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemPost(sem_handle, retval);
+  NaClStraceSemDestory(sem, retval);
   #endif
   return retval;
-=======
-  return lind_sem_destroy(sem, nap->cage_id);
->>>>>>> develop
 }
 
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
@@ -2944,19 +2903,10 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
     *sval = (int32_t)lindsval;
     lindsval = 0;
   } 
-
-<<<<<<< HEAD
-  retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->GetValue)(desc);
-  NaClDescUnref(desc);
-cleanup:
-
   #ifdef TRACING
-  NaClStraceSemGetValue(sem_handle, retval);
+  NaClStraceSemGetValue(sem, lindsval);
   #endif
-  return retval;
-=======
   return lindsval;
->>>>>>> develop
 }
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
