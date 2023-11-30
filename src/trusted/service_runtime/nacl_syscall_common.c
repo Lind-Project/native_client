@@ -2819,7 +2819,7 @@ int32_t NaClSysSemInit(struct NaClAppThread *natp,
            (uintptr_t)natp, sem, pshared, value);
   int retval = lind_sem_init(sem, pshared, value, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemCreate(init_value, retval);
+  NaClStraceSemInit(sem, pshared, value, retval);
   #endif
   return retval;
 }
