@@ -2840,11 +2840,11 @@ int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemTryWait(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-  int retval = 
+  int retval = lind_sem_trywait(sem, nap->cage_id)
   #ifdef TRACING
   NaClStraceSemWait(sem_handle, retval);
   #endif
-  return lind_sem_trywait(sem, nap->cage_id);
+  return retval;
 }
 
 int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
