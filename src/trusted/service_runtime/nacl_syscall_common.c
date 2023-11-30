@@ -2842,7 +2842,7 @@ int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
            (uintptr_t)natp, sem);
   int retval = lind_sem_trywait(sem, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemWait(sem_handle, retval);
+  NaClStraceSemWait(sem, retval);
   #endif
   return retval;
 }
