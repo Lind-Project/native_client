@@ -217,12 +217,12 @@ void NaClStraceSemWait(int32_t sem_handle, int ret) {
     printf("semwait(%d) = %d\n", sem_handle, ret);
 }
 
-void NaClStraceSemInit(int32_t sem, int32_t pshared, int32_t value, int retval) {
-    printf("seminit(%d, %d, %d) = %d", sem, pshared, value, retval);
+void NaClStraceSemInit(int32_t sem, int32_t pshared, int32_t value, int ret) {
+    printf("seminit(%d, %d, %d) = %d", sem, pshared, value, ret);
 }
 
 void NaClStraceSemDestroy(int32_t sem_handle, int ret) {
-    printf("semdestory(%d) = %d\n", sem_handle, ret);
+    printf("semdestroy(%d) = %d\n", sem_handle, ret);
 }
 
 void NaClStraceSemPost(int32_t sem_handle, int ret) {

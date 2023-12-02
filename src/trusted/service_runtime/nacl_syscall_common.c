@@ -2880,7 +2880,7 @@ int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
            (uintptr_t)natp, sem);
   int retval = lind_sem_destroy(sem, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemDestory(sem, retval);
+  NaClStraceSemDestroy(sem, retval);
   #endif
   return retval;
 }
