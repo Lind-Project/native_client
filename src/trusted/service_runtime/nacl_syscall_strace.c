@@ -395,7 +395,11 @@ void NaClStraceGetpeername(int sockfd, uintptr_t addr, socklen_t * addrlen, int 
 }
 
 void NaClStraceAccess(const char *file, int mode, int ret) {
-    printf("access(%s, %d) = %d\n");
+    if file == NULL {
+        printf("access(NULL, %d) = %d\n");
+    } else {
+        printf("access(%s, %d) = %d\n");
+    }
 }
 
 void NaClStraceTruncate(uint32_t file, int length, int ret) {
