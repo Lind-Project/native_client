@@ -101,7 +101,7 @@ void NaClStraceFstatfs(int d, uintptr_t buf, int ret);
 void NaClStraceStatfs(const char *pathname, uintptr_t buf, int ret);
 void NaClStraceGetsockname(int sockfd, uintptr_t addr, socklen_t * addrlen, int ret);
 void NaClStraceGetpeername(int sockfd, uintptr_t addr, socklen_t * addrlen, int ret);
-void NaClStraceAccess(const char *file, int mode, int ret);
+void NaClStraceAccess(char *file, int mode, int ret);
 void NaClStraceTruncate(uint32_t file, int length, int ret);
 void NaClStraceFtruncate(int fd, int length, int ret);
 void NaClStraceConnect(int sockfd, uintptr_t addr, socklen_t addrlen, int ret);
