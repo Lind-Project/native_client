@@ -394,7 +394,7 @@ void NaClStraceGetpeername(int sockfd, uintptr_t addr, socklen_t * addrlen, int 
     printf("getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, addr, (uintptr_t)addrlen, ret);
 }
 
-void NaClStraceAccess(const char *file, int mode, int ret) {
+void NaClStraceAccess(char *file, int mode, int ret) {
     printf("access(%s, %d) = %d\n");
 }
 
