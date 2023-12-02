@@ -4320,7 +4320,7 @@ int32_t NaClSysAccess(struct NaClAppThread *natp,
   ret = lind_access(path, mode, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceAccess(file, mode, ret);
+  NaClStraceAccess(path, mode, ret);
   #endif
 
   return ret;
