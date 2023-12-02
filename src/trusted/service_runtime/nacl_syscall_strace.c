@@ -394,12 +394,12 @@ void NaClStraceGetpeername(int sockfd, uintptr_t addr, socklen_t * addrlen, int 
     printf("getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", sockfd, addr, (uintptr_t)addrlen, ret);
 }
 
-void NaClStraceAccess(char *file, int mode, int ret) {
-    printf("access(%s, %d) = %d\n");
+void NaClStraceAccess(char *path, int mode, int ret) {
+    printf("access(%s, %d) = %d\n", path, mode, ret);
 }
 
-void NaClStraceTruncate(uint32_t file, int length, int ret) {
-    printf("truncate(%u, %d) = %d\n", file, length, ret);
+void NaClStraceTruncate(uint32_t path, int length, int ret) {
+    printf("truncate(%u, %d) = %d\n", path, length, ret);
 }
 
 void NaClStraceFtruncate(int fd, int length, int ret) {
