@@ -4345,7 +4345,7 @@ int32_t NaClSysTruncate(struct NaClAppThread *natp,
   ret = lind_truncate(path, length, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceTruncate(file, length, ret);
+  NaClStraceTruncate(path, length, ret);
   #endif
   return ret;
 }
