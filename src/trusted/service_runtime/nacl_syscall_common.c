@@ -1322,9 +1322,6 @@ int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
   UNREFERENCED_PARAMETER(length);
   usraddr = NaClTruncAllocPage(usraddr);
   return usraddr < nap->dynamic_text_end;
-  #ifdef TRACING
-  NaClStraceCommon(usraddr, length);
-  #endif
 }
 
 int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
@@ -2126,9 +2123,6 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
-  #ifdef TRACING
-  NaClStraceMprotectInternal(start,length,prot,sysaddr,retval,holding_app_lock);
-  #endif
   return retval;
 }
 
@@ -2145,9 +2139,6 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
-  #ifdef TRACING
-  NaClStraceMprotect(start,length,prot);
-  #endif
 
   return NaClSysMprotectInternal(nap, start, length, prot);
 }
@@ -2185,7 +2176,7 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
     }
   }
   #ifdef TRACING
-  NaClStraceShmget(key,size,shmflg,retval,alloc_rounded_size);
+  NaClStraceShmget(key, alloc_rounded_size, shmflg, retval);
   #endif
 
   return retval;
@@ -2401,9 +2392,9 @@ cleanup:
                        "0x%"NACL_PRIxPTR"\n", map_result);
   }
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
-  // #ifdef TRACING
-  // NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
-  // #endif
+  #ifdef TRACING
+  NaClStraceShmat(shmid, (void *) sysaddr, shmflg, (int)map_result);
+  #endif
 
   return map_result;     
 }
@@ -2467,9 +2458,9 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
 cleanup:
   NaClXMutexUnlock(&nap->mu);
-  // #ifdef TRACING
-  // NaClStraceShmdt(*shmaddr, shmid, sysaddr, length);
-  // #endif
+  #ifdef TRACING
+  NaClStraceShmdt((void *) sysaddr, retval);
+  #endif
 
   return retval;
 

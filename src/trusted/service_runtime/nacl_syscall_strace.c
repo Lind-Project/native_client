@@ -108,9 +108,6 @@ void NaClStraceUnlink(char* pathname,int32_t retval){
     printf("unlink(%s) = %d\n", pathname, retval);
 
 }
-void NaClStraceCommon(uintptr_t usraddr, size_t length) {
-    printf("User Address: %p, Length: %zu\n", (void*)usraddr, length);
-}
 
 void NaClStraceRename(const char *oldpath, const char *newpath, int32_t retval) {
     printf("rename(oldpath: \"%s\", newpath: \"%s\") = %d\n", oldpath, newpath, retval);
@@ -119,32 +116,19 @@ void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t r
     printf("mmap(%p, %zu, %d, %d, %d) = %d\n", start, length, prot, flags, d, retval);
 
 }
-void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length){
+void NaClStraceMunmap(void *start, size_t length, int32_t retval, uintptr_t sysaddr, size_t alloc_rounded_length){
    printf("munmap(%p, %zu) = %d, Sysaddr: %p, alloc_rounded_ength: %zu\n", start, length, retval, (void*)sysaddr, alloc_rounded_length);
 
 }
-void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock){
-    printf("mprotect_internal(%u, %zu, %d, %p) = %d, holding_app_lock: %d\n", start, length, prot, (void*)sysaddr, retval, holding_app_lock);
-    
+void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval){
+    printf("shmat(%d, %p, %d) = %d\n", shmid, shmaddr, shmflg, retval);
 }
-void NaClStraceMprotect(uint32_t start,size_t length,int prot){
-    printf("mprotect(%u, %zu, %d) = void\n", start, length, prot);
-
+void NaClStraceShmget(int key, size_t size, int shmflg, int retval){
+    printf("%d, %zu, %d) = %d\n", key, size, shmflg, retval);
 }
-// void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
-//     printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, Alloc Rounded Size: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
-// }
-void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size){
-    printf("Key: %d, Size: %zu, Shmflg: %d, Return Value: %d, alloc_rounded_ength: %zu\n",key, size, shmflg, retval, alloc_rounded_size);
+void NaClStraceShmdt(void *shmaddr, int retval) {
+    printf("shmdt(%p) = %d\n", shmaddr, retval);
 }
-// void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg) {
-//     printf("shmdt(%d, %p, %d) = void\n", shmid, shmaddr, shmflg);
-// }
-
-// void NaClStraceSyst(void *shmaddr,int shmid,uintptr_t sysaddr,int length){
-//     printf("syst(%p, %d, %lu, %d) = void\n", shmaddr, shmid, sysaddr, length);
-//}
-
 
 void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
     printf("shmctl(%d, %d) = %d\n", shmid, cmd, retval);
@@ -157,13 +141,6 @@ void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lin
 void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
     printf("tls_init(%u, %lu) = %d\n", thread_ptr, sys_tls, retval);
 }
-// void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval, uintptr_t sys_tls, uintptr_t sys_stack) {
-//     printf("thread_create(%p, %u, %u, %u, %lu, %lu) = %d\n", *(void **)prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, sys_tls, sys_stack, retval);
-//}
-
-// void NaClStraceTlsGet(struct NaClAppThread *natp) {
-//     printf("TlsGet(natp=%p)\n", natp);
-// }
 
 void NaClStraceSecondTlsSet(uint32_t new_value) {
     printf("SecondTlsSet(new_value=%u)\n", new_value);
