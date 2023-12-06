@@ -2956,7 +2956,7 @@ cleanup:
   NaClLog(2, "%s\n", "nanosleep done.");
 
   #ifdef TRACING
-  NaClStraceNanosleep((uintptr_t)req, (uintptr_t)rem, retval);
+  NaClStraceNanosleep((uintptr_t)&t_sleep, (uintptr_t)remptr, retval);
   #endif
 
   return retval;
@@ -3314,7 +3314,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
   #ifdef TRACING
-  NaClStracePipe2(pipedes, flags, ret);
+  NaClStracePipe2(lindfds, flags, ret);
   #endif
 
   return ret;
@@ -3856,7 +3856,7 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGethostname(name, len, ret);
+  NaClStraceGethostname(sysaddr, len, ret);
   #endif
   
   return ret;
@@ -3884,7 +3884,7 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   NaClLog(2, "NaClSysGetifaddrs: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGetifaddrs(buf, len, ret);
+  NaClStraceGetifaddrs(sysaddr, len, ret);
   #endif
   
   return ret;
@@ -3927,7 +3927,7 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   NaClLog(2, "NaClSysSend: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceSend(sockfd, len, flags, buf, ret);
+  NaClStraceSend(sockfd, len, flags, sysbufaddr, ret);
   #endif
 
 
@@ -3958,7 +3958,7 @@ int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, s
   NaClLog(2, "NaClSysSendto: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceSendto(sockfd, buf, len, flags, (uintptr_t)dest_addr, addrlen, ret);
+  NaClStraceSendto(sockfd, sysbufaddr, len, flags, (uintptr_t)syssockaddraddr, addrlen, ret);
   #endif
 
   return ret;
@@ -3982,7 +3982,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   NaClLog(2, "NaClSysRecv: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceRecv(sockfd, len, flags, buf, ret);
+  NaClStraceRecv(sockfd, len, flags, sysbufaddr, ret);
   #endif
 
   return ret;
@@ -4030,7 +4030,7 @@ int32_t NaClSysRecvfrom(struct NaClAppThread *natp, int sockfd, void *buf, size_
   NaClLog(2, "NaClSysRecvfrom: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceRecvfrom(sockfd, buf, len, flags,(uintptr_t)src_addr, addrlen, ret);
+  NaClStraceRecvfrom(sockfd, sysbufaddr, len, flags,(uintptr_t)sysaddraddr, sysaddrlenaddr, ret);
   #endif
 
   return ret;
@@ -4147,7 +4147,7 @@ int32_t NaClSysGetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
   ret = lind_getsockopt(sockfd, level, optname, sysvaladdr, syslenaddr, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceGetsockopt(sockfd, level, optname, optval, optlen, ret);
+  NaClStraceGetsockopt(sockfd, level, optname, sysvaladdr, syslenaddr, ret);
   #endif
 
   return ret;
@@ -4169,7 +4169,7 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
   ret = lind_setsockopt(sockfd, level, optname, sysvaladdr, optlen, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceSetsockopt(sockfd, level, optname, optval, optlen, ret);
+  NaClStraceSetsockopt(sockfd, level, optname, sysvaladdr, optlen, ret);
   #endif
 
   return ret;
@@ -4195,7 +4195,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
   if(ret > 0) ret = 0;
 
   #ifdef TRACING
-  NaClStraceFstatfs(d, (uintptr_t) buf, ret);
+  NaClStraceFstatfs(d, (uintptr_t) sysbufaddr, ret);
   #endif
 
   return ret;
@@ -4230,7 +4230,7 @@ int32_t NaClSysStatfs(struct NaClAppThread *natp,
   if(ret > 0) ret = 0;
 
   #ifdef TRACING
-  NaClStraceStatfs(pathname, (uintptr_t) buf, ret);
+  NaClStraceStatfs(path, (uintptr_t) sysbufaddr, ret);
   #endif
 
   return ret;
@@ -4262,7 +4262,7 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp,
   NaClLog(2, "NaClSysGetsockname returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGetsockname(sockfd, (uintptr_t) addr, addrlen, ret);
+  NaClStraceGetsockname(sockfd, (uintptr_t) sysaddr, sysaddrlen, ret);
   #endif
   
   return ret; 
@@ -4295,7 +4295,7 @@ int32_t NaClSysGetpeername(struct NaClAppThread *natp,
   NaClLog(2, "NaClSysGetpeername returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGetpeername(sockfd, (uintptr_t)addr, addrlen, ret);
+  NaClStraceGetpeername(sockfd, (uintptr_t)sysaddr, sysaddrlen, ret);
   #endif
 
   return ret; 
@@ -4387,7 +4387,7 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
   ret = lind_connect(sockfd, sysvaladdr, addrlen, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceConnect(sockfd, (uintptr_t)addr, addrlen, ret);
+  NaClStraceConnect(sockfd, (uintptr_t)sysvaladdr, addrlen, ret);
   #endif
 
   return ret;
@@ -4431,7 +4431,7 @@ int32_t NaClSysAccept(struct NaClAppThread *natp,
   ret = lind_accept(sockfd, sysvaladdr, syslenaddr, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceAccept(sockfd, (uintptr_t)addr, addrlen, ret);
+  NaClStraceAccept(sockfd, (uintptr_t)sysvaladdr, syslenaddr, ret);
   #endif
   return ret;
 }
@@ -4459,7 +4459,7 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
   NaClLog(2, "NaClSysBind returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceBind(sockfd, (uintptr_t) addr, addrlen, ret);
+  NaClStraceBind(sockfd, (uintptr_t) sysvaladdr, addrlen, ret);
   #endif
   return ret;
 }
@@ -4531,7 +4531,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   retval = lind_poll(fds_sysaddr, nfds, timeout, nap->cage_id);
   
   #ifdef TRACING
-  NaClStracePoll((uintptr_t)fds, nfds, timeout, retval);
+  NaClStracePoll((uintptr_t)fds_sysaddr, nfds, timeout, retval);
   #endif
   return retval;
 }
@@ -4575,7 +4575,7 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
   ret = lind_epoll_ctl(epfd, op, fd, eventsysaddr, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceEpollCtl(epfd, op, fd, (uintptr_t) event, ret);
+  NaClStraceEpollCtl(epfd, op, fd, (uintptr_t) eventsysaddr, ret);
   #endif
 
   return ret;
@@ -4603,7 +4603,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
   retval = lind_epoll_wait(epfd, sys_event_array, maxevents, timeout, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceEpollWait(epfd, (uintptr_t) events, maxevents, timeout, retval);
+  NaClStraceEpollWait(epfd, (uintptr_t) sys_event_array, maxevents, timeout, retval);
   #endif
 
   return retval;
@@ -4661,7 +4661,7 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   retval = lind_select(nfds, sysreadfds, syswritefds, sysexceptfds, nacltimeout, nap->cage_id);
   
   #ifdef TRACING
-  NaClStraceSelect(nfds, readfds, writefds, exceptfds, (uintptr_t)timeout, retval);
+  NaClStraceSelect(nfds, sysreadfds, syswritefds, sysexceptfds, (uintptr_t)nacltimeout, retval);
   #endif
 
   return retval;
