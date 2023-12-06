@@ -37,13 +37,11 @@ void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t r
 void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length);
 void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock);
 void NaClStraceMprotect(uint32_t start,size_t length,int prot);
-// void NaClStraceShmat(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size);
-void NaClStraceShmget(int key,size_t size,int shmflg,int32_t retval,size_t alloc_rounded_size);
-//void NaClStraceShmdt(int shmid, void *shmaddr, int shmflg);
-void NaClStraceShmctl(int shmid,int cmd, int32_t retval);
+void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval);
+void NaClStraceShmget(int key, size_t size, int shmflg, int retval);
+void NaClStraceShmdt(void *shmaddr, int retval);
+void NaClStraceShmctl(int shmid, int cmd, int32_t retval);
 void NaClStraceSocketPair(int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval);
-void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls);
-// void NaClStraceThreadCreate(void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr,uint32_t second_thread_ptr,int32_t retval,uintptr_t sys_tls,uintptr_t sys_stack);
 void NaClStraceMutexCreate(int32_t retval);
 void NaClStraceMutexLock(int32_t mutex_handle, int32_t retval);
 void NaClStraceMutexUnLock(int32_t mutex_handle, int32_t retval);

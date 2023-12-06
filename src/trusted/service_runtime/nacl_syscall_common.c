@@ -2463,7 +2463,6 @@ cleanup:
   #endif
 
   return retval;
-
 }
 
 int32_t NaClSysShmctl(struct NaClAppThread        *natp,

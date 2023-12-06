@@ -120,17 +120,17 @@ void NaClStraceMunmap(void *start, size_t length, int32_t retval, uintptr_t sysa
    printf("munmap(%p, %zu) = %d, Sysaddr: %p, alloc_rounded_ength: %zu\n", start, length, retval, (void*)sysaddr, alloc_rounded_length);
 
 }
-void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval){
+void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval) {
     printf("shmat(%d, %p, %d) = %d\n", shmid, shmaddr, shmflg, retval);
 }
-void NaClStraceShmget(int key, size_t size, int shmflg, int retval){
-    printf("%d, %zu, %d) = %d\n", key, size, shmflg, retval);
+void NaClStraceShmget(int key, size_t size, int shmflg, int retval) {
+    printf("shmget(%d, %zu, %d) = %d\n", key, size, shmflg, retval);
 }
 void NaClStraceShmdt(void *shmaddr, int retval) {
     printf("shmdt(%p) = %d\n", shmaddr, retval);
 }
 
-void NaClStraceShmctl(int shmid,int cmd, int32_t retval){
+void NaClStraceShmctl(int shmid, int cmd, int32_t retval) {
     printf("shmctl(%d, %d) = %d\n", shmid, cmd, retval);
 
 }
