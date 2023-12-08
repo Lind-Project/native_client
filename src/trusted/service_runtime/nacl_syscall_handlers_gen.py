@@ -306,7 +306,6 @@ SYSCALL_LIST = [
     ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd']),
     ('NACL_sys_sync_file_range', 'NaClSysSyncFileRange', ['int fd', 'off_t offset', 'off_t nbytes', 'uint32_t flags']),
     ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd'])
-
     ]
 
 
