@@ -145,7 +145,8 @@ int NaClVmmapCtor(struct NaClVmmap *self) {
   }
   self->nvalid = 0;
   self->is_sorted = 1;
-  self->cached_entry = NULL;
+  self->cache.n_cached = 0;
+  self->cache.next_evict = 0;
   return 1;
 }
 
@@ -404,7 +405,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
                ent_end_page <= new_region_end_page) {
       /* New mapping covers all of the existing mapping. */
       ent->removed = 1;
-      if (ent == self->cached_entry) self->cached_entry = NULL;
+      NaClVmmapCacheClear(self);
     } else {
       /* No overlap */
       assert(new_region_end_page <= ent->page_num || ent_end_page <= page_num);
@@ -666,9 +667,9 @@ int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
   }
 
   // Caching entries to improve I/O speed
-
-  if (self->cached_entry) {
-    struct NaClVmmapEntry   *ent = self->cached_entry;
+  struct NaClVmmapCache cache = self->cache;
+  for (int i = 0; i < cache.n_cached; i++) {
+    struct NaClVmmapEntry   *ent = cache.entries[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
     int                     flags = ent->prot;
    
@@ -701,7 +702,7 @@ int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
 
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
-      self->cached_entry = ent;
+      NaClVmmapCacheInsert(self, ent);
       if (!(prot & (~flags))) return ent_end_page;
     } else if (ent->page_num <= page_num && page_num < ent_end_page) {
       /* The mapping overlaps the entry. */
@@ -949,4 +950,28 @@ uintptr_t NaClVmmapFindMapSpaceAboveHint(struct NaClVmmap *self,
     }
   }
   return 0;
+}
+
+void NaClVmmapCacheInsert(struct NaClVmmap *self, struct NaClVmmapEntry *new_entry) {
+  struct NaClVmmapCache *cache = &(self->cache);
+  // check if cache is full and need eviction
+  if (cache->n_cached == NACL_VMMAP_CACHE_SIZE) {
+      // overwrite new_entry on the one that need to be evicted
+      cache->entries[cache->next_evict] = new_entry;
+      // update next_evict, following FIFO rule
+      cache->next_evict = (cache->next_evict + 1) % NACL_VMMAP_CACHE_SIZE;
+  } else {
+      // when the cache is not full
+      cache->entries[cache->n_cached] = new_entry;
+      cache->n_cached += 1;
+  }
+}
+
+void NaClVmmapCacheClear(struct NaClVmmap *self) {
+  struct NaClVmmapCache *cache = &(self->cache);
+  for (int i = 0; i < NACL_VMMAP_CACHE_SIZE; i++) {
+      cache->entries[i] = NULL;
+  }
+  cache->next_evict = 0;
+  cache->n_cached = 0;
 }
