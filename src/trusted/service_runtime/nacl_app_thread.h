@@ -29,7 +29,7 @@ struct NaClAppThreadSuspendedRegisters;
 
 void rustposix_thread_init(uint64_t cageid);
 
-THREAD extern bool pendingsignal; 
+extern THREAD bool pendingsignal; 
 
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
