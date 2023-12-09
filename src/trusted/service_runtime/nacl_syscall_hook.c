@@ -70,7 +70,7 @@ static void HandleStackContext(struct NaClAppThread *natp,
    * to the stack.
    */
   old_sp_user = NaClGetThreadCtxSp(&natp->user);
-  if(pendingsignal) {
+  if(pendingsignal_get()) {
     sp_user = NaClGetThreadCtxSp(&natp->user) + sizeof(struct NaClExceptionFrame) + 136;
   } else {
     //No race condition here as it doesn't matter if the natp->user.rsp value changed
@@ -95,7 +95,7 @@ static void HandleStackContext(struct NaClAppThread *natp,
   prog_ctr_location = &natp->user.new_prog_ctr;
 
   asm volatile ("xchgq %0, %1": "+r" (user_ret), "+m" (*prog_ctr_location));
-  if(pendingsignal) {
+  if(pendingsignal_get()) {
     nacl_reg_t user_ret_copy = (nacl_reg_t) NaClSandboxCodeAddr(nap, 
                                *(volatile uintptr_t *) (sp_sys + NACL_USERRET_FIX));
     //If this check is true, signal happned before the xchg, revert and correct
