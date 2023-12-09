@@ -38,10 +38,10 @@ void NaClInitSwitchToApp(struct NaClApp *nap) {
 static bool NaClMaskRestore(struct NaClAppThread* natp) {
   struct NaClExceptionFrame* rsp_frame;
   natp->signatpflag = false;
-  if(!natp->pendingsignal) {
+  if(!pendingsignal) {
     return false;
   }
-  natp->pendingsignal = false;
+  pendingsignal = false;
   rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
   rsp_frame->context.regs.rax = natp->user.sysret;
   return true;

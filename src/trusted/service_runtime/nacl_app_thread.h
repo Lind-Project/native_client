@@ -27,7 +27,9 @@ EXTERN_C_BEGIN
 struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
 
-void rustposix_thread_init(uint64_t cageid, uint64_t signalflag);
+void rustposix_thread_init(uint64_t cageid);
+
+THREAD extern bool pendingsignal; 
 
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
@@ -85,7 +87,6 @@ struct NaClAppThread {
   struct NaClThreadContext  user;
 
   bool                      signatpflag; //is the natp set up to receive signals?
-  bool                      pendingsignal; 
 
   struct NaClMutex          mu;
 
