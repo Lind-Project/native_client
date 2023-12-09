@@ -48,7 +48,6 @@ struct NaClAppThread *natp_to_teardown = NULL;
 struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
-THREAD bool pendingsignal; 
 
 /*
  * dynamically allocate and initilize a copy
@@ -453,7 +452,7 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
   natp->nap = nap;
 
   natp->signatpflag = false;
-  pendingsignal = false;
+  pendingsignal_set(false);
   natp->single_stepping_signum = 0;
 
   natp->thread_num = -1;  /* illegal index */

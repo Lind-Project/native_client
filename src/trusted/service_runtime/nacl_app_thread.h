@@ -28,6 +28,8 @@ struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
 
 void rustposix_thread_init(uint64_t cageid);
+void pendingsignal_set(bool value);
+int pendingsignal_get();
 
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,

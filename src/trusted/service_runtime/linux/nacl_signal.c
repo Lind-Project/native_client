@@ -389,7 +389,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
       return -1;
     }
   } else {
-    pendingsignal = true;
+    pendingsignal_set(true);
     if (!natp->signatpflag) {
       /* See the "DispatchToUntrustedHandler: Trusted special cases" section in the 
        * explanatory comment at the top of this file
@@ -474,7 +474,7 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
         natp->user.rsp = regs->stack_ptr;
         natp->user.r12 = regs->r12;
         natp->user.r13 = regs->r13;
-        pendingsignal = false;
+        pendingsignal_set(false);
       }
     }
   }
