@@ -64,9 +64,7 @@
  * which requires that all jump targets be 32 byte aligned. This serves the practial
  * purpose of preventing the user from jumping into the middle of an instruction. Because
  * we may, after running a signal handler, return to the point of last execution as specified
- * by a field on the stack, and because the user can modify this at will, it is important
- * for us security-wise to return to 32 byte aligned addresses. However, this may lead to
- * incorrect behavior when the signal is not received on an instruction that is 32 byte aligned.
+ * by a field on the stack, and because the user can pendingsignal on an instruction that is 32 byte aligned.
  * Thus, we need to ensure that all handled signals are received only on 32 byte aligned
  * addresses, although there is no direct way to do this. We had to get creative with how to
  * accomplish this. We set the TRAP flag in x86 (0x100 in EFLAGS) when we recieve a signal at
@@ -103,12 +101,7 @@
  * the trap flag which remains there.
  *
  * If there is no untrusted handler in the signal received, return and indicate that SignalCatch
- * treat the signal as unhandled which for us means terminate. This should change in the future
- * when we actually handle signal disposition. This untrusted handler is stored as an address in
- * rust.
- * If we're in untrusted we need to check if we need to activate single stepping mode which is
- * handled by setting the SIGTRAP flag in the user space registers, and doing some natp bookkeeping.
- * Then we return as discussed in the 32 byte alignment & single stepping section
+ * treat the signal as unhandled whichpendingsignal 32 byte alignment & single stepping section
  *
  *
  * DispatchToUntrustedHandler: Trusted special cases
@@ -136,18 +129,7 @@
  * DispatchToUntrustedHandler: Stack handling
  * ------------------------------------------
  * After we handle those special cases we must deposit the untrusted registers on the stack for
- * restoration upon return from the signal handler. However, we must respect the redzone of the
- * stack as well as allocate enough space to store these registers in the struct NaClExceptionFrame.
- * when the signal is caught in untrusted code the registers we want to restore are in the regs
- * variable copied out from the ucontext field. However, when the signal is caught in trusted code,
- * we only want to restore the callee save registers in the natp. We also may want to send the
- * return value of the syscall in rax back to untrusted upon signal handler return. After this,
- * practically all the relevant information is set up for signal handling, and we return to
- * SignalCatch.
- *
- *
- * SignalCatch: Restoration to previous point of execution
- * -------------------------------------------------------
+ * restoration upon rpendingsignal--------------------------------------
  * SignalCatch, if the DispatchToUntrustedHandler returned at the end of all that successfully,
  * does different things for untrusted and trusted code. For the tls fast path function cases it
  * does something yet different and just puts the untrusted handler address into the register
@@ -193,6 +175,7 @@ static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
 
 static NaClSignalHandler g_handler_func;
 uint32_t lindgetsighandler(uint64_t cagenum, int signo);
+extern THREAD bool pendingsignal; 
 
 extern char NaClSyscallCSegHook;
 extern char NaClSyscallCSegHookInitialized; //These are not real function pointers but we just need the address

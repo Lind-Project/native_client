@@ -48,6 +48,7 @@ struct NaClAppThread *natp_to_teardown = NULL;
 struct NaClMutex reapermut;
 struct NaClCondVar reapercv;
 bool reap = true;
+extern THREAD bool pendingsignal; 
 
 /*
  * dynamically allocate and initilize a copy

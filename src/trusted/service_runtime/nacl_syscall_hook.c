@@ -32,6 +32,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
 #include "native_client/src/trusted/service_runtime/nacl_exception.h"
 
+extern THREAD bool pendingsignal; 
+
 
 /*
  * HandleStackContext() fetches some of the inputs to the NaCl syscall
