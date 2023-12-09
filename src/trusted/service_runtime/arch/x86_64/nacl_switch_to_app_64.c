@@ -24,7 +24,6 @@
 #endif
 
 NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
-extern THREAD bool pendingsignal; 
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */

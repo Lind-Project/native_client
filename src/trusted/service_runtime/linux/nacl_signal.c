@@ -129,7 +129,18 @@
  * DispatchToUntrustedHandler: Stack handling
  * ------------------------------------------
  * After we handle those special cases we must deposit the untrusted registers on the stack for
- * restoration upon rpendingsignal--------------------------------------
+ * restoration upon return from the signal handler. However, we must respect the redzone of the
+ * stack as well as allocate enough space to store these registers in the struct NaClExceptionFrame.
+ * when the signal is caught in untrusted code the registers we want to restore are in the regs
+ * variable copied out from the ucontext field. However, when the signal is caught in trusted code,
+ * we only want to restore the callee save registers in the natp. We also may want to send the
+ * return value of the syscall in rax back to untrusted upon signal handler return. After this,
+ * practically all the relevant information is set up for signal handling, and we return to
+ * SignalCatch.
+ *
+ *
+ * SignalCatch: Restoration to previous point of execution
+ * -------------------------------------------------------
  * SignalCatch, if the DispatchToUntrustedHandler returned at the end of all that successfully,
  * does different things for untrusted and trusted code. For the tls fast path function cases it
  * does something yet different and just puts the untrusted handler address into the register
@@ -175,7 +186,6 @@ static struct sigaction s_OldActions[NACL_ARRAY_SIZE_UNSAFE(s_Signals)];
 
 static NaClSignalHandler g_handler_func;
 uint32_t lindgetsighandler(uint64_t cagenum, int signo);
-extern THREAD bool pendingsignal; 
 
 extern char NaClSyscallCSegHook;
 extern char NaClSyscallCSegHookInitialized; //These are not real function pointers but we just need the address

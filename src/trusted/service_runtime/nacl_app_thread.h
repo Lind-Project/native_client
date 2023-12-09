@@ -35,6 +35,7 @@ enum NaClThreadLaunchType {
   THREAD_LAUNCH_EXEC
 };
 
+extern THREAD bool pendingsignal; 
 
 /*
  * The thread hosting the NaClAppThread may change suspend_state
