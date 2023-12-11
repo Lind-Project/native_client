@@ -1345,6 +1345,9 @@ int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
    */
   UNREFERENCED_PARAMETER(length);
   usraddr = NaClTruncAllocPage(usraddr);
+  #ifdef TRACING
+  NaClStraceCommonAddrRangeContainsExecutablePages( usraddr, length) {
+  #endif
   return usraddr < nap->dynamic_text_end;
 }
 
@@ -1362,6 +1365,9 @@ int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
     /* 32-bit systems only, rounding caused uint32_t overflow */
     return 0;
   }
+  #ifdef TRACING
+  NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace( usraddr, length) {
+  #endif
   return (nap->dynamic_text_start <= usraddr &&
           usr_region_end <= nap->dynamic_text_end);
 }
@@ -2166,6 +2172,10 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
+  #ifdef TRACING
+  NaClStraceMprotect(start, length, prot, retval);
+  #endif
+
 
   return NaClSysMprotectInternal(nap, start, length, prot);
 }
@@ -2592,6 +2602,7 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   NaClTlsSetTlsValue1(natp, thread_ptr);
   retval = 0;
 cleanup:
+
   return retval;
 }
 
@@ -2895,7 +2906,10 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemWait(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-
+           
+  #ifdef TRACING
+  NaClStraceSemWait(sem, retval);
+  #endif
   return lind_sem_wait(sem, nap->cage_id);
  }
 
@@ -2907,7 +2921,7 @@ int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
            (uintptr_t)natp, sem);
   int retval = lind_sem_trywait(sem, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemWait(sem, retval);
+  NaClStraceSemTryWait(sem, retval);
   #endif
   return retval;
 }

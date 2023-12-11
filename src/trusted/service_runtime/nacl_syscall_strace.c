@@ -195,6 +195,10 @@ void NaClStraceSecondTlsGet(uintptr_t natp) {
     printf("SecondTlsGet(some natp)\n");
 }
 
+void NaClStraceSemTryWait(int32_t sem_handle, int ret) {
+    printf("semwait(%d) = %d\n", sem_handle, ret);
+}
+
 void NaClStraceSemWait(int32_t sem_handle, int ret) {
     printf("semwait(%d) = %d\n", sem_handle, ret);
 }
@@ -452,6 +456,9 @@ void NaClStraceThreadNice(int nice) {
 }
 
 
+void NaClStraceMprotect(uint32_t start, size_t length, int prot, int32_t retval) {
+    printf("NaClSysMprotect(start=%u, length=%d, prot=0x%d) = %d\n", start, length, prot, retval);
+}
 
 void NaClStraceMprotectInternal(uint32_t start, size_t length, int prot, int32_t retval) {
     printf("MprotectInternal(start: %u, length: %zu, prot: %d, retval: %d)\n",
@@ -463,10 +470,14 @@ void NaClStraceFdatasync(int fd, int32_t ret) {
 void NaClStraceFsync(int fd, int32_t ret) {
     printf("Fsync(fd: %d, ret: %d)\n", fd, ret);
 }
-// void NaClStraceIoctlAclCheck(struct NaClDesc *ndp, unsigned long request, void *arg) {
-//     printf("IoctlAclCheck(ndp: 0x%08"NACL_PRIxPTR", request: %lu, arg: 0x%08"NACL_PRIxPTR")\n",
-//            (uintptr_t)ndp, request, (uintptr_t)arg);
-// }
+void NaClStraceCommonAddrRangeContainsExecutablePages( uintptr_t usraddr, size_t length) {
+    printf("NaClSysCommonAddrRangeContainsExecutablePages( usrdaddr=%d, length=%u)\n", usraddr, length);
+}
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace( uintptr_t usraddr, size_t length) {
+    printf("NaClSysCommonAddrRangeInAllowedDynamicCodeSpace( usrdaddr=%d, length=%u)\n", usraddr, length);
+}
+
+
 void NaClStraceGetppid(int32_t ppid) {
     printf("Getppid() = %d\n", ppid);
 }
