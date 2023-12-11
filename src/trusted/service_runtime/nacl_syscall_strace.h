@@ -116,18 +116,7 @@ void NaClStraceSelect(int nfds, fd_set * readfds,
                        fd_set * writefds, fd_set * exceptfds, uintptr_t timeout, int ret);
 void NaClStraceTlsGet(int ret);
 void NaClStraceLseek(int d, int whence);
-void NaClStraceCondDestroy(int32_t cond_handle, int32_t retval);
-void NaClStraceCondBroadcast(int32_t cond_handle, int32_t retval);
-void NaClStraceCondSignal(int cond_handle, int retval);
-void NaClStraceCondWait(int cond_handle, int mutex_handle, int retval);
-void NaClStraceCondCreate(int retval);
-void NaClStraceMutexDestroy(int mutex_handle, int retval);
-void NaClStraceMutexTrylock(int mutex_handle, int retval);
-void NaClStraceMutexUnlock(int mutex_handle, int retval);
 void NaClStraceThreadNice(int nice);
-void NaClStraceSecondTlsGet(int ret);
-void NaClStraceSecondTlsSet(uint32_t new_value);
-void NaClStraceMprotectInternal(uint32_t start, size_t length, int prot, int32_t retval);
 void NaClStraceFdatasync(int fd, int32_t ret);
 void NaClStraceFsync(int fd, int32_t ret);
 void NaClStraceGetppid(int32_t ppid);
