@@ -998,6 +998,7 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();
