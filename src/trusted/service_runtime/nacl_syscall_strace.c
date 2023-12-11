@@ -26,6 +26,7 @@ void NaClStraceSetOutputFile(char *path) {
             fclose(tracingOutputFile);
         }
         tracingOutputFile = newFile;
+        setbuf(tracingOutputFile, NULL);
     }
 }
 
