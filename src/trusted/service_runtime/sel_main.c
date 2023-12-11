@@ -300,6 +300,8 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   #if defined(TRACING) && defined(STRACE_OUTPUT_PATH)
   NaClStraceSetOutputFile(STRACE_OUTPUT_PATH);
+  #elif defined(TRACING)
+   NaClStraceSetOutputFile(NULL);
   #endif
 
   /*
