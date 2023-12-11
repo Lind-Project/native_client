@@ -100,6 +100,9 @@ struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
+  #ifdef TRACING
+  NaClStraceNotImplementedDecoder(0);
+  #endif
   return -NACL_ABI_ENOSYS;
 }
 
@@ -113,6 +116,9 @@ void NaClAddSyscall(int num, int32_t (*fn)(struct NaClAppThread *)) {
 
 int32_t NaClSysNull(struct NaClAppThread *natp) {
   UNREFERENCED_PARAMETER(natp);
+  #ifdef TRACING
+  NaClStaceSysNull(0);
+  #endif
   return 0;
 }
 
@@ -1059,6 +1065,9 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
+  #ifdef TRACING
+  NaClStraceLStat(path, retval);
+  #endif
 
   return retval;
 }
@@ -2421,7 +2430,12 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
   sysaddr = NaClUserToSysAddr(nap, (uintptr_t) shmaddr);
   if (kNaClBadAddress == sysaddr) {
     NaClLog(4, "shmdt: region not user addresses\n");
+    
     retval = -NACL_ABI_EFAULT;
+    #ifdef TRACING
+    NaClStraceShmdt(shmaddr, retval);
+    #endif
+
     return retval;
   }
 

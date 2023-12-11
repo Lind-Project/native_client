@@ -74,6 +74,11 @@ void NaClStraceFstat(int d, size_t retval){
 void NaClStraceStat(char* path, size_t retval){
     printf("stat(%s) = %zu\n", path, retval);
 
+
+}
+void NaClStraceLStat(char* path, size_t retval){
+    printf("stat(%s) = %zu\n", path, retval);
+
 }
 void NaClStraceMkdir(char* path, int mode,size_t retval){
     printf("mkdir(%s, %d) = %zu\n", path, mode, retval);
@@ -220,7 +225,12 @@ void NaClStraceSchedYield(int ret) {
 void NaClStraceTlsGet(int ret) {
     printf("tlsgetid() = %d\n", ret);
 }
-
+void NaClStaceSysNull(int ret) {
+    printf("tlsgetid() = %d\n", ret);
+}
+void NaClStraceNotImplementedDecoder(int ret) {
+    printf("tlsgetid() = %d\n", ret);
+}
 void NaClStraceExceptionHandler(uint32_t             handler_addr,
                                 uint32_t             old_handler, int ret) {
                                     printf("exceptionhandler(%u, %u) = %d\n", handler_addr, old_handler, ret);

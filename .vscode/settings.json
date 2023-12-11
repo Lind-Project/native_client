@@ -21,6 +21,10 @@
         "algorithm": "c",
         "functional": "c",
         "iterator": "c",
-        "memory": "c"
+        "memory": "c",
+        "__locale": "c",
+        "string": "c",
+        "string_view": "c",
+        "__string": "c"
     }
 }
