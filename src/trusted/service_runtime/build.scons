@@ -28,6 +28,13 @@ if os.environ.get('TRACING_ENABLED') == '1':
     env.Append(CPPFLAGS=['-DTRACING=1'])
     env.Append(CXXFLAGS=['-DTRACING=1'])
 
+if os.environ.get('TRACING_TO_FILE') == '1':
+    print("Coulson's flag added")
+    env.Append(CCFLAGS=['-DTRACING_TO_FILE=1'])
+    env.Append(CFLAGS=['-DTRACING_TO_FILE=1'])
+    env.Append(CPPFLAGS=['-DTRACING_TO_FILE=1'])
+    env.Append(CXXFLAGS=['-DTRACING_TO_FILE=1'])
+
 STRACE_DEFAULT_PATH = ""
 path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
 env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
@@ -401,12 +408,19 @@ if (env.Bit('linux') and not env.Bit('android')
     bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
   
+  if os.environ.get('TRACING_TO_FILE') == '1':
+    print("Coulson's flag added")
+    bootstrap_env.Append(CCFLAGS=['-DTRACING_TO_FILE=1'])
+    bootstrap_env.Append(CFLAGS=['-DTRACING_TO_FILE=1'])
+    bootstrap_env.Append(CPPFLAGS=['-DTRACING_TO_FILE=1'])
+    bootstrap_env.Append(CXXFLAGS=['-DTRACING_TO_FILE=1'])
+  
   STRACE_DEFAULT_PATH = ""
   path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
-  env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
-  env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
-  env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
-  env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
