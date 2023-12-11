@@ -963,6 +963,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();
