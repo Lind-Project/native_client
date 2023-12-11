@@ -940,9 +940,9 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
               "NaClSysLseek: in/out ptr became invalid at copyout?\n");
     }
   }
-  // #ifdef TRACING
-  // NaClStraceLseek(d, offp, whence,offset);
-  // #endif
+  #ifdef TRACING
+  NaClStraceLseek(d, whence);
+  #endif
 
   return retval;
 }
@@ -2623,6 +2623,10 @@ cleanup:
  * NaClGetTlsFastPath1 (see nacl_syscall_64.S).
  */
 int32_t NaClSysTlsGet(struct NaClAppThread *natp) {
+  #ifdef TRACING
+  NaClStraceTlsGet(0);
+  #endif
+  
   return NaClTlsGetTlsValue1(natp);
 }
 

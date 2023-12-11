@@ -60,10 +60,10 @@ void NaClStracePWrite(int d, const void *buf, int count, off_t offset) {
     printf("pwrite(%d, %p, %d, %jd)\n", d, buf, count, (intmax_t)offset);
 }
 
-// void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
-//     printf("lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
+void NaClStraceLseek(int d, int whence){
+    printf("lseek(%d, %d) = %zu\n", d,  whence);
 
-// }
+}
 void NaClStraceIoctl(int d, unsigned long request, size_t ret){
     printf("ioctl(%d, %lu) = %zu\n", d, request, ret);
 
@@ -216,6 +216,9 @@ void NaClStraceNanosleep(uintptr_t req, uintptr_t rem, int ret) {
 
 void NaClStraceSchedYield(int ret) {
     printf("schedyield() = %d\n", ret);
+}
+void NaClStraceTlsGet(int ret) {
+    printf("tlsgetid() = %d\n", ret);
 }
 
 void NaClStraceExceptionHandler(uint32_t             handler_addr,

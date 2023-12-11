@@ -114,3 +114,5 @@ void NaClStraceEpollCtl(int epfd, int op, int fd, uintptr_t event, int ret);
 void NaClStraceEpollWait(int epfd, uintptr_t events, int maxevents, int timeout, int ret);
 void NaClStraceSelect(int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, uintptr_t timeout, int ret);
+void NaClStraceTlsGet(int ret);
+void NaClStraceLseek(int d, int whence);
