@@ -28,12 +28,12 @@ if os.environ.get('TRACING_ENABLED') == '1':
     env.Append(CPPFLAGS=['-DTRACING=1'])
     env.Append(CXXFLAGS=['-DTRACING=1'])
 
-STRACE_DEFAULT_PATH = ''
+STRACE_DEFAULT_PATH = ""
 path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
-env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
+env.Append(CCFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+env.Append(CFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+env.Append(CPPFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+env.Append(CXXFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
 
 # TODO GENERATED CODE
 GENERATED='${TARGET_ROOT}/gen/native_client/src/trusted/service_runtime'
@@ -401,12 +401,12 @@ if (env.Bit('linux') and not env.Bit('android')
     bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
   
-  STRACE_DEFAULT_PATH = ''
+  STRACE_DEFAULT_PATH = ""
   path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
-  env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-  env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-  env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
-  env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH="{path_string}"'])
+  env.Append(CCFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+  env.Append(CFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+  env.Append(CPPFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
+  env.Append(CXXFLAGS=[f'-DSTRACE_OUTPUT_PATH="{path_string}"'])
 
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
