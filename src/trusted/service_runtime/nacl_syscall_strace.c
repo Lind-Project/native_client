@@ -26,7 +26,13 @@ void NaClStraceSetOutputFile(char *path) {
             fclose(tracingOutputFile);
         }
         tracingOutputFile = newFile;
-        setbuf(tracingOutputFile, NULL);
+        // setbuf(tracingOutputFile, NULL);
+    }
+}
+
+void NaClStraceCloseFile() {
+    if tracingOutputFile != NULL && tracingOutputFile != stderr {
+        if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
 
