@@ -31,7 +31,7 @@ void NaClStraceSetOutputFile(char *path) {
 }
 
 void NaClStraceCloseFile() {
-    if tracingOutputFile != NULL && tracingOutputFile != stderr {
+    if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
