@@ -471,10 +471,10 @@ void NaClStraceFsync(int fd, int32_t ret) {
     printf("Fsync(fd: %d, ret: %d)\n", fd, ret);
 }
 void NaClStraceCommonAddrRangeContainsExecutablePages( uintptr_t usraddr, size_t length) {
-    printf("NaClSysCommonAddrRangeContainsExecutablePages( usrdaddr=%d, length=%u)\n", usraddr, length);
+    printf("NaClSysCommonAddrRangeContainsExecutablePages( usrdaddr=%ld, length=%lu)\n", usraddr, length);
 }
 void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace( uintptr_t usraddr, size_t length) {
-    printf("NaClSysCommonAddrRangeInAllowedDynamicCodeSpace( usrdaddr=%d, length=%u)\n", usraddr, length);
+    printf("NaClSysCommonAddrRangeInAllowedDynamicCodeSpace( usrdaddr=%ld, length=%lu)\n", usraddr, length);
 }
 
 
