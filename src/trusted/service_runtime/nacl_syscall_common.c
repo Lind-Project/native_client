@@ -342,6 +342,9 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap, //Unused for now
   if (NaClAclBypassChecks) {
     return 0;
   }
+  // #ifdef TRACING
+  // NaClStraceIoctlAclCheck(ndp, request, arg);
+  // #endif
   return -NACL_ABI_EINVAL;
 }
 
@@ -365,7 +368,9 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
 
   ppid = lind_getppid(nap->cage_id);
   NaClLog(1, "NaClSysGetppid: returning %d\n", ppid);
-
+  #ifdef TRACING
+  NaClStraceGetppid(ppid);
+  #endif
   return ppid;
 }
 
@@ -1215,6 +1220,9 @@ int32_t NaClSysFsync(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fsync(fd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFsync(fd, ret);
+  #endif
 
   return ret;
 }
@@ -1229,6 +1237,9 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fdatasync(fd, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceFdatasync(fd, ret);
+  #endif
 
   return ret;
 }
@@ -2136,6 +2147,9 @@ cleanup:
   if (holding_app_lock) {
     NaClXMutexUnlock(&nap->mu);
   }
+  #ifdef TRACING
+  NaClStraceMprotectInternal(start, length, prot, retval);
+  #endif
   return retval;
 }
 
@@ -2651,6 +2665,9 @@ int32_t NaClSysTlsGet(struct NaClAppThread *natp) {
 int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
                             uint32_t             new_value) {
   NaClTlsSetTlsValue2(natp, new_value);
+  #ifdef TRACING
+  NaClStraceSecondTlsSet(new_value);
+  #endif
   return 0;
 }
 
@@ -2659,6 +2676,10 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
  * NaClGetTlsFastPath2 (see nacl_syscall_64.S).
  */
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
+  #ifdef TRACING
+  NaClStraceSecondTlsGet(0);
+  #endif
+
   return NaClTlsGetTlsValue2(natp);
 }
 
@@ -2666,6 +2687,9 @@ int NaClSysThreadNice(struct NaClAppThread *natp,
                       int                  nice) {
   /* Note: implementation of nacl_thread_nice is OS dependent. */
   UNREFERENCED_PARAMETER(natp);
+  #ifdef TRACING
+  NaClStraceThreadNice(nice);
+  #endif
   return nacl_thread_nice(nice);
 }
 
@@ -2682,6 +2706,9 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   NaClLog(3,
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
+  #ifdef TRACING
+  NaClStraceMutexCreate(retval);
+  #endif
   return retval;
 }
 
@@ -2694,7 +2721,9 @@ int32_t NaClSysMutexLock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_lock(mutex_handle, nap->cage_id);
-
+  #ifdef TRACING
+  NaClStraceMutexLock(mutex_handle, retval);
+  #endif
   return retval;
 }
 
@@ -2707,6 +2736,9 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_unlock(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexUnlock(mutex_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2720,6 +2752,9 @@ int32_t NaClSysMutexTrylock(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_trylock(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexTrylock(mutex_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2733,6 +2768,9 @@ int32_t NaClSysMutexDestroy(struct NaClAppThread   *natp,
           (uintptr_t)natp, mutex_handle);
 
   retval = lind_mutex_destroy(mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceMutexDestroy(mutex_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2749,6 +2787,9 @@ int32_t NaClSysCondCreate(struct NaClAppThread *natp) {
 
   NaClLog(2, "NaClSysCondCreate(0x%08"NACL_PRIxPTR") = %d\n",
            (uintptr_t)natp, retval);
+  #ifdef TRACING
+  NaClStraceCondCreate(retval);
+  #endif
   return retval;
 }
 
@@ -2762,6 +2803,9 @@ int32_t NaClSysCondWait(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle, mutex_handle);
 
   retval = lind_cond_wait(cond_handle, mutex_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondWait(cond_handle, mutex_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2775,6 +2819,9 @@ int32_t NaClSysCondSignal(struct NaClAppThread *natp,
            (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_signal(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondSignal(cond_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2788,6 +2835,9 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_broadcast(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondBroadcast(cond_handle, retval);
+  #endif
 
   return retval;
 }
@@ -2801,6 +2851,9 @@ int32_t NaClSysCondDestroy(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_destroy(cond_handle, nap->cage_id);
+  #ifdef TRACING
+  NaClStraceCondDestroy(cond_handle, retval);
+  #endif
 
   return retval;
 }

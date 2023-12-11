@@ -444,3 +444,61 @@ void NaClStraceNameService(int32_t *desc_addr, int32_t retval) {
     printf("NameService(desc_addr: 0x%08"NACL_PRIxPTR", retval: %d)\n", 
            (uintptr_t)desc_addr, retval);
 }
+void NaClStraceCondDestroy(int32_t cond_handle, int32_t retval) {
+    printf("CondDestroy(cond_handle: %d, retval: %d)\n", cond_handle, retval);
+}
+void NaClStraceCondBroadcast(int cond_handle, int retval) {
+    printf("CondBroadcast(cond_handle: %d, retval: %d)\n", cond_handle, retval);
+}
+void NaClStraceCondSignal(int cond_handle, int retval) {
+    printf("CondSignal(cond_handle: %d, retval: %d)\n", cond_handle, retval);
+}
+void NaClStraceCondWait(int cond_handle, int mutex_handle, int retval) {
+    printf("CondWait(cond_handle: %d, mutex_handle: %d, retval: %d)\n", 
+           cond_handle, mutex_handle, retval);
+}
+void NaClStraceCondCreate(int retval) {
+    printf("CondCreate() = %d\n", retval);
+}
+void NaClStraceMutexDestroy(int mutex_handle, int retval) {
+    printf("MutexDestroy(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
+}
+void NaClStraceMutexTrylock(int mutex_handle, int retval) {
+    printf("MutexTrylock(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
+}
+void NaClStraceMutexUnlock(int mutex_handle, int retval) {
+    printf("MutexUnlock(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
+}
+void NaClStraceMutexLock(int mutex_handle, int retval) {
+    printf("MutexLock(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
+}
+void NaClStraceMutexCreate(int retval) {
+    printf("MutexCreate() = %d\n", retval);
+}
+void NaClStraceThreadNice(int nice) {
+    printf("ThreadNice(nice: %d,\n", nice);
+}
+
+void NaClStraceSecondTlsGet(int ret) {
+    printf("tlsgetid() = %d\n", ret);
+}
+void NaClStraceSecondTlsSet(uint32_t new_value) {
+    printf("SecondTlsSet(new_value: %u)\n", new_value);
+}
+void NaClStraceMprotectInternal(uint32_t start, size_t length, int prot, int32_t retval) {
+    printf("MprotectInternal(start: %u, length: %zu, prot: %d, retval: %d)\n",
+           start, length, prot, retval);
+}
+void NaClStraceFdatasync(int fd, int32_t ret) {
+    printf("Fdatasync(fd: %d, ret: %d)\n", fd, ret);
+}
+void NaClStraceFsync(int fd, int32_t ret) {
+    printf("Fsync(fd: %d, ret: %d)\n", fd, ret);
+}
+// void NaClStraceIoctlAclCheck(struct NaClDesc *ndp, unsigned long request, void *arg) {
+//     printf("IoctlAclCheck(ndp: 0x%08"NACL_PRIxPTR", request: %lu, arg: 0x%08"NACL_PRIxPTR")\n",
+//            (uintptr_t)ndp, request, (uintptr_t)arg);
+// }
+void NaClStraceGetppid(int32_t ppid) {
+    printf("Getppid() = %d\n", ppid);
+}
