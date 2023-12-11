@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "native_client/src/include/portability.h" 
 
-
+void NaClStraceSetOutputFile(char *path);
 void NaClStraceGetpid(int pid);
 void NaClStraceOpen(char* path, int flags, int mode, int fd);
 void NaClStraceClose(int d, int ret);
