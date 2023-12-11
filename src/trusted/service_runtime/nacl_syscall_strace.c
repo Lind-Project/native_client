@@ -405,7 +405,7 @@ void NaClStraceAccept(int sockfd, uintptr_t addr, socklen_t *addrlen, int ret) {
 }
 
 void NaClStraceBind(int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    printf("bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n");
+    printf("bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n",sockfd,addr,addrlen,ret);
 }
 
 void NaClStraceListen(int sockfd, int backlog, int ret) {
@@ -421,7 +421,7 @@ void NaClStraceFcntlSet(int fd, int cmd, long set_op, int ret) {
 }
 
 void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    printf("poll(0x%08"NACL_PRIxPTR", %d, %d) = %d\n");
+    printf("poll(0x%08"NACL_PRIxPTR", %d, %d) = %d\n",fds,nfds,timeout,ret);
 }
 
 void NaClStraceEpollCreate(int size, int ret) {
@@ -446,16 +446,6 @@ void NaClStraceNameService(int32_t *desc_addr, int32_t retval) {
 }
 
 
-void NaClStraceMutexDestroy(int mutex_handle, int retval) {
-    printf("MutexDestroy(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
-}
-
-void NaClStraceMutexUnlock(int mutex_handle, int retval) {
-    printf("MutexUnlock(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
-}
-void NaClStraceMutexLock(int mutex_handle, int retval) {
-    printf("MutexLock(mutex_handle: %d, retval: %d)\n", mutex_handle, retval);
-}
 
 void NaClStraceThreadNice(int nice) {
     printf("ThreadNice(nice: %d,\n", nice);
