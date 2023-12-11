@@ -36,7 +36,7 @@ void NaClStraceSecondTlsSet(uint32_t new_value);
 void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t retval);
 void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length);
 void NaClStraceMprotectInternal(uint32_t start, size_t length, int prot, int32_t retval);
-void NaClStraceMprotect(uint32_t start,size_t length,int prot);
+void NaClStraceMprotect(uint32_t start,size_t length,int prot,int32_t retval);
 void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval);
 void NaClStraceShmget(int key, size_t size, int shmflg, int retval);
 void NaClStraceShmdt(void *shmaddr, int retval);
@@ -56,6 +56,7 @@ void NaClStraceCondTimedWaitAbs(int32_t cond_handle,int32_t mutex_handle,int32_t
 void NaClStraceSemCreate(int32_t init_value, int32_t retval);
 void NaClStraceSecondTlsGet(uintptr_t natp);
 void NaClStraceSemInit(int32_t sem, int32_t pshared, int32_t value, int retval);
+void NaClStraceSemTryWait(int32_t sem_handle, int ret);
 void NaClStraceSemWait(int32_t sem_handle, int ret);
 void NaClStraceSemPost(int32_t sem_handle, int ret);
 void NaClStraceSemDestroy(int32_t sem_handle, int ret);

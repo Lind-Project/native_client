@@ -61,7 +61,7 @@ void NaClStracePWrite(int d, const void *buf, int count, off_t offset) {
 }
 
 void NaClStraceLseek(int d, int whence){
-    printf("lseek(%d, %d) = %zu\n", d,  whence);
+    printf("lseek(%d, %d)\n", d,  whence);
 
 }
 void NaClStraceIoctl(int d, unsigned long request, size_t ret){
@@ -190,10 +190,10 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
 
 }
 
-void NaClStraceSecondTlsGet(uintptr_t natp) {
-    // this is not used in x86 anyway
-    printf("SecondTlsGet(some natp)\n");
-}
+// void NaClStraceSecondTlsGet(uintptr_t natp) {
+//     // this is not used in x86 anyway
+//     printf("SecondTlsGet(some natp)\n");
+// }
 
 void NaClStraceSemTryWait(int32_t sem_handle, int ret) {
     printf("semwait(%d) = %d\n", sem_handle, ret);

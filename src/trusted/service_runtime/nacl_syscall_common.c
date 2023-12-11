@@ -1346,7 +1346,7 @@ int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
   UNREFERENCED_PARAMETER(length);
   usraddr = NaClTruncAllocPage(usraddr);
   #ifdef TRACING
-  NaClStraceCommonAddrRangeContainsExecutablePages( usraddr, length) {
+  NaClStraceCommonAddrRangeContainsExecutablePages( usraddr, length);
   #endif
   return usraddr < nap->dynamic_text_end;
 }
