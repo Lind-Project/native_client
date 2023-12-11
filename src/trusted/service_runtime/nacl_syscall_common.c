@@ -2113,7 +2113,7 @@ cleanup:
     NaClXMutexUnlock(&nap->mu);
   }
   #ifdef TRACING
-  NaClStraceMprotectInternal(start,length,prot,sysaddr,retval,holding_app_lock);
+  NaClStraceMprotectInternal(start,length,prot,retval);
   #endif
   return retval;
 }
