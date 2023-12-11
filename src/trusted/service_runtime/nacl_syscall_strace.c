@@ -8,7 +8,7 @@
 #include <sys/poll.h>
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 
-FILE *tracingOutputFile = stderr;
+FILE *tracingOutputFile = NULL;
 
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
@@ -19,7 +19,8 @@ void NaClStraceSetOutputFile(char *path) {
 
     FILE *newFile = fopen(path, "w");
     if (newFile == NULL) {
-        perror("Error opening the tracing output file");
+        perror("Error opening the tracing output file. Now output to stderr");
+        tracingOutputFile = stderr;
     } else {
         if (tracingOutputFile != stderr && tracingOutputFile != NULL) {
             fclose(tracingOutputFile);
