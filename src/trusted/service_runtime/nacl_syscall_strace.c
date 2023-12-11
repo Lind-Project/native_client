@@ -440,3 +440,7 @@ void NaClStraceSelect(int nfds, fd_set * readfds, fd_set * writefds,
                                 fd_set * exceptfds, uintptr_t timeout, int ret) {
     printf("select(%d, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", nfds, readfds, writefds, exceptfds, timeout);
                        }
+void NaClStraceNameService(int32_t *desc_addr, int32_t retval) {
+    printf("NameService(desc_addr: 0x%08"NACL_PRIxPTR", retval: %d)\n", 
+           (uintptr_t)desc_addr, retval);
+}

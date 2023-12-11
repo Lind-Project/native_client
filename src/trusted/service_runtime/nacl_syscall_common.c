@@ -473,6 +473,10 @@ int32_t NaClSysNameService(struct NaClAppThread *natp,
   }
 
  done:
+  
+  #ifdef TRACING
+  NaClStraceNameService(desc_addr, retval);
+  #endif
   return retval;
 }
 

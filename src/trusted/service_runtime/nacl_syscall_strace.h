@@ -116,3 +116,4 @@ void NaClStraceSelect(int nfds, fd_set * readfds,
                        fd_set * writefds, fd_set * exceptfds, uintptr_t timeout, int ret);
 void NaClStraceTlsGet(int ret);
 void NaClStraceLseek(int d, int whence);
+NaClStraceNameService(int32_t *desc_addr, int32_t retval);
