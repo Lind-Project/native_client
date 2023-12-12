@@ -205,8 +205,9 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
     fprintf(tracingOutputFile, "sem_create(%d) = %d\n", init_value, retval);
 
 }
-void NaClStraceLStat(const char *pathname, int32_t retval) {
-  fprintf("Strace: NaClSysLStat(pathname: %s, retval: %d)\n", pathname, retval);
+void NaClStraceLStat(char* path, size_t retval){
+    fprintf(tracingOutputFile, "stat(%s) = %zu\n", path, retval);
+
 }
 
 void NaClStraceLseek(int d, int whence) {

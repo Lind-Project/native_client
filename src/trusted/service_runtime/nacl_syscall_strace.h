@@ -37,7 +37,7 @@ void NaClStraceMmap(void *start,size_t length,int prot,int flags,int d,int32_t r
 void NaClStraceMunmap(void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length);
 void NaClStraceMprotectInternal(uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock);
 void NaClStraceMprotect(uint32_t start,size_t length,int prot);
-void NaClStraceShmat(int shmid, void *shmaddr, int shmflg, int retval);
+void NaClStraceShmat(int shmid, void *shmaddr, int shmflg);
 void NaClStraceShmget(int key, size_t size, int shmflg, int retval);
 void NaClStraceShmdt(void *shmaddr, int retval);
 void NaClStraceShmctl(int shmid, int cmd, int32_t retval);
@@ -115,7 +115,7 @@ void NaClStraceEpollWait(int epfd, uintptr_t events, int maxevents, int timeout,
 void NaClStraceSelect(int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, uintptr_t timeout, int ret);
 void NaClStraceLseek(int d, int whence);
-void NaClStraceLStat(const char *pathname, int retval);
+void NaClStraceLStat(char* path, size_t retval);
 void NaClStraceTlsGet(int32_t retval);
 void NaClStraceNameService(int32_t *desc_addr, int32_t retval);
 void NaClStraceNull(int32_t retval);

@@ -266,6 +266,10 @@ cleanup_no_lock:
   rv = (int32_t) break_addr;
 
   NaClLog(3, "NaClSysBrk: returning 0x%08"NACL_PRIx32"\n", rv);
+  #ifdef TRACING
+  NaClSysBrkTrace(new_break, rv);
+  #endif
+
   return rv;
 }
 
@@ -1069,7 +1073,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
   #ifdef TRACING
-  NaClSysLStat(pathname, retval);
+  NaClStraceLStat(path, retval);
   #endif
 
   return retval;
