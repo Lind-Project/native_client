@@ -140,6 +140,10 @@ void NaClStraceMunmap(void *start, size_t length, int32_t retval, uintptr_t sysa
 void NaClStraceShmat(int shmid, void *shmaddr, int shmflg) {
     fprintf(tracingOutputFile, "shmat(%d, %p, %d) \n", shmid, shmaddr, shmflg);
 }
+void NaClSysBrkTrace(uintptr_t new_break, int32_t retval) {
+  fprintf("Strace: NaClSysBrk(new_break: 0x%08" PRIxPTR ", retval: %d)\n", new_break, retval);
+}
+
 void NaClStraceShmget(int key, size_t size, int shmflg, int retval) {
     fprintf(tracingOutputFile, "shmget(%d, %zu, %d) = %d\n", key, size, shmflg, retval);
 }
@@ -201,6 +205,10 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
     fprintf(tracingOutputFile, "sem_create(%d) = %d\n", init_value, retval);
 
 }
+void NaClStraceLStat(const char *pathname, int32_t retval) {
+  fprintf("Strace: NaClSysLStat(pathname: %s, retval: %d)\n", pathname, retval);
+}
+
 void NaClStraceLseek(int d, int whence) {
   fprintf("Strace: lseek(descriptor: %d, whence: %d)\n", d, whence);
 }

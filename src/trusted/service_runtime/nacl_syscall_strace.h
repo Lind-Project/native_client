@@ -121,3 +121,5 @@ void NaClStraceNameService(int32_t *desc_addr, int32_t retval);
 void NaClStraceNull(int32_t retval);
 void NaClStraceNotImplementedDecoder(int32_t retval);
 void NaClStraceTlsInit(uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls);
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(uintptr_t usraddr, size_t length);
+void NaClSysBrkTrace(uintptr_t new_break, int32_t retval);
