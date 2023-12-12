@@ -81,10 +81,6 @@ void NaClStracePWrite(int d, const void *buf, int count, off_t offset) {
     fprintf(tracingOutputFile, "pwrite(%d, %p, %d, %jd)\n", d, buf, count, (intmax_t)offset);
 }
 
-// void NaClStraceLseek(int d, nacl_abi_off_t offp, int whence,size_t ret){
-//     fprintf(tracingOutputFile, "lseek(%d, %lld, %d) = %zu\n", d, (long long)offp, whence, ret);
-
-// }
 void NaClStraceIoctl(int d, unsigned long request, size_t ret){
     fprintf(tracingOutputFile, "ioctl(%d, %lu) = %zu\n", d, request, ret);
 
@@ -205,6 +201,27 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
     fprintf(tracingOutputFile, "sem_create(%d) = %d\n", init_value, retval);
 
 }
+void NaClStraceLseek(int d, int whence) {
+  NaClLog(2, "Strace: lseek(descriptor: %d, whence: %d)\n", d, whence);
+}
+void NaClStraceLStat(const char *pathname, int retval) {
+  NaClLog(2, "Strace: lstat(pathname: %s, retval: %d)\n", pathname, retval);
+}
+void NaClStraceTlsGet(int32_t retval) {
+    printf("TlsGet(retval: %d)\n", retval);
+}
+void NaClStraceNameService(int32_t *desc_addr, int32_t retval) {
+    printf("NameService(desc_addr: 0x%08"NACL_PRIxPTR", retval: %d)\n", 
+           (uintptr_t)desc_addr, retval);
+}
+void NaClStraceNull(int32_t retval) {
+    printf("TlsGet(retval: %d)\n", retval);
+}
+void NaClStraceNotImplementedDecoder(int32_t retval) {
+    printf("TlsGet(retval: %d)\n", retval);
+}
+
+
 
 void NaClStraceSecondTlsGet(uintptr_t natp) {
     // this is not used in x86 anyway
