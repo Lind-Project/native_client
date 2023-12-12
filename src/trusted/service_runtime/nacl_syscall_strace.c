@@ -202,10 +202,13 @@ void NaClStraceSemCreate(int32_t init_value, int32_t retval) {
 
 }
 void NaClStraceLseek(int d, int whence) {
-  NaClLog(2, "Strace: lseek(descriptor: %d, whence: %d)\n", d, whence);
+  fprintf("Strace: lseek(descriptor: %d, whence: %d)\n", d, whence);
 }
-void NaClStraceLStat(const char *pathname, int retval) {
-  NaClLog(2, "Strace: lstat(pathname: %s, retval: %d)\n", pathname, retval);
+void NaClStraceCommon(uintptr_t usraddr, size_t length) {
+  fprintf("Strace: NaClStraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
+}
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(uintptr_t usraddr, size_t length) {
+  fprintf("Strace: NaClStraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
 }
 void NaClStraceTlsGet(int32_t retval) {
     printf("TlsGet(retval: %d)\n", retval);

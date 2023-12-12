@@ -1327,6 +1327,9 @@ int NaClSysCommonAddrRangeInAllowedDynamicCodeSpace(struct NaClApp *nap,
     /* 32-bit systems only, rounding caused uint32_t overflow */
     return 0;
   }
+  #ifdef TRACING
+  NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(usraddr, length);
+  #endif
   return (nap->dynamic_text_start <= usraddr &&
           usr_region_end <= nap->dynamic_text_end);
 }
