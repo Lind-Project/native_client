@@ -2171,7 +2171,7 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
     }
   }
   #ifdef TRACING
-  NaClStraceShmget(key,size,shmflg,retval,alloc_rounded_size);
+  NaClStraceShmget(key,size,shmflg,retval);
   #endif
 
   return retval;
@@ -2388,7 +2388,7 @@ cleanup:
   }
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
   #ifdef TRACING
-  NaClStraceShmat(   *natp, shmid, *shmaddr, shmflg);
+  NaClStraceShmat( shmid, *shmaddr, shmflg);
   #endif
 
 
