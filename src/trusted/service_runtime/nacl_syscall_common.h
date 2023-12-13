@@ -352,8 +352,9 @@ int32_t NaClSysSemInit(struct NaClAppThread *natp,
                          uint32_t             sem,
                          int32_t              pshared,
                          int32_t              value);
+
 int32_t NaClSysSemWait(struct NaClAppThread *natp,
-                       int32_t              sem_handle);
+                       uint32_t              sem);
 
 int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
                             uint32_t              sem);
@@ -362,11 +363,15 @@ int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
                             uint32_t              sem,
                             struct nacl_abi_timespec *abs);
 
+int32_t NaClSysSemPost(struct NaClAppThread *natp,
+                       uint32_t              sem);
 
-int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
-                           int32_t              sem_handle);
 int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
                           uint32_t              sem);
+
+int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
+                           uint32_t              sem,
+                           int32_t              *sval);
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
                          struct nacl_abi_timespec *req,
