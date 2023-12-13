@@ -21,6 +21,20 @@
         "algorithm": "c",
         "functional": "c",
         "iterator": "c",
-        "memory": "c"
+        "memory": "c",
+        "__hash_table": "c",
+        "__split_buffer": "c",
+        "__tree": "c",
+        "array": "c",
+        "initializer_list": "c",
+        "map": "c",
+        "queue": "c",
+        "set": "c",
+        "stack": "c",
+        "string": "c",
+        "string_view": "c",
+        "unordered_map": "c",
+        "utility": "c",
+        "fstream": "c"
     }
 }

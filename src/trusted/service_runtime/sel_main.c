@@ -298,10 +298,8 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Failed to allocate env var array");
   }
 
-  #if defined(TRACING) && defined(TRACING_TO_FILE)
+  #if defined(TRACING)
   NaClStraceSetOutputFile("strace_output.txt");
-  #elif defined(TRACING)
-  NaClStraceSetOutputFile(NULL);
   #endif
 
   /*
