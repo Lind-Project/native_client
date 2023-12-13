@@ -368,10 +368,6 @@ int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
 int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
                           uint32_t              sem);
 
-int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
-                           uint32_t              sem,
-                           int32_t              *sval);
-
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
                          struct nacl_abi_timespec *req,
                          struct nacl_abi_timespec *rem);
