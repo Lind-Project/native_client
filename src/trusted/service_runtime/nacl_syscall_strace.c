@@ -32,6 +32,9 @@ void NaClStraceSetOutputFile(char *path) {
 void NaClStraceGetpid(int pid) {
     fprintf(tracingOutputFile, "getpid() = %d\n", pid);
 }
+void NaClStraceGetppid(int pid) {
+    fprintf(tracingOutputFile, "getppid() = %d\n", pid);
+}
 
 void NaClStraceOpen(char* path, int flags, int mode, int fd) {
     fprintf(tracingOutputFile, "open(%s, %d, %d) = %d\n", path, flags, mode, fd);
@@ -454,8 +457,11 @@ void NaClStraceFcntlSet(int fd, int cmd, long set_op, int ret) {
     fprintf(tracingOutputFile, "fcntlset(%d, %d, %ld) = %d\n", fd, cmd, set_op, ret);
 }
 
+// void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
+//     fprintf(tracingOutputFile, "poll(0x%08" NACL_PRIxPTR ", %d, %d,%d) = %d\n", fds, nfds, timeout, ret);
+// }
 void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    fprintf(tracingOutputFile, "poll(0x%08" NACL_PRIxPTR ", %d, %d) = %d\n", fds, nfds, timeout, ret);
+    fprintf(tracingOutputFile, "NaClStracePoll called with fds: 0x%08" NACL_PRIxPTR ", nfds: %d, timeout: %d, ret: %d\n", fds, nfds, timeout, ret);
 }
 
 void NaClStraceEpollCreate(int size, int ret) {
