@@ -2918,9 +2918,6 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->SemWait)(desc);
   NaClDescUnref(desc);
 cleanup:
-  #ifdef TRACING
-  NaClStraceSemWait(sem_handle,retval);
-  #endif
   return retval;
 }
 
