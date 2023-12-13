@@ -218,7 +218,7 @@ void NaClStraceCommon(uintptr_t usraddr, size_t length) {
     fprintf(tracingOutputFile, "StraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
 }
 void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(uintptr_t usraddr, size_t length) {
-  fprintf("Strace: NaClStraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
+    fprintf(tracingOutputFile, "NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
 }
 void NaClStraceTlsGet(int32_t retval) {
     printf("TlsGet(retval: %d)\n", retval);
@@ -440,9 +440,8 @@ void NaClStraceAccept(int sockfd, uintptr_t addr, socklen_t *addrlen, int ret) {
 }
 
 void NaClStraceBind(int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    fprintf(tracingOutputFile, "bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n");
+    fprintf(tracingOutputFile, "bind(%d, 0x%08" NACL_PRIxPTR ", %u) = %d\n", sockfd, addr, addrlen, ret);
 }
-
 void NaClStraceListen(int sockfd, int backlog, int ret) {
     fprintf(tracingOutputFile, "listen(%d, %d) = %d\n", sockfd, backlog, ret);
 }
