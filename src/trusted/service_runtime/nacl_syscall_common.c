@@ -369,6 +369,9 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
 
   ppid = lind_getppid(nap->cage_id);
   NaClLog(1, "NaClSysGetppid: returning %d\n", ppid);
+  #ifdef TRACING
+  NaClStraceGetppid(pid);
+  #endif
 
   return ppid;
 }
@@ -2915,6 +2918,9 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   retval = (*((struct NaClDescVtbl const *) desc->base.vtbl)->SemWait)(desc);
   NaClDescUnref(desc);
 cleanup:
+  #ifdef TRACING
+  NaClStraceSemWait(sem_handle,retval);
+  #endif
   return retval;
 }
 
