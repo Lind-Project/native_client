@@ -455,7 +455,7 @@ void NaClStraceFcntlSet(int fd, int cmd, long set_op, int ret) {
 }
 
 void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    fprintf(tracingOutputFile, "poll(0x%08"NACL_PRIxPTR", %d, %d) = %d\n");
+    fprintf(tracingOutputFile, "poll(0x%08" NACL_PRIxPTR ", %d, %d) = %d\n", fds, nfds, timeout, ret);
 }
 
 void NaClStraceEpollCreate(int size, int ret) {
