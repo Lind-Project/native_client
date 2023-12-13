@@ -415,7 +415,7 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
 
   NaClAppThreadTeardown(natp);
   #ifdef TRACING
-  NaClStraceThreadExit(nap->cage_id, stack_flag,zero);
+  NaClStraceThreadExit(natp->nap->cage_id, stack_flag,zero);
   #endif
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
@@ -2711,7 +2711,7 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread  *natp,
   retval = lind_mutex_unlock(mutex_handle, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceMutexUnlock(nap->cage_id, mutex_handle, retval);
+  NaClStraceMutexUnLock(nap->cage_id, mutex_handle, retval);
   #endif
 
   return retval;
@@ -2854,7 +2854,7 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
   int ret = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
   #ifdef TRACING
-  NaClStraceCondTimedWaitAbs(nap->cage_id, cond_handle, mutex_handle,  (uintptr_t)&trusted_ts, retval);
+  NaClStraceCondTimedWaitAbs(nap->cage_id, cond_handle, mutex_handle,  (uintptr_t)&trusted_ts, ret);
   #endif
 
   return ret;
@@ -2915,7 +2915,7 @@ int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
 
   int retval = lind_sem_timedwait(sem, (struct timespec*) &trusted_abs, nap->cage_id);
   #ifdef TRACING
-  NaClStraceSemTimedWait(nap->cage_id, sem, (uintptr_t) &trusted_abs);
+  NaClStraceSemTimedWait(nap->cage_id, sem, (uintptr_t) &trusted_abs, retval);
   #endif
   return retval;
 }
@@ -3221,11 +3221,11 @@ int32_t NaClSysTestInfoLeak(struct NaClAppThread *natp) {
 
 #endif
 
-  UNREFERENCED_PARAMETER(natp);
-
   #ifdef TRACING
-  NaClStraceTestInfoLeak(nap->cage_id, -NACL_ABI_ENOSYS);
+  NaClStraceTestInfoLeak(natp->nap->cage_id, -NACL_ABI_ENOSYS);
   #endif
+
+  UNREFERENCED_PARAMETER(natp);
 
   return -NACL_ABI_ENOSYS;
 }
@@ -3260,7 +3260,7 @@ int32_t NaClSysTestCrash(struct NaClAppThread *natp, int crash_type) {
       break;
   }
   #ifdef TRACING
-  NaClStraceTestCrash(nap->cage_id, crash_type, -NACL_ABI_EINVAL);
+  NaClStraceTestCrash(natp->nap->cage_id, crash_type, -NACL_ABI_EINVAL);
   #endif
 
   return -NACL_ABI_EINVAL;
@@ -3291,7 +3291,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
   if (retval) {
 
     #ifdef TRACING
-    NaClStraceGetTimeOfDay((uintptr_t)tv,(uintptr_t)tz, retval);
+    NaClStraceGetTimeOfDay(natp->nap->cage_id,(uintptr_t)tv,(uintptr_t)tz, retval);
     #endif
 
     return retval;
