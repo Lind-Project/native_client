@@ -462,8 +462,9 @@ void NaClStraceFcntlSet(int fd, int cmd, long set_op, int ret) {
 // }
 
 void NaClStracePoll(uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    fprintf(tracingOutputFile, "poll(0x%08" NACL_PRIxPTR ", %u, %d) = %d\n", fds, nfds, timeout, ret);
+    fprintf(tracingOutputFile, "poll(0x%08" NACL_PRIxPTR ", %lu, %d) = %d\n", fds, nfds, timeout, ret);
 }
+
 void NaClStraceEpollCreate(int size, int ret) {
     fprintf(tracingOutputFile, "epollcreate(%d) = %d\n", size, ret);
 }
@@ -476,7 +477,10 @@ void NaClStraceEpollWait(int epfd, uintptr_t events,int maxevents, int timeout, 
     fprintf(tracingOutputFile, "epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d\n", epfd, events, maxevents, timeout, ret);
 }
 
-void NaClStraceSelect(int nfds, fd_set * readfds, fd_set * writefds, 
-                                fd_set * exceptfds, uintptr_t timeout, int ret) {
-    fprintf(tracingOutputFile, "select(%d, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", nfds, readfds, writefds, exceptfds, timeout);
-                       }
+// void NaClStraceSelect(int nfds, fd_set * readfds, fd_set * writefds, 
+//                                 fd_set * exceptfds, uintptr_t timeout, int ret) {
+//     fprintf(tracingOutputFile, "select(%d, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", nfds, readfds, writefds, exceptfds, timeout);
+//                        }
+void NaClStraceSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, uintptr_t timeout, int ret) {
+    fprintf(tracingOutputFile, "select(%d, %p, %p, %p, 0x%08" NACL_PRIxPTR ") = %d\n", nfds, (void*)readfds, (void*)writefds, (void*)exceptfds, timeout, ret);
+}
