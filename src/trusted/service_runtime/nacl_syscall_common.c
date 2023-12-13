@@ -2944,6 +2944,7 @@ cleanup:
   return retval;
 }
 
+
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
                            int32_t              sem_handle) {
   struct NaClApp  *nap = natp->nap;
