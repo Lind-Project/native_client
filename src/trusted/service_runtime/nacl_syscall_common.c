@@ -2651,7 +2651,7 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
  */
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
   #ifdef TRACING
-  NaClStraceSecondTlsGet((uintptr_t) natp);
+  NaClStraceSecondTlsGet(0);
   #endif
   return NaClTlsGetTlsValue2(natp);
 }
@@ -4355,6 +4355,11 @@ int32_t NaClSysBind(struct NaClAppThread *natp,
 
   ret = lind_bind(sockfd, sysvaladdr, addrlen, nap->cage_id);
   NaClLog(2, "NaClSysBind returning %d\n", ret);
+  #ifdef TRACING
+  NaClStraceBind(sockfd,addr,addrlen,ret);
+  #endif
+
+
 
   return ret;
 }
