@@ -234,11 +234,8 @@ void NaClStraceNotImplementedDecoder(int32_t retval) {
     printf("TlsGet(retval: %d)\n", retval);
 }
 
-
-
-void NaClStraceSecondTlsGet(uintptr_t natp) {
-    // this is not used in x86 anyway
-    fprintf(tracingOutputFile, "SecondTlsGet(some natp)\n");
+void NaClStraceSecondTlsGet(int32_t retval) {
+    printf("SecondTlsGet(retval: %d)\n", retval);
 }
 
 void NaClStraceSemWait(int32_t sem_handle, int ret) {
