@@ -2922,7 +2922,7 @@ cleanup:
 }
 
 int32_t NaClSysSemPost(struct NaClAppThread *natp,
-                       int32_t              sem_handle) {
+                       uint32_t              sem_handle) {
   struct NaClApp  *nap = natp->nap;
   int32_t         retval = -NACL_ABI_EINVAL;
   struct NaClDesc *desc;
