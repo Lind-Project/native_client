@@ -212,10 +212,10 @@ void NaClStraceLStat(char* path, size_t retval){
 }
 
 void NaClStraceLseek(int d, int whence) {
-  fprintf("Strace: lseek(descriptor: %d, whence: %d)\n", d, whence);
+    fprintf(tracingOutputFile, "lseek(descriptor: %d, whence: %d)\n", d, whence);
 }
 void NaClStraceCommon(uintptr_t usraddr, size_t length) {
-  fprintf("Strace: NaClStraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
+    fprintf(tracingOutputFile, "StraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
 }
 void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(uintptr_t usraddr, size_t length) {
   fprintf("Strace: NaClStraceCommon(usraddr: %p, length: %zu)\n", (void*)usraddr, length);
