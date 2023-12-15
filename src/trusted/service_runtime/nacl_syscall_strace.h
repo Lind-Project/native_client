@@ -40,7 +40,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int3
 void NaClStraceCommon(int cageid, uintptr_t usraddr, size_t length);
 void NaClStraceSecondTlsSet(int cageid, uint32_t new_value);
 void NaClStraceMmap(int cageid, void *start,size_t length,int prot,int flags,int d,int32_t retval);
-void NaClStraceMunmap(int cageid, void *start,size_t length,int32_t retval,uintptr_t sysaddr,size_t alloc_rounded_length);
+void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length,int32_t retval);
 void NaClStraceMprotectInternal(int cageid, uint32_t start,size_t length,int prot,uintptr_t sysaddr,int32_t retval,int holding_app_lock);
 void NaClStraceMprotect(int cageid, uint32_t start,size_t length,int prot);
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval);

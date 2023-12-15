@@ -1920,7 +1920,7 @@ cleanup:
     NaClXMutexUnlock(&nap->mu);
   }
   #ifdef TRACING
-  NaClStraceMunmap(nap->cage_id, start,length,retval,sysaddr,alloc_rounded_length);
+  NaClStraceMunmap(nap->cage_id, sysaddr, length, retval);
   #endif
   return retval;
 }

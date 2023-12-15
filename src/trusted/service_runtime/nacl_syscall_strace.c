@@ -171,8 +171,8 @@ void NaClStraceMmap(int cageid, void *start,size_t length,int prot,int flags,int
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d) = %d\n", cageid, start, length, prot, flags, d, retval);
 
 }
-void NaClStraceMunmap(int cageid, void *start, size_t length, int32_t retval, uintptr_t sysaddr, size_t alloc_rounded_length){
-   fprintf(tracingOutputFile, "%d munmap(%p, %zu) = %d, Sysaddr: %p, alloc_rounded_ength: %zu\n", cageid, start, length, retval, (void*)sysaddr, alloc_rounded_length);
+void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length,int32_t retval) {
+   fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 
 }
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
@@ -190,7 +190,7 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, int32_t retval) {
 
 }
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval) {
-    fprintf(tracingOutputFile, "%d SocketPair(domain=%d, type=%d, protocol=%d, fds=%p, lindfds=%p, retval=%d)\n", cageid, domain, type, protocol, (void *)fds, (void *)lindfds, retval);
+    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, %p, %p) = %d\n", cageid, domain, type, protocol, (void *)fds, (void *)lindfds, retval);
 }
 
 void NaClStraceTlsInit(int cageid, uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
