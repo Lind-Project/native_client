@@ -16,7 +16,7 @@ void NaClStraceThreadExit(int cageid, int32_t *stack_flag, uint32_t zero);
 void NaClStraceDup(int cageid, int oldfd,int ret);
 void NaClStraceDup2(int cageid, int oldfd,int newfd,int ret);
 void NaClStraceDup3(int cageid, int oldfd,int newfd,int flags,int ret);
-void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret, ssize_t getdents_ret, uintptr_t sysaddr);
+void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret);
 void NaClStracePread(int cageid, int d, void *buf, int count,  size_t log_bytes);
 void NaClStraceWrite(int cageid, int d, void *buf, int count);
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval);
