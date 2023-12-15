@@ -75,8 +75,8 @@ void NaClStraceDup3(int cageid, int oldfd,int newfd,int flags,int ret){
     fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
 
 }
-void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret, ssize_t getdents_ret, uintptr_t sysaddr) {
-    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %zu, Getdents Ret: %zd, Sysaddr: %p\n", cageid, d, drip, count, ret, getdents_ret, (void *)sysaddr);
+void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret) {
+    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %zu\n", cageid, d, drip, count, ret);
 }
 
 void NaClStracePread(int cageid, int d, void *buf, int count,  size_t log_bytes){
@@ -150,8 +150,8 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
     fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
 }
 
-void NaClStraceGetcwd(int cageid, char *buf, size_t size, uintptr_t sysaddr, int32_t retval) {
-    fprintf(tracingOutputFile, "%d getcwd(%p, %zu) = %d, Sysaddr: %p\n", cageid, (void *)buf, size, retval, (void *)sysaddr);
+void NaClStraceGetcwd(int cageid, char *buf, size_t size, int32_t retval) {
+    fprintf(tracingOutputFile, "%d getcwd(%p, %zu) = %d\n", cageid, (void *)buf, size, retval);
 }
 
 
