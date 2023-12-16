@@ -23,7 +23,6 @@ void NaClStracePWrite(int cageid, int d, const void *buf, size_t count, off_t of
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int32_t ret);
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret);
 // void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval);
-void NaClStraceFstat(int cageid, int d, const struct lind_stat *result, int32_t retval);
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval);
 void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval);
 void NaClStraceMkdir(int cageid, char* path, int mode,int32_t retval);
@@ -60,7 +59,7 @@ void NaClStraceCondBroadcast(int cageid, int32_t cond_handle, int32_t retval);
 void NaClStraceCondDestroy(int cageid, int32_t cond_handle,int32_t retval);
 void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle, int32_t mutex_handle, uintptr_t trusted_ts, int32_t retval);
 void NaClStraceSemCreate(int cageid, int32_t init_value, int32_t retval);
-void NaClStraceSecondTlsGet(int cageid, uintptr_t natp);
+void NaClStraceSecondTlsGet(int cageid, int32_t retval);
 void NaClStraceSemInit(int cageid, int32_t sem, int32_t pshared, int32_t value, int retval);
 void NaClStraceSemWait(int cageid, int32_t sem_handle, int ret);
 void NaClStraceSemTryWait(int cageid, int32_t sem_handle, int ret);
