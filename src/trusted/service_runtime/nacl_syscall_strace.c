@@ -513,3 +513,12 @@ void NaClStraceMmapIntern(int cageid, void *start, size_t length, int prot, int 
     fprintf(tracingOutputFile, "%d MmapIntern(start=%p, length=%zu, prot=%d, flags=%d, d=%d, offset=%lld) = %d\n", 
             cageid, start, length, prot, flags, d, (long long)offset, retval);
 }
+void NaClStraceTlsInit(int cageid, uint32_t thread_ptr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d TlsInit(thread_ptr=0x%08"NACL_PRIx32") = %d\n", 
+            cageid, thread_ptr, retval);
+}
+void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d ThreadCreate(prog_ctr=%p, stack_ptr=0x%08"NACL_PRIx32", thread_ptr=0x%08"NACL_PRIx32", second_thread_ptr=0x%08"NACL_PRIx32") = %d\n", 
+            cageid, prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
+}
+

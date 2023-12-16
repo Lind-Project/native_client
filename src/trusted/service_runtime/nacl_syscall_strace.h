@@ -127,3 +127,5 @@ void NaClStraceNameService(int cageid, int32_t *desc_addr, int32_t retval);
 void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, size_t length);
 void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(int cageid, uintptr_t usraddr, size_t length);
 void NaClStraceMmapIntern(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int32_t retval);
+void NaClStraceTlsInit(int cageid, uint32_t thread_ptr, int32_t retval);
+void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval);
