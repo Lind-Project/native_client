@@ -93,7 +93,7 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
 }
 
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, size_t ret) {
-    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR, %d") = %d\n", cageid, d, offset, whence, ret);
+    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 
 }
 
