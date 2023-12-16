@@ -4172,6 +4172,7 @@ int32_t NaClSysFstatfs(struct NaClAppThread *natp,
   if(ret > 0) ret = 0;
 
   #ifdef TRACING
+  
   NaClStraceFstatfs(nap->cage_id, d, (uintptr_t) sysbufaddr, ret);
   #endif
 
