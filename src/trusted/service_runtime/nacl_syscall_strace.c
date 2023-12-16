@@ -491,3 +491,7 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
                                 uintptr_t exceptfds, uintptr_t timeout, int ret) {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
                        }
+void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d ThreadCreate(pc=0x%08"NACL_PRIxPTR", sp=0x%08"NACL_PRIx32", thread_ptr=0x%08"NACL_PRIx32", second_thread_ptr=0x%08"NACL_PRIx32") = %d\n", 
+            cageid, (uintptr_t)prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
+}

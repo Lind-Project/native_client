@@ -85,7 +85,7 @@ void NaClStraceFork(int cageid, int ret);
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, char *const *envp, int ret);
 void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret);
 void NaClStraceWaitpid(int cageid, int pid, uint32_t *stat_loc, int options, int ret);
-void NaClStraceGethostname(int cageid, char *name, size_t len, int ret);
+void NaClStraceGethostname(int cageid, uintptr_t sysaddr, size_t len, int32_t ret);
 void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret);
 void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret);
 void NaClStraceSend(int cageid, int sockfd, size_t len, int flags, const void *buf, int ret);
@@ -121,3 +121,4 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, 
                        uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret);
+void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval);
