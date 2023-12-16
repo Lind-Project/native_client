@@ -82,7 +82,7 @@ void NaClStraceGetdents(int cageid, int d, void *dirp, size_t count, size_t retv
 
 
 void NaClStracePread(int cageid, int d, void *buf, size_t count, off_t offset, int32_t ret) {
-    fprintf(tracingOutputFile, "%d pread(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (long long)offset, ret);
+    fprintf(tracingOutputFile, "%d pread(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (intmax_t)offset, ret);
 }
 
 
@@ -150,9 +150,8 @@ void NaClStraceFsync(int cageid, int fd, int ret) {
 void NaClStraceFdatasync(int cageid, int fd, int ret) {
     fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
 }
-
-void NaClStraceGetcwd(int cageid, char *buf, size_t size, int32_t retval) {
-    fprintf(tracingOutputFile, "%d getcwd(%p, %zu) = %d\n", cageid, (void *)buf, size, retval);
+void NaClStraceGetcwd(int cageid, char* buf, size_t size, uintptr_t sysaddr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d getcwd(%p, %zu, 0x%08"NACL_PRIxPTR") = %d\n",cageid, buf, size, sysaddr, retval);
 }
 
 
@@ -172,10 +171,14 @@ void NaClStraceMmap(int cageid, void *start,size_t length,int prot,int flags,int
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
 
 }
-void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length,int32_t retval) {
-   fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
+// void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length,int32_t retval) {
+//    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 
+// }
+void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, int32_t retval) {
+    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d) = %d\n",cageid, start, length, prot, flags, d, retval);
 }
+
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
     fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
 }

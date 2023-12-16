@@ -1024,9 +1024,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
-  #ifdef TRACING
-  NaClStraceStat(nap->cage_id, path, retval);
-  #endif
+
 
   return retval;
 }
@@ -1236,9 +1234,7 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
   retval = lind_getcwd((void *) sysaddr, size, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
-  #ifdef TRACING
-  NaClStraceGetcwd(nap->cage_id, buf,size,sysaddr,retval);
-  #endif
+  
   return retval;
 }
 
@@ -1821,9 +1817,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
 
 cleanup:
-  #ifdef TRACING
-  NaClStraceMmap(nap->cage_id, start,length,prot,flags,d,retval);
-  #endif
+  
   return retval;
 }
 
