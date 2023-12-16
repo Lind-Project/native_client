@@ -414,9 +414,7 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
   lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
   NaClAppThreadTeardown(natp);
-  #ifdef TRACING
-  NaClStraceThreadExit(nap->cage_id, stack_flag,zero);
-  #endif
+
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 }
@@ -2508,9 +2506,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
   if (!NaClCopyOutToUser(nap, (uintptr_t)fds, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
   NaClLog(2, "NaClSysSocketPair: returning %d\n", retval);
-  #ifdef TRACING
-  NaClStraceSocketPair(nap->cage_id, domain, type, protocol, fds, lindfds, retval);
-  #endif
 
   return retval;
 }
