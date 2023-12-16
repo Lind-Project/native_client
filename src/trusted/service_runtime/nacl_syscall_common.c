@@ -749,7 +749,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   #ifdef TRACING
-  NaClStraceRead(nap->cage_id, d, buf, count, retval);
+  NaClStraceRead(nap->cage_id, d, (void *)sysaddr, count, retval);
   #endif
   return retval;
 }
@@ -807,7 +807,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   #ifdef TRACING
-  NaClStracePread(nap->cage_id, d, buf, count, log_bytes);
+  NaClStracePread(nap->cage_id, d, (void *)sysaddr, count, offset, retval);
   #endif
   return retval;
 }
@@ -849,7 +849,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
   #ifdef TRACING
-  NaClStraceWrite(nap->cage_id, d, buf, count);
+  NaClStraceWrite(nap->cage_id, d, (void *)sysaddr, count, retval);
   #endif
   
   return retval;
@@ -902,7 +902,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
   #ifdef TRACING
-  NaClStracePWrite(nap->cage_id, d, buf, count, offset, retval);
+  NaClStracePWrite(nap->cage_id, d, (void *)sysaddr, count, offset, retval);
   #endif
   return retval;
 }
@@ -977,7 +977,7 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
   #ifdef TRACING
-  NaClStraceIoctl(nap->cage_id, d, request, retval);
+  NaClStraceIoctl(nap->cage_id, d, request, (void *) sysaddr, retval);
   #endif
   return retval;
 }
@@ -1089,7 +1089,7 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
   #ifdef TRACING
-  NaClStraceMkdir(nap->cage_id, path, mode,retval);
+  NaClStraceMkdir(nap->cage_id, path, mode, retval);
   #endif
   return retval;
 }
@@ -1849,7 +1849,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
 
 cleanup:
   #ifdef TRACING
-  NaClStraceMmap(nap->cage_id, start,length,prot,flags,d,retval);
+  NaClStraceMmap(nap->cage_id, start,length,prot,flags,d, offset,retval);
   #endif
   return retval;
 }
