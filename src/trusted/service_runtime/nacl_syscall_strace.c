@@ -104,8 +104,11 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
 
 }
 
-void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval) {
-    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
+// void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval) {
+//     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
+// }
+void NaClStraceFstat(int cageid, int d, const struct lind_stat *result, int32_t retval) {
+    fprintf(tracingOutputFile, "%d fstat(%d, %p) = %d\n", cageid, d, (void *)result, retval);
 }
 
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
@@ -192,10 +195,6 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, int32_t retval) {
 }
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval) {
     fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, %p, %p) = %d\n", cageid, domain, type, protocol, (void *)fds, (void *)lindfds, retval);
-}
-
-void NaClStraceTlsInit(int cageid, uint32_t thread_ptr,int32_t retval,uintptr_t sys_tls){
-    fprintf(tracingOutputFile, "%d tls_init(%u, %lu) = %d\n", cageid, thread_ptr, sys_tls, retval);
 }
 
 void NaClStraceSecondTlsSet(int cageid, uint32_t new_value) {
