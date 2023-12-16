@@ -47,7 +47,7 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
 void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int32_t retval);
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval);
 void NaClStraceShmctl(int cageid, int shmid, int cmd, int32_t retval);
-void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval);
+void fSocketPair(int cageid, int domain, int type, int protocol, int *fds, int *lindfds, int32_t retval);
 void NaClStraceMutexCreate(int cageid, int32_t retval);
 void NaClStraceMutexLock(int cageid, int32_t mutex_handle, int32_t retval);
 void NaClStraceMutexUnLock(int cageid, int32_t mutex_handle, int32_t retval);

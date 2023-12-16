@@ -81,22 +81,21 @@ void NaClStraceGetdents(int cageid, int d, void *dirp, size_t count, size_t retv
 }
 
 
-void NaClStracePread(int cageid, int d, void *buf, int count,  off_t offset, int ret) {
-    fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %lld) = %d\n", cageid, d, buf, count, offset, ret);
+void NaClStracePread(int cageid, int d, void *buf, size_t count, off_t offset, int32_t ret) {
+    fprintf(tracingOutputFile, "%d pread(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (long long)offset, ret);
 }
 
 
-void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
-    fprintf(tracingOutputFile, "%d write(%d, %p, %d) = %d\n", cageid, d, buf, count, ret);
+void NaClStraceWrite(int cageid, int d, void *buf, size_t count, int32_t ret) {
+    fprintf(tracingOutputFile, "%d write(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
     fprintf(tracingOutputFile, "%d pwrite(%d, %p, %d, %lld) = %d\n", cageid, d, buf, count, (intmax_t)offset, retval);
 }
 
-void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, size_t ret) {
-    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
-
+void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int32_t ret) {
+    fprintf(tracingOutputFile, "%d lseek(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, whence, offset, ret);
 }
 
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret) {
@@ -108,20 +107,20 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval) {
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
 }
 
-void NaClStraceStat(int cageid, char* path, uintptr_t result, size_t retval) {
-    fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %zu\n", cageid, path, result, retval);
-
+void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
+    fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
+
 
 void NaClStraceLStat(int cageid, char* path, uintptr_t result, size_t retval){
     fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %zu\n", cageid, path, result, retval);
 
 }
 
-void NaClStraceMkdir(int cageid, char* path, int mode, size_t retval){
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %zu\n", cageid, path, mode, retval);
-
+void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
+
 
 void NaClStraceRmdir(int cageid, uint32_t pathname, const char* path, int32_t retval) {
     fprintf(tracingOutputFile, "%d rmdir(%u, %s) = %d\n", cageid, pathname, path, retval);
