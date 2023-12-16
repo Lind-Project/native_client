@@ -846,9 +846,7 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   retval = (int32_t)write_result;
 
   if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
-  #ifdef TRACING
-  NaClStraceWrite(nap->cage_id, d, buf, count);
-  #endif
+
   
   return retval;
 }
@@ -974,9 +972,6 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   retval = lind_ioctl(d ,request, (void *) sysaddr, nap->cage_id);
   
   NaClLog(2, "NaClSysIoctl: returning %d\n", retval);
-  #ifdef TRACING
-  NaClStraceIoctl(nap->cage_id, d, request, retval);
-  #endif
   return retval;
 }
 
@@ -1003,9 +998,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) nasp, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
-  #ifdef TRACING
-  NaClStraceFstat(nap->cage_id, d, retval);
-  #endif
+  
   return retval;
 }
 
@@ -1105,9 +1098,7 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   retval = lind_rmdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysRmdir: returning %d\n", retval);
-  #ifdef TRACING
-  NaClStraceRmdir(nap->cage_id, path,retval);
-  #endif
+
   return retval;
 }
 
@@ -1128,9 +1119,7 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
   retval = lind_chdir(path, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysChdir: returning %d\n", retval);
-  #ifdef TRACING
-  NaClStraceChdir(nap->cage_id, path,retval);
-  #endif
+
   return retval;
 }
 
@@ -1186,9 +1175,7 @@ int32_t NaClSysFchdir(struct NaClAppThread *natp,
           nap->cage_id, (uintptr_t) natp, fd);
 
   ret = lind_fchdir(fd, nap->cage_id);
-  #ifdef TRACING
-  NaClStraceFchdir(nap->cage_id, fd);
-  #endif
+  
 
   return ret;
 }
