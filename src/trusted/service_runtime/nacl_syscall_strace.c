@@ -75,9 +75,11 @@ void NaClStraceDup3(int cageid, int oldfd,int newfd,int flags,int ret){
     fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
 
 }
-void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret) {
-    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %zu\n", cageid, d, drip, count, ret);
+void NaClStraceGetdents(int cageid, int d, void *dirp, size_t count, size_t retval, ssize_t getdents_ret, uintptr_t sysaddr) {
+    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu, %zu, %zd, %zu) = void\n", 
+            cageid, d, dirp, count, retval, getdents_ret, sysaddr);
 }
+
 
 void NaClStracePread(int cageid, int d, void *buf, int count,  off_t offset, int ret) {
     fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %lld) = %d\n", cageid, d, buf, count, offset, ret);
@@ -121,13 +123,13 @@ void NaClStraceMkdir(int cageid, char* path, int mode, size_t retval){
 
 }
 
-void NaClStraceRmdir(int cageid, const char *path, int32_t retval) {
-    fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
+void NaClStraceRmdir(int cageid, uint32_t pathname, const char* path, int32_t retval) {
+    fprintf(tracingOutputFile, "%d rmdir(%u, %s) = %d\n", cageid, pathname, path, retval);
+}
+void NaClStraceChdir(int cageid, uint32_t pathname, const char* path, int32_t retval) {
+    fprintf(tracingOutputFile, "%d chdir(%u, %s) = %d\n", cageid, pathname, path, retval);
 }
 
-void NaClStraceChdir(int cageid, const char *path, int32_t retval) {
-    fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
-}
 
 void NaClStraceChmod(int cageid, const char *path, int mode, int32_t retval) {
     fprintf(tracingOutputFile, "%d chmod(%s, %d) = %d\n", cageid, path, mode, retval);
