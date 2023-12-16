@@ -122,3 +122,8 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, 
                        uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret);
 void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint32_t thread_ptr, uint32_t second_thread_ptr, int32_t retval);
+void NaClStraceThreadNice(int cageid, int nice, int retval);
+void NaClStraceNameService(int cageid, int32_t *desc_addr, int32_t retval);
+void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, size_t length);
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(int cageid, uintptr_t usraddr, size_t length);
+void NaClStraceMmapIntern(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int32_t retval);

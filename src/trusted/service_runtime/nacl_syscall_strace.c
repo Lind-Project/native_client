@@ -495,3 +495,21 @@ void NaClStraceThreadCreate(int cageid, void *prog_ctr, uint32_t stack_ptr, uint
     fprintf(tracingOutputFile, "%d ThreadCreate(pc=0x%08"NACL_PRIxPTR", sp=0x%08"NACL_PRIx32", thread_ptr=0x%08"NACL_PRIx32", second_thread_ptr=0x%08"NACL_PRIx32") = %d\n", 
             cageid, (uintptr_t)prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
 }
+void NaClStraceThreadNice(int cageid, int nice, int retval) {
+    fprintf(tracingOutputFile, "%d ThreadNice(nice=%d) = %d\n", cageid, nice, retval);
+}
+
+void NaClStraceNameService(int cageid, int32_t *desc_addr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d NameService(desc_addr=%p) = %d\n", 
+            cageid, desc_addr, retval);
+}
+void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, size_t length) {
+    fprintf(tracingOutputFile, "%d CommonAddrRangeContainsExecutablePages(usraddr=0x%08"NACL_PRIxPTR", length=%zu)\n", cageid, usraddr, length);
+}
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(int cageid, uintptr_t usraddr, size_t length) {
+    fprintf(tracingOutputFile, "%d CommonAddrRangeInAllowedDynamicCodeSpace(usraddr=0x%08"NACL_PRIxPTR", length=%zu)\n", cageid, usraddr, length);
+}
+void NaClStraceMmapIntern(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int32_t retval) {
+    fprintf(tracingOutputFile, "%d MmapIntern(start=%p, length=%zu, prot=%d, flags=%d, d=%d, offset=%lld) = %d\n", 
+            cageid, start, length, prot, flags, d, (long long)offset, retval);
+}
