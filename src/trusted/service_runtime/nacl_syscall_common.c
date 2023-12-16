@@ -806,9 +806,7 @@ int32_t NaClSysPread(struct NaClAppThread  *natp, //will make NaCl logs like rea
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
-  #ifdef TRACING
-  NaClStracePread(nap->cage_id, d, buf, count, log_bytes);
-  #endif
+
   return retval;
 }
 
