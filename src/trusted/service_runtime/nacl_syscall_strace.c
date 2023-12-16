@@ -467,3 +467,6 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
                                 uintptr_t exceptfds, uintptr_t timeout, int ret) {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
                        }
+void NaClStraceThreadNice(int nice){
+    fprintf(tracingOutputFile, "threadnice(%d)\n", nice);
+}

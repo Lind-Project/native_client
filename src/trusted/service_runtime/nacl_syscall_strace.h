@@ -64,7 +64,7 @@ void NaClStraceSemTryWait(int cageid, int32_t sem_handle, int ret);
 void NaClStraceSemTimedWait(int cageid, uint32_t sem, uintptr_t trusted_abs, int ret);
 void NaClStraceSemPost(int cageid, int32_t sem_handle, int ret);
 void NaClStraceSemDestroy(int cageid, int32_t sem_handle, int ret);
-void NaClStraceSemGetValue(int cageid, int32_t sem_handle, int ret);
+void NaClStraceNameService(int cageid, int32_t sem_handle, int ret);
 void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret);
 void NaClStraceSchedYield(int cageid, int ret);
 void NaClStraceExceptionHandler(int cageid, uint32_t             handler_addr,
@@ -119,3 +119,4 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, 
                        uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret);
+void NaClStraceThreadNice(int nice);
