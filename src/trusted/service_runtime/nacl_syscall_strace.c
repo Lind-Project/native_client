@@ -81,8 +81,8 @@ void NaClStraceGetdents(int cageid, int d, void *dirp, size_t count, size_t retv
 }
 
 
-void NaClStracePread(int cageid, int d, void *buf, size_t count, off_t offset, int32_t ret) {
-    fprintf(tracingOutputFile, "%d pread(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (intmax_t)offset, ret);
+void NaClStracePread(int cageid, int d, void *buf, size_t count, off_t offset, int32_t retval) {
+    fprintf(tracingOutputFile, "%d pread(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (long long)offset, retval);
 }
 
 
@@ -91,7 +91,7 @@ void NaClStraceWrite(int cageid, int d, void *buf, size_t count, int32_t ret) {
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, size_t count, off_t offset, int32_t retval) {
-    fprintf(tracingOutputFile, "%d pwrite(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (intmax_t)offset, retval);
+    fprintf(tracingOutputFile, "%d pwrite(%d, %p, %zu, %lld) = %d\n", cageid, d, buf, count, (long long)offset, retval);
 }
 
 
