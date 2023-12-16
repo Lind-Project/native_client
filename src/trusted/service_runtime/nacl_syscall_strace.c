@@ -175,9 +175,6 @@ void NaClStraceMmap(int cageid, void *start,size_t length,int prot,int flags,int
 //    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 
 // }
-void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, int32_t retval) {
-    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d) = %d\n",cageid, start, length, prot, flags, d, retval);
-}
 
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
     fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
