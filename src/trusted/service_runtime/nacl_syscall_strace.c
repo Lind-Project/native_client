@@ -104,11 +104,8 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
 
 }
 
-// void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval) {
-//     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
-// }
-void NaClStraceFstat(int cageid, int d, const struct lind_stat *result, int retval) {
-    fprintf(tracingOutputFile, "%d fstat(%d, %p) = %d\n", cageid, d, (void *)result, retval);
+void NaClStraceFstat(int cageid, int d, int retval) {
+    fprintf(tracingOutputFile, "%d fstat(%d) = %d\n", cageid, d, retval);
 }
 
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int retval) {
