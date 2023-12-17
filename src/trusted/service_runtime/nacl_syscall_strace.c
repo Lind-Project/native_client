@@ -53,7 +53,7 @@ void NaClStraceClose(int cageid, int d, int ret) {
 }
 
 void NaClStraceRead(int cageid, int d, void *buf, int  count, int ret) {
-    fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
+    fprintf(tracingOutputFile, "%d read(%d, %p, %d) = %d\n", cageid, d, buf, count, ret);
 }
 void NaClStraceExit(int cageid, int status){
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
@@ -76,7 +76,7 @@ void NaClStraceDup3(int cageid, int oldfd,int newfd,int flags,int ret){
 
 }
 void NaClStraceGetdents(int cageid, int d, void *dirp, int  count, int  retval, int  getdents_ret, uintptr_t sysaddr) {
-    fprintf(tracingOutputFile, "%d getdents(%d, %p, %d, %zu, %zd, %zu) = void\n", 
+    fprintf(tracingOutputFile, "%d getdents(%d, %p, %d, %d, %d, %zu) = void\n", 
             cageid, d, dirp, count, retval, getdents_ret, sysaddr);
 }
 
@@ -499,12 +499,15 @@ void NaClStraceNameService(int cageid,int *desc_addr,int retval) {
     fprintf(tracingOutputFile, "%d NameService(desc_addr=%p) = %d\n", 
             cageid, desc_addr, retval);
 }
-void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, int  length) {
-    fprintf(tracingOutputFile, "%d CommonAddrRangeContainsExecutablePages(usraddr=0x%08"NACL_PRIxPTR", length=%zu)\n", cageid, usraddr, length);
+
+void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, int length) {
+    fprintf(tracingOutputFile, "%d CommonAddrRangeContainsExecutablePages(usraddr=0x%08" NACL_PRIxPTR ", length=%d)\n", cageid, usraddr, length);
 }
-void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(int cageid, uintptr_t usraddr, int  length) {
-    fprintf(tracingOutputFile, "%d CommonAddrRangeInAllowedDynamicCodeSpace(usraddr=0x%08"NACL_PRIxPTR", length=%zu)\n", cageid, usraddr, length);
+
+void NaClStraceCommonAddrRangeInAllowedDynamicCodeSpace(int cageid, uintptr_t usraddr, int length) {
+    fprintf(tracingOutputFile, "%d CommonAddrRangeInAllowedDynamicCodeSpace(usraddr=0x%08" NACL_PRIxPTR ", length=%d)\n", cageid, usraddr, length);
 }
+
 void NaClStraceMmapIntern(int cageid, void *start, int  length, int prot, int flags, int d, nacl_abi_off_t offset,int retval) {
     fprintf(tracingOutputFile, "%d MmapIntern(start=%p, length=%zu, prot=%d, flags=%d, d=%d, offset=%lld) = %d\n", 
             cageid, start, length, prot, flags, d, (long long)offset, retval);
