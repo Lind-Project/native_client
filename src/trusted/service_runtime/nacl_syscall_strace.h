@@ -23,7 +23,7 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int ret);
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret);
 // void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval);
-void NaClStraceFstat(int cageid, int d, const struct lind_stat *result, int retval);
+void NaClStraceFstat(int cageid, int d, int retval);
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int retval);
 void NaClStraceLStat(int cageid, char* path, uintptr_t result, int retval);
 void NaClStraceMkdir(int cageid, char* path, int mode,int retval);
