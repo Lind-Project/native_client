@@ -470,7 +470,7 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret) {
 }
 
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret) {
-    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %d, %d) = %d\n", cageid, fds, nfds, timeout, ret);
+    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %lu, %d) = %d\n", cageid, fds, nfds, timeout, ret);
 }
 
 void NaClStraceEpollCreate(int cageid, int size, int ret) {
@@ -494,9 +494,9 @@ void NaClStraceThreadNice(int cageid, int nice, int retval) {
     fprintf(tracingOutputFile, "%d ThreadNice(nice=%d) = %d\n", cageid, nice, retval);
 }
 
-void NaClStraceNameService(int cageid,int *desc_addr,int retval) {
+void NaClStraceNameService(int cageid, int *desc_addr, int retval) {
     fprintf(tracingOutputFile, "%d NameService(desc_addr=%p) = %d\n", 
-            cageid, desc_addr, retval);
+            cageid, (void*)desc_addr, retval);
 }
 
 void NaClStraceCommonAddrRangeContainsExecutablePages(int cageid, uintptr_t usraddr, int length) {
