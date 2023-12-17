@@ -86,7 +86,7 @@ void NaClStraceFork(int cageid, int ret);
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, char *const *envp, int ret);
 void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret);
 void NaClStraceWaitpid(int cageid, int pid, uint32_t *stat_loc, int options, int ret);
-void NaClStraceGethostname(int cageid, uintptr_t sysaddr, int len, int ret);
+void NaClStraceGethostname(int cageid, char *name, int  len, int ret);
 void NaClStraceGetifaddrs(int cageid, char *buf, int len, int ret);
 void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret);
 void NaClStraceSend(int cageid, int sockfd, int len, int flags, const void *buf, int ret);
