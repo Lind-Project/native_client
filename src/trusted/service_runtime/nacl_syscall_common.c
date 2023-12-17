@@ -3291,9 +3291,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   /* copy out NaCl fds */
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
-  #ifdef TRACING
-  NaClStracePipe2(nap->cage_id, lindfds, flags, ret);
-  #endif
+  
 
   return ret;
 }
@@ -3833,9 +3831,6 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   
   NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
 
-  #ifdef TRACING
-  NaClStraceGethostname(nap->cage_id, sysaddr, len, ret);
-  #endif
   
   return ret;
 }
@@ -3861,9 +3856,6 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   
   NaClLog(2, "NaClSysGetifaddrs: returning %d\n", ret);
 
-  #ifdef TRACING
-  NaClStraceGetifaddrs(nap->cage_id, sysaddr, len, ret);
-  #endif
   
   return ret;
 }
