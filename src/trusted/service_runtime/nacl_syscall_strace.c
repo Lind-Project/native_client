@@ -369,15 +369,14 @@ void NaClStraceSend(int cageid, int sockfd, int  len, int flags, const void *buf
     );
 }
 
-void NaClStraceSendto(int cageid, int sockfd, const void *buf, int  len,
-    int flags, uintptr_t dest_addr, socklen_t addrlen, int ret) {
-        fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d\n",
-         cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret
-        );
-    }
+void NaClStraceSendto(int cageid, int sockfd, const void *buf, int len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret) {
+    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %d, %d, 0x%08"NACL_PRIxPTR", %d) = %d\n",
+        cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret);
+}
 
-void NaClStraceRecv(int cageid, int sockfd, int  len, int flags, void *buf, int ret) {
-    fprintf(tracingOutputFile, "%d recv(%d, %ld, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, len, flags, (uintptr_t)buf, ret);
+
+void NaClStraceRecv(int cageid, int sockfd, int len, int flags, void *buf, int ret) {
+    fprintf(tracingOutputFile, "%d recv(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, len, flags, (uintptr_t)buf, ret);
 }
 
 void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, int  len, int flags,
