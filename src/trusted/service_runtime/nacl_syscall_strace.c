@@ -92,11 +92,11 @@ void NaClStracePread(int cageid, int d, void *buf, int count,  off_t offset, int
 }
 
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
-    fprintf(tracingOutputFile, "%d write(%d, %*s, %d) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? (char *)buf : "NULL", count, ret);
+    fprintf(tracingOutputFile, "%d write(%d, %.*s, %d) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? (char *)buf : "NULL", count, ret);
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
-    fprintf(tracingOutputFile, "%d pwrite(%d, %*s, %d, %lld) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? (char *)buf : "NULL", count, (intmax_t)offset, retval);
+    fprintf(tracingOutputFile, "%d pwrite(%d, %.*s, %d, %lld) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? (char *)buf : "NULL", count, (intmax_t)offset, retval);
 }
 
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, size_t ret) {
