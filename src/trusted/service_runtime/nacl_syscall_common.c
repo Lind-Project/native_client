@@ -1294,7 +1294,7 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   if ((retval = CopyPathFromUser(nap, path, sizeof(path), (uintptr_t) pathname))) return -NACL_ABI_EINVAL;
   retval = lind_unlink(path, nap->cage_id);
   #ifdef TRACING
-  NaClStraceUnlink(nap->cage_id, pathname,retval);
+  NaClStraceUnlink(nap->cage_id, path,retval);
   #endif
 
   return retval;
@@ -1312,7 +1312,7 @@ int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const cha
 
   retval = lind_rename(oldpathname, newpathname, nap->cage_id);
   #ifdef TRACING
-  NaClStraceRename(nap->cage_id, oldpath, newpath, retval);
+  NaClStraceRename(nap->cage_id, oldpathname, newpathname, retval);
   #endif
   return retval;
 }
