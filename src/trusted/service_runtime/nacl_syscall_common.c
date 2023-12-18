@@ -3073,10 +3073,7 @@ int32_t NaClSysExceptionHandler(struct NaClAppThread *natp,
  unlock_exit:
   NaClXMutexUnlock(&nap->exception_mu);
  no_lock_exit:
-
-  #ifdef TRACING
-  NaClStraceExceptionHandler(nap->cage_id, handler_addr, old_handler, rv);
-  #endif
+ 
   return rv;
 }
 
