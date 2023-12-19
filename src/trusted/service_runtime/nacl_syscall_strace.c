@@ -11,7 +11,7 @@
 FILE *tracingOutputFile = NULL;
 
 // this defines the number of characters we display for printing a string buf
-#define STR_PRINT_LEN 20
+#define STR_PRINT_LEN 30
 
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
@@ -71,7 +71,6 @@ char* formatStringArgument(const char *input) {
 
     // set the truncated flag 
     if (*srcPtr != 0) {
-        printf("truncated, *srcPtr is now %c\n", *srcPtr);
         wasTruncated = 1;
     }
 
