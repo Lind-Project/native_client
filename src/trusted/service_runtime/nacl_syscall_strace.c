@@ -52,10 +52,10 @@ char* formatStringArgument(const char *input) {
         return "TRACING PRINT FAILED!"; // Allocation failed
     }
 
-    const char *srcPtr = input;
+    char *srcPtr = input;
     char *dstPtr = output;
     int dstLen = 0;
-    int wasTruncated = 0;  // indicate if the string was truncated
+    bool wasTruncated = false;  // indicate if the string was truncated
 
     while (*srcPtr && dstLen < STR_PRINT_LEN - 1) { 
         if (*srcPtr == '\n' && dstLen < STR_PRINT_LEN - 2) {
@@ -70,15 +70,16 @@ char* formatStringArgument(const char *input) {
     }
 
     // set the truncated flag 
-    if (*srcPtr != '\0') {
-        wasTruncated = 1;
+    if (*srcPtr != 0) {
+        printf("truncated, *srcPtr is now %c\n". *srcPtr);
+        wasTruncated = true;
     }
 
     // append "......" to the end if the string was truncated
     if (wasTruncated) {
         strcpy(dstPtr, "......");
     } else {
-        *dstPtr = '\0';  // Null-terminate the output string
+        *dstPtr = 0;  // Null-terminate the output string
     }
 
     return output;
