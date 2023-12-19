@@ -55,7 +55,7 @@ char* formatStringArgument(const char *input) {
     char *srcPtr = input;
     char *dstPtr = output;
     int dstLen = 0;
-    bool wasTruncated = false;  // indicate if the string was truncated
+    int wasTruncated = 0;  // indicate if the string was truncated
 
     while (*srcPtr && dstLen < STR_PRINT_LEN - 1) { 
         if (*srcPtr == '\n' && dstLen < STR_PRINT_LEN - 2) {
@@ -72,7 +72,7 @@ char* formatStringArgument(const char *input) {
     // set the truncated flag 
     if (*srcPtr != 0) {
         printf("truncated, *srcPtr is now %c\n". *srcPtr);
-        wasTruncated = true;
+        wasTruncated = 1;
     }
 
     // append "......" to the end if the string was truncated
