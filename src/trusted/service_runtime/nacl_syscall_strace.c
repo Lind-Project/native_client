@@ -83,7 +83,7 @@ void NaClStraceDup3(int cageid, int oldfd,int newfd,int flags,int ret){
 
 }
 
-void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, size_t ret) {
+void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret) {
     fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %zu\n", cageid, d, drip, count, ret);
 }
 
@@ -99,7 +99,7 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     fprintf(tracingOutputFile, "%d pwrite(%d, \"%.*s\", %d, %lld) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? "NULL" : (char *)buf, count, (intmax_t)offset, retval);
 }
 
-void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, size_t ret) {
+void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int ret) {
     fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 }
 
@@ -255,7 +255,7 @@ void NaClStraceCondDestroy(int cageid, int32_t cond_handle, int retval){
     fprintf(tracingOutputFile, "%d cond_destroy(%d) = %d\n", cageid, cond_handle, retval);
 }
 
-void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle,int32_t mutex_handle, uintptr_t trusted_ts, int32_t retval){
+void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle,int32_t mutex_handle, uintptr_t trusted_ts, int retval){
     fprintf(tracingOutputFile, "%d cond_timedwaitabs(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, cond_handle, mutex_handle, trusted_ts, retval);
 }  
 
