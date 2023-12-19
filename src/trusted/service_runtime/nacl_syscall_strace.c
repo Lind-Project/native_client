@@ -63,8 +63,8 @@ char* formatStringArgument(const char *input) {
             *dstPtr++ = 'n';
             dstLen += 2;
         } else {
-            *dstPtr++ = *srcPtr;
-            dstLen++;
+            srcPtr++;
+            break;
         }
         srcPtr++;
     }
