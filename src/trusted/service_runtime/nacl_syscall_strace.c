@@ -39,15 +39,13 @@ void NaClStraceCloseFile() {
     }
 }
 
-// 1. replace all the line breaks in the string by "\\n" to make outputs tidy
-// 2. add the "......" if the string was truncated in the tracing output
+// replace all the line breaks in the string by "\\n" to make outputs tidy
 char* formatStringArgument(const char *input) {
     if (input == NULL) {
         return "NULL";
     }
 
-    // allocate memory for the output string plus the potential "......"
-    char *output = malloc(STR_PRINT_LEN + 7); // 7 = 6 + 1, 6 for "......" and 1 for '\0'
+    char *output = malloc(STR_PRINT_LEN + 1); // 1 for '\0'
     if (output == NULL) {
         return "TRACING PRINT FAILED!"; // Allocation failed
     }
@@ -55,9 +53,8 @@ char* formatStringArgument(const char *input) {
     char *srcPtr = input;
     char *dstPtr = output;
     int dstLen = 0;
-    int wasTruncated = 0;  // indicate if the string was truncated
 
-    while (*srcPtr && dstLen < STR_PRINT_LEN - 1) { 
+    while (*srcPtr && *srcPtr != '\0' && dstLen < STR_PRINT_LEN - 1) { 
         if (*srcPtr == '\n' && dstLen < STR_PRINT_LEN - 2) {
             *dstPtr++ = '\\';
             *dstPtr++ = 'n';
@@ -69,18 +66,6 @@ char* formatStringArgument(const char *input) {
             dstLen++;
         }
         srcPtr++;
-    }
-
-    // set the truncated flag 
-    if (*srcPtr != 0) {
-        wasTruncated = 1;
-    }
-
-    // append "......" to the end if the string was truncated
-    if (wasTruncated) {
-        strcpy(dstPtr, "......");
-    } else {
-        *dstPtr = 0;  // Null-terminate the output string
     }
 
     return output;
