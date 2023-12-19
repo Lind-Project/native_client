@@ -71,7 +71,7 @@ char* formatStringArgument(const char *input) {
 
     // set the truncated flag 
     if (*srcPtr != 0) {
-        printf("truncated, *srcPtr is now %c\n". *srcPtr);
+        printf("truncated, *srcPtr is now %c\n", *srcPtr);
         wasTruncated = 1;
     }
 
