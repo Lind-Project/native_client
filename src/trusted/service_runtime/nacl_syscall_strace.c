@@ -128,7 +128,7 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
-    fprintf(tracingOutputFile, "%d pwrite(%d, \"%.*s\", %d, %lld) = %d\n", cageid, d, formatStringArgument((char *)buf), count, (intmax_t)offset, retval);
+    fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %lld) = %d\n", cageid, d, formatStringArgument((char *)buf), count, (intmax_t)offset, retval);
 }
 
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int ret) {
@@ -189,22 +189,22 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
 }
 
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
-    fprintf(tracingOutputFile, "%d getcwd(%p, %zu) = %d\n", cageid, (void *)buf, size, retval);
+    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, formatStringArgument(buf), size, retval);
 }
 
 void NaClStraceLink(int cageid, char* from, char* to) {
-    fprintf(tracingOutputFile, "%d link(%s, %s) = void\n", cageid, from, to);
+    fprintf(tracingOutputFile, "%d link(%s, %s) = void\n", cageid, formatStringArgument(from), formatStringArgument(to));
 
 }
 
 void NaClStraceUnlink(int cageid, char* pathname, int retval){
-    fprintf(tracingOutputFile, "%d unlink(\"%.*s\") = %d\n", cageid, STR_PRINT_LEN, pathname == NULL ? "NULL" : pathname, retval);
+    fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, formatStringArgument(pathname), retval);
 
 }
 
 // TODO: double check this
 void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval) {
-    fprintf(tracingOutputFile, "%d rename(\"%.*s\", \"%.*s\") = %d\n", cageid, STR_PRINT_LEN, oldpath == NULL ? "NULL" : oldpath, STR_PRINT_LEN, newpath == NULL ? "NULL" : newpath, retval);
+    fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, formatStringArgument(oldpath), formatStringArgument(oldpath), retval);
 }
 
 void NaClStraceMmap(int cageid, void *start,size_t length,int prot,int flags,int d, uintptr_t offset, int retval) {
@@ -398,13 +398,13 @@ void NaClStraceWaitpid(int cageid, int pid, uint32_t *stat_loc, int options, int
 
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
     fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n",
-     cageid, name, len, ret
+     cageid, formatStringArgument(name), len, ret
     );
 }
 
 void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret) {
     fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n",
-     cageid, buf, len, ret
+     cageid, formatStringArgument(buf), len, ret
     );
 }
 
@@ -474,7 +474,7 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret) {
 }
 
 void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret) {
-    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, pathname, buf, ret);
+    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, formatStringArgument(pathname), buf, ret);
 }
 
 void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
@@ -486,7 +486,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
 }
 
 void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
-    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, path, mode, ret);
+    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, formatStringArgument(pathname), mode, ret);
 }
 
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
