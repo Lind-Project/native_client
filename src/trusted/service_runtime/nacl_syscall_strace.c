@@ -70,7 +70,7 @@ char* formatStringArgument(const char *input) {
     }
 
     // set the truncated flag 
-    if (*src != '\0') {
+    if (*srcPtr != '\0') {
         wasTruncated = 1;
     }
 
