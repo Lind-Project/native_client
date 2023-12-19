@@ -486,7 +486,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
 }
 
 void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
-    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, formatStringArgument(pathname), mode, ret);
+    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, formatStringArgument(path), mode, ret);
 }
 
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
