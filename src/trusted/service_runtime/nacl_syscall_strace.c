@@ -39,6 +39,51 @@ void NaClStraceCloseFile() {
     }
 }
 
+// 1. replace all the line breaks in the string by "\\n" to make outputs tidy
+// 2. add the "......" if the string was truncated in the tracing output
+char* formatStringArgument(const char *input) {
+    if (input == NULL) {
+        return "NULL";
+    }
+
+    // allocate memory for the output string plus the potential "......"
+    char *output = malloc(STR_PRINT_LEN + 7); // 7 = 6 + 1, 6 for "......" and 1 for '\0'
+    if (output == NULL) {
+        return "TRACING PRINT FAILED!"; // Allocation failed
+    }
+
+    const char *srcPtr = input;
+    char *dstPtr = output;
+    int dstLen = 0;
+    int wasTruncated = 0;  // indicate if the string was truncated
+
+    while (*srcPtr && dstLen < STR_PRINT_LEN - 1) { 
+        if (*srcPtr == '\n' && dstLen < STR_PRINT_LEN - 2) {
+            *dstPtr++ = '\\';
+            *dstPtr++ = 'n';
+            dstLen += 2;
+        } else {
+            *dstPtr++ = *srcPtr;
+            dstLen++;
+        }
+        srcPtr++;
+    }
+
+    // set the truncated flag 
+    if (*src != '\0') {
+        wasTruncated = 1;
+    }
+
+    // append "......" to the end if the string was truncated
+    if (wasTruncated) {
+        strcpy(dstPtr, "......");
+    } else {
+        *dstPtr = '\0';  // Null-terminate the output string
+    }
+
+    return output;
+}
+
 void NaClStraceGetpid(int cageid, int pid) {
     fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
 }
@@ -92,11 +137,11 @@ void NaClStracePread(int cageid, int d, void *buf, int count,  off_t offset, int
 }
 
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
-    fprintf(tracingOutputFile, "%d write(%d, \"%.*s\", %d) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? "NULL" : (char *)buf, count, ret);
+    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, formatStringArgument((char *)buf), count, ret);
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
-    fprintf(tracingOutputFile, "%d pwrite(%d, \"%.*s\", %d, %lld) = %d\n", cageid, d, STR_PRINT_LEN, buf == NULL ? "NULL" : (char *)buf, count, (intmax_t)offset, retval);
+    fprintf(tracingOutputFile, "%d pwrite(%d, \"%.*s\", %d, %lld) = %d\n", cageid, d, formatStringArgument((char *)buf), count, (intmax_t)offset, retval);
 }
 
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int ret) {
