@@ -198,6 +198,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval) {
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
 }
+
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 }
@@ -221,14 +222,6 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int 
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval) {
     fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, %p, %p) = %d\n", cageid, domain, type, protocol, (void *)lindfds, retval);
 }
-
-// void NaClStraceTlsInit(int cageid, uint32_t thread_ptr, int retval, uintptr_t sys_tls) {
-//     fprintf(tracingOutputFile, "%d tls_init(%u, %lu) = %d\n", cageid, thread_ptr, sys_tls, retval);
-// }
-
-// void NaClStraceSecondTlsSet(int cageid, uint32_t new_value) {
-//     fprintf(tracingOutputFile, "%d SecondTlsSet(new_value=%u)\n", cageid, new_value);
-// }
 
 void NaClStraceMutexCreate(int cageid, int retval) {
     fprintf(tracingOutputFile, "%d mutex_create() = %d\n", cageid, retval);
@@ -277,11 +270,6 @@ void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle,int32_t mutex_ha
 void NaClStraceSemCreate(int cageid, int32_t init_value, int retval) {
     fprintf(tracingOutputFile, "%d sem_create(%d) = %d\n", cageid, init_value, retval);
 }
-
-// void NaClStraceSecondTlsGet(int cageid, uintptr_t natp) {
-//     // this is not used in x86 anyway
-//     fprintf(tracingOutputFile, "%d SecondTlsGet(some natp)\n", cageid);
-// }
 
 void NaClStraceSemWait(int cageid, int32_t sem_handle, int ret) {
     fprintf(tracingOutputFile, "%d semwait(%d) = %d\n", cageid, sem_handle, ret);
