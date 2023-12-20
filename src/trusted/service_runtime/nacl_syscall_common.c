@@ -3932,7 +3932,7 @@ out:
   NaClLog(1, "[NaClSysWaitpid] ret = %d \n", ret);
 
   #ifdef TRACING
-  NaClStraceWaitpid(nap->cage_id, pid, stat_loc, options, ret);
+  NaClStraceWaitpid(nap->cage_id, pid, sysaddr, options, ret);
   #endif
 
   return ret;
@@ -4666,7 +4666,7 @@ int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds,
   #ifdef TRACING
   NaClStracePoll(nap->cage_id, (uintptr_t)fds_sysaddr, nfds, timeout, retval);
   #endif
-  
+
   return retval;
 }
 

@@ -349,8 +349,8 @@ void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret) {
     fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t) argv, ret);
 }
 
-void NaClStraceWaitpid(int cageid, int pid, uint32_t *stat_loc, int options, int ret) {
-    fprintf(tracingOutputFile, "%d waitpid(%d, %d, %d) = %d\n", cageid, pid, *stat_loc, options, ret);
+void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret) {
+    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
 }
 
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
