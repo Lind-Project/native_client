@@ -44,7 +44,7 @@ char* formatStringArgument(const char *input) {
         return "NULL";
     }
 
-    char *output = malloc(STR_PRINT_LEN + 1); // 1 for '\0'
+    char *output = malloc(STR_PRINT_LEN + 1, sizeof(char)); // 1 for '\0'
     if (output == NULL) {
         return "TRACING PRINT FAILED!"; // Allocation failed
     }
