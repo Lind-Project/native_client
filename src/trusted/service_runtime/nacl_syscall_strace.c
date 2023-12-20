@@ -41,12 +41,12 @@ void NaClStraceCloseFile() {
 // replace all the line breaks in the string by "\\n" to make outputs tidy
 char* formatStringArgument(const char *input) {
     if (input == NULL) {
-        return "NULL";
+        return NULL;
     }
 
     char *output = malloc(STR_PRINT_LEN + 1, sizeof(char)); // 1 for '\0'
     if (output == NULL) {
-        return "TRACING PRINT FAILED!"; // Allocation failed
+        return NULL; // Allocation failed
     }
 
     char *srcPtr = input;
@@ -119,11 +119,15 @@ void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int 
 }
 
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
-    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, formatStringArgument((char *)buf), count, ret);
+    char *strBuf = formatStringArgument((char *)buf);
+    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
+    free(strBuf);
 }
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
-    fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %lld) = %d\n", cageid, d, formatStringArgument((char *)buf), count, (intmax_t)offset, retval);
+    char *strBuf = formatStringArgument((char *)buf);
+    fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %lld) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval);
+    free(strBuf);
 }
 
 void NaClStraceLseek(int cageid, int d, int whence, uintptr_t offset, int ret) {
@@ -179,20 +183,32 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
 }
 
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
-    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, formatStringArgument(buf), size, retval);
+    char *strBuf = formatStringArgument(buf);
+    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
+    free(strBuf);
 }
 
 void NaClStraceLink(int cageid, char* from, char* to, int retval) {
-    fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, formatStringArgument(from), formatStringArgument(to), retval);
+    char *strBuf1 = formatStringArgument(from);
+    char *strBuf2 = formatStringArgument(to);
+    fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
+    free(strBuf1);
+    free(strBuf2);
 }
 
 void NaClStraceUnlink(int cageid, char* pathname, int retval){
-    fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, formatStringArgument(pathname), retval);
+    char *strBuf = formatStringArgument(pathname);
+    fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, strBuf ? strBuf : "NULL", retval);
+    free(strBuf);
 }
 
 // TODO: double check this
 void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval) {
-    fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, formatStringArgument(oldpath), formatStringArgument(oldpath), retval);
+    char *strBuf1 = formatStringArgument(oldpath);
+    char *strBuf2 = formatStringArgument(newpath);
+    fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
+    free(strBuf1);
+    free(strBuf2);
 }
 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval) {
@@ -354,11 +370,15 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
 }
 
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
-    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, formatStringArgument(name), len, ret);
+    char *strBuf = formatStringArgument(name);
+    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    free(strBuf);
 }
 
 void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret) {
-    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, formatStringArgument(buf), len, ret);
+    char *strBuf = formatStringArgument(buf);
+    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    free(strBuf);
 }
 
 void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret) {
@@ -430,7 +450,9 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
 }
 
 void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
-    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, formatStringArgument(path), mode, ret);
+    char *strBuf = formatStringArgument(path);
+    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
+    free(strBuf);
 }
 
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
