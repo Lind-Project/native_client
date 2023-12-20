@@ -1266,6 +1266,23 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp,
   return ret;
 }
 
+int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,
+                     int                   fd,
+		     off_t 		   offset,
+		     off_t 		   nbytes, 
+		     uint32_t 	           flags) {
+
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+
+  NaClLog(2, "Cage %d Entered NaClSysSyncFileRange(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd);
+
+  ret = lind_sync_file_range(fd, offset, nbytes, flags, nap->cage_id);
+
+  return ret;
+}
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size) {
