@@ -33,6 +33,7 @@ void NaClStraceFchmod(int cageid, int fd, int mode, int retval);
 void NaClStraceFchdir(int cageid, int fd, int retval);
 void NaClStraceFsync(int cageid, int fd, int ret);
 void NaClStraceFdatasync(int cageid, int fd, int ret);
+void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval);
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval);
 void NaClStraceLink(int cageid, char* from, char* to, int retval);
 void NaClStraceUnlink(int cageid, char* pathname, int retval);

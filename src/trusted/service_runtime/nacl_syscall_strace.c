@@ -182,6 +182,10 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
     fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
 }
 
+void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval) {
+    fprintf(tracingOutputFile, "%d syncfilerange(%d, %lld, %lld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
+}
+
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
     char *strBuf = formatStringArgument(buf);
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);

@@ -1280,6 +1280,10 @@ int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,
 
   ret = lind_sync_file_range(fd, offset, nbytes, flags, nap->cage_id);
 
+  #ifdef TRACING
+  NaClStraceSyncFileRange(nap->cage_id, fd, offset, nbytes, flags, ret);
+  #endif
+
   return ret;
 }
 
