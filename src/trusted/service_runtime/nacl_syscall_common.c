@@ -859,15 +859,12 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
   /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
-<<<<<<< HEAD
-=======
 
   if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
 
   #ifdef TRACING
   NaClStraceWrite(nap->cage_id, d, (void *)sysaddr, count, retval);
   #endif
->>>>>>> develop
   
   return retval;
 }
