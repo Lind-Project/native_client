@@ -21,6 +21,18 @@ if env.Bit('windows'):
 else:
   syscall_impl = 'posix/nacl_syscall_impl.c'
 
+if os.environ.get('TRACING_ENABLED') == '1':
+    env.Append(CCFLAGS=['-DTRACING=1'])
+    env.Append(CFLAGS=['-DTRACING=1'])
+    env.Append(CPPFLAGS=['-DTRACING=1'])
+    env.Append(CXXFLAGS=['-DTRACING=1'])
+
+STRACE_DEFAULT_PATH = ""
+path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
+env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 
 # TODO GENERATED CODE
 GENERATED='${TARGET_ROOT}/gen/native_client/src/trusted/service_runtime'
@@ -54,6 +66,7 @@ ldr_inputs = [
     'nacl_signal_common.c',
     'nacl_stack_safety.c',
     'nacl_syscall_common.c',
+    'nacl_syscall_strace.c',
     GENERATED + '/nacl_syscall_handlers.c',
     'nacl_syscall_hook.c',
     'nacl_text.c',
@@ -380,6 +393,21 @@ env.EnsureRequiredBuildWarnings()
 if (env.Bit('linux') and not env.Bit('android')
     and not env.Bit('built_elsewhere')):
   bootstrap_env = env.Clone()
+  if os.environ.get('TRACING_ENABLED') == '1':
+    print("Coulson's flag added")
+    bootstrap_env.Append(CCFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
+    bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
+  
+  
+  STRACE_DEFAULT_PATH = ""
+  path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
+  bootstrap_env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+  bootstrap_env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
                                    '-pedantic', '$COVERAGE_CCFLAGS'],
