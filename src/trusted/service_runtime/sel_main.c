@@ -60,6 +60,7 @@
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
 #include "native_client/src/shared/platform/aligned_malloc.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 
 
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
@@ -296,6 +297,10 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (!DynArrayCtor(&env_vars, 0)) {
     NaClLog(1, "%s\n", "Failed to allocate env var array");
   }
+
+  #if defined(TRACING)
+  NaClStraceSetOutputFile("strace_output.txt");
+  #endif
 
   /*
    * On platforms with glibc getopt, require POSIXLY_CORRECT behavior,
@@ -956,6 +961,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();
@@ -991,6 +997,7 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();
