@@ -176,6 +176,9 @@ char const *const *NaClEnvCleanserEnvironment(struct NaClEnvCleanser *self) {
     envc++;
   }
   rete = childe = malloc((envc + 1) * sizeof(char*));
+  if (!childe) {  // Check if memory allocation failed
+    return NULL;  
+  }
   for(char const *const *ce = self->cleansed_environ; ce && *ce; ++ce) {
      *childe++ = *ce;
   }

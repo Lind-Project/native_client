@@ -238,6 +238,11 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   if (!nap->name_service) {
     goto cleanup_cv;
   }
+  cleanup_name_service:
+  if (nap->name_service) {
+    free(nap->name_service);
+    nap->name_service = NULL;
+  }
   if (!NaClNameServiceCtor(nap->name_service,
                            NaClAddrSpSquattingThreadIfFactoryFunction,
                            (void *) nap)) {
