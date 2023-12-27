@@ -157,7 +157,7 @@ void NaClVmmapDtor(struct NaClVmmap *self) {
     NaClVmmapEntryFree(self->vmentry[i]);
   }
   free(self->vmentry);
-  self->vmentry = 0;
+  self->vmentry = NULL;
 }
 
 /*

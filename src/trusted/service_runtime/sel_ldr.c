@@ -151,6 +151,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->mem_io_regions = malloc(sizeof(*nap->mem_io_regions) + 8);
   if (!nap->mem_io_regions) {
+    // Mem-leak fix: Freeing nap->mem_io_regions if allocation failed
+    free(nap->mem_io_regions);
     goto cleanup_mem_map;
   }
 
@@ -1090,7 +1092,7 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
   /*
    * TODO(bsy): consider doing the processing below after sending the
    * RPC reply to increase parallelism.
-   */
+   */ 
 
   NaClXMutexLock(&nap->mu);
 
