@@ -167,6 +167,8 @@ static struct Gio *NaClLogGioFromFileIoBuffer(FILE *log_iob) {
   if (NULL == log_gio) {
     perror("NaClLogSetFile");
     fprintf(stderr, "No memory for log buffers\n");
+    // Free the allocated memory before aborting
+    free(log_gio);
     NaClAbort();
   }
   if (!GioFileRefCtor(log_gio, log_iob)) {

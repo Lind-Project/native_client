@@ -59,6 +59,8 @@ void GioReadTestWithOffset(struct Gio* my_file,
   // mf_curpos = 32, 0 left, read 16
   ret_code = my_file->vtbl->Read(my_file, out_buffer, 16);
   EXPECT_EQ(0, ret_code);
+  // Free the previously allocated memory for out_buffer
+  free(out_buffer);
 }
 
 /** Should be given a scratch file that can be written to without worry. */
@@ -91,6 +93,9 @@ void GioWriteTest(struct Gio* my_file,
     ret_code = my_file->vtbl->Seek(my_file, 0, SEEK_END);
     EXPECT_EQ(in_size, ret_code);
   }
+  // Free the previously allocated memory for in_buffer
+  free(in_buffer);
+
 
   // mf_curpos = 44, 20 left, write 10
   ret_code = my_file->vtbl->Write(my_file, in_buffer, 10);
