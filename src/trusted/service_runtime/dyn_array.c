@@ -41,34 +41,41 @@ static INLINE size_t BitsToOffset(size_t nbits) {
 }
 
 
-int DynArrayCtor(struct DynArray  *dap,
-                 size_t           initial_size) {
-  if (initial_size == 0) {
-    initial_size = 32;
-  }
-  dap->num_entries = 0u;
-  /* calloc should check internally, but we're paranoid */
-  if (SIZE_T_MAX / sizeof *dap->ptr_array < initial_size ||
-      SIZE_T_MAX/ sizeof *dap->available < BitsToAllocWords(initial_size)) {
-    /* would integer overflow */
-    return 0;
-  }
-  dap->ptr_array = calloc(initial_size, sizeof *dap->ptr_array);
-  if (NULL == dap->ptr_array) {
-    return 0;
-  }
-  dap->available = calloc(BitsToAllocWords(initial_size),
-                          sizeof *dap->available);
-  if (NULL == dap->available) {
-    free(dap->ptr_array);
-    dap->ptr_array = NULL;
-    return 0;
-  }
-  dap->avail_ix = 0;  /* hint */
+int DynArrayCtor(struct DynArray *dap, size_t initial_size) {
+    if (initial_size == 0) {
+        initial_size = 32;
+    }
+    dap->num_entries = 0u;
+    /* calloc should check internally, but we're paranoid */
+    if (SIZE_T_MAX / sizeof *dap->ptr_array < initial_size ||
+        SIZE_T_MAX / sizeof *dap->available < BitsToAllocWords(initial_size)) {
+        /* would integer overflow */
+        return 0;
+    }
+    dap->ptr_array = calloc(initial_size, sizeof *dap->ptr_array);
+    if (NULL == dap->ptr_array) {
+        return 0;
+    }
 
-  dap->ptr_array_space = initial_size;
-  return 1;
+    // Free previous memory block of dap->available (if exists)
+    if (NULL != dap->available) {
+        free(dap->available);
+        dap->available = NULL;
+    }
+
+    dap->available = calloc(BitsToAllocWords(initial_size), sizeof *dap->available);
+    if (NULL == dap->available) {
+        free(dap->ptr_array);
+        dap->ptr_array = NULL;
+        return 0;
+    }
+
+    dap->avail_ix = 0;  /* hint */
+    dap->ptr_array_space = initial_size;
+
+    return 1;
 }
+
 
 
 void DynArrayDtor(struct DynArray *dap) {
