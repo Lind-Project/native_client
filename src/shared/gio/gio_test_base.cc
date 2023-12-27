@@ -133,6 +133,7 @@ void GioWriteTest(struct Gio* my_file,
     ret_code = my_file->vtbl->Write(my_file, in_buffer, 20);
     EXPECT_RETCODE(0, ret_code);
   }
+  free(in_buffer);
 }
 
 void GioSeekTestWithOffset(struct Gio* my_file,
