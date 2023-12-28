@@ -174,7 +174,7 @@ struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path, int mode, int perms)
   }
   if (0 != NaClHostDescOpen(nhdp, path, mode, perms)) {
     NaClLog(4, "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n", path);
-    free(nhdp);  // Free the allocated memory before returning
+    //free(nhdp);  // Free the allocated memory before returning
     return NULL;
   }
   return NaClDescIoDescMake(nhdp);
