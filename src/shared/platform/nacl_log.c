@@ -169,12 +169,16 @@ static struct Gio *NaClLogGioFromFileIoBuffer(FILE *log_iob) {
     fprintf(stderr, "No memory for log buffers\n");
     NaClAbort();
   }
+
   if (!GioFileRefCtor(log_gio, log_iob)) {
     fprintf(stderr, "NaClLog module internal error: GioFileRefCtor failed\n");
+    free(log_gio);  // Free the allocated memory
     NaClAbort();
   }
+  
   return (struct Gio *) log_gio;
 }
+
 
 void NaClLogSetFile(char const *log_file) {
   NaClLogSetGio(NaClLogGioFromFileIoBuffer(

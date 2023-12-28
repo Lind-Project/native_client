@@ -164,23 +164,22 @@ struct NaClDesc *NaClDescIoDescFromDescAllocCtor(int desc,
   return (struct NaClDesc *) NaClDescIoDescMake(nhdp);
 }
 
-struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
-                                          int mode,
-                                          int perms) {
+struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path, int mode, int perms) {
   struct NaClHostDesc *nhdp;
 
   nhdp = malloc(sizeof *nhdp);
   if (NULL == nhdp) {
     NaClLog(LOG_FATAL, "NaClDescIoDescOpen: no memory for %s\n", path);
+    return NULL;  // Ensure to return here to prevent further execution
   }
   if (0 != NaClHostDescOpen(nhdp, path, mode, perms)) {
-    NaClLog(4,
-            "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",
-            path);
+    NaClLog(4, "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n", path);
+    free(nhdp);  // Free the allocated memory before returning
     return NULL;
   }
   return NaClDescIoDescMake(nhdp);
 }
+
 
 static uintptr_t NaClDescIoDescMap(struct NaClDesc         *vself,
                                    struct NaClDescEffector *effp,

@@ -26,108 +26,115 @@ void GioInitTestMemFile(char* mem_buff, char initial_char, int in_size) {
     mem_buff[i] = GioExpectedCharAt(initial_char, i);
 }
 
-void GioReadTestWithOffset(struct Gio* my_file,
-                           char initial_char) {
-  char* out_buffer;
-  int out_size = 16;
-  ssize_t ret_code;
+void GioReadTestWithOffset(struct Gio* my_file, char initial_char) {
+    char* out_buffer;
+    int out_size = 16;
+    ssize_t ret_code;
 
-  out_buffer = reinterpret_cast<char*>(malloc(out_size));
+    // Allocate memory for out_buffer
+    out_buffer = reinterpret_cast<char*>(malloc(out_size));
+    if (!out_buffer) {
+        // If memory allocation fails, log an error and exit the function
+        fprintf(stderr, "Memory allocation failed\n");
+        return;
+    }
 
-  // mf_curpos = 0, 32 left, read 16
-  ret_code = my_file->vtbl->Read(my_file, out_buffer, 16);
-  EXPECT_RETCODE(16, ret_code);
-  for (int i = 0; i < 16; ++i)
-    EXPECT_EQ(GioExpectedCharAt(initial_char, i), out_buffer[i]);
+    // mf_curpos = 0, 32 left, read 16
+    ret_code = my_file->vtbl->Read(my_file, out_buffer, 16);
+    EXPECT_RETCODE(16, ret_code);
+    for (int i = 0; i < 16; ++i)
+        EXPECT_EQ(GioExpectedCharAt(initial_char, i), out_buffer[i]);
 
-  // mf_curpos = 16, 16 left, read 10
-  ret_code = my_file->vtbl->Read(my_file, out_buffer, 10);
-  EXPECT_RETCODE(10, ret_code);
-  for (int i = 0; i < 10; ++i)
-    EXPECT_EQ(GioExpectedCharAt(initial_char, i + 16), out_buffer[i]);
-  // residual value after idx 10
-  EXPECT_EQ(GioExpectedCharAt(initial_char, 10), out_buffer[10]);
+    // mf_curpos = 16, 16 left, read 10
+    ret_code = my_file->vtbl->Read(my_file, out_buffer, 10);
+    EXPECT_RETCODE(10, ret_code);
+    for (int i = 0; i < 10; ++i)
+        EXPECT_EQ(GioExpectedCharAt(initial_char, i + 16), out_buffer[i]);
+    // residual value after idx 10
+    EXPECT_EQ(GioExpectedCharAt(initial_char, 10), out_buffer[10]);
 
-  // mf_curpos = 26, 6 left, read 8
-  ret_code = my_file->vtbl->Read(my_file, out_buffer, 8);
-  EXPECT_RETCODE(6, ret_code);
-  for (int i = 0; i < 6; ++i)
-    EXPECT_EQ(GioExpectedCharAt(initial_char, i + 26), out_buffer[i]);
-  // residual value after idx 6
-  EXPECT_EQ(GioExpectedCharAt(initial_char, 16 + 6), out_buffer[6]);
+    // mf_curpos = 26, 6 left, read 8
+    ret_code = my_file->vtbl->Read(my_file, out_buffer, 8);
+    EXPECT_RETCODE(6, ret_code);
+    for (int i = 0; i < 6; ++i)
+        EXPECT_EQ(GioExpectedCharAt(initial_char, i + 26), out_buffer[i]);
+    // residual value after idx 6
+    EXPECT_EQ(GioExpectedCharAt(initial_char, 16 + 6), out_buffer[6]);
 
-  // mf_curpos = 32, 0 left, read 16
-  ret_code = my_file->vtbl->Read(my_file, out_buffer, 16);
-  EXPECT_EQ(0, ret_code);
+    // mf_curpos = 32, 0 left, read 16
+    ret_code = my_file->vtbl->Read(my_file, out_buffer, 16);
+    EXPECT_EQ(0, ret_code);
+
+    // Free the allocated memory for out_buffer
+    free(out_buffer);
 }
 
 /** Should be given a scratch file that can be written to without worry. */
-void GioWriteTest(struct Gio* my_file,
-                  bool fixed_length) {
-  char* in_buffer;
-  int in_size = 44;
-  char initial_char = 'A';
-  char out_char;
-  ssize_t ret_code;
+void GioWriteTest(struct Gio* my_file, bool fixed_length) {
+    char* in_buffer;
+    int in_size = 44;
+    char initial_char = 'A';
+    char out_char;
+    ssize_t ret_code;
 
-  in_buffer = reinterpret_cast<char*>(malloc(in_size));
-  for (int i = 0; i < in_size; ++i)
-    in_buffer[i] = GioExpectedCharAt(initial_char, i);
+    // Allocate memory for in_buffer
+    in_buffer = reinterpret_cast<char*>(malloc(in_size));
+    if (!in_buffer) {
+        // If memory allocation fails, log an error and exit the function
+        fprintf(stderr, "Memory allocation failed\n");
+        return;
+    }
 
-  // mf_curpos = 0, 64 left, write 44
-  ret_code = my_file->vtbl->Write(my_file, in_buffer, in_size);
-  EXPECT_RETCODE(in_size, ret_code);
-  EXPECT_EQ(0, my_file->vtbl->Flush(my_file));
+    for (int i = 0; i < in_size; ++i) {
+        in_buffer[i] = GioExpectedCharAt(initial_char, i);
+    }
 
-  ret_code = my_file->vtbl->Seek(my_file, -1, SEEK_CUR);
-  EXPECT_RETCODE(in_size - 1, ret_code);
-  ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
-  EXPECT_EQ(1, ret_code);
-  EXPECT_EQ(GioExpectedCharAt(initial_char, in_size - 1), out_char);
+    // mf_curpos = 0, 64 left, write 44
+    ret_code = my_file->vtbl->Write(my_file, in_buffer, in_size);
+    EXPECT_RETCODE(in_size, ret_code);
+    EXPECT_EQ(0, my_file->vtbl->Flush(my_file));
 
-  // Windows *requires* hitting EOF before writing more.
-  // See _flsbuf in _flsbuf.c.
-  if (!fixed_length) {
-    ret_code = my_file->vtbl->Seek(my_file, 0, SEEK_END);
-    EXPECT_EQ(in_size, ret_code);
-  }
+    ret_code = my_file->vtbl->Seek(my_file, -1, SEEK_CUR);
+    EXPECT_RETCODE(in_size - 1, ret_code);
+    ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
+    EXPECT_EQ(1, ret_code);
+    EXPECT_EQ(GioExpectedCharAt(initial_char, in_size - 1), out_char);
 
-  // mf_curpos = 44, 20 left, write 10
-  ret_code = my_file->vtbl->Write(my_file, in_buffer, 10);
-  EXPECT_RETCODE(10, ret_code);
-  EXPECT_EQ(0, my_file->vtbl->Flush(my_file));
+    if (!fixed_length) {
+        ret_code = my_file->vtbl->Seek(my_file, 0, SEEK_END);
+        EXPECT_EQ(in_size, ret_code);
+    }
 
-  // Sample a couple of other spots
-
-  // seek mf_curpos = 40
-  ret_code = my_file->vtbl->Seek(my_file, in_size - 4, SEEK_SET);
-  EXPECT_RETCODE(in_size - 4, ret_code);
-  ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
-  EXPECT_EQ(1, ret_code);
-  EXPECT_EQ(GioExpectedCharAt(initial_char, in_size - 4), out_char);
-
-  // mf_curpose = 41, advance by 12 and read to get back to 54
-  ret_code = my_file->vtbl->Seek(my_file, 12, SEEK_CUR);
-  EXPECT_RETCODE(in_size - 3 + 12, ret_code);
-  ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
-  EXPECT_EQ(1, ret_code);
-  EXPECT_EQ(GioExpectedCharAt(initial_char, 9), out_char);
-
-  // Back at the mf_curpos = 54
-
-  if (fixed_length) {
-    // mf_curpos = 54, 10 left, write 20
-    ret_code = my_file->vtbl->Write(my_file, in_buffer, 20);
+    // mf_curpos = 44, 20 left, write 10
+    ret_code = my_file->vtbl->Write(my_file, in_buffer, 10);
     EXPECT_RETCODE(10, ret_code);
+    EXPECT_EQ(0, my_file->vtbl->Flush(my_file));
 
-    my_file->vtbl->Seek(my_file, -1, SEEK_CUR);
-    my_file->vtbl->Read(my_file, &out_char, 1);
+    // seek mf_curpos = 40
+    ret_code = my_file->vtbl->Seek(my_file, in_size - 4, SEEK_SET);
+    EXPECT_RETCODE(in_size - 4, ret_code);
+    ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
+    EXPECT_EQ(1, ret_code);
+    EXPECT_EQ(GioExpectedCharAt(initial_char, in_size - 4), out_char);
+
+    ret_code = my_file->vtbl->Seek(my_file, 12, SEEK_CUR);
+    EXPECT_RETCODE(in_size - 3 + 12, ret_code);
+    ret_code = my_file->vtbl->Read(my_file, &out_char, 1);
+    EXPECT_EQ(1, ret_code);
     EXPECT_EQ(GioExpectedCharAt(initial_char, 9), out_char);
 
-    // mf_curpos = 64, 0 left, write 20
-    ret_code = my_file->vtbl->Write(my_file, in_buffer, 20);
-    EXPECT_RETCODE(0, ret_code);
-  }
+    if (fixed_length) {
+        ret_code = my_file->vtbl->Write(my_file, in_buffer, 20);
+        EXPECT_RETCODE(10, ret_code);
+        my_file->vtbl->Seek(my_file, -1, SEEK_CUR);
+        my_file->vtbl->Read(my_file, &out_char, 1);
+        EXPECT_EQ(GioExpectedCharAt(initial_char, 9), out_char);
+        ret_code = my_file->vtbl->Write(my_file, in_buffer, 20);
+        EXPECT_RETCODE(0, ret_code);
+    }
+
+    // Free the allocated memory for in_buffer
+    free(in_buffer);
 }
 
 void GioSeekTestWithOffset(struct Gio* my_file,
