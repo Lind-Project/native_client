@@ -545,3 +545,9 @@ void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int
 void NaClStraceNameService(int cageid, uintptr_t desc_addr, int32_t retval) {
     fprintf(tracingOutputFile, "%d NameService(0x%08"NACL_PRIxPTR") = %d\n", cageid, desc_addr, retval);
 }
+void NaClStraceBrk(int cageid, uintptr_t new_break, uintptr_t ret) {
+    fprintf(tracingOutputFile, "%d brk(0x%08"NACL_PRIxPTR") = 0x%08"NACL_PRIxPTR"\n", cageid, new_break, ret);
+}
+void NaClStraceNull(int cageid, int ret) {
+    fprintf(tracingOutputFile, "%d null() = %d\n", cageid, ret);
+}
