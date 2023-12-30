@@ -463,8 +463,8 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
     free(strBuf);
 }
 
-void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
-    fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d\n", cageid, path, length, ret);
+void NaClStraceTruncate(int cageid, char *path, int length, int ret) {
+    fprintf(tracingOutputFile, "%d truncate(%s, %d) = %d\n", cageid, path, length, ret);
 }
 
 void NaClStraceFtruncate(int cageid, int fd, int length, int ret) {
