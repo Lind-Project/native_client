@@ -41,8 +41,6 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 void NaClStraceCommon(int cageid, uintptr_t usraddr, size_t length);
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval);
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval);
-void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int prot, uintptr_t sysaddr, int retval, int holding_app_lock);
-void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot);
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval);
 void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval);
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval);
@@ -59,7 +57,6 @@ void NaClStraceCondSignal(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondBroadcast(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondDestroy(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle, int32_t mutex_handle, uintptr_t trusted_ts, int retval);
-void NaClStraceSecondTlsGet(int cageid, uintptr_t natp);
 void NaClStraceSemInit(int cageid, int32_t sem, int32_t pshared, int32_t value, int retval);
 void NaClStraceSemWait(int cageid, int32_t sem_handle, int ret);
 void NaClStraceSemTryWait(int cageid, int32_t sem_handle, int ret);

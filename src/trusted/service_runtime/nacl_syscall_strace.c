@@ -543,3 +543,6 @@ void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int p
 void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t retval) {
     fprintf(tracingOutputFile, "%d Mprotect(0x%08x, %zu, %d) = %d\n", cageid, start, length, prot, retval);
 }
+void NaClStraceNameService(int cageid, uintptr_t desc_addr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d NameService(0x%08"NACL_PRIxPTR") = %d\n", cageid, desc_addr, retval);
+}
