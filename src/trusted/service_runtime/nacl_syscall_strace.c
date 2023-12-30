@@ -146,8 +146,8 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int retval) {
     fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
 
-void NaClStraceLStat(int cageid, char* path, uintptr_t result, int retval){
-    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %zu\n", cageid, path, result, retval);
+void NaClStraceLStat(int cageid, char* path, uintptr_t result, int retval) {
+    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
 
 void NaClStraceMkdir(int cageid, char* path, int mode, int retval) {
