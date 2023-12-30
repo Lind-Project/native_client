@@ -114,3 +114,16 @@ void NaClStraceEpollCreate(int cageid, int size, int ret);
 void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret);
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret);
+void NaClStraceTlsInit(int cageid, uint32_t thread_ptr, int32_t retval);
+void NaClStraceThreadCreate(int cageid,
+                            uintptr_t prog_ctr,
+                            uint32_t stack_ptr,
+                            uint32_t thread_ptr,
+                            uint32_t second_thread_ptr,
+                            int32_t retval);
+void NaClStraceTlsGet(int cageid, int32_t retval);
+void NaClStraceSecondTlsSet(int cageid, uint32_t new_value, int32_t retval);
+void NaClStraceSecondTlsGet(int cageid, int32_t retval);
+void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int prot, int32_t retval);
+void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t retval);
+void NaClStraceNameService(int cageid, uintptr_t desc_addr, int32_t retval);

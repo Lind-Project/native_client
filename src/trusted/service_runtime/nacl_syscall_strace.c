@@ -515,3 +515,31 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events,int maxevents, i
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret) {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
 }
+void NaClStraceTlsInit(int cageid, uint32_t thread_ptr, int32_t retval) {
+    fprintf(tracingOutputFile, "%d TlsInit(0x%08x) = %d\n", cageid, thread_ptr, retval);
+}
+void NaClStraceThreadCreate(int cageid,
+                            uintptr_t prog_ctr,
+                            uint32_t stack_ptr,
+                            uint32_t thread_ptr,
+                            uint32_t second_thread_ptr,
+                            int32_t retval) {
+    fprintf(tracingOutputFile, 
+            "%d ThreadCreate(pc=0x%08"NACL_PRIxPTR", sp=0x%08"NACL_PRIx32", tp=0x%08"NACL_PRIx32", stp=0x%08"NACL_PRIx32") = %d\n",
+            cageid, prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
+}
+void NaClStraceTlsGet(int cageid, int32_t retval) {
+    fprintf(tracingOutputFile, "%d TlsGet() = %d\n", cageid, retval);
+}
+void NaClStraceSecondTlsSet(int cageid, uint32_t new_value, int32_t retval) {
+    fprintf(tracingOutputFile, "%d SecondTlsSet(0x%08x) = %d\n", cageid, new_value, retval);
+}
+void NaClStraceSecondTlsGet(int cageid, int32_t retval) {
+    fprintf(tracingOutputFile, "%d SecondTlsGet() = %d\n", cageid, retval);
+}
+void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int prot, int32_t retval) {
+    fprintf(tracingOutputFile, "%d MprotectInternal(0x%08x, %zu, %d) = %d\n", cageid, start, length, prot, retval);
+}
+void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t retval) {
+    fprintf(tracingOutputFile, "%d Mprotect(0x%08x, %zu, %d) = %d\n", cageid, start, length, prot, retval);
+}
