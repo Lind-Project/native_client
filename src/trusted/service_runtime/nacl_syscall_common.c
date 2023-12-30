@@ -4129,7 +4129,7 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   NaClLog(2, "NaClSysRecv: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceRecv(nap->cage_id, sockfd, len, flags, sysbufaddr, ret);
+  NaClStraceRecv(nap->cage_id, sockfd, sysbufaddr, len, flags, ret);
   #endif
 
   return ret;

@@ -59,7 +59,6 @@ void NaClStraceCondSignal(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondBroadcast(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondDestroy(int cageid, int32_t cond_handle, int retval);
 void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle, int32_t mutex_handle, uintptr_t trusted_ts, int retval);
-void NaClStraceSemCreate(int cageid, int32_t init_value, int retval);
 void NaClStraceSecondTlsGet(int cageid, uintptr_t natp);
 void NaClStraceSemInit(int cageid, int32_t sem, int32_t pshared, int32_t value, int retval);
 void NaClStraceSemWait(int cageid, int32_t sem_handle, int ret);

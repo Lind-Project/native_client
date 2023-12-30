@@ -292,9 +292,6 @@ void NaClStraceCondTimedWaitAbs(int cageid, int32_t cond_handle,int32_t mutex_ha
     fprintf(tracingOutputFile, "%d cond_timedwaitabs(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, cond_handle, mutex_handle, trusted_ts, retval);
 }  
 
-void NaClStraceSemCreate(int cageid, int32_t init_value, int retval) {
-    fprintf(tracingOutputFile, "%d sem_create(%d) = %d\n", cageid, init_value, retval);
-}
 
 void NaClStraceSemWait(int cageid, int32_t sem_handle, int ret) {
     fprintf(tracingOutputFile, "%d semwait(%d) = %d\n", cageid, sem_handle, ret);
