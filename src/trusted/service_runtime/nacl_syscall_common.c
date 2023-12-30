@@ -1025,7 +1025,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
   }
 
   #ifdef TRACING
-  NaClStraceFstat(nap->cage_id, d, &result, retval);
+  NaClStraceFstat(nap->cage_id, d, (uintptr_t) &result, retval);
   #endif
 
   return retval;
@@ -1055,7 +1055,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
   }
 
   #ifdef TRACING
-  NaClStraceStat(nap->cage_id, path, &result, retval);
+  NaClStraceStat(nap->cage_id, path, (uintptr_t) &result, retval);
   #endif
 
   return retval;
@@ -1085,7 +1085,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   }
 
   #ifdef TRACING
-  NaClStraceLStat(nap->cage_id, path, &result, retval);
+  NaClStraceStat(nap->cage_id, path, (uintptr_t) &result, retval);
   #endif
 
   return retval;
@@ -3432,7 +3432,7 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
  done:
 
   #ifdef TRACING
-  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, (uintptr_t)time_func, retval);
+  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, time_func, retval);
   #endif
 
   return retval;
