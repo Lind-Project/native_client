@@ -98,7 +98,7 @@ void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret);
 void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret);
 void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret);
 void NaClStraceAccess(int cageid, char *file, int mode, int ret);
-void NaClStraceTruncate(int cageid, uint32_t file, int length, int ret);
+void NaClStraceTruncate(int cageid, char *path, int length, int ret);
 void NaClStraceFtruncate(int cageid, int fd, int length, int ret);
 void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret);
 void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret);

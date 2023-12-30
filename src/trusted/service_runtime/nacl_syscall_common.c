@@ -4004,7 +4004,7 @@ int32_t NaClSysGethostname(struct NaClAppThread *natp, char *name, size_t len) {
   NaClLog(2, "NaClSysGethostname: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGethostname(nap->cage_id, sysaddr, len, ret);
+  NaClStraceGethostname(nap->cage_id, (char *)name, len, ret);
   #endif
   
   return ret;
@@ -4032,7 +4032,7 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   NaClLog(2, "NaClSysGetifaddrs: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGetifaddrs(nap->cage_id, sysaddr, len, ret);
+  NaClStraceGetifaddrs(nap->cage_id, (char *)buf, len, ret);
   #endif
   
   return ret;
@@ -4075,7 +4075,7 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   NaClLog(2, "NaClSysSend: returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceSend(nap->cage_id, sockfd, len, flags, sysbufaddr, ret);
+  NaClStraceSend(nap->cage_id, sockfd, sysbufaddr, len, flags, ret);
   #endif
 
   return ret;
