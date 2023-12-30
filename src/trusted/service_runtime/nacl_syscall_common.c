@@ -1317,7 +1317,7 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp,
   NaClLog(2, "NaClSysGetcwd: returning %d\n", retval);
 
   #ifdef TRACING
-  NaClStraceGetcwd(nap->cage_id, sysaddr, size, retval);
+  NaClStraceGetcwd(nap->cage_id, (char *)sysaddr, size, retval);
   #endif
 
   return retval;
