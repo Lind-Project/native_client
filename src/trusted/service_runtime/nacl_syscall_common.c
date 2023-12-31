@@ -3462,7 +3462,7 @@ int32_t NaClSysPipe2(struct NaClAppThread  *natp, uint32_t *pipedes, int flags) 
   if (!NaClCopyOutToUser(nap, (uintptr_t)pipedes, lindfds, sizeof(lindfds))) return -NACL_ABI_EFAULT;
 
   #ifdef TRACING
-  NaClStracePipe2(nap->cage_id, lindfds, flags, ret);
+  NaClStracePipe2(nap->cage_id, (uint32_t *)lindfds, flags, ret);
   #endif
 
   return ret;

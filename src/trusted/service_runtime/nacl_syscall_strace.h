@@ -72,7 +72,7 @@ void NaClStraceExceptionClearFlag(int cageid, int ret);
 void NaClStraceTestInfoLeak(int cageid, int ret);
 void NaClStraceTestCrash(int cageid, int crash_type, int ret);
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret);
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret);
+void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret) ;
 void NaClStracePipe2(int cageid, uint32_t *pipedes, int flags, int ret);
 void NaClStraceFork(int cageid, int ret);
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret);
