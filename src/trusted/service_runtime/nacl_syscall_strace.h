@@ -126,3 +126,4 @@ void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int
 void NaClStraceNameService(int cageid, uintptr_t desc_addr, int32_t retval);
 void NaClStraceBrk(int cageid, uintptr_t new_break, uintptr_t result);
 void NaClStraceNull(int cageid, int ret);
+void NaClStraceMmapIntern(int cageid, uintptr_t start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int32_t retval);

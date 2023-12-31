@@ -553,3 +553,7 @@ void NaClStraceBrk(int cageid, uintptr_t new_break, uintptr_t ret) {
 void NaClStraceNull(int cageid, int ret) {
     fprintf(tracingOutputFile, "%d null() = %d\n", cageid, ret);
 }
+void NaClStraceMmapIntern(int cageid, uintptr_t start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int32_t retval) {
+    fprintf(tracingOutputFile, "%d MmapIntern(start=0x%08x, length=%zu, prot=%d, flags=%d, d=%d, offset=%ld) = %d\n",
+            cageid, start, length, prot, flags, d, offset, retval);
+}
