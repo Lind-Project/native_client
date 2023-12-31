@@ -114,7 +114,7 @@ void NaClAddSyscall(int num, int32_t (*fn)(struct NaClAppThread *)) {
 int32_t NaClSysNull(struct NaClAppThread *natp) {
   UNREFERENCED_PARAMETER(natp);
   #ifdef TRACING
-  NaClStraceNull(nap->cage_id, ret);
+  NaClStraceNull(natp->nap->cage_id, ret);
   #endif
 
   return 0;
@@ -2727,7 +2727,8 @@ int32_t NaClSysThreadCreate(struct NaClAppThread *natp,
 
 cleanup:
   #ifdef TRACING
-  NaClStraceThreadCreate(nap->cage_id, prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
+  NaClStraceThreadCreate(nap->cage_id, (uintptr_t)prog_ctr, stack_ptr, thread_ptr, second_thread_ptr, retval);
+
   #endif
 
   return retval;
@@ -3476,7 +3477,9 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
  done:
 
   #ifdef TRACING
-  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, time_func, retval);
+  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, (void*)time_func, retval);
+
+  
   #endif
 
   return retval;

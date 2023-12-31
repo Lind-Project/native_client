@@ -350,11 +350,10 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret) {
 }
 
 
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret) {
-    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08x, %p) = %d\n",
-            cageid, clk_id, ts_addr, (unsigned int)time_func, (void *)*time_func, ret);
+void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, void *time_func, int ret) {
+    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, %p) = %d\n",
+            cageid, clk_id, ts_addr, time_func, ret);
 }
-
 
 void NaClStracePipe2(int cageid, uint32_t *pipedes, int flags, int ret) {
     fprintf(tracingOutputFile, "%d pipe2(0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, (uintptr_t) pipedes, flags, ret);
