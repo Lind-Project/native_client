@@ -2150,7 +2150,7 @@ static int32_t MprotectInternal(struct NaClApp *nap,
     }
   }
   #ifdef TRACING
-  NaClStraceMprotectInternal(nap->cage_id, start, length, prot, retval);
+  NaClStraceMprotectInternal(nap->cage_id, sysaddr, length, prot, result);
   #endif
 
 
@@ -2667,7 +2667,8 @@ int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
   retval = 0;
 cleanup:
   #ifdef TRACING
-  NaClStraceTlsInit(nap->cage_id, thread_ptr, retval);
+  NaClStraceTlsInit(natp->nap->cage_id, thread_ptr, retval);
+
   #endif
 
   return retval;
@@ -2738,7 +2739,7 @@ cleanup:
  */
 int32_t NaClSysTlsGet(struct NaClAppThread *natp) {
   #ifdef TRACING
-  NaClStraceTlsGet(nap->cage_id, retval);
+  NaClStraceTlsGet(natp->nap->cage_id, retval);
   #endif
 
   return NaClTlsGetTlsValue1(natp);
@@ -2748,7 +2749,7 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
                             uint32_t             new_value) {
   NaClTlsSetTlsValue2(natp, new_value);
   #ifdef TRACING
-  NaClStraceSecondTlsSet(nap->cage_id, new_value, retval);
+  NaClStraceSecondTlsSet(natp->nap->cage_id, new_value, retval);
   #endif
 
   return 0;
@@ -2760,7 +2761,7 @@ int32_t NaClSysSecondTlsSet(struct NaClAppThread *natp,
  */
 int32_t NaClSysSecondTlsGet(struct NaClAppThread *natp) {
   #ifdef TRACING
-  NaClStraceSecondTlsGet(nap->cage_id, retval);
+  NaClStraceSecondTlsGet(natp->nap->cage_id, retval);
   #endif
 
   return NaClTlsGetTlsValue2(natp);

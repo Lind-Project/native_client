@@ -538,9 +538,13 @@ void NaClStraceSecondTlsSet(int cageid, uint32_t new_value, int32_t retval) {
 void NaClStraceSecondTlsGet(int cageid, int32_t retval) {
     fprintf(tracingOutputFile, "%d SecondTlsGet() = %d\n", cageid, retval);
 }
-void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int prot, int32_t retval) {
-    fprintf(tracingOutputFile, "%d MprotectInternal(0x%08x, %zu, %d) = %d\n", cageid, start, length, prot, retval);
+
+void NaClStraceMprotectInternal(int cageid, uintptr_t addr, size_t len, int prot, int result) {
+    fprintf(tracingOutputFile, "%d MprotectInternal(addr=0x%08"NACL_PRIxPTR", len=%zu, prot=%d) = %d\n", 
+            cageid, addr, len, prot, result);
 }
+
+
 void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t retval) {
     fprintf(tracingOutputFile, "%d Mprotect(0x%08x, %zu, %d) = %d\n", cageid, start, length, prot, retval);
 }

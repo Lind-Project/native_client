@@ -121,7 +121,7 @@ void NaClStraceThreadCreate(int cageid,
 void NaClStraceTlsGet(int cageid, int32_t retval);
 void NaClStraceSecondTlsSet(int cageid, uint32_t new_value, int32_t retval);
 void NaClStraceSecondTlsGet(int cageid, int32_t retval);
-void NaClStraceMprotectInternal(int cageid, uint32_t start, size_t length, int prot, int32_t retval);
+void NaClStraceMprotectInternal(int cageid, uintptr_t addr, size_t len, int prot, int result) ;
 void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t retval);
 void NaClStraceNameService(int cageid, uintptr_t desc_addr, int32_t retval);
 void NaClStraceBrk(int cageid, uintptr_t new_break, uintptr_t result);
