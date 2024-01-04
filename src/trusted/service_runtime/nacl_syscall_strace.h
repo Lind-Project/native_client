@@ -4,9 +4,12 @@
 #include "sys/types.h"
 #include <stdint.h>
 #include "native_client/src/include/portability.h" 
+void NaClStraceSetOutputFile(char *path);
+void NaClStraceCloseFile();
 void NaClStraceGetpid(int cageid, int pid);
 void NaClStraceGetppid(int cageid, int pid);
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd);
+void NaClStraceClose(int cageid, int d, int ret);
 void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret);
 void NaClStraceExit(int cageid, int status);
 void NaClStraceDup(int cageid, int oldfd, int ret);
@@ -15,6 +18,7 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret);
 void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret);
 void NaClStracePread(int cageid, int d, void *buf, int count,  off_t offset, int ret);
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret);
+void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval);
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret);
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret);
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval);
@@ -73,6 +77,7 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
 void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret);
 void NaClStraceListen(int cageid, int sockfd, int backlog, int ret);
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret);
+void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret);
 void NaClStraceEpollCreate(int cageid, int size, int ret);
 void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret);
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
