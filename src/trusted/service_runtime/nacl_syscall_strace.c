@@ -318,6 +318,9 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret) {
     fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
 }
+void NaClStraceFcntlSet(int cageid, int fd, int cmd,long set_op, int ret) {
+    fprintf(tracingOutputFile, "%d fcntlget(%d, ,%d,%d) = %d\n", cageid, fd, cmd,set_op, ret);
+}
 void NaClStraceEpollCreate(int cageid, int size, int ret) {
     fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
 }
