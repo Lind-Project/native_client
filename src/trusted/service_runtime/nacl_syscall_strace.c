@@ -197,6 +197,9 @@ void NaClStraceShmdt(int cageid, void *shmaddr, int retval) {
 void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval) {
     fprintf(tracingOutputFile, "%d shmctl(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, shmid, cmd, bufsysaddr, retval);
 }
+void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval) {
+    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, %p, %p) = %d\n", cageid, domain, type, protocol, (void *)lindfds, retval);
+}
 void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret) {
     fprintf(tracingOutputFile, "%d nanosleep(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d", cageid, req, rem, ret);
 }
@@ -217,13 +220,14 @@ void NaClStraceFork(int cageid, int ret) {
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret) {
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t)argv, ret);
 }
+void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret) {
+    fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t) argv, ret);
+}
+
 void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret) {
     fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
 }
-//void NaClStraceWaitpid(int cageid, int pid, int *stat_loc, int options, int32_t retval) {
-//     fprintf(tracingOutputFile, "%d waitpid(%d, %p, %d) = %d\n",
-//             cageid, pid, (void *)stat_loc, options, retval);
-// }
+
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
     char *strBuf = formatStringArgument(name);
     fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);

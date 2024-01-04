@@ -43,13 +43,15 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
 void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval);
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval);
 void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval);
+void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval);
 void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret);
 void NaClStraceSchedYield(int cageid, int ret);
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret);
 void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret);
 void NaClStraceFork(int cageid, int ret);
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret);
-void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret);
+void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret);
+void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret) ;
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret);
 void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret);
 void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret);
