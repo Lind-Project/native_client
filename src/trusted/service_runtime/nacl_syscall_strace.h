@@ -79,7 +79,8 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
 void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret);
 void NaClStraceListen(int cageid, int sockfd, int backlog, int ret);
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret);
-void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret);
+void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret) ;
+void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op,int ret);
 void NaClStraceEpollCreate(int cageid, int size, int ret);
 void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret);
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
