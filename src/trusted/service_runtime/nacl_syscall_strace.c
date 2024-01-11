@@ -119,16 +119,16 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret) {
     fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
 }
-void NaClStraceFstat(int cageid, int d, uintptr_t result, int retval) {
+void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
 }
-void NaClStraceStat(int cageid, char* path, uintptr_t result, int retval) {
+void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
-void NaClStraceLStat(int cageid, char* path, uintptr_t result, int retval) {
+void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
-void NaClStraceMkdir(int cageid, char* path, int mode, int retval) {
+void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
