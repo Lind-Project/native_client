@@ -125,6 +125,9 @@ static INLINE uintptr_t NaClUserToSysAddrProt(struct NaClApp  *nap,
   if (0 == uaddr || ((uintptr_t) 1U << nap->addr_bits) <= uaddr) {
     return kNaClBadAddress;
   }
+  if (uaddr % 0x8 != 0) {
+    return kNaClBadAddress;
+  }
   if(!NaClVmmapCheckAddrMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, 1, prot)){
     return kNaClBadAddress;
   }
@@ -146,6 +149,9 @@ static INLINE uintptr_t NaClUserToSysAddrRangeProt(struct NaClApp  *nap,
     return kNaClBadAddress;
   }
   if (((uintptr_t) 1U << nap->addr_bits) < end_addr) {
+    return kNaClBadAddress;
+  }
+  if (uaddr % 0x8 != 0) {
     return kNaClBadAddress;
   }
   if(!NaClVmmapCheckAddrMapping( &nap->mem_map, uaddr >> NACL_PAGESHIFT, count >> NACL_PAGESHIFT, prot)){
