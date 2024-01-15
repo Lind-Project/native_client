@@ -4,21 +4,15 @@
 #include <errno.h>
 
 int main() {
-    char *dirName = "new_directory"; // Name of the directory to create
-    struct stat st = {0};
+    char *dirName = "/root/new_directory"; // An example directory path where you likely don't have permission
 
-    // Check if directory exists
-    if (stat(dirName, &st) == -1) {
-        // Directory does not exist, so create it
-        if (mkdir(dirName, 0700) == -1) {
-            perror("Error creating directory");
-            return EXIT_FAILURE;
-        } else {
-            printf("Directory created successfully.\n");
-        }
+    // Attempt to create the directory
+    if (mkdir(dirName, 0700) == -1) {
+        perror("Error creating directory");
+        printf("The errno value is: %d\n", errno);
+        return EXIT_FAILURE;
     } else {
-        // Directory exists
-        printf("Directory already exists.\n");
+        printf("Directory created successfully.\n");
     }
 
     return EXIT_SUCCESS;
