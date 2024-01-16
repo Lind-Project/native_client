@@ -122,6 +122,9 @@ static INLINE uintptr_t NaClUserToSysAddrNullOkayProt(struct NaClApp  *nap,
 static INLINE uintptr_t NaClUserToSysAddrProt(struct NaClApp  *nap,
                                               uintptr_t       uaddr,
                                               int             prot) {
+  if (uaddr & 0x7) {
+     return kNaClBadAddress;
+   }
   if (0 == uaddr || ((uintptr_t) 1U << nap->addr_bits) <= uaddr) {
     return kNaClBadAddress;
   }
@@ -136,7 +139,9 @@ static INLINE uintptr_t NaClUserToSysAddrRangeProt(struct NaClApp  *nap,
                                                    size_t          count,
                                                    int             prot) {
   uintptr_t end_addr;
-
+  if (uaddr & 0x7) {
+     return kNaClBadAddress;
+   }
   if (0 == uaddr) {
     return kNaClBadAddress;
   }
