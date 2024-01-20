@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "sys/types.h"
 #include <stdint.h>
+#include <stdlib.h>
+#include <pthread.h>
 #include "native_client/src/include/portability.h" 
 
 void NaClStraceSetOutputFile(char *path);
