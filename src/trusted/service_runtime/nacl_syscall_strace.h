@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "native_client/src/include/portability.h" 
+#include "/home/lind/lind_project/lind/native_client/src/include/portability.h" 
 
 void NaClStraceSetOutputFile(char *path);
 void NaClStraceCloseFile();
