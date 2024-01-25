@@ -26,8 +26,11 @@ if os.environ.get('TRACING_ENABLED') == '1':
     env.Append(CFLAGS=['-DTRACING=1'])
     env.Append(CPPFLAGS=['-DTRACING=1'])
     env.Append(CXXFLAGS=['-DTRACING=1'])
-
-STRACE_DEFAULT_PATH = ""
+if os.environ.get('TRACING_DASHC') == '1':
+    env.Append(CCFLAGS=['-DTRACING_DASHC=1'])
+    env.Append(CFLAGS=['-DTRACING_DASHC=1'])
+    env.Append(CPPFLAGS=['-DTRACING_DASHC=1'])
+    env.Append(CXXFLAGS=['-DTRACING_DASHC=1'])STRACE_DEFAULT_PATH = ""
 path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
 env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
@@ -393,7 +396,7 @@ env.EnsureRequiredBuildWarnings()
 if (env.Bit('linux') and not env.Bit('android')
     and not env.Bit('built_elsewhere')):
   bootstrap_env = env.Clone()
-  if os.environ.get('TRACING_ENABLED') == '1':
+  if os.environ.get('BLED') == '1':
     print("Coulson's flag added")
     bootstrap_env.Append(CCFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CFLAGS=['-DTRACING=1'])
