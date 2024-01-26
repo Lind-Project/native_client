@@ -8,6 +8,7 @@
 #include <sys/poll.h>
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
+#include <stdbool.h>
 
 long long gettimens() {
     struct timespec tp;
@@ -15,10 +16,7 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 FILE *tracingOutputFile = NULL;
-bool dashC = false;
-#ifdef TRACING_DASHC
-dashC=true;
-#endif
+
 typedef struct {    
     long long callCount;
     long long totalTime;
@@ -26,11 +24,7 @@ typedef struct {
 } SyscallStats;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
-const char* syscallNames[NUM_SYSCALLS] = {
-    "read",    
-    "write",   
-    "open",    
-}
+
 
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
@@ -102,48 +96,13 @@ void NaClStraceGetppid(int cageid, int pid) {
     fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
 }
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
-    long long startTime, endTime;
-
-    if (dashC) {
-        startTime = gettimens(); // Assuming gettimens() is your timing function
-    }
-
-    // Original tracing code
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
-
-    if (dashC) {
-        endTime = gettimens();
-        long long elapsedTime = endTime - startTime;
-        syscallStats[SYS_OPEN].callCount++; // SYS_OPEN is the identifier for the open syscall
-        syscallStats[SYS_OPEN].totalTime += elapsedTime;
-    }
 }
 
 void NaClStraceClose(int cageid, int d, int ret) {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
 }
 void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
-#ifdef TRACING_DASHC
-    // Start the timer
-    long long startTime = gettimens();
-#endif
-
-#ifdef TRACING_DASHC
-    long long endTime = gettimens();
-    int syscallIndex = SYS_READ; // Replace with the appropriate index for read syscall
-    syscallStats[syscallIndex].count++;
-    syscallStats[syscallIndex].totalTime += (endTime - startTime);
-
-    // Print the statistics for this syscall
-    long long avgTime = syscallStats[syscallIndex].count > 0 
-                        ? syscallStats[syscallIndex].totalTime / syscallStats[syscallIndex].count 
-                        : 0;
-    fprintf(tracingOutputFile, 
-            "Read Syscall - CageID: %d, Count: %lld, Average Time: %lld ns\n", 
-            cageid, syscallStats[syscallIndex].count, avgTime);
-#endif
-
-    // Original tracing code
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 }
 
@@ -422,36 +381,36 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events,int maxevents, i
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret) {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
 }
-void ReportSyscallStatistics() {
-    long long totalCalls = 0;
-    long long totalTime = 0;
+// void ReportSyscallStatistics() {
+//     long long totalCalls = 0;
+//     long long totalTime = 0;
 
-    // First, compute the total number of calls and the total time
-    for (int i = 0; i < NUM_SYSCALLS; ++i) {
-        totalCalls += syscallStats[i].callCount;
-        totalTime += syscallStats[i].totalTime;
-    }
+//     // First, compute the total number of calls and the total time
+//     for (int i = 0; i < NUM_SYSCALLS; ++i) {
+//         totalCalls += syscallStats[i].callCount;
+//         totalTime += syscallStats[i].totalTime;
+//     }
 
-    fprintf(tracingOutputFile, "\n% time     seconds  usecs/call     calls    errors syscall\n");
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+//     fprintf(tracingOutputFile, "\n% time     seconds  usecs/call     calls    errors syscall\n");
+//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
 
-    for (int i = 0; i < NUM_SYSCALLS; ++i) {
-        if (syscallStats[i].callCount > 0) {
-            double timeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0;
-            long long avgTimePerCall = syscallStats[i].totalTime / syscallStats[i].callCount;
-            double percentTime = totalTime > 0 ? (100.0 * timeInSeconds) / (totalTime / 1000000000.0) : 0;
+//     for (int i = 0; i < NUM_SYSCALLS; ++i) {
+//         if (syscallStats[i].callCount > 0) {
+//             double timeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0;
+//             long long avgTimePerCall = syscallStats[i].totalTime / syscallStats[i].callCount;
+//             double percentTime = totalTime > 0 ? (100.0 * timeInSeconds) / (totalTime / 1000000000.0) : 0;
 
-            fprintf(tracingOutputFile, "  %.2f    %.9f   %11lld %9lld %9lld %s\n",
-                    percentTime,
-                    timeInSeconds,
-                    avgTimePerCall / 1000, // Convert nanoseconds to microseconds for usecs/call
-                    syscallStats[i].callCount,
-                    syscallStats[i].errorCount, // If tracking errors
-                    syscallNames[i]
-                   );
-        }
-    }
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f                   %lld         total\n",
-            (double)totalTime / 1000000000.0, totalCalls);
-}
+//             fprintf(tracingOutputFile, "  %.2f    %.9f   %11lld %9lld %9lld %s\n",
+//                     percentTime,
+//                     timeInSeconds,
+//                     avgTimePerCall / 1000, // Convert nanoseconds to microseconds for usecs/call
+//                     syscallStats[i].callCount,
+//                     syscallStats[i].errorCount, // If tracking errors
+//                     syscallNames[i]
+//                    );
+//         }
+//     }
+//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+//     fprintf(tracingOutputFile, "100.00    %.9f                   %lld         total\n",
+//             (double)totalTime / 1000000000.0, totalCalls);
+// }
