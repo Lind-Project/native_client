@@ -18,11 +18,11 @@ long long gettimens() {
 }
 FILE *tracingOutputFile = NULL;
 
-typedef struct {    
-    long long callCount;
-    long long totalTime;
-    long long errorCount; // Optional, if you want to track errors
-} SyscallStats;
+typedef struct {
+    long long count;      // Number of times the syscall was called
+    long long totalTime;  // Total time spent in the syscall (in nanoseconds)
+} SyscallStats; // Ensure this matches the name used in the code
+
 
 SyscallStats syscallStats[NUM_SYSCALLS];
 
@@ -156,24 +156,19 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens(); // Start time measurement
-#endif
 
-    // The original mkdir functionality or tracing happens here
-    // ...
+    // ... original functionality ...
 
-#ifdef TRACING_DASHC
     long long endTime = gettimens(); // End time measurement
-    int syscallIndex = SYS_MKDIR; // Replace with the appropriate index for mkdir syscall
-    syscallStats[syscallIndex].count++; // Increment the count for the mkdir syscall
-    syscallStats[syscallIndex].totalTime += (endTime - startTime); // Add the time taken for this call
+    syscallStats[SYS_MKDIR].count++; // Increment the count for the mkdir syscall
+    syscallStats[SYS_MKDIR].totalTime += (endTime - startTime); // Add the time taken for this call
 
-    // Calculate and print the statistics for the mkdir syscall
-    long long avgTime = syscallStats[syscallIndex].count > 0 
-                        ? syscallStats[syscallIndex].totalTime / syscallStats[syscallIndex].count 
+    long long avgTime = syscallStats[SYS_MKDIR].count > 0 
+                        ? syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count 
                         : 0;
     fprintf(tracingOutputFile, 
             "Mkdir Syscall - CageID: %d, Path: %s, Count: %lld, Average Time: %lld ns\n", 
-            cageid, path, syscallStats[syscallIndex].count, avgTime);
+            cageid, path, syscallStats[SYS_MKDIR].count, avgTime);
 #endif
 
     // Print the original tracing information
