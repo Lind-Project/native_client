@@ -7,23 +7,29 @@
 #include <stdint.h>
 #include <sys/poll.h>
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
+#include <time.h>
 
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 FILE *tracingOutputFile = NULL;
 bool dashC = false;
 #ifdef TRACING_DASHC
 dashC=true;
 #endif
-typedef struct {
+typedef struct {    
     long long callCount;
     long long totalTime;
     long long errorCount; // Optional, if you want to track errors
 } SyscallStats;
 
-SyscallStats syscallStats[NUM_SYSCALLS]; // NUM_SYSCALLS is the total number of syscalls you support
+SyscallStats syscallStats[NUM_SYSCALLS];
 const char* syscallNames[NUM_SYSCALLS] = {
-    "read",    // SYS_READ
-    "write",   // SYS_WRITE
-    "open",    // SYS_OPEN
+    "read",    
+    "write",   
+    "open",    
 }
 
 // this defines the number of characters we display for printing a string buf
@@ -89,7 +95,7 @@ char* formatStringArgument(const char *input) {
 
 void NaClStraceGetpid(int cageid, int pid) {
         //ifdef dashC, do the format prints
-
+        
     fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
 }
 void NaClStraceGetppid(int cageid, int pid) {
@@ -117,8 +123,30 @@ void NaClStraceClose(int cageid, int d, int ret) {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
 }
 void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
+#ifdef TRACING_DASHC
+    // Start the timer
+    long long startTime = gettimens();
+#endif
+
+#ifdef TRACING_DASHC
+    long long endTime = gettimens();
+    int syscallIndex = SYS_READ; // Replace with the appropriate index for read syscall
+    syscallStats[syscallIndex].count++;
+    syscallStats[syscallIndex].totalTime += (endTime - startTime);
+
+    // Print the statistics for this syscall
+    long long avgTime = syscallStats[syscallIndex].count > 0 
+                        ? syscallStats[syscallIndex].totalTime / syscallStats[syscallIndex].count 
+                        : 0;
+    fprintf(tracingOutputFile, 
+            "Read Syscall - CageID: %d, Count: %lld, Average Time: %lld ns\n", 
+            cageid, syscallStats[syscallIndex].count, avgTime);
+#endif
+
+    // Original tracing code
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 }
+
 void NaClStraceExit(int cageid, int status) {
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
 }
@@ -162,9 +190,36 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
+// void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+//     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+// }
 void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens(); // Start time measurement
+#endif
+
+    // The original mkdir functionality or tracing happens here
+    // ...
+
+#ifdef TRACING_DASHC
+    long long endTime = gettimens(); // End time measurement
+    int syscallIndex = SYS_MKDIR; // Replace with the appropriate index for mkdir syscall
+    syscallStats[syscallIndex].count++; // Increment the count for the mkdir syscall
+    syscallStats[syscallIndex].totalTime += (endTime - startTime); // Add the time taken for this call
+
+    // Calculate and print the statistics for the mkdir syscall
+    long long avgTime = syscallStats[syscallIndex].count > 0 
+                        ? syscallStats[syscallIndex].totalTime / syscallStats[syscallIndex].count 
+                        : 0;
+    fprintf(tracingOutputFile, 
+            "Mkdir Syscall - CageID: %d, Path: %s, Count: %lld, Average Time: %lld ns\n", 
+            cageid, path, syscallStats[syscallIndex].count, avgTime);
+#endif
+
+    // Print the original tracing information
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
+
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
 }
