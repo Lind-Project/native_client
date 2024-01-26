@@ -153,6 +153,27 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 // void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 //     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 // }
+// void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+// #ifdef TRACING_DASHC
+//     long long startTime = gettimens(); // Start time measurement
+
+//     // ... original functionality ...
+
+//     long long endTime = gettimens(); // End time measurement
+//     syscallStats[SYS_MKDIR].count++; // Increment the count for the mkdir syscall
+//     syscallStats[SYS_MKDIR].totalTime += (endTime - startTime); // Add the time taken for this call
+
+//     long long avgTime = syscallStats[SYS_MKDIR].count > 0 
+//                         ? syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count 
+//                         : 0;
+//     fprintf(tracingOutputFile, 
+//             "Mkdir Syscall - CageID: %d, Path: %s, Count: %lld, Average Time: %lld ns\n", 
+//             cageid, path, syscallStats[SYS_MKDIR].count, avgTime);
+// #endif
+
+//     // Print the original tracing information
+//     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+// }
 void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens(); // Start time measurement
@@ -163,12 +184,24 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     syscallStats[SYS_MKDIR].count++; // Increment the count for the mkdir syscall
     syscallStats[SYS_MKDIR].totalTime += (endTime - startTime); // Add the time taken for this call
 
-    long long avgTime = syscallStats[SYS_MKDIR].count > 0 
-                        ? syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count 
-                        : 0;
+    long long totalTimeInSeconds = syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
+    long long avgTimeInMicroseconds = syscallStats[SYS_MKDIR].count > 0 
+                                      ? (syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count) / 1000
+                                      : 0;
+
+    // Calculate % time (assuming you have total time of all syscalls)
+    double percentTime = (totalSyscallsTime > 0) 
+                         ? 100.0 * totalTimeInSeconds / totalSyscallsTime 
+                         : 0.0;
+
     fprintf(tracingOutputFile, 
-            "Mkdir Syscall - CageID: %d, Path: %s, Count: %lld, Average Time: %lld ns\n", 
-            cageid, path, syscallStats[SYS_MKDIR].count, avgTime);
+            "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(tracingOutputFile, 
+            "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, 
+            "%.2f    %.9f   %lld        %lld        %d %s\n", 
+            percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
+            syscallStats[SYS_MKDIR].count, /* errors count */, "mkdir");
 #endif
 
     // Print the original tracing information
