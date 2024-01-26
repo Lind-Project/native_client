@@ -30,7 +30,8 @@ if os.environ.get('TRACING_DASHC') == '1':
     env.Append(CCFLAGS=['-DTRACING_DASHC=1'])
     env.Append(CFLAGS=['-DTRACING_DASHC=1'])
     env.Append(CPPFLAGS=['-DTRACING_DASHC=1'])
-    env.Append(CXXFLAGS=['-DTRACING_DASHC=1'])STRACE_DEFAULT_PATH = ""
+    env.Append(CXXFLAGS=['-DTRACING_DASHC=1'])
+STRACE_DEFAULT_PATH = ""
 path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
 env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
