@@ -9,7 +9,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
 #include <stdbool.h>
-
+#define NUM_SYSCALLS 100 
+#define SYS_MKDIR 1 
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
