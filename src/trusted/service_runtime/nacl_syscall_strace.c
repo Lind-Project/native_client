@@ -17,6 +17,7 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 FILE *tracingOutputFile = NULL;
+long long totalSyscallsTime = 0; // Total time for all syscalls
 
 typedef struct {
     long long count;      // Number of times the syscall was called
@@ -176,20 +177,19 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 // }
 void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 #ifdef TRACING_DASHC
-    long long startTime = gettimens(); // Start time measurement
+    long long startTime = gettimens();
 
     // ... original functionality ...
 
-    long long endTime = gettimens(); // End time measurement
-    syscallStats[SYS_MKDIR].count++; // Increment the count for the mkdir syscall
-    syscallStats[SYS_MKDIR].totalTime += (endTime - startTime); // Add the time taken for this call
+    long long endTime = gettimens();
+    syscallStats[SYS_MKDIR].count++;
+    syscallStats[SYS_MKDIR].totalTime += (endTime - startTime);
+    totalSyscallsTime += (endTime - startTime); // Update total time
 
     long long totalTimeInSeconds = syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
     long long avgTimeInMicroseconds = syscallStats[SYS_MKDIR].count > 0 
                                       ? (syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count) / 1000
                                       : 0;
-
-    // Calculate % time (assuming you have total time of all syscalls)
     double percentTime = (totalSyscallsTime > 0) 
                          ? 100.0 * totalTimeInSeconds / totalSyscallsTime 
                          : 0.0;
@@ -201,13 +201,11 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     fprintf(tracingOutputFile, 
             "%.2f    %.9f   %lld        %lld        %d %s\n", 
             percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
-            syscallStats[SYS_MKDIR].count, /* errors count */, "mkdir");
+            syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
 #endif
 
-    // Print the original tracing information
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
-
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
 }
