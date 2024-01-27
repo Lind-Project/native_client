@@ -27,7 +27,7 @@ typedef struct {
 
 
 SyscallStats syscallStats[NUM_SYSCALLS];
-long long totalSyscallsTime = 0; 
+ 
 
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
@@ -280,7 +280,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     // Calculate and print total statistics for all syscalls
     long long totalCalls = 0, totalErrors = 0;
-    totalSeconds = 0.0;
+    double totalSeconds = 0.0; // Declare totalSeconds as a local variable
     for (int i = 0; i < NUM_SYSCALLS; i++) {
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
@@ -293,6 +293,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
+
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
 }
