@@ -271,11 +271,11 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
                                          ? (double)syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count / 1000.0
                                          : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
-    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "%.2f    %.9f   %.2f        %lld        %lld mkdir\n", 
-            percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, 
-            syscallStats[SYS_MKDIR].count, syscallStats[SYS_MKDIR].errorCount);
+    // fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    // fprintf(tracingOutputFile, "%.2f    %.9f   %.2f        %lld        %lld mkdir\n", 
+    //         percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, 
+    //         syscallStats[SYS_MKDIR].count, syscallStats[SYS_MKDIR].errorCount);
 
     // Calculate and print total statistics for all syscalls
     long long totalCalls = 0, totalErrors = 0;
