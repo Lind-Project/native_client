@@ -290,7 +290,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
                                         : 0.0;
 
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %.2f        %lld       %lld         %lld total\n", 
+    fprintf(tracingOutputFile, "100.00    %.9f   %.2f        %lld       %lld       mkdir\n", 
         totalSeconds, avgTimePerCallAllInMicroseconds, totalCalls, totalErrors);
 
     #endif
