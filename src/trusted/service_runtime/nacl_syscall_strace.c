@@ -22,7 +22,8 @@ long long totalSyscallsTime = 0; // Total time for all syscalls
 typedef struct {
     long long count;      // Number of times the syscall was called
     long long totalTime;  // Total time spent in the syscall (in nanoseconds)
-} SyscallStats; // Ensure this matches the name used in the code
+    long long errorCount; // Number of errors encountered in the syscall
+} SyscallStats;
 
 
 SyscallStats syscallStats[NUM_SYSCALLS];
@@ -178,6 +179,9 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
+     if (retval < 0) { // Assuming negative retval indicates an error
+        syscallStats[SYS_MKDIR].errorCount++;
+    }
 
     //next steps
     long long endTime = gettimens();
@@ -195,14 +199,15 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     fprintf(tracingOutputFile, 
             "%% time     seconds  usecs/call     calls    errors syscall\n");
-    // fprintf(tracingOutputFile, 
-    //         "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, 
+            "------ ----------- ----------- --------- --------- ----------------\n");
     // fprintf(tracingOutputFile, 
     //         "%.2f    %.9f   %lld        %lld        %d %s\n", 
     //         percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
     //         syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
-    fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld        %d %s\n", 
-        0.0, 0.0, 0LL, 0LL, 0, "mkdir");
+    fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld        %lld %s\n", 
+        percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
+        syscallStats[SYS_MKDIR].count, syscallStats[SYS_MKDIR].errorCount, "mkdir");
 
 #endif
 
