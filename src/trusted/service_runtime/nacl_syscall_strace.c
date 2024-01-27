@@ -285,9 +285,14 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
         totalErrors += syscallStats[i].errorCount;
         totalSeconds += syscallStats[i].totalTime / 1000000000.0;
     }
+    double avgTimePerCallAllInMicroseconds = totalCalls > 0 
+                                        ? (totalSeconds * 1000000.0) / totalCalls
+                                        : 0.0;
+
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f           %lld       %lld         %lld total\n", 
-            totalSeconds, totalCalls, totalErrors);
+    fprintf(tracingOutputFile, "100.00    %.9f   %.2f        %lld       %lld         %lld total\n", 
+        totalSeconds, avgTimePerCallAllInMicroseconds, totalCalls, totalErrors);
+
     #endif
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
