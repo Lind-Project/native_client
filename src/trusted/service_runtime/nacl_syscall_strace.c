@@ -221,7 +221,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     if (tracingOutputFile != NULL) {
-        fprintf(tracingOutputFile, "Test message: %s\n", "mkdir");
+        fprintf(tracingOutputFile, "Test message: %s\n", "mkdir2");
     }
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
     
