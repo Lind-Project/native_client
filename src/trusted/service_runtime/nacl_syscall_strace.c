@@ -200,26 +200,34 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
                          ? 100.0 * totalTimeInSeconds / totalSyscallsTime 
                          : 0.0;
 
-    fprintf(tracingOutputFile, 
-            "%% time     seconds  usecs/call     calls    errors syscall\n");
-    if (tracingOutputFile != NULL) {
-    fprintf(tracingOutputFile, "Test message: %s\n", "mkdir");
-    }
+    // fprintf(tracingOutputFile, 
+    //         "%% time     seconds  usecs/call     calls    errors syscall\n");
+    
 
-    fprintf(tracingOutputFile, 
-            "------ ----------- ----------- --------- --------- ----------------\n");
+    // fprintf(tracingOutputFile, 
+    //         "------ ----------- ----------- --------- --------- ----------------\n");
     
     // fprintf(tracingOutputFile, 
     //         "%.2f    %.9f   %lld        %lld        %d %s\n", 
     //         percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
     //         syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
-    fprintf(tracingOutputFile, 
-        "Syscall: mkdir, Count: %lld, Avg Time (us): %lld, Errors: %d\n", 
-        syscallStats[SYS_MKDIR].count, avgTimeInMicroseconds, syscallStats[SYS_MKDIR].errorCount);
+    // fprintf(tracingOutputFile, 
+    //     "Syscall: mkdir, Count: %lld, Avg Time (us): %lld, Errors: %d\n", 
+    //     syscallStats[SYS_MKDIR].count, avgTimeInMicroseconds, syscallStats[SYS_MKDIR].errorCount);
 
     // fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld        %lld %s\n", 
     //     percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
     //     syscallStats[SYS_MKDIR].count, syscallStats[SYS_MKDIR].errorCount, "mkdir");
+    
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    if (tracingOutputFile != NULL) {
+        fprintf(tracingOutputFile, "Test message: %s\n", "mkdir");
+    }
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    
+    fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld        %lld mkdir\n", 
+            percentTime, totalTimeInSeconds, avgTimePerCall, 
+            syscallStats[SYS_MKDIR].count, syscallStats[SYS_MKDIR].errorCount);
     fprintf(tracingOutputFile, "Static test message after syscall stats.\n");
 
 #endif
