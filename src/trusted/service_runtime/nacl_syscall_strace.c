@@ -195,8 +195,8 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     fprintf(tracingOutputFile, 
             "%% time     seconds  usecs/call     calls    errors syscall\n");
-    fprintf(tracingOutputFile, 
-            "------ ----------- ----------- --------- --------- ----------------\n");
+    // fprintf(tracingOutputFile, 
+    //         "------ ----------- ----------- --------- --------- ----------------\n");
     // fprintf(tracingOutputFile, 
     //         "%.2f    %.9f   %lld        %lld        %d %s\n", 
     //         percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
