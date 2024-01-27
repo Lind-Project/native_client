@@ -196,13 +196,13 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
                          : 0.0;
 
     fprintf(tracingOutputFile, 
-            "%% time     seconds  usecs/call     calls    errors syscall\n");
+            "%% time     seconds  usecs/call     calls    syscall errors\n");
     fprintf(tracingOutputFile, 
             "------ ----------- ----------- --------- --------- ----------------\n");
     fprintf(tracingOutputFile, 
-            "%.2f    %.9f   %lld        %lld        %d %s\n", 
+            "%.2f    %.9f   %lld        %lld        %s %d\n", 
             percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
-            syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
+            syscallStats[SYS_MKDIR].count, "mkdir", 0);
 #endif
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
