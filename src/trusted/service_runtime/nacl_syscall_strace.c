@@ -179,8 +179,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original functionality ...
-
+    //next steps
     long long endTime = gettimens();
     syscallStats[SYS_MKDIR].count++;
     syscallStats[SYS_MKDIR].totalTime += (endTime - startTime);
@@ -198,10 +197,13 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
             "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, 
             "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, 
-            "%.2f    %.9f   %lld        %lld        %d %s\n", 
-            percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
-            syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
+    // fprintf(tracingOutputFile, 
+    //         "%.2f    %.9f   %lld        %lld        %d %s\n", 
+    //         percentTime, totalTimeInSeconds, avgTimeInMicroseconds, 
+    //         syscallStats[SYS_MKDIR].count, 0 /* or error count */, "mkdir");
+    fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld        %d %s\n", 
+        0.0, 0.0, 0LL, 0LL, 0, "mkdir");
+
 #endif
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
