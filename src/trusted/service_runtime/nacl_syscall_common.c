@@ -15,7 +15,7 @@
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
-
+#define NUM_SYSCALLS 100 
 #include <stdio.h>
 #include <Python.h>
 #include <string.h>
@@ -23,6 +23,12 @@
 #include <time.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+typedef struct {
+    long long count;      // Number of times the syscall was called
+    long long totalTime;  // Total time spent in the syscall (in nanoseconds)
+    long long errorCount; // Number of errors encountered in the syscall
+} SyscallStats;gui
+SyscallStats syscallStats[NUM_SYSCALLS];
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
