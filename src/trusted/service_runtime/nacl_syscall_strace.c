@@ -521,36 +521,4 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events,int maxevents, i
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret) {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
 }
-// void ReportSyscallStatistics() {
-//     long long totalCalls = 0;
-//     long long totalTime = 0;
 
-//     // First, compute the total number of calls and the total time
-//     for (int i = 0; i < NUM_SYSCALLS; ++i) {
-//         totalCalls += syscallStats[i].callCount;
-//         totalTime += syscallStats[i].totalTime;
-//     }
-
-//     fprintf(tracingOutputFile, "\n% time     seconds  usecs/call     calls    errors syscall\n");
-//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-
-//     for (int i = 0; i < NUM_SYSCALLS; ++i) {
-//         if (syscallStats[i].callCount > 0) {
-//             double timeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0;
-//             long long avgTimePerCall = syscallStats[i].totalTime / syscallStats[i].callCount;
-//             double percentTime = totalTime > 0 ? (100.0 * timeInSeconds) / (totalTime / 1000000000.0) : 0;
-
-//             fprintf(tracingOutputFile, "  %.2f    %.9f   %11lld %9lld %9lld %s\n",
-//                     percentTime,
-//                     timeInSeconds,
-//                     avgTimePerCall / 1000, // Convert nanoseconds to microseconds for usecs/call
-//                     syscallStats[i].callCount,
-//                     syscallStats[i].errorCount, // If tracking errors
-//                     syscallNames[i]
-//                    );
-//         }
-//     }
-//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-//     fprintf(tracingOutputFile, "100.00    %.9f                   %lld         total\n",
-//             (double)totalTime / 1000000000.0, totalCalls);
-// }
