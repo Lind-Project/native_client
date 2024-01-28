@@ -24,7 +24,8 @@ typedef struct {
     long long totalTime;  // Total time spent in the syscall (in nanoseconds)
     long long errorCount; // Number of errors encountered in the syscall
 } SyscallStats;
-
+long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in microseconds)
+int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
  
@@ -264,6 +265,9 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     if (retval < 0) {
         syscallStats[SYS_MKDIR].errorCount++;
     }
+    totalSyscallsCount++;
+    totalSyscallsMicroseconds += elapsedTime / 1000; // Convert nanoseconds to microseconds
+
 
     // Calculate and print individual syscall stats for mkdir
     double totalTimeInSeconds = (double)syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
@@ -308,7 +312,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     
 // Now you can print this along with the other statistics
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       total\n", 
+    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mdkir\n", 
             totalSeconds, avgMicrosecondsPerCall, totalCalls, totalErrors);
 
     
@@ -522,3 +526,11 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
 }
 
+void printFinalSyscallStats() {
+    double totalSeconds = totalSyscallsMicroseconds / 1000000.0; // Convert microseconds to seconds
+    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 ? totalSyscallsMicroseconds / totalSyscallsCount : 0;
+
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       total\n", 
+            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount, /* total error count can be added here if needed */);
+}
