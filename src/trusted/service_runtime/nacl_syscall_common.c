@@ -1109,6 +1109,7 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   #ifdef TRACING
   NaClStraceMkdir(nap->cage_id, path, mode, retval);
+  printFinalSyscallStats();
   #endif
 
   return retval;
@@ -4724,4 +4725,15 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   #endif
 
   return retval;
+}
+
+void printFinalSyscallStats() {
+    printf("Final Syscall Statistics:\n");
+    printf("%-20s %-10s %-15s %-10s\n", "Syscall", "Count", "Total Time (ns)", "Errors");
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+        if (syscallStats[i].count > 0) {
+            printf("%-20d %-10lld %-15lld %-10lld\n",
+                   i, syscallStats[i].count, syscallStats[i].totalTime, syscallStats[i].errorCount);
+        }
+    }
 }

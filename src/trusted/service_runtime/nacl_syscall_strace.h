@@ -3,8 +3,7 @@
 #include <sys/socket.h>
 #include "sys/types.h"
 #include <stdint.h>
-//#include "native_client/src/include/portability.h"
-#include "/home/lind/lind_project/src/native_client/src/include/probability.h" 
+#include "native_client/src/include/portability.h"
 void NaClStraceSetOutputFile(char *path);
 void NaClStraceCloseFile();
 void NaClStraceGetpid(int cageid, int pid);
