@@ -12,7 +12,8 @@
 #define NUM_SYSCALLS 100 
 #define SYS_MKDIR 1 
 #define SYS_MMAP 2 
-#define SYS_GETEUID 3 
+#define SYS_GETEUID 3
+#define SYS_GETUID 4
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -356,6 +357,8 @@ const char* getSyscallName(int syscallIndex) {
             return "mmap";
         case SYS_GETEUID:
             return "geteuid";
+        case SYS_GETUID:
+            return "getuid";
         // Add cases for other syscalls...
         default:
             return "unknown";
@@ -521,9 +524,28 @@ void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags
 void NaClStraceShutdown(int cageid, int sockfd, int how, int ret) {
     fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d\n", cageid, sockfd, how, ret);
 }
+// void NaClStraceGetuid(int cageid, int ret) {
+//     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
+// }
 void NaClStraceGetuid(int cageid, int ret) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original getuid functionality ...
+
+    long long endTime = gettimens();
+    long long elapsedTime = endTime - startTime;
+    syscallStats[SYS_GETUID].count++;
+    syscallStats[SYS_GETUID].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[SYS_GETUID].errorCount++;
+    }
+
+    // Print the syscall information
     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
+#endif
 }
+
 // void NaClStraceGeteuid(int cageid, int ret) {
 //     fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
 // }
