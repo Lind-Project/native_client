@@ -4,6 +4,7 @@
 #include "sys/types.h"
 #include <stdint.h>
 #include "native_client/src/include/portability.h"
+extern SyscallStat syscallStats[NUM_SYSCALLS];
 void NaClStraceSetOutputFile(char *path);
 void NaClStraceCloseFile();
 void NaClStraceGetpid(int cageid, int pid);
