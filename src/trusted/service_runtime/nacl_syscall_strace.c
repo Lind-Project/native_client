@@ -37,6 +37,7 @@ void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
         // if the path is NULL, always revert to stderr
         tracingOutputFile = stderr;
+        printFinalSyscallStats();
         return;
     }
 
@@ -46,6 +47,7 @@ void NaClStraceSetOutputFile(char *path) {
         tracingOutputFile = stderr;
     } else {
         if (tracingOutputFile != stderr && tracingOutputFile != NULL) {
+            printFinalSyscallStats();
             fclose(tracingOutputFile);
         }
         tracingOutputFile = newFile;
