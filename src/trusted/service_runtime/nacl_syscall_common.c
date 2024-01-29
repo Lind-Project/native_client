@@ -15,7 +15,6 @@
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
-#define NUM_SYSCALLS 100 
 #include <stdio.h>
 #include <Python.h>
 #include <string.h>
@@ -23,12 +22,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <netinet/in.h>
-typedef struct {
-    long long count;      // Number of times the syscall was called
-    long long totalTime;  // Total time spent in the syscall (in nanoseconds)
-    long long errorCount; // Number of errors encountered in the syscall
-} SyscallStats;gui
-SyscallStats syscallStats[NUM_SYSCALLS];
+
 
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
@@ -1120,7 +1114,6 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   return retval;
 }
-
 int32_t NaClSysRmdir(struct NaClAppThread *natp,
                      uint32_t             pathname) {
   struct NaClApp *nap = natp->nap;
@@ -4733,13 +4726,3 @@ int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds,
   return retval;
 }
 
-void printFinalSyscallStats() {
-    printf("Final Syscall Statistics:\n");
-    printf("%-20s %-10s %-15s %-10s\n", "Syscall", "Count", "Total Time (ns)", "Errors");
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-        if (syscallStats[i].count > 0) {
-            printf("%-20d %-10lld %-15lld %-10lld\n",
-                   i, syscallStats[i].count, syscallStats[i].totalTime, syscallStats[i].errorCount);
-        }
-    }
-}
