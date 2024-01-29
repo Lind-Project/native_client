@@ -360,19 +360,21 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   uintptr_t context_user_addr;
   uint32_t lind_exception_handler;
   
+  #ifndef DEBUG_NACL_SIGNAL 
   // Single stepping to 32-byte boundary if we have set SIGTRAP
   // if we reach boundary: unset SIGTRAP, otherwise return
   // This must be before the lindgetsighandler call
   // See the "32 byte alignment & single stepping" section in the explanatory comment at the top of this file
-  // if(sig == SIGTRAP && natp->single_stepping_signum) {
-  //   if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
-  //     regs->flags &= ~0x100; //get rid of the trap flag
-  //     sig = natp->single_stepping_signum; //overwrite SIGTRAP
-  //     natp->single_stepping_signum = 0;
-  //   } else {
-  //     return -1;
-  //   }
-  // }
+  if(sig == SIGTRAP && natp->single_stepping_signum) {
+    if((regs->prog_ctr & 31) == 0) { //if our address is 32 bit aligned
+      regs->flags &= ~0x100; //get rid of the trap flag
+      sig = natp->single_stepping_signum; //overwrite SIGTRAP
+      natp->single_stepping_signum = 0;
+    } else {
+      return -1;
+    }
+  }
+  #endif
 
   lind_exception_handler = lindgetsighandler(nap->cage_id, sig); // retrive handler address from RustPOSIX
 
@@ -387,14 +389,16 @@ static int DispatchToUntrustedHandler(struct NaClAppThread *natp,
   }
 
   if (*is_untrusted) {
+    #ifndef DEBUG_NACL_SIGNAL
     // See the "32 byte alignment & single stepping" section in the explanatory comment at the top of this file
-    // if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGFPE) {
-    //   if(!natp->single_stepping_signum)  {
-    //     natp->single_stepping_signum = sig;
-    //     regs->flags |= 0x100; //set the trap flag on return
-    //   }
-    //   return -1;
-    // }
+    if(regs->prog_ctr & 31 && sig != SIGSEGV && sig != SIGBUS &&  sig != SIGTRAP && sig != SIGILL && sig != SIGFPE) {
+      if(!natp->single_stepping_signum)  {
+        natp->single_stepping_signum = sig;
+        regs->flags |= 0x100; //set the trap flag on return
+      }
+      return -1;
+    }
+    #endif
   } else {
     natp->pendingsignal = true;
     if (!natp->signatpflag) {
