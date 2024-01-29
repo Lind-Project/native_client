@@ -134,8 +134,11 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
         syscallStats[SYS_OPEN].errorCount++;
     }
     #endif
+    #ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
+    #endif
+
 }
 // void NaClStraceClose(int cageid, int d, int ret) {
 //     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
@@ -740,8 +743,9 @@ void NaClStraceGetgid(int cageid, int ret) {
         syscallStats[SYS_GETGID].errorCount++;
     }
     #endif
-
+    #ifdef TRACING_INDIVIDUAL_CALLS
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
+    #endif
 }
 
 // void NaClStraceGetegid(int cageid, int ret) {
