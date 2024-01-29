@@ -310,7 +310,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     #endif
 
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+    //fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
