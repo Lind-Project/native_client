@@ -511,14 +511,7 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
 }
 
-void printFinalSyscallStats() {
-    double totalSeconds = totalSyscallsMicroseconds / 1000000.0; // Convert microseconds to seconds
-    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 ? totalSyscallsMicroseconds / totalSyscallsCount : 0;
 
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
-            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
-}
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     printFinalSyscallStats();
