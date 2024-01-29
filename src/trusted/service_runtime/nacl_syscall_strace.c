@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #define NUM_SYSCALLS 100 
 #define SYS_MKDIR 1 
+#define SYS_MMAP 2 
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -310,7 +311,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     #endif
 
-    //fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
@@ -376,8 +377,38 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
     free(strBuf1);
     free(strBuf2);
 }
+// void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval) {
+//     #ifdef TRACING_DASHC
+//     printFinalSyscallStats();
+//     #endif
+//     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
+// }
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval) {
-    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original functionality ...
+
+    long long endTime = gettimens();
+    long long elapsedTime = endTime - startTime;
+    syscallStats[SYS_MMAP].count++;
+    syscallStats[SYS_MMAP].totalTime += elapsedTime;
+    totalSyscallsTime += elapsedTime; 
+    if (retval < 0) {
+        syscallStats[SYS_MMAP].errorCount++;
+    }
+    totalSyscallsCount++;
+
+    // Only print individual syscall info if detailed tracing is enabled
+    if (printDetailedSyscallInfo) {
+        fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", 
+                cageid, start, length, prot, flags, d, offset, retval);
+    }
+
+    #endif
+
+    // Print summarised statistics
+    printFinalSyscallStats();
 }
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
