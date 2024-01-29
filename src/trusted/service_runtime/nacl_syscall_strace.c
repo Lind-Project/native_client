@@ -419,6 +419,10 @@ const char* getSyscallName(int syscallIndex) {
             return "mkdir";
         case SYS_MMAP:
             return "mmap";
+        case SYS_GETEUID:
+            return "geteuid";
+        case SYS_GETUID:
+            return "getuid";
         case SYS_READ:
             return "read";
         case SYS_LSEEK:
@@ -427,11 +431,12 @@ const char* getSyscallName(int syscallIndex) {
             return "fstat";
         case SYS_CLOSE:
             return "close";
-        // Add cases for other syscalls...
+        // Add cases for other syscalls as needed...
         default:
             return "unknown";
     }
 }
+
 
 
 
