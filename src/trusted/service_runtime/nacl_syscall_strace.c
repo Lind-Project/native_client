@@ -18,6 +18,11 @@
 #define SYS_LSEEK 6
 #define SYS_FSTAT 7
 #define SYS_CLOSE 8
+#define SYS_GETCWD 9
+#define SYS_MUNMAP 10
+#define SYS_ACCESS 11
+#define SYS_OPEN 12
+
 
 long long gettimens() {
     struct timespec tp;
@@ -112,10 +117,25 @@ void NaClStraceGetpid(int cageid, int pid) {
 void NaClStraceGetppid(int cageid, int pid) {
     fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
 }
+// void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
+//     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
+// }
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original open functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_OPEN].count++;
+    syscallStats[SYS_OPEN].totalTime += endTime - startTime;
+    if (fd < 0) {
+        syscallStats[SYS_OPEN].errorCount++;
+    }
+    #endif
+
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
 }
-
 // void NaClStraceClose(int cageid, int d, int ret) {
 //     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
 // }
@@ -431,6 +451,14 @@ const char* getSyscallName(int syscallIndex) {
             return "fstat";
         case SYS_CLOSE:
             return "close";
+        case SYS_GETCWD:
+            return "getcwd";
+        case SYS_MUNMAP:
+            return "munmap";
+        case SYS_ACCESS:
+            return "access";
+        case SYS_OPEN:
+            return "open";    
         // Add cases for other syscalls as needed...
         default:
             return "unknown";
@@ -465,7 +493,25 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
 void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval) {
     fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
 }
+// void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
+//     char *strBuf = formatStringArgument(buf);
+//     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
+//     free(strBuf);
+// }
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+    
+    // ... original getcwd functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_GETCWD].count++;
+    syscallStats[SYS_GETCWD].totalTime += endTime - startTime;
+    if (retval < 0) {
+        syscallStats[SYS_GETCWD].errorCount++;
+    }
+    #endif
+
     char *strBuf = formatStringArgument(buf);
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
     free(strBuf);
@@ -524,8 +570,24 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
 }
 
+// void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
+//    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
+// }
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
-   fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original munmap functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_MUNMAP].count++;
+    syscallStats[SYS_MUNMAP].totalTime += endTime - startTime;
+    if (retval < 0) {
+        syscallStats[SYS_MUNMAP].errorCount++;
+    }
+    #endif
+
+    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 }
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
     fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
@@ -669,7 +731,25 @@ void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * a
 void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
     fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
 }
+// void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
+//     char *strBuf = formatStringArgument(path);
+//     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
+//     free(strBuf);
+// }
 void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original access functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_ACCESS].count++;
+    syscallStats[SYS_ACCESS].totalTime += endTime - startTime;
+    if (ret < 0) {
+        syscallStats[SYS_ACCESS].errorCount++;
+    }
+    #endif
+
     char *strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
     free(strBuf);
