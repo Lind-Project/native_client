@@ -174,6 +174,8 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
     if (ret < 0) {
         syscallStats[SYS_READ].errorCount++;
     }
+#endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 #endif
