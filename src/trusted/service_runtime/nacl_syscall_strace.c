@@ -37,7 +37,7 @@ void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
         // if the path is NULL, always revert to stderr
         tracingOutputFile = stderr;
-        //printFinalSyscallStats();
+        
         return;
     }
 
@@ -57,6 +57,9 @@ void NaClStraceSetOutputFile(char *path) {
 void NaClStraceCloseFile() {
     //ifdef dashC, do the format prints
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
+        #ifdef TRACING_DASHC
+        printFinalSyscallStats(); // Print the final statistics
+        #endif
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
