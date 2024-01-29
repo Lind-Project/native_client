@@ -330,16 +330,37 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 // }
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
-    double totalSeconds = (double)totalSyscallsTime / 1000000000.0; // Convert nanoseconds to seconds
-    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 
-                                       ? (totalSyscallsTime / totalSyscallsCount) / 1000 
-                                       : 0;
-
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          all_syscalls\n", 
-            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
+
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+        if (syscallStats[i].count > 0) {
+            double totalTimeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0;
+            long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 
+                                                     ? syscallStats[i].totalTime / syscallStats[i].count / 1000 
+                                                     : 0;
+            fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       %s\n", 
+                    totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
+        }
+    }
     #endif
 }
+
+// Helper function to get syscall name from its index
+const char* getSyscallName(int syscallIndex) {
+    // You need to implement this function based on your syscall index definitions
+    // Example implementation:
+    switch (syscallIndex) {
+        case SYS_MKDIR:
+            return "mkdir";
+        case SYS_MMAP:
+            return "mmap";
+        // Add cases for other syscalls...
+        default:
+            return "unknown";
+    }
+}
+
 
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
@@ -416,9 +437,9 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
                                          : 0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
 
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mmap\n", 
-            totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[SYS_MMAP].count, syscallStats[SYS_MMAP].errorCount);
+    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mmap\n", 
+    //         totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[SYS_MMAP].count, syscallStats[SYS_MMAP].errorCount);
     #endif
 
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
