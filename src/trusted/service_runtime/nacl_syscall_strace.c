@@ -101,6 +101,7 @@ void printFinalSyscallStats() {
             totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
      #endif
 }
+printFinalSyscallStats();
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
         // if the path is NULL, always revert to stderr
@@ -115,7 +116,7 @@ void NaClStraceSetOutputFile(char *path) {
         tracingOutputFile = stderr;
     } else {
         if (tracingOutputFile != stderr && tracingOutputFile != NULL) {
-            printFinalSyscallStats();
+            
             fclose(tracingOutputFile);
         }
         tracingOutputFile = newFile;
