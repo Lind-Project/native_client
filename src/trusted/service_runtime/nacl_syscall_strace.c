@@ -408,8 +408,12 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     
 
     #endif
+    #ifdef TRACING_INDIVIDUAL_CALLS
+
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+    #endif
+
 }
 
 // void printFinalSyscallStats() {
@@ -781,8 +785,11 @@ void NaClStraceGetegid(int cageid, int ret) {
         syscallStats[SYS_GETEGID].errorCount++;
     }
     #endif
+    #ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
+    #endif
+
 }
 
 void NaClStraceFlock(int cageid, int fd, int operation, int ret) {
