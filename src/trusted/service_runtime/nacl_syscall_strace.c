@@ -32,6 +32,60 @@ SyscallStats syscallStats[NUM_SYSCALLS];
 
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
+void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+
+    long long endTime = gettimens();
+    long long elapsedTime = endTime - startTime;  // Time for this call in nanoseconds
+    syscallStats[SYS_MKDIR].count++;
+    syscallStats[SYS_MKDIR].totalTime += elapsedTime;
+    totalSyscallsTime += elapsedTime; // Update total time for all syscalls
+    if (retval < 0) {
+        syscallStats[SYS_MKDIR].errorCount++;
+    }
+    totalSyscallsCount++;
+    totalSyscallsMicroseconds += elapsedTime / 1000; // Convert nanoseconds to microseconds
+
+
+    // Calculate and print individual syscall stats for mkdir
+    double totalTimeInSeconds = (double)syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
+    double avgTimePerCallInMicroseconds = syscallStats[SYS_MKDIR].count > 0 
+                                         ? (double)syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count / 1000.0
+                                         : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
+    // fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    
+    // Calculate and print total statistics for all syscalls
+    long long totalCalls = 0, totalErrors = 0;
+    double totalSeconds = 0.0;
+    long long totalMicroseconds = 0; // To store the total microseconds for all syscalls
+
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+        totalCalls += syscallStats[i].count;
+        totalErrors += syscallStats[i].errorCount;
+        totalSeconds += syscallStats[i].totalTime / 1000000000.0;
+    
+        // Add the total time (in microseconds) for each syscall
+        totalMicroseconds += syscallStats[i].totalTime / 1000;
+    }
+
+// Calculate the average microseconds per call
+    long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
+    
+// Now you can print this along with the other statistics
+    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mdkir\n", 
+    //         totalSeconds, avgMicrosecondsPerCall, totalCalls, totalErrors);
+
+    
+
+    #endif
+
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+}
 
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
@@ -254,60 +308,7 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 
 //     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 // }
-void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
 
-
-    long long endTime = gettimens();
-    long long elapsedTime = endTime - startTime;  // Time for this call in nanoseconds
-    syscallStats[SYS_MKDIR].count++;
-    syscallStats[SYS_MKDIR].totalTime += elapsedTime;
-    totalSyscallsTime += elapsedTime; // Update total time for all syscalls
-    if (retval < 0) {
-        syscallStats[SYS_MKDIR].errorCount++;
-    }
-    totalSyscallsCount++;
-    totalSyscallsMicroseconds += elapsedTime / 1000; // Convert nanoseconds to microseconds
-
-
-    // Calculate and print individual syscall stats for mkdir
-    double totalTimeInSeconds = (double)syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
-    double avgTimePerCallInMicroseconds = syscallStats[SYS_MKDIR].count > 0 
-                                         ? (double)syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count / 1000.0
-                                         : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
-    // fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    
-    // Calculate and print total statistics for all syscalls
-    long long totalCalls = 0, totalErrors = 0;
-    double totalSeconds = 0.0;
-    long long totalMicroseconds = 0; // To store the total microseconds for all syscalls
-
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-        totalCalls += syscallStats[i].count;
-        totalErrors += syscallStats[i].errorCount;
-        totalSeconds += syscallStats[i].totalTime / 1000000000.0;
-    
-        // Add the total time (in microseconds) for each syscall
-        totalMicroseconds += syscallStats[i].totalTime / 1000;
-    }
-
-// Calculate the average microseconds per call
-    long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
-    
-// Now you can print this along with the other statistics
-    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mdkir\n", 
-    //         totalSeconds, avgMicrosecondsPerCall, totalCalls, totalErrors);
-
-    
-
-    #endif
-
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-}
 
 
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
