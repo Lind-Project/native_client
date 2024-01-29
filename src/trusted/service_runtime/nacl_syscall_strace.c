@@ -520,7 +520,7 @@ void printFinalSyscallStats() {
     long long avgMicrosecondsPerCall = totalSyscallsCount > 0 
                                        ? (totalSyscallsTime / totalSyscallsCount) / 1000 
                                        : 0;
-    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls     syscall\n");
 
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
     fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
