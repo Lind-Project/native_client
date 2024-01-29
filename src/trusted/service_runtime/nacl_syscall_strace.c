@@ -222,6 +222,8 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
     if (ret < 0) {
         syscallStats[SYS_LSEEK].errorCount++;
     }
+#endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 #endif
@@ -242,6 +244,8 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
     if (retval < 0) {
         syscallStats[SYS_FSTAT].errorCount++;
     }
+#endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
 #endif
@@ -537,10 +541,13 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
         syscallStats[SYS_GETCWD].errorCount++;
     }
     #endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     char *strBuf = formatStringArgument(buf);
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
     free(strBuf);
+#endif
+
 }
 void NaClStraceLink(int cageid, char* from, char* to, int retval) {
     char *strBuf1 = formatStringArgument(from);
@@ -592,8 +599,11 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mmap\n", 
     //         totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[SYS_MMAP].count, syscallStats[SYS_MMAP].errorCount);
     #endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
+#endif
+
 }
 
 // void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
@@ -612,8 +622,10 @@ void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) 
         syscallStats[SYS_MUNMAP].errorCount++;
     }
     #endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
+#endif    
 }
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
     fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
@@ -702,6 +714,8 @@ void NaClStraceGetuid(int cageid, int ret) {
     if (ret < 0) {
         syscallStats[SYS_GETUID].errorCount++;
     }
+#endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     // Print the syscall information
     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
@@ -724,6 +738,8 @@ void NaClStraceGeteuid(int cageid, int ret) {
     if (ret < 0) {
         syscallStats[SYS_GETEUID].errorCount++;
     }
+#endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     // Print the syscall information
     fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
@@ -808,10 +824,13 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
         syscallStats[SYS_ACCESS].errorCount++;
     }
     #endif
+#ifdef TRACING_INDIVIDUAL_CALLS
 
     char *strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
     free(strBuf);
+#endif
+
 }
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
     fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d\n", cageid, path, length, ret);
