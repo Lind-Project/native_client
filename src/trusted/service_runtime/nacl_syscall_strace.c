@@ -519,3 +519,18 @@ void printFinalSyscallStats() {
     fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
             totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
 }
+void printFinalSyscallStats() {
+    #ifdef TRACING_DASHC
+    printFinalSyscallStats();
+   
+
+    double totalSeconds = (double)totalSyscallsTime / 1000000000.0; // Convert nanoseconds to seconds
+    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 
+                                       ? (totalSyscallsTime / totalSyscallsCount) / 1000 
+                                       : 0;
+
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
+            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
+     #endif
+}
