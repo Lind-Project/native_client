@@ -399,28 +399,31 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original functionality ...
+    // ... original mmap functionality ...
 
     long long endTime = gettimens();
     long long elapsedTime = endTime - startTime;
     syscallStats[SYS_MMAP].count++;
     syscallStats[SYS_MMAP].totalTime += elapsedTime;
-    totalSyscallsTime += elapsedTime; 
     if (retval < 0) {
         syscallStats[SYS_MMAP].errorCount++;
     }
-    totalSyscallsCount++;
 
-    // Only print individual syscall info if detailed tracing is enabled
-    if (printDetailedSyscallInfo) {
-        fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", 
-                cageid, start, length, prot, flags, d, offset, retval);
-    }
+    // Calculate and print statistics for mmap syscall
+    double totalTimeInSeconds = (double)syscallStats[SYS_MMAP].totalTime / 1000000000.0;
+    long long avgTimePerCallInMicroseconds = syscallStats[SYS_MMAP].count > 0 
+                                         ? syscallStats[SYS_MMAP].totalTime / syscallStats[SYS_MMAP].count / 1000
+                                         : 0;
+    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
 
-    // Print summarised statistics
-    printFinalSyscallStats();
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mmap\n", 
+            totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[SYS_MMAP].count, syscallStats[SYS_MMAP].errorCount);
     #endif
+
+    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
 }
+
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
 }
