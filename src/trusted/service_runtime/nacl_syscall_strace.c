@@ -152,8 +152,9 @@ void NaClStraceClose(int cageid, int d, int ret) {
     if (ret < 0) {
         syscallStats[SYS_CLOSE].errorCount++;
     }
-
+    #ifdef TRACING_INDIVIDUAL_CALLS
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
+    #endif
 #endif
 }
 
@@ -442,7 +443,7 @@ void printFinalSyscallStats() {
 
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f           0       %lld        %lld total\n", 
+    fprintf(tracingOutputFile, "100.00    %.9f      0            %lld       %lld            total\n", 
             totalSeconds, totalCalls, totalErrors);
     #endif
 }
