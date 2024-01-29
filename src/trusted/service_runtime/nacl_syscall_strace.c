@@ -12,6 +12,7 @@
 #define NUM_SYSCALLS 100 
 #define SYS_MKDIR 1 
 #define SYS_MMAP 2 
+#define SYS_GETEUID 3 
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -348,18 +349,19 @@ void printFinalSyscallStats() {
 
 // Helper function to get syscall name from its index
 const char* getSyscallName(int syscallIndex) {
-    // You need to implement this function based on your syscall index definitions
-    // Example implementation:
     switch (syscallIndex) {
         case SYS_MKDIR:
             return "mkdir";
         case SYS_MMAP:
             return "mmap";
+        case SYS_GETEUID:
+            return "geteuid";
         // Add cases for other syscalls...
         default:
             return "unknown";
     }
 }
+
 
 
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
@@ -522,9 +524,28 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret) {
 void NaClStraceGetuid(int cageid, int ret) {
     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
 }
+// void NaClStraceGeteuid(int cageid, int ret) {
+//     fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
+// }
 void NaClStraceGeteuid(int cageid, int ret) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original geteuid functionality ...
+
+    long long endTime = gettimens();
+    long long elapsedTime = endTime - startTime;
+    syscallStats[SYS_GETEUID].count++;
+    syscallStats[SYS_GETEUID].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[SYS_GETEUID].errorCount++;
+    }
+
+    // Print the syscall information
     fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
+#endif
 }
+
 void NaClStraceGetgid(int cageid, int ret) {
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
 }
