@@ -22,7 +22,8 @@
 #define SYS_MUNMAP 10
 #define SYS_ACCESS 11
 #define SYS_OPEN 12
-
+#define SYS_GETGID 13
+#define SYS_GETEGID 14
 
 long long gettimens() {
     struct timespec tp;
@@ -459,6 +460,10 @@ const char* getSyscallName(int syscallIndex) {
             return "access";
         case SYS_OPEN:
             return "open";    
+        case SYS_GETGID:
+            return "getgid";
+        case SYS_GETEGID:
+            return "getegid";
         // Add cases for other syscalls as needed...
         default:
             return "unknown";
@@ -704,12 +709,44 @@ void NaClStraceGeteuid(int cageid, int ret) {
 #endif
 }
 
+// void NaClStraceGetgid(int cageid, int ret) {
+//     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
+// }
 void NaClStraceGetgid(int cageid, int ret) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+
+    long long endTime = gettimens();
+    syscallStats[SYS_GETGID].count++;
+    syscallStats[SYS_GETGID].totalTime += endTime - startTime;
+    if (ret < 0) {
+        syscallStats[SYS_GETGID].errorCount++;
+    }
+    #endif
+
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
 }
+
+// void NaClStraceGetegid(int cageid, int ret) {
+//     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
+// }
 void NaClStraceGetegid(int cageid, int ret) {
+    #ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+
+    long long endTime = gettimens();
+    syscallStats[SYS_GETEGID].count++;
+    syscallStats[SYS_GETEGID].totalTime += endTime - startTime;
+    if (ret < 0) {
+        syscallStats[SYS_GETEGID].errorCount++;
+    }
+    #endif
+
     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
 }
+
 void NaClStraceFlock(int cageid, int fd, int operation, int ret) {
     fprintf(tracingOutputFile, "%d flock(%d, %d) = %d\n", cageid, fd, operation, ret);
 }
