@@ -86,12 +86,26 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 }
+void printFinalSyscallStats() {
+    #ifdef TRACING_DASHC
+   
 
+    double totalSeconds = (double)totalSyscallsTime / 1000000000.0; // Convert nanoseconds to seconds
+    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 
+                                       ? (totalSyscallsTime / totalSyscallsCount) / 1000 
+                                       : 0;
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls     syscall\n");
+
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
+            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
+     #endif
+}
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
         // if the path is NULL, always revert to stderr
         tracingOutputFile = stderr;
-        printFinalSyscallStats();
+        //printFinalSyscallStats();
         return;
     }
 
@@ -515,18 +529,3 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 }
 
 
-void printFinalSyscallStats() {
-    #ifdef TRACING_DASHC
-   
-
-    double totalSeconds = (double)totalSyscallsTime / 1000000000.0; // Convert nanoseconds to seconds
-    long long avgMicrosecondsPerCall = totalSyscallsCount > 0 
-                                       ? (totalSyscallsTime / totalSyscallsCount) / 1000 
-                                       : 0;
-    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls     syscall\n");
-
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld          mkdir\n", 
-            totalSeconds, avgMicrosecondsPerCall, totalSyscallsCount);
-     #endif
-}
