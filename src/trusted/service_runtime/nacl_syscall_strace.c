@@ -14,6 +14,11 @@
 #define SYS_MMAP 2 
 #define SYS_GETEUID 3
 #define SYS_GETUID 4
+#define SYS_READ 5
+#define SYS_LSEEK 6
+#define SYS_FSTAT 7
+#define SYS_CLOSE 8
+
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -111,12 +116,43 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
 }
 
+// void NaClStraceClose(int cageid, int d, int ret) {
+//     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
+// }
 void NaClStraceClose(int cageid, int d, int ret) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original close functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_CLOSE].count++;
+    syscallStats[SYS_CLOSE].totalTime += (endTime - startTime);
+    if (ret < 0) {
+        syscallStats[SYS_CLOSE].errorCount++;
+    }
+
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
+#endif
 }
+
 void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original read functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_READ].count++;
+    syscallStats[SYS_READ].totalTime += (endTime - startTime);
+    if (ret < 0) {
+        syscallStats[SYS_READ].errorCount++;
+    }
+
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
+#endif
 }
+
 
 void NaClStraceExit(int cageid, int status) {
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
@@ -147,14 +183,42 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     free(strBuf);
 }
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original lseek functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_LSEEK].count++;
+    syscallStats[SYS_LSEEK].totalTime += (endTime - startTime);
+    if (ret < 0) {
+        syscallStats[SYS_LSEEK].errorCount++;
+    }
+
     fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
+#endif
 }
+
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret) {
     fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
 }
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
+#ifdef TRACING_DASHC
+    long long startTime = gettimens();
+
+    // ... original fstat functionality ...
+
+    long long endTime = gettimens();
+    syscallStats[SYS_FSTAT].count++;
+    syscallStats[SYS_FSTAT].totalTime += (endTime - startTime);
+    if (retval < 0) {
+        syscallStats[SYS_FSTAT].errorCount++;
+    }
+
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
+#endif
 }
+
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
 }
@@ -355,15 +419,20 @@ const char* getSyscallName(int syscallIndex) {
             return "mkdir";
         case SYS_MMAP:
             return "mmap";
-        case SYS_GETEUID:
-            return "geteuid";
-        case SYS_GETUID:
-            return "getuid";
+        case SYS_READ:
+            return "read";
+        case SYS_LSEEK:
+            return "lseek";
+        case SYS_FSTAT:
+            return "fstat";
+        case SYS_CLOSE:
+            return "close";
         // Add cases for other syscalls...
         default:
             return "unknown";
     }
 }
+
 
 
 
