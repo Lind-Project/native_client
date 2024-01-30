@@ -7,6 +7,7 @@
 /*
  * NaCl service run-time, non-platform specific system call helper routines.
  */
+extern long long g_totaltime; 
 
 #include <sys/stat.h>
 #include <sys/types.h>
