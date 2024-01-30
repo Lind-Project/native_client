@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <sys/poll.h>
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
-
+//test
 FILE *tracingOutputFile = NULL;
 
 // this defines the number of characters we display for printing a string buf
