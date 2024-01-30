@@ -300,7 +300,6 @@ int NaClSelLdrMain(int argc, char **argv) {
 
   #if defined(TRACING)
   NaClStraceSetOutputFile("strace_output.txt");
-  printFinalSyscallStats();
   #endif
 
   /*
