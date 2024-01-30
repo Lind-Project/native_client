@@ -661,8 +661,8 @@ const char* getSyscallName(int syscallIndex) {
             return "getegid";
         case SYS_SELECT:
             return "select";
-        case SYS_FCNTL_SET:
-            return "fcntl_set";
+        // case SYS_FCNTL_SET:
+        //     return "fcntl_set";
         case SYS_EPOLL_CREATE:
             return "epoll_create";
         case SYS_EPOLL_CTL:
@@ -721,12 +721,10 @@ const char* getSyscallName(int syscallIndex) {
             return "socketpair";
         case SYS_NANOSLEEP:
             return "nanosleep";
-        case SYS_SCHED_YIELD:
-            return "sched_yield";
+        // case SYS_SCHED_YIELD:
+        //     return "sched_yield";
         case SYS_GETTIMEOFDAY:
             return "gettimeofday";
-        case SYS_CLOCK_GET_COMMON:
-            return "clockgetcommon";
         case SYS_LINK:
             return "link";
         case SYS_UNLINK:
