@@ -544,8 +544,6 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
     #endif
 
-
-    fprintf("%d total time",totaltime);
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
 
 
