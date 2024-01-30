@@ -24,7 +24,7 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval);
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval);
 void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval);
-void NaClStraceMkdir(int cage_id, const char *path, int mode, int retval, long long totaltime);
+void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime);
 void NaClStraceRmdir(int cageid, const char *path, int retval);
 void NaClStraceChdir(int cageid, const char *path, int retval);
 void NaClStraceChmod(int cageid, const char *path, int mode, int retval);
