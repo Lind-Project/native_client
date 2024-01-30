@@ -98,7 +98,16 @@
 
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
-
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
+typedef struct {
+    long long count;      // Number of times the syscall was called
+    long long totalTime;  // Total time spent in the syscall (in nanoseconds)
+    long long errorCount; // Number of errors encountered in the syscall
+} SyscallStats;
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
 }
@@ -1101,15 +1110,23 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return -NACL_ABI_EACCES;
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) return;
+  if (retval) return retval;
+
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
 
   #ifdef TRACING
-  NaClStraceMkdir(nap->cage_id, path, mode, retval);
-  //printFinalSyscallStats();
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMkdir(nap->cage_id, path, mode, retval, totaltime);
+
+  // Store the total time in the global variable
+  g_totaltime = totaltime;
   #endif
 
   return retval;

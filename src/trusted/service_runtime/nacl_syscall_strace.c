@@ -501,7 +501,7 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 }
 
 
-void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
+void NaClStraceMkdir(int cage_id, const char *path, int mode, int retval, long long totaltime) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
@@ -543,11 +543,11 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
 
     #endif
-    #ifdef TRACING_INDIVIDUAL_CALLS
 
 
+    fprintf("%d total time",totaltime);
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-    #endif
+
 
 }
 
