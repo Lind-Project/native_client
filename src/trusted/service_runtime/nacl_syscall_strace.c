@@ -179,7 +179,6 @@ void NaClStraceGetpid(int cageid, int pid) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getpid functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETPID].count++;
@@ -195,7 +194,6 @@ void NaClStraceGetppid(int cageid, int pid) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getppid functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETPPID].count++;
@@ -207,14 +205,11 @@ void NaClStraceGetppid(int cageid, int pid) {
     #endif
 }
 
-// void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
-//     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
-// }
+
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original open functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_OPEN].count++;
@@ -229,14 +224,11 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
     #endif
 
 }
-// void NaClStraceClose(int cageid, int d, int ret) {
-//     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
-// }
+
 void NaClStraceClose(int cageid, int d, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original close functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_CLOSE].count++;
@@ -255,7 +247,6 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original read functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_READ].count++;
@@ -275,7 +266,6 @@ void NaClStraceExit(int cageid, int status) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original exit functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EXIT].count++;
@@ -294,7 +284,6 @@ void NaClStraceDup(int cageid, int oldfd, int ret){
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original dup functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_DUP].count++;
@@ -313,7 +302,6 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret){
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original dup2 functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_DUP2].count++;
@@ -332,7 +320,6 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret){
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original dup3 functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_DUP3].count++;
@@ -351,7 +338,6 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getdents functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETDENTS].count++;
@@ -370,7 +356,6 @@ void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original pread functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_PREAD].count++;
@@ -389,7 +374,6 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original write functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_WRITE].count++;
@@ -410,7 +394,6 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original pwrite functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_PWRITE].count++;
@@ -431,7 +414,6 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original lseek functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_LSEEK].count++;
@@ -450,7 +432,6 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original ioctl functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_IOCTL].count++;
@@ -469,7 +450,6 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original fstat functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FSTAT].count++;
@@ -488,7 +468,6 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original stat functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_STAT].count++;
@@ -507,7 +486,6 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original lstat functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_LSTAT].count++;
@@ -546,10 +524,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
                                          ? (double)syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count / 1000.0
                                          : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
-    // fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
     
-    // Calculate and print total statistics for all syscalls
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
     long long totalMicroseconds = 0; // To store the total microseconds for all syscalls
@@ -563,15 +538,9 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
         totalMicroseconds += syscallStats[i].totalTime / 1000;
     }
 
-// Calculate the average microseconds per call
     long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
     
-// Now you can print this along with the other statistics
-    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mdkir\n", 
-    //         totalSeconds, avgMicrosecondsPerCall, totalCalls, totalErrors);
 
-    
 
     #endif
     #ifdef TRACING_INDIVIDUAL_CALLS
@@ -582,23 +551,7 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
 
 }
 
-// void printFinalSyscallStats() {
-//     #ifdef TRACING_DASHC
-//     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
 
-//     for (int i = 0; i < NUM_SYSCALLS; i++) {
-//         if (syscallStats[i].count > 0) {
-//             double totalTimeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0;
-//             long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 
-//                                                      ? syscallStats[i].totalTime / syscallStats[i].count / 1000 
-//                                                      : 0;
-//             fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       %s\n", 
-//                     totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
-//         }
-//     }
-//     #endif
-// }
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
@@ -661,8 +614,6 @@ const char* getSyscallName(int syscallIndex) {
             return "getegid";
         case SYS_SELECT:
             return "select";
-        // case SYS_FCNTL_SET:
-        //     return "fcntl_set";
         case SYS_EPOLL_CREATE:
             return "epoll_create";
         case SYS_EPOLL_CTL:
@@ -721,8 +672,6 @@ const char* getSyscallName(int syscallIndex) {
             return "socketpair";
         case SYS_NANOSLEEP:
             return "nanosleep";
-        // case SYS_SCHED_YIELD:
-        //     return "sched_yield";
         case SYS_GETTIMEOFDAY:
             return "gettimeofday";
         case SYS_LINK:
@@ -773,7 +722,6 @@ const char* getSyscallName(int syscallIndex) {
             return "getpid";
         case SYS_GETPPID:
             return "getppid";
-        // Add cases for other syscalls as needed...
         default:
             return "unknown";
     }
@@ -785,7 +733,6 @@ void NaClStraceRmdir(int cageid, const char *path, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original rmdir functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_RMDIR].count++;
@@ -804,7 +751,6 @@ void NaClStraceChdir(int cageid, const char *path, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original chdir functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_CHDIR].count++;
@@ -823,7 +769,6 @@ void NaClStraceChmod(int cageid, const char *path, int mode, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original chmod functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_CHMOD].count++;
@@ -842,7 +787,6 @@ void NaClStraceFchmod(int cageid, int fd, int mode, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fchmod functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FCHMOD].count++;
@@ -861,8 +805,6 @@ void NaClStraceFchdir(int cageid, int fd, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fchdir functionality ...
-
     long long endTime = gettimens();
     syscallStats[SYS_FCHDIR].count++;
     syscallStats[SYS_FCHDIR].totalTime += (endTime - startTime);
@@ -880,7 +822,6 @@ void NaClStraceFsync(int cageid, int fd, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fsync functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FSYNC].count++;
@@ -899,7 +840,6 @@ void NaClStraceFdatasync(int cageid, int fd, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fdatasync functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FDATASYNC].count++;
@@ -918,7 +858,6 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original syncfilerange functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SYNC_FILE_RANGE].count++;
@@ -933,16 +872,10 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
     #endif
 }
 
-// void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
-//     char *strBuf = formatStringArgument(buf);
-//     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
-//     free(strBuf);
-// }
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getcwd functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETCWD].count++;
@@ -963,8 +896,6 @@ void NaClStraceLink(int cageid, char* from, char* to, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original link functionality ...
-
     long long endTime = gettimens();
     syscallStats[SYS_LINK].count++;
     syscallStats[SYS_LINK].totalTime += (endTime - startTime);
@@ -986,7 +917,6 @@ void NaClStraceUnlink(int cageid, char* pathname, int retval){
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original unlink functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_UNLINK].count++;
@@ -1007,7 +937,6 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original rename functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_RENAME].count++;
@@ -1031,7 +960,6 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original mmap functionality ...
 
     long long endTime = gettimens();
     long long elapsedTime = endTime - startTime;
@@ -1041,16 +969,13 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
         syscallStats[SYS_MMAP].errorCount++;
     }
 
-    // Calculate and print statistics for mmap syscall
     double totalTimeInSeconds = (double)syscallStats[SYS_MMAP].totalTime / 1000000000.0;
     long long avgTimePerCallInMicroseconds = syscallStats[SYS_MMAP].count > 0 
                                          ? syscallStats[SYS_MMAP].totalTime / syscallStats[SYS_MMAP].count / 1000
                                          : 0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
 
-    // fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    // fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       mmap\n", 
-    //         totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[SYS_MMAP].count, syscallStats[SYS_MMAP].errorCount);
+    
     #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
 
@@ -1059,14 +984,11 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
 
 }
 
-// void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
-//    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
-// }
+
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original munmap functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_MUNMAP].count++;
@@ -1084,7 +1006,6 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original shmat functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SHMAT].count++;
@@ -1103,7 +1024,6 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval) 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original shmget functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SHMGET].count++;
@@ -1122,7 +1042,6 @@ void NaClStraceShmdt(int cageid, void *shmaddr, int retval) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original shmdt functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SHMDT].count++;
@@ -1141,7 +1060,6 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original shmctl functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SHMCTL].count++;
@@ -1160,7 +1078,6 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *l
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original SocketPair functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SOCKETPAIR].count++;
@@ -1198,7 +1115,6 @@ void NaClStraceSchedYield(int cageid, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original schedyield functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SCHEDYIELD].count++;
@@ -1217,7 +1133,6 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original gettimeofday functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETTIMEOFDAY].count++;
@@ -1236,7 +1151,6 @@ void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original clockgetcommon functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_CLOCKGETCOMMON].count++;
@@ -1255,7 +1169,6 @@ void NaClStraceFork(int cageid, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fork functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FORK].count++;
@@ -1274,7 +1187,6 @@ void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret) 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original execve functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EXECVE].count++;
@@ -1293,7 +1205,6 @@ void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original execv functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EXECV].count++;
@@ -1312,7 +1223,6 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original waitpid functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_WAITPID].count++;
@@ -1331,7 +1241,6 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original gethostname functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETHOSTNAME].count++;
@@ -1352,7 +1261,6 @@ void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getifaddrs functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETIFADDRS].count++;
@@ -1373,7 +1281,6 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original socket functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SOCKET].count++;
@@ -1392,7 +1299,6 @@ void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int fla
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original send functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SEND].count++;
@@ -1411,7 +1317,6 @@ void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int f
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original sendto functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SENDTO].count++;
@@ -1430,7 +1335,6 @@ void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, in
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original recv functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_RECV].count++;
@@ -1449,7 +1353,6 @@ void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original recvfrom functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_RECVFROM].count++;
@@ -1468,7 +1371,6 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original shutdown functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SHUTDOWN].count++;
@@ -1483,14 +1385,11 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret) {
     #endif
 }
 
-// void NaClStraceGetuid(int cageid, int ret) {
-//     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
-// }
+
 void NaClStraceGetuid(int cageid, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original getuid functionality ...
 
     long long endTime = gettimens();
     long long elapsedTime = endTime - startTime;
@@ -1502,19 +1401,15 @@ void NaClStraceGetuid(int cageid, int ret) {
 #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
 
-    // Print the syscall information
     fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
 #endif
 }
 
-// void NaClStraceGeteuid(int cageid, int ret) {
-//     fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
-// }
+
 void NaClStraceGeteuid(int cageid, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
-    // ... original geteuid functionality ...
 
     long long endTime = gettimens();
     long long elapsedTime = endTime - startTime;
@@ -1531,9 +1426,7 @@ void NaClStraceGeteuid(int cageid, int ret) {
 #endif
 }
 
-// void NaClStraceGetgid(int cageid, int ret) {
-//     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
-// }
+
 void NaClStraceGetgid(int cageid, int ret) {
 #ifdef TRACING_DASHC
     long long startTime = gettimens();
@@ -1551,9 +1444,7 @@ void NaClStraceGetgid(int cageid, int ret) {
 #endif
 }
 
-// void NaClStraceGetegid(int cageid, int ret) {
-//     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
-// }
+
 void NaClStraceGetegid(int cageid, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
@@ -1577,7 +1468,6 @@ void NaClStraceFlock(int cageid, int fd, int operation, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original flock functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FLOCK].count++;
@@ -1596,7 +1486,6 @@ void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getsockopt functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETSOCKOPT].count++;
@@ -1615,7 +1504,6 @@ void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original setsockopt functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_SETSOCKOPT].count++;
@@ -1634,7 +1522,6 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fstatfs functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FSTATFS].count++;
@@ -1653,7 +1540,6 @@ void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret) 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original statfs functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_STATFS].count++;
@@ -1672,7 +1558,6 @@ void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * a
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getsockname functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETSOCKNAME].count++;
@@ -1691,7 +1576,6 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original getpeername functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_GETPEERNAME].count++;
@@ -1706,11 +1590,6 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
     #endif
 }
 
-// void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
-//     char *strBuf = formatStringArgument(path);
-//     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
-//     free(strBuf);
-// }
 void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
@@ -1736,7 +1615,6 @@ void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original truncate functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_TRUNCATE].count++;
@@ -1755,7 +1633,6 @@ void NaClStraceFtruncate(int cageid, int fd, int length, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original ftruncate functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FTRUNCATE].count++;
@@ -1774,7 +1651,6 @@ void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original connect functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_CONNECT].count++;
@@ -1793,7 +1669,6 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original accept functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_ACCEPT].count++;
@@ -1812,7 +1687,6 @@ void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, i
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original bind functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_BIND].count++;
@@ -1831,7 +1705,6 @@ void NaClStraceListen(int cageid, int sockfd, int backlog, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original listen functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_LISTEN].count++;
@@ -1850,7 +1723,6 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original poll functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_POLL].count++;
@@ -1869,7 +1741,6 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fcntlget functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_FCNTL_GET].count++;
@@ -1888,8 +1759,6 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original fcntl functionality ...
-
     long long endTime = gettimens();
     syscallStats[SYS_FCNTL].count++;
     syscallStats[SYS_FCNTL].totalTime += (endTime - startTime);
@@ -1907,7 +1776,6 @@ void NaClStraceEpollCreate(int cageid, int size, int ret) {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original epollcreate functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EPOLL_CREATE].count++;
@@ -1926,7 +1794,6 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original epollctl functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EPOLL_CTL].count++;
@@ -1945,7 +1812,6 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
     
-    // ... original epollwait functionality ...
 
     long long endTime = gettimens();
     syscallStats[SYS_EPOLL_WAIT].count++;
