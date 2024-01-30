@@ -1109,7 +1109,6 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   #ifdef TRACING
   NaClStraceMkdir(nap->cage_id, path, mode, retval);
-  //printFinalSyscallStats();
   #endif
 
   return retval;
