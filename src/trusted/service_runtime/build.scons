@@ -404,6 +404,11 @@ if (env.Bit('linux') and not env.Bit('android')
     bootstrap_env.Append(CFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
+  if os.environ.get('TRACING_DASHC_ENABLED') == '1':
+    env.Append(CCFLAGS=['-DTRACING_DASH_C=1'])
+    env.Append(CFLAGS=['-DTRACING_DASH_C=1'])
+    env.Append(CPPFLAGS=['-DTRACING_DASH_C=1'])
+    env.Append(CXXFLAGS=['-DTRACING_DASH_C=1'])
   
   
   STRACE_DEFAULT_PATH = ""
