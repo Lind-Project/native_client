@@ -1080,13 +1080,17 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
 
   retval = NaClStatAclCheck(nap, path);
   if (retval) return -NACL_ABI_EINVAL;
-
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
   retval = lind_xstat(path, &result, nap->cage_id);
   if (!retval) {
     if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
   }
 
   #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
   NaClStraceLStat(nap->cage_id, path, &result, retval, totaltime);
   #endif
 
