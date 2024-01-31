@@ -38,7 +38,9 @@ void PrintTotalMkdirTime() {
 }
 void NaClStraceCloseFile() {
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
+        #ifdef TRACING_DASHC
         PrintTotalMkdirTime();
+        #endif
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
