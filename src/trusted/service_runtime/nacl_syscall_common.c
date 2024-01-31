@@ -95,6 +95,7 @@
 #define kdefault_io_buffer_bytes_to_log 64ull
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
+long long total_mkdir_time = 0;
 
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
@@ -102,7 +103,6 @@ struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
 }
-long long total_mkdir_time = 0;
 
 void AddToTotalMkdirTime(long long time) {
     total_mkdir_time += time;

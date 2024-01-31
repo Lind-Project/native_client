@@ -450,5 +450,5 @@ extern long long gettimens();
 void AddToTotalMkdirTime(long long time);
 void PrintTotalMkdirTime();
 EXTERN_C_END
-
+extern long long total_mkdir_time;
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */
