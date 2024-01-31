@@ -103,7 +103,7 @@ int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
  
-
+static long long totalMkdirTime = 0;
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
 
@@ -535,7 +535,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
     long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
     
-
+    totalMkdirTime += totaltime;
     
     #endif
     #ifdef TRACING_INDIVIDUAL_CALLS
@@ -548,6 +548,8 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
+    fprintf(tracingOutputFile, "Total mkdir time: %lld ns\n", totalMkdirTime);
+
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
 
