@@ -1087,7 +1087,7 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
   }
 
   #ifdef TRACING
-  NaClStraceLStat(nap->cage_id, path, &result, retval);
+  NaClStraceLStat(nap->cage_id, path, &result, retval, totaltime);
   #endif
 
   return retval;
