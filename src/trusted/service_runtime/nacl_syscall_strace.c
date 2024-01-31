@@ -37,7 +37,6 @@ void NaClStraceSetOutputFile(char *path) {
 void NaClStraceCloseFile() {
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
         PrintTotalMkdirTime();
-        printf("Total time taken by all mkdir calls: %lld ns\n", total_mkdir_time);
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
