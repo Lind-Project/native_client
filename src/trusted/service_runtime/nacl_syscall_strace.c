@@ -36,6 +36,7 @@ void NaClStraceSetOutputFile(char *path) {
 
 void NaClStraceCloseFile() {
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
+        PrintTotalMkdirTime();
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
