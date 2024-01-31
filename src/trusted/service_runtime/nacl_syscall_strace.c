@@ -33,9 +33,7 @@ void NaClStraceSetOutputFile(char *path) {
         tracingOutputFile = newFile;
     }
 }
-void PrintTotalMkdirTime() {
-    printf("file calls");
-}
+
 void NaClStraceCloseFile() {
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
         #ifdef TRACING_DASHC
@@ -44,7 +42,9 @@ void NaClStraceCloseFile() {
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
 }
-
+void PrintTotalMkdirTime() {
+    printf("file calls");
+}
 // replace all the line breaks in the string by "\\n" to make outputs tidy
 char* formatStringArgument(const char *input) {
     if (input == NULL) {

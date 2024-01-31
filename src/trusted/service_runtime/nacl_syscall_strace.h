@@ -117,3 +117,4 @@ void NaClStraceEpollCreate(int cageid, int size, int ret);
 void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret);
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret);
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret);
+void PrintTotalMkdirTime();
