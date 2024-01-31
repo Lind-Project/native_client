@@ -447,7 +447,7 @@ int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_eve
 int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
 void printFinalSyscallStats();
-
+long long gettimens();
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */

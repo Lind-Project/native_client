@@ -98,6 +98,11 @@
 
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
@@ -1101,18 +1106,25 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   if (!NaClAclBypassChecks) return -NACL_ABI_EACCES;
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
-  if (retval) return;
+  if (retval) return retval;
+
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 
-  NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
-
   #ifdef TRACING
-  NaClStraceMkdir(nap->cage_id, path, mode, retval);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMkdir(nap->cage_id, path, mode, retval, totaltime);
   #endif
+
+  NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
 
   return retval;
 }
+
 int32_t NaClSysRmdir(struct NaClAppThread *natp,
                      uint32_t             pathname) {
   struct NaClApp *nap = natp->nap;
