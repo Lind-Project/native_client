@@ -494,13 +494,9 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    long long elapsedTime = endTime - startTime;  // Time for this call in nanoseconds
+    // Time for this call in nanoseconds
     syscallStats[SYS_MKDIR].count++;
-    syscallStats[SYS_MKDIR].totalTime += elapsedTime;
+    syscallStats[SYS_MKDIR].totalTime += totaltime;
     totalSyscallsTime += elapsedTime; // Update total time for all syscalls
     if (retval < 0) {
         syscallStats[SYS_MKDIR].errorCount++;
