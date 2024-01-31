@@ -540,8 +540,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
     #endif
     #ifdef TRACING_INDIVIDUAL_CALLS
 
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d, Time taken: %lld ns\n", cageid, path, mode, retval, totaltime);
-
+    fprintf(tracingOutputFile, "%d mkdir(%s, %o) = %d (%lld ns)\n", cageid, path, mode, retval, totaltime);
     #endif
 
 }
