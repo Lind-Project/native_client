@@ -4141,11 +4141,17 @@ int32_t NaClSysGetuid(struct NaClAppThread *natp)
 int32_t NaClSysGeteuid(struct NaClAppThread *natp)
 {
   struct NaClApp *nap = natp->nap;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+
   int ret = lind_geteuid(nap->cage_id);
   NaClLog(2, "NaClSysGeteuid returning %d\n", ret);
 
   #ifdef TRACING
-  NaClStraceGeteuid(nap->cage_id, ret);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceGeteuid(nap->cage_id, ret,totaltime);
   #endif
 
   return ret;
