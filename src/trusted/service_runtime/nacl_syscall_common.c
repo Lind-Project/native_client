@@ -1125,9 +1125,6 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
   long long endtime = gettimens();
   long long totaltime = endtime - starttime;
   NaClStraceMkdir(nap->cage_id, path, mode, retval, totaltime);
-
-  // Store the total time in the global variable
-  g_totaltime = totaltime;
   #endif
 
   return retval;

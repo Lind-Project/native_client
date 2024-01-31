@@ -550,11 +550,9 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 // }
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime) {
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-    
-    // Print the total time from the global variable
-    fprintf(tracingOutputFile, "Total Time: %.9f seconds\n", (double)totaltime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d, Time taken: %lld ns\n", cageid, path, mode, retval, totaltime);
 }
+
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
