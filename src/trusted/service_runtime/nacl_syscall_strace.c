@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #define NUM_SYSCALLS 100 
 #define NACL_sys_mkdir 1 
-#define SYS_MMAP 99 
+#define NACL_sys_mmap 2 
 #define SYS_GETEUID 3
 #define SYS_GETUID 4
 #define SYS_READ 5
@@ -519,20 +519,20 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
     #ifdef TRACING_DASHC
     // Time for this call in nanoseconds
-    syscallStats[SYS_MKDIR].count++;
-    syscallStats[SYS_MKDIR].totalTime += totaltime;
+    syscallStats[NACL_sys_mkdir].count++;
+    syscallStats[NACL_sys_mkdir].totalTime += totaltime;
     totalSyscallsTime += totaltime; // Update total time for all syscalls
     if (retval < 0) {
-        syscallStats[SYS_MKDIR].errorCount++;
+        syscallStats[NACL_sys_mkdir].errorCount++;
     }
     totalSyscallsCount++;
     totalSyscallsMicroseconds += totaltime / 1000; // Convert nanoseconds to microseconds
 
 
     // Calculate and print individual syscall stats for mkdir
-    double totalTimeInSeconds = (double)syscallStats[SYS_MKDIR].totalTime / 1000000000.0;
-    double avgTimePerCallInMicroseconds = syscallStats[SYS_MKDIR].count > 0 
-                                         ? (double)syscallStats[SYS_MKDIR].totalTime / syscallStats[SYS_MKDIR].count / 1000.0
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_mkdir].totalTime / 1000000000.0;
+    double avgTimePerCallInMicroseconds = syscallStats[NACL_sys_mkdir].count > 0 
+                                         ? (double)syscallStats[NACL_sys_mkdir].totalTime / syscallStats[NACL_sys_mkdir].count / 1000.0
                                          : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
     
@@ -598,9 +598,9 @@ void printFinalSyscallStats() {
 // Helper function to get syscall name from its index
 const char* getSyscallName(int syscallIndex) {
     switch (syscallIndex) {
-        case SYS_MKDIR:
-            return "mkdir";
         case NACL_sys_mkdir:
+            return "mkdir";
+        case NACL_sys_mmap:
             return "mmap";
         case SYS_GETEUID:
             return "geteuid";
@@ -972,19 +972,19 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long time) {
     #ifdef TRACING_DASHC
-    syscallStats[SYS_MMAP].count++;
-    syscallStats[SYS_MMAP].totalTime += time;
+    syscallStats[NACL_sys_mmap].count++;
+    syscallStats[NACL_sys_mmap].totalTime += time;
     if (retval < 0) {
-        syscallStats[SYS_MMAP].errorCount++;
+        syscallStats[NACL_sys_mmap].errorCount++;
     }
     
     // Update total time for all syscalls
     totalSyscallsTime += time;
     
     // Calculate and print individual syscall stats for mmap
-    double totalTimeInSeconds = (double)syscallStats[SYS_MMAP].totalTime / 1000000000.0;
-    long long avgTimePerCallInMicroseconds = syscallStats[SYS_MMAP].count > 0 
-                                             ? syscallStats[SYS_MMAP].totalTime / syscallStats[SYS_MMAP].count / 1000
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_mmap].totalTime / 1000000000.0;
+    long long avgTimePerCallInMicroseconds = syscallStats[NACL_sys_mmap].count > 0 
+                                             ? syscallStats[NACL_sys_mmap].totalTime / syscallStats[NACL_sys_mmap].count / 1000
                                              : 0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
     #endif
