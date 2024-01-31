@@ -541,12 +541,12 @@ void NaClStraceMkdir(int cageid, char* path, int mode, int32_t retval) {
     long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
     
 
-
+    
     #endif
     #ifdef TRACING_INDIVIDUAL_CALLS
 
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d, Time taken: %lld ns\n", cageid, path, mode, retval, totaltime);
 
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     #endif
 
 }
