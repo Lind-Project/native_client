@@ -6,12 +6,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/poll.h>
+#include "bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
 #include <stdbool.h>
 #define NUM_SYSCALLS 100 
-#define SYS_MKDIR 1 
-#define SYS_MMAP 2 
+#define NACL_sys_mkdir 1 
+#define SYS_MMAP 99 
 #define SYS_GETEUID 3
 #define SYS_GETUID 4
 #define SYS_READ 5
@@ -245,7 +246,7 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
 
 
     long long endTime = gettimens();
-    syscallStats[SYS_READ].count++;
+    syscallStats[NACL_sys_read].count++;
     syscallStats[SYS_READ].totalTime += (endTime - startTime);
     if (ret < 0) {
         syscallStats[SYS_READ].errorCount++;
@@ -599,7 +600,7 @@ const char* getSyscallName(int syscallIndex) {
     switch (syscallIndex) {
         case SYS_MKDIR:
             return "mkdir";
-        case SYS_MMAP:
+        case NACL_sys_mkdir:
             return "mmap";
         case SYS_GETEUID:
             return "geteuid";
