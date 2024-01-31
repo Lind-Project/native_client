@@ -7,6 +7,7 @@
         "set": "c",
         "unordered_map": "c",
         "chrono": "c",
-        "nacl_syscalls.h": "c"
+        "nacl_syscalls.h": "c",
+        "stdbool.h": "c"
     }
 }

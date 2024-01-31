@@ -11,15 +11,15 @@
 #include <time.h>
 #include <stdbool.h>
 #define NUM_SYSCALLS 200 
-#define NACL_sys_mkdir 131 
-#define NACL_sys_mmap 2 
-#define NACL_sys_geteuid 3
-#define NACL_sys_getuid 4
-#define NACL_sys_read 5
-#define NACL_sys_lseek 6
-#define NACL_sys_fstat 7
-#define NACL_sys_close 8
-#define NACL_sys_getcwd 9
+// #define NACL_sys_mkdir 131 
+// #define NACL_sys_mmap 2 
+// #define NACL_sys_geteuid 3
+// #define NACL_sys_getuid 4
+// #define NACL_sys_read 5
+// #define NACL_sys_lseek 6
+// #define NACL_sys_fstat 7
+// #define NACL_sys_close 8
+// #define NACL_sys_getcwd 9
 #define SYS_MUNMAP 10
 #define SYS_ACCESS 11
 #define SYS_OPEN 12
