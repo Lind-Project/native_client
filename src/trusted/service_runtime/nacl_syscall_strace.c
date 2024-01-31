@@ -969,33 +969,31 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 }
 
 
-void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long totaltime) {    
+void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long time) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    long long elapsedTime = endTime - startTime;
     syscallStats[SYS_MMAP].count++;
-    syscallStats[SYS_MMAP].totalTime += elapsedTime;
+    syscallStats[SYS_MMAP].totalTime += time;
     if (retval < 0) {
         syscallStats[SYS_MMAP].errorCount++;
     }
-
+    
+    // Update total time for all syscalls
+    totalSyscallsTime += time;
+    
+    // Calculate and print individual syscall stats for mmap
     double totalTimeInSeconds = (double)syscallStats[SYS_MMAP].totalTime / 1000000000.0;
     long long avgTimePerCallInMicroseconds = syscallStats[SYS_MMAP].count > 0 
-                                         ? syscallStats[SYS_MMAP].totalTime / syscallStats[SYS_MMAP].count / 1000
-                                         : 0;
+                                             ? syscallStats[SYS_MMAP].totalTime / syscallStats[SYS_MMAP].count / 1000
+                                             : 0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
-
-    
     #endif
-#ifdef TRACING_INDIVIDUAL_CALLS
-
-  fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %lld ns)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, totaltime);
-#endif
-
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %lld ns)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, time);
+    #endif
 }
+
+
 
 
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
