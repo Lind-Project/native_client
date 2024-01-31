@@ -37,7 +37,7 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval);
 void NaClStraceLink(int cageid, char* from, char* to, int retval);
 void NaClStraceUnlink(int cageid, char* pathname, int retval);
 void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval);
-void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int retval, long long totaltime);
+void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long totaltime);
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval);
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval);
 void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval);
