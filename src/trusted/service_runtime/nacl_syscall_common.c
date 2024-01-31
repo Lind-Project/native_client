@@ -103,6 +103,11 @@ int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
 }
 
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 
 void NaClAddSyscall(int num, int32_t (*fn)(struct NaClAppThread *)) {
   if (nacl_syscall[num].handler != &NaClSysNotImplementedDecoder) {
