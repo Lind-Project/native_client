@@ -477,21 +477,21 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
     #endif
 }
 
-void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
+void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t retval, long long time){
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
+ 
     
 
-    long long endTime = gettimens();
+    
     syscallStats[SYS_LSTAT].count++;
-    syscallStats[SYS_LSTAT].totalTime += (endTime - startTime);
+    syscallStats[SYS_LSTAT].totalTime += time;
     if (retval < 0) {
         syscallStats[SYS_LSTAT].errorCount++;
     }
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
+    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %lld ns)\n", cageid, path, result, retval, time);
     #endif
 }
 
