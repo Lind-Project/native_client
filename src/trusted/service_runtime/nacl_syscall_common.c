@@ -109,8 +109,13 @@ void AddToTotalMkdirTime(long long time) {
 }
 
 void PrintTotalMkdirTime() {
-    printf("Total time taken by all mkdir calls: %lld ns\n", total_mkdir_time);
+    if (tracingOutputFile != NULL) {
+        fprintf(tracingOutputFile, "Total time taken by all mkdir calls: %lld ns\n", total_mkdir_time);
+    } else {
+        printf("Total time taken by all mkdir calls: %lld ns\n", total_mkdir_time);
+    }
 }
+
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
