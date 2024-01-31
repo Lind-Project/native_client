@@ -10,8 +10,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
 #include <stdbool.h>
-#define NUM_SYSCALLS 100 
-//#define NACL_sys_mkdir 131 
+#define NUM_SYSCALLS 200 
+#define NACL_sys_mkdir 131 
 #define NACL_sys_mmap 2 
 #define SYS_GETEUID 3
 #define SYS_GETUID 4
