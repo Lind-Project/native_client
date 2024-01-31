@@ -497,7 +497,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
     // Time for this call in nanoseconds
     syscallStats[SYS_MKDIR].count++;
     syscallStats[SYS_MKDIR].totalTime += totaltime;
-    totalSyscallsTime += elapsedTime; // Update total time for all syscalls
+    totalSyscallsTime += totaltime; // Update total time for all syscalls
     if (retval < 0) {
         syscallStats[SYS_MKDIR].errorCount++;
     }
