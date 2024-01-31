@@ -523,7 +523,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
         syscallStats[SYS_MKDIR].errorCount++;
     }
     totalSyscallsCount++;
-    totalSyscallsMicroseconds += elapsedTime / 1000; // Convert nanoseconds to microseconds
+    totalSyscallsMicroseconds += totaltime / 1000; // Convert nanoseconds to microseconds
 
 
     // Calculate and print individual syscall stats for mkdir
