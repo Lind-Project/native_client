@@ -952,7 +952,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 }
 
 
-void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int retval, long long totaltime) {    
+void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long totaltime) {    
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
