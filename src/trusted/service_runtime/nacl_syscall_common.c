@@ -96,7 +96,7 @@ extern long long g_totaltime;
 #define kdefault_io_buffer_bytes_to_log 64ull
 #define kMaxUsableFileSize (SIZE_MAX >> 1)
 #define MIN(a, b) ((size_t)((a < b) ? a : b))
-
+long long g_totaltime = 0;
 struct NaClDescQuotaInterface;
 struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 long long gettimens() {
