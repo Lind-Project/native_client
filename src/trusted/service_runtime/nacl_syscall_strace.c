@@ -499,8 +499,9 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 long long syscallTotalTime[NUM_SYSCALLS] = {0};
 
 // In each syscall-specific tracing function, add the time taken to the array
-void NaClStraceMkdir(int cageid, const char* path, mode_t mode, int retval, long long totaltime) {
-    // Print syscall information including total time
+void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime){
+
+ // Print syscall information including total time
     fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld       mkdir(%s, %o) = %d\n", 
             (double)totaltime / 1000000000.0, totaltime, 0, 0, cageid, path, mode, retval);
     
