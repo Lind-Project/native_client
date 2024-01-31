@@ -978,21 +978,22 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
         syscallStats[NACL_sys_mmap].errorCount++;
     }
     
-    // Update total time for all syscalls
-    totalSyscallsTime += time;
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
     // Calculate and print individual syscall stats for mmap
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_mmap].totalTime / 1000000000.0;
-    long long avgTimePerCallInMicroseconds = syscallStats[NACL_sys_mmap].count > 0 
-                                             ? syscallStats[NACL_sys_mmap].totalTime / syscallStats[NACL_sys_mmap].count / 1000
-                                             : 0;
-    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_mmap].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_mmap].count > 0 
+                                     ? (double)syscallStats[NACL_sys_mmap].totalTime / syscallStats[NACL_sys_mmap].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %lld ns)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, time);
+    fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %.9f seconds)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, (double)time / 1000000000.0);
     #endif
 }
+
 
 
 
