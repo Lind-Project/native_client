@@ -14,6 +14,7 @@ FILE *tracingOutputFile = NULL;
 
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
+long long total_mkdir_time = 0;
 
 void NaClStraceSetOutputFile(char *path) {
     if (path == NULL || strlen(path) == 0) {
