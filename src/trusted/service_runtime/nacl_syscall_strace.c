@@ -952,7 +952,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 }
 
 
-void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval) {
+void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, nacl_abi_off_t offset, int retval, long long totaltime) {    
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
@@ -975,7 +975,7 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
 
-    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
+  fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %lld ns)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, totaltime);
 #endif
 
 }

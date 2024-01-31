@@ -1912,12 +1912,17 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   }
   offset = *(nacl_abi_off_t *)sysaddr;
   NaClLog(2, " offset = 0x%08"NACL_PRIxNACL_OFF"\n", offset);
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
 
 cleanup:
 
   #ifdef TRACING
-  NaClStraceMmap(nap->cage_id, start, length, prot, flags , d, offset, retval);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMmap(nap->cage_id, start, length, prot, flags, d, offset, retval, totaltime);
   #endif
 
   return retval;
