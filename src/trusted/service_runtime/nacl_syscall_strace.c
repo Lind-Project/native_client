@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/poll.h>
-#include "bits/nacl_syscalls.h"
+#include "native_client/src/trusted/service_runtime/bits/nacl_syscalls.h"
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
 #include <stdbool.h>
