@@ -504,36 +504,13 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
     totalSyscallsCount++;
     totalSyscallsMicroseconds += time / 1000; // Convert nanoseconds to microseconds
 
-    // Calculate and print individual syscall stats for lstat
-    double totalTimeInSeconds = (double)syscallStats[SYS_LSTAT].totalTime / 1000000000.0;
-    double avgTimePerCallInMicroseconds = syscallStats[SYS_LSTAT].count > 0 
-                                         ? (double)syscallStats[SYS_LSTAT].totalTime / syscallStats[SYS_LSTAT].count / 1000.0
-                                         : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
-    
-    long long totalCalls = 0, totalErrors = 0;
-    double totalSeconds = 0.0;
-    long long totalMicroseconds = 0; // To store the total microseconds for all syscalls
-
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-        totalCalls += syscallStats[i].count;
-        totalErrors += syscallStats[i].errorCount;
-        totalSeconds += syscallStats[i].totalTime / 1000000000.0;
-    
-        // Add the total time (in microseconds) for each syscall
-        totalMicroseconds += syscallStats[i].totalTime / 1000;
-    }
-
-    long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
-    
-    totalLstatTime += time; // Add total time for lstat
-
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
     fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d (%lld ns)\n", cageid, path, result, retval, time);
     #endif
 }
+
 
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
