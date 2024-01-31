@@ -1417,25 +1417,31 @@ void NaClStraceGetuid(int cageid, int ret) {
 }
 
 
-void NaClStraceGeteuid(int cageid, int ret) {
-#ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    long long elapsedTime = endTime - startTime;
+void NaClStraceGeteuid(int cageid, int ret, long long time) {
+    #ifdef TRACING_DASHC
     syscallStats[SYS_GETEUID].count++;
-    syscallStats[SYS_GETEUID].totalTime += elapsedTime;
+    syscallStats[SYS_GETEUID].totalTime += time;
     if (ret < 0) {
         syscallStats[SYS_GETEUID].errorCount++;
     }
-#endif
-#ifdef TRACING_INDIVIDUAL_CALLS
-
+    
+    // Update total time for all syscalls
+    totalSyscallsTime += time;
+    
+    // Calculate and print individual syscall stats for geteuid
+    double totalTimeInSeconds = (double)syscallStats[SYS_GETEUID].totalTime / 1000000000.0;
+    long long avgTimePerCallInMicroseconds = syscallStats[SYS_GETEUID].count > 0 
+                                             ? syscallStats[SYS_GETEUID].totalTime / syscallStats[SYS_GETEUID].count / 1000
+                                             : 0;
+    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
     // Print the syscall information
-    fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
-#endif
+    fprintf(tracingOutputFile, "%d geteuid() = %d (Total time: %lld ns)\n", cageid, ret, time);
+    #endif
 }
+
 
 
 void NaClStraceGetgid(int cageid, int ret) {

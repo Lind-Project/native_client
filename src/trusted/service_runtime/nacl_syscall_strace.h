@@ -61,7 +61,7 @@ void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, in
 void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags, uintptr_t src_addr, socklen_t *addrlen, int ret);
 void NaClStraceShutdown(int cageid, int sockfd, int how, int ret);
 void NaClStraceGetuid(int cageid, int ret);
-void NaClStraceGeteuid(int cageid, int ret);
+void NaClStraceGeteuid(int cageid, int ret, long long time);
 void NaClStraceGetgid(int cageid, int ret);
 void NaClStraceGetegid(int cageid, int ret);
 void NaClStraceFlock(int cageid, int fd, int operation, int ret);
