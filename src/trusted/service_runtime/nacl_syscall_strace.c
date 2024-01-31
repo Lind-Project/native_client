@@ -34,7 +34,7 @@ void NaClStraceSetOutputFile(char *path) {
     }
 }
 void PrintTotalMkdirTime() {
-    printf("file calls")
+    printf("file calls");
 }
 void NaClStraceCloseFile() {
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
