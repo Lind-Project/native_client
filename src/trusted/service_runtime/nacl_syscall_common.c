@@ -102,7 +102,15 @@ struct NaClSyscallTableEntry nacl_syscall[NACL_MAX_SYSCALLS];
 int32_t NaClSysNotImplementedDecoder(struct NaClAppThread *natp) {
   return -NACL_ABI_ENOSYS;
 }
+long long total_mkdir_time = 0;
 
+void AddToTotalMkdirTime(long long time) {
+    total_mkdir_time += time;
+}
+
+void PrintTotalMkdirTime() {
+    printf("Total time taken by all mkdir calls: %lld ns\n", total_mkdir_time);
+}
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);

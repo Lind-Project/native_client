@@ -154,7 +154,9 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int retval) {
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime) {
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d, Time taken: %lld ns\n", cageid, path, mode, retval, totaltime);
+    AddToTotalMkdirTime(totaltime);
 }
+
 
 void NaClStraceRmdir(int cageid, const char *path, int retval) {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
