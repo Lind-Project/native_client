@@ -1105,13 +1105,18 @@ int32_t NaClSysMkdir(struct NaClAppThread *natp,
 
   retval = CopyPathFromUser(nap, path, sizeof(path), pathname);
   if (retval) return;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   retval = lind_mkdir(path, mode, natp->nap->cage_id);
 
   NaClLog(2, "NaClSysMkdir: returning %d\n", retval);
 
   #ifdef TRACING
-  NaClStraceMkdir(nap->cage_id, path, mode, retval);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMkdir(nap->cage_id, path, mode, retval, totaltime);
   #endif
 
   return retval;
