@@ -501,7 +501,7 @@ void NaClStraceLStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 }
 
 
-void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime); {
+void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
     #ifdef TRACING_DASHC
     long long startTime = gettimens();
 
