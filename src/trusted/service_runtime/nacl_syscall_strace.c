@@ -11,7 +11,7 @@
 #include <time.h>
 #include <stdbool.h>
 #define NUM_SYSCALLS 100 
-#define NACL_sys_mkdir 131 
+//#define NACL_sys_mkdir 131 
 #define NACL_sys_mmap 2 
 #define SYS_GETEUID 3
 #define SYS_GETUID 4
