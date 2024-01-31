@@ -13,13 +13,13 @@
 #define NUM_SYSCALLS 200 
 #define NACL_sys_mkdir 131 
 #define NACL_sys_mmap 2 
-#define SYS_GETEUID 3
-#define SYS_GETUID 4
-#define SYS_READ 5
-#define SYS_LSEEK 6
-#define SYS_FSTAT 7
-#define SYS_CLOSE 8
-#define SYS_GETCWD 9
+#define NACL_sys_geteuid 3
+#define NACL_sys_getuid 4
+#define NACL_sys_read 5
+#define NACL_sys_lseek 6
+#define NACL_sys_fstat 7
+#define NACL_sys_close 8
+#define NACL_sys_getcwd 9
 #define SYS_MUNMAP 10
 #define SYS_ACCESS 11
 #define SYS_OPEN 12
@@ -228,10 +228,10 @@ void NaClStraceClose(int cageid, int d, int ret) {
 
 
     long long endTime = gettimens();
-    syscallStats[SYS_CLOSE].count++;
-    syscallStats[SYS_CLOSE].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_close].count++;
+    syscallStats[NACL_sys_close].totalTime += (endTime - startTime);
     if (ret < 0) {
-        syscallStats[SYS_CLOSE].errorCount++;
+        syscallStats[NACL_sys_close].errorCount++;
     }
     
 #endif
@@ -247,9 +247,9 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
 
     long long endTime = gettimens();
     syscallStats[NACL_sys_read].count++;
-    syscallStats[SYS_READ].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_read].totalTime += (endTime - startTime);
     if (ret < 0) {
-        syscallStats[SYS_READ].errorCount++;
+        syscallStats[NACL_sys_read].errorCount++;
     }
 #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
@@ -413,10 +413,10 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
 
 
     long long endTime = gettimens();
-    syscallStats[SYS_LSEEK].count++;
-    syscallStats[SYS_LSEEK].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_lseek].count++;
+    syscallStats[NACL_sys_lseek].totalTime += (endTime - startTime);
     if (ret < 0) {
-        syscallStats[SYS_LSEEK].errorCount++;
+        syscallStats[NACL_sys_lseek].errorCount++;
     }
 #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
@@ -449,10 +449,10 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
 
 
     long long endTime = gettimens();
-    syscallStats[SYS_FSTAT].count++;
-    syscallStats[SYS_FSTAT].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_fstat].count++;
+    syscallStats[NACL_sys_fstat].totalTime += (endTime - startTime);
     if (retval < 0) {
-        syscallStats[SYS_FSTAT].errorCount++;
+        syscallStats[NACL_sys_fstat].errorCount++;
     }
 #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
@@ -602,19 +602,19 @@ const char* getSyscallName(int syscallIndex) {
             return "mkdir";
         case NACL_sys_mmap:
             return "mmap";
-        case SYS_GETEUID:
+        case NACL_sys_geteuid:
             return "geteuid";
-        case SYS_GETUID:
+        case NACL_sys_getuid:
             return "getuid";
-        case SYS_READ:
+        case NACL_sys_read:
             return "read";
-        case SYS_LSEEK:
+        case NACL_sys_lseek:
             return "lseek";
-        case SYS_FSTAT:
+        case NACL_sys_fstat:
             return "fstat";
-        case SYS_CLOSE:
+        case NACL_sys_close:
             return "close";
-        case SYS_GETCWD:
+        case NACL_sys_getcwd:
             return "getcwd";
         case SYS_MUNMAP:
             return "munmap";
@@ -892,10 +892,10 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
     
 
     long long endTime = gettimens();
-    syscallStats[SYS_GETCWD].count++;
-    syscallStats[SYS_GETCWD].totalTime += endTime - startTime;
+    syscallStats[NACL_sys_getcwd].count++;
+    syscallStats[NACL_sys_getcwd].totalTime += endTime - startTime;
     if (retval < 0) {
-        syscallStats[SYS_GETCWD].errorCount++;
+        syscallStats[NACL_sys_getcwd].errorCount++;
     }
     #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
@@ -1406,10 +1406,10 @@ void NaClStraceGetuid(int cageid, int ret) {
 
     long long endTime = gettimens();
     long long elapsedTime = endTime - startTime;
-    syscallStats[SYS_GETUID].count++;
-    syscallStats[SYS_GETUID].totalTime += elapsedTime;
+    syscallStats[NACL_sys_getuid].count++;
+    syscallStats[NACL_sys_getuid].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETUID].errorCount++;
+        syscallStats[NACL_sys_getuid].errorCount++;
     }
 #endif
 #ifdef TRACING_INDIVIDUAL_CALLS
@@ -1421,19 +1421,19 @@ void NaClStraceGetuid(int cageid, int ret) {
 
 void NaClStraceGeteuid(int cageid, int ret, long long time) {
     #ifdef TRACING_DASHC
-    syscallStats[SYS_GETEUID].count++;
-    syscallStats[SYS_GETEUID].totalTime += time;
+    syscallStats[NACL_sys_geteuid].count++;
+    syscallStats[NACL_sys_geteuid].totalTime += time;
     if (ret < 0) {
-        syscallStats[SYS_GETEUID].errorCount++;
+        syscallStats[NACL_sys_geteuid].errorCount++;
     }
     
     // Update total time for all syscalls
     totalSyscallsTime += time;
     
     // Calculate and print individual syscall stats for geteuid
-    double totalTimeInSeconds = (double)syscallStats[SYS_GETEUID].totalTime / 1000000000.0;
-    long long avgTimePerCallInMicroseconds = syscallStats[SYS_GETEUID].count > 0 
-                                             ? syscallStats[SYS_GETEUID].totalTime / syscallStats[SYS_GETEUID].count / 1000
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_geteuid].totalTime / 1000000000.0;
+    long long avgTimePerCallInMicroseconds = syscallStats[NACL_sys_geteuid].count > 0 
+                                             ? syscallStats[NACL_sys_geteuid].totalTime / syscallStats[NACL_sys_geteuid].count / 1000
                                              : 0;
     double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
     #endif
