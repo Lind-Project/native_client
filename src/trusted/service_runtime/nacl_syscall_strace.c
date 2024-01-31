@@ -104,6 +104,7 @@ int totalSyscallsCount = 0;
 SyscallStats syscallStats[NUM_SYSCALLS];
  
 static long long totalMkdirTime = 0;
+static long long totalLstatTime = 0;
 // this defines the number of characters we display for printing a string buf
 #define STR_PRINT_LEN 30
 
@@ -495,7 +496,7 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 
     syscallStats[SYS_LSTAT].count++;
     syscallStats[SYS_LSTAT].totalTime += time;
-    totalSyscallsTime += time; // Update total time for all syscalls
+    totalLstatTime += time; // Add total time for lstat
 
     if (retval < 0) {
         syscallStats[SYS_LSTAT].errorCount++;
@@ -507,9 +508,10 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d (%lld ns)\n", cageid, path, result, retval, time);
+    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %lld ns)\n", cageid, path, result, retval, time);
     #endif
 }
+
 
 
 
