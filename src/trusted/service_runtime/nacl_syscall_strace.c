@@ -90,11 +90,6 @@
 #define SYS_GETPID 78
 #define SYS_GETPPID 79
 
-long long gettimens() {
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
-}
 FILE *tracingOutputFile = NULL;
 long long totalSyscallsTime = 0; // Total time for all syscalls
 
