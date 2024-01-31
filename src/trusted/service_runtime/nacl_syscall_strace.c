@@ -549,6 +549,8 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     fprintf(tracingOutputFile, "Total mkdir time: %lld ns\n", totalMkdirTime);
+    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[SYS_LSTAT].totalTime);
+
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
