@@ -20,76 +20,76 @@
 // #define NACL_sys_fstat 7
 // #define NACL_sys_close 8
 // #define NACL_sys_getcwd 9
-#define SYS_MUNMAP 10
-#define SYS_ACCESS 11
-#define SYS_OPEN 12
-#define SYS_GETGID 13
-#define SYS_GETEGID 14
-#define SYS_SELECT 15
-#define SYS_FCNTL 16
-#define SYS_EPOLL_CREATE 17
-#define SYS_EPOLL_CTL 18
-#define SYS_EPOLL_WAIT 19
-#define SYS_BIND 20
-#define SYS_LISTEN 21
-#define SYS_POLL 22
-#define SYS_FCNTL_GET 23
-#define SYS_TRUNCATE 24
-#define SYS_FTRUNCATE 25
-#define SYS_CONNECT 26
-#define SYS_ACCEPT 27
-#define SYS_FLOCK 28
-#define SYS_GETSOCKOPT 29
-#define SYS_SETSOCKOPT 30
-#define SYS_FSTATFS 31
-#define SYS_STATFS 32
-#define SYS_GETSOCKNAME 33
-#define SYS_GETPEERNAME 34
-#define SYS_SOCKET 35
-#define SYS_SEND 36
-#define SYS_SENDTO 37
-#define SYS_RECV 38
-#define SYS_RECVFROM 39
-#define SYS_SHUTDOWN 40
-#define SYS_FORK 41
-#define SYS_EXECVE 42
-#define SYS_EXECV 43
-#define SYS_WAITPID 44
-#define SYS_GETHOSTNAME 45
-#define SYS_GETIFADDRS 46
-#define SYS_SHMAT 47
-#define SYS_SHMGET 48
-#define SYS_SHMDT 49
-#define SYS_SHMCTL 50
-#define SYS_SOCKETPAIR 51
-#define SYS_NANOSLEEP 52
-#define SYS_SCHEDYIELD 53
-#define SYS_GETTIMEOFDAY 54
-#define SYS_CLOCKGETCOMMON 55
-#define SYS_LINK 56
-#define SYS_UNLINK 57
-#define SYS_RENAME 58
-#define SYS_RMDIR 59
-#define SYS_CHDIR 60
-#define SYS_CHMOD 61
-#define SYS_FCHMOD 62
-#define SYS_FCHDIR 63
-#define SYS_FSYNC 64
-#define SYS_FDATASYNC 65
-#define SYS_SYNC_FILE_RANGE 66
-#define SYS_EXIT 67
-#define SYS_DUP 68
-#define SYS_DUP2 69
-#define SYS_DUP3 70
-#define SYS_GETDENTS 71
-#define SYS_PREAD 72
-#define SYS_WRITE 73
-#define SYS_PWRITE 74
-#define SYS_IOCTL 75
-#define SYS_LSTAT 76
-#define SYS_STAT 77
-#define SYS_GETPID 78
-#define SYS_GETPPID 79
+// #define NACL_sys_munmap 10
+// #define SYS_ACCESS 11
+// #define SYS_OPEN 12
+// #define SYS_GETGID 13
+// #define SYS_GETEGID 14
+// #define SYS_SELECT 15
+// #define SYS_FCNTL 16
+// #define SYS_EPOLL_CREATE 17
+// #define SYS_EPOLL_CTL 18
+// #define SYS_EPOLL_WAIT 19
+// #define SYS_BIND 20
+// #define SYS_LISTEN 21
+// #define SYS_POLL 22
+// #define SYS_FCNTL_GET 23
+// #define SYS_TRUNCATE 24
+// #define SYS_FTRUNCATE 25
+// #define SYS_CONNECT 26
+// #define SYS_ACCEPT 27
+// #define SYS_FLOCK 28
+// #define SYS_GETSOCKOPT 29
+// #define SYS_SETSOCKOPT 30
+// #define SYS_FSTATFS 31
+// #define SYS_STATFS 32
+// #define SYS_GETSOCKNAME 33
+// #define SYS_GETPEERNAME 34
+// #define SYS_SOCKET 35
+// #define SYS_SEND 36
+// #define SYS_SENDTO 37
+// #define SYS_RECV 38
+// #define SYS_RECVFROM 39
+// #define SYS_SHUTDOWN 40
+// #define SYS_FORK 41
+// #define SYS_EXECVE 42
+// #define SYS_EXECV 43
+// #define SYS_WAITPID 44
+// #define SYS_GETHOSTNAME 45
+// #define SYS_GETIFADDRS 46
+// #define SYS_SHMAT 47
+// #define SYS_SHMGET 48
+// #define SYS_SHMDT 49
+// #define SYS_SHMCTL 50
+// #define SYS_SOCKETPAIR 51
+// #define SYS_NANOSLEEP 52
+// #define SYS_SCHEDYIELD 53
+// #define SYS_GETTIMEOFDAY 54
+// #define SYS_CLOCKGETCOMMON 55
+// #define SYS_LINK 56
+// #define SYS_UNLINK 57
+// #define SYS_RENAME 58
+// #define SYS_RMDIR 59
+// #define SYS_CHDIR 60
+// #define SYS_CHMOD 61
+// #define SYS_FCHMOD 62
+// #define SYS_FCHDIR 63
+// #define SYS_FSYNC 64
+// #define SYS_FDATASYNC 65
+// #define SYS_SYNC_FILE_RANGE 66
+// #define SYS_EXIT 67
+// #define SYS_DUP 68
+// #define SYS_DUP2 69
+// #define SYS_DUP3 70
+// #define SYS_GETDENTS 71
+// #define SYS_PREAD 72
+// #define SYS_WRITE 73
+// #define SYS_PWRITE 74
+// #define SYS_IOCTL 75
+// #define SYS_LSTAT 76
+// #define SYS_STAT 77
+// #define SYS_GETPID 78
+// #define SYS_GETPPID 79
 
 FILE *tracingOutputFile = NULL;
 long long totalSyscallsTime = 0; // Total time for all syscalls
@@ -172,319 +172,397 @@ char* formatStringArgument(const char *input) {
     return output;
 }
 
-void NaClStraceGetpid(int cageid, int pid) {
+void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
+    syscallStats[NACL_SYS_GETPID].count++;
+    syscallStats[NACL_SYS_GETPID].totalTime += elapsedTime;
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETPID].count++;
-    syscallStats[SYS_GETPID].totalTime += (endTime - startTime);
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_GETPID].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_GETPID].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_GETPID].totalTime / syscallStats[NACL_SYS_GETPID].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
+    fprintf(tracingOutputFile, "%d getpid() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pid, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetppid(int cageid, int pid) {
+void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
+    syscallStats[NACL_sys_getppid].count++;
+    syscallStats[NACL_sys_getppid].totalTime += elapsedTime;
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETPPID].count++;
-    syscallStats[SYS_GETPPID].totalTime += (endTime - startTime);
+    // Calculate and print individual syscall stats for getppid
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getppid].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getppid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getppid].totalTime / syscallStats[NACL_sys_getppid].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
+
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
+    fprintf(tracingOutputFile, "%d NACL_sys_getppid() = %d (Total time: %.9f seconds)\n", cageid, pid, (double)elapsedTime / 1000000000.0);
     #endif
 }
 
 
-void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd) {
+
+void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    syscallStats[SYS_OPEN].count++;
-    syscallStats[SYS_OPEN].totalTime += endTime - startTime;
+    syscallStats[NACL_sys_open].count++;
+    syscallStats[NACL_sys_open].totalTime += elapsedTime;
     if (fd < 0) {
-        syscallStats[SYS_OPEN].errorCount++;
+        syscallStats[NACL_sys_open].errorCount++;
     }
+
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+
+    // Calculate and print individual syscall stats for open
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_open].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_open].count > 0 
+                                     ? (double)syscallStats[NACL_sys_open].totalTime / syscallStats[NACL_sys_open].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+
     #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
+    char *strBuf = formatStringArgument(path);
+    fprintf(tracingOutputFile, "%d NACL_sys_open(%s, %d, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", flags, mode, fd, (double)elapsedTime / 1000000000.0);
+    free(strBuf);
     #endif
-
 }
 
-void NaClStraceClose(int cageid, int d, int ret) {
-#ifdef TRACING_DASHC
-    long long startTime = gettimens();
 
-
-    long long endTime = gettimens();
+void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
     syscallStats[NACL_sys_close].count++;
-    syscallStats[NACL_sys_close].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_close].totalTime += elapsedTime;
     if (ret < 0) {
         syscallStats[NACL_sys_close].errorCount++;
     }
-    
-#endif
-#ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
-#endif
+
+    // Calculate and print individual syscall stats for close
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_close].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_close].count > 0 
+                                     ? (double)syscallStats[NACL_sys_close].totalTime / syscallStats[NACL_sys_close].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d NACL_sys_close(%d) = %d (Total time: %.9f seconds)\n", cageid, d, ret, (double)elapsedTime / 1000000000.0);
+    #endif
 }
 
-void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret) {
+
+void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret, long long time) {
 #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
     syscallStats[NACL_sys_read].count++;
-    syscallStats[NACL_sys_read].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_read].totalTime += time;
     if (ret < 0) {
         syscallStats[NACL_sys_read].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for read
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_read].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_read].count > 0 
+                                     ? (double)syscallStats[NACL_sys_read].totalTime / syscallStats[NACL_sys_read].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
+    
 #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
+    fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d (Total time: %.9f seconds)\n", cageid, d, buf, count, ret, (double)time / 1000000000.0);
 #endif
 }
 
 
-void NaClStraceExit(int cageid, int status) {
+void NaClStraceExit(int cageid, int status, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_EXIT].count++;
-    syscallStats[SYS_EXIT].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_exit].count++;
+    syscallStats[NACL_sys_exit].totalTime += elapsedTime;
     if (status != 0) {
-        syscallStats[SYS_EXIT].errorCount++;
+        syscallStats[NACL_sys_exit].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for exit
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_exit].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_exit].count > 0 
+                                     ? (double)syscallStats[NACL_sys_exit].totalTime / syscallStats[NACL_sys_exit].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
+    fprintf(tracingOutputFile, "%d NACL_sys_exit() = %d (Total time: %.9f seconds)\n", cageid, status, (double)elapsedTime / 1000000000.0);
     #endif
 }
 
-void NaClStraceDup(int cageid, int oldfd, int ret){
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_DUP].count++;
-    syscallStats[SYS_DUP].totalTime += (endTime - startTime);
+void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_dup].count++;
+    syscallStats[NACL_sys_dup].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_DUP].errorCount++;
+        syscallStats[NACL_sys_dup].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for dup
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup].count > 0 
+                                     ? (double)syscallStats[NACL_sys_dup].totalTime / syscallStats[NACL_sys_dup].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d dup(%d) = %d\n", cageid, oldfd, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_dup(%d) = %d (Total time: %.9f seconds)\n", cageid, oldfd, ret, (double)elapsedTime / 1000000000.0);
     #endif
 }
 
-void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret){
+void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_DUP2].count++;
-    syscallStats[SYS_DUP2].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_dup2].count++;
+    syscallStats[NACL_sys_dup2].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_DUP2].errorCount++;
+        syscallStats[NACL_sys_dup2].errorCount++;
     }
+
+    // Calculate and print individual syscall stats for dup2
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup2].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup2].count > 0 
+                                     ? (double)syscallStats[NACL_sys_dup2].totalTime / syscallStats[NACL_sys_dup2].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d dup2(%d, %d) = %d\n", cageid, oldfd, newfd, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_dup2(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldfd, newfd, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret){
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_DUP3].count++;
-    syscallStats[SYS_DUP3].totalTime += (endTime - startTime);
+void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_dup3].count++;
+    syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_DUP3].errorCount++;
+        syscallStats[NACL_sys_dup3].errorCount++;
     }
+
+    // Calculate and print individual syscall stats for dup3
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup3].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup3].count > 0 
+                                     ? (double)syscallStats[NACL_sys_dup3].totalTime / syscallStats[NACL_sys_dup3].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_dup3(%d, %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldfd, newfd, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETDENTS].count++;
-    syscallStats[SYS_GETDENTS].totalTime += (endTime - startTime);
+void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_getdents].count++;
+    syscallStats[NACL_sys_getdents].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETDENTS].errorCount++;
+        syscallStats[NACL_sys_getdents].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getdents].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getdents].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getdents].totalTime / syscallStats[NACL_sys_getdents].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_getdents(%d, %p, %zu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, drip, count, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_PREAD].count++;
-    syscallStats[SYS_PREAD].totalTime += (endTime - startTime);
+void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_pread].count++;
+    syscallStats[NACL_sys_pread].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_PREAD].errorCount++;
+        syscallStats[NACL_sys_pread].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_pread].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_pread].count > 0 
+                                     ? (double)syscallStats[NACL_sys_pread].totalTime / syscallStats[NACL_sys_pread].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %ld) = %d\n", cageid, d, buf, count, offset, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_pread(%d, %p, %d, %ld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, buf, count, offset, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret) {
+void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_WRITE].count++;
-    syscallStats[SYS_WRITE].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_write].count++;
+    syscallStats[NACL_sys_write].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_WRITE].errorCount++;
+        syscallStats[NACL_sys_write].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_write].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_write].count > 0 
+                                     ? (double)syscallStats[NACL_sys_write].totalTime / syscallStats[NACL_sys_write].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument((char *)buf);
-    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_write(%d, \"%s\", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, strBuf ? strBuf : "NULL", count, ret, (double)elapsedTime / 1000000000.0, percentTime);
     free(strBuf);
     #endif
 }
 
-void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_PWRITE].count++;
-    syscallStats[SYS_PWRITE].totalTime += (endTime - startTime);
+void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_pwrite].count++;
+    syscallStats[NACL_sys_pwrite].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_PWRITE].errorCount++;
+        syscallStats[NACL_sys_pwrite].errorCount++;
     }
+
+    // Calculate and print individual syscall stats for pwrite
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_pwrite].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_pwrite].count > 0 
+                                     ? (double)syscallStats[NACL_sys_pwrite].totalTime / syscallStats[NACL_sys_pwrite].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument((char *)buf);
-    fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %lld) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_pwrite(%d, \"%s\", %d, %lld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval, (double)elapsedTime / 1000000000.0, percentTime);
     free(strBuf);
     #endif
 }
 
-void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret) {
+
+void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long time) {
 #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
     syscallStats[NACL_sys_lseek].count++;
-    syscallStats[NACL_sys_lseek].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_lseek].totalTime += time;
     if (ret < 0) {
         syscallStats[NACL_sys_lseek].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for lseek
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_lseek].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_lseek].count > 0 
+                                     ? (double)syscallStats[NACL_sys_lseek].totalTime / syscallStats[NACL_sys_lseek].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
+    
 #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
+    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds)\n", cageid, d, offset, whence, ret, (double)time / 1000000000.0);
 #endif
 }
 
-void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_IOCTL].count++;
-    syscallStats[SYS_IOCTL].totalTime += (endTime - startTime);
+void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_ioctl].count++;
+    syscallStats[NACL_sys_ioctl].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_IOCTL].errorCount++;
+        syscallStats[NACL_sys_ioctl].errorCount++;
     }
+
+    // Calculate and print individual syscall stats for ioctl
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_ioctl].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_ioctl].count > 0 
+                                     ? (double)syscallStats[NACL_sys_ioctl].totalTime / syscallStats[NACL_sys_ioctl].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_ioctl(%d, %lu, %p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, request, arg_ptr, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval) {
+
+void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long time) {
 #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
     syscallStats[NACL_sys_fstat].count++;
-    syscallStats[NACL_sys_fstat].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_fstat].totalTime += time;
     if (retval < 0) {
         syscallStats[NACL_sys_fstat].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for fstat
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fstat].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fstat].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fstat].totalTime / syscallStats[NACL_sys_fstat].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
+    
 #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
+    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds)\n", cageid, d, result, retval, (double)time / 1000000000.0);
 #endif
 }
 
-void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
+void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_STAT].count++;
-    syscallStats[SYS_STAT].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_stat].count++;
+    syscallStats[NACL_sys_stat].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_STAT].errorCount++;
+        syscallStats[NACL_sys_stat].errorCount++;
     }
+
+    // Calculate and print individual syscall stats for stat
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_stat].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_stat].count > 0 
+                                     ? (double)syscallStats[NACL_sys_stat].totalTime / syscallStats[NACL_sys_stat].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
+
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_stat(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds)\n", cageid, path, result, retval, (double)elapsedTime / 1000000000.0);
     #endif
 }
+
 
 // void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t retval, long long time){
 //     #ifdef TRACING_DASHC
-//     syscallStats[SYS_LSTAT].count++;
-//     syscallStats[SYS_LSTAT].totalTime += time;
+//     syscallStats[NACL_SYS_LSTAT].count++;
+//     syscallStats[NACL_SYS_LSTAT].totalTime += time;
 //     if (retval < 0) {
-//         syscallStats[SYS_LSTAT].errorCount++;
+//         syscallStats[NACL_SYS_LSTAT].errorCount++;
 //     }
 //     #endif
     
@@ -495,12 +573,12 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval) {
 void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t retval, long long time) {
     #ifdef TRACING_DASHC
 
-    syscallStats[SYS_LSTAT].count++;
-    syscallStats[SYS_LSTAT].totalTime += time;
+    syscallStats[NACL_sys_LSTAT].count++;
+    syscallStats[NACL_sys_LSTAT].totalTime += time;
     totalLstatTime += time; // Add total time for lstat
 
     if (retval < 0) {
-        syscallStats[SYS_LSTAT].errorCount++;
+        syscallStats[NACL_sys_LSTAT].errorCount++;
     }
     
     totalSyscallsCount++;
@@ -565,7 +643,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     fprintf(tracingOutputFile, "Total mkdir time: %lld ns\n", totalMkdirTime);
-    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[SYS_LSTAT].totalTime);
+    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[NACL_SYS_LSTAT].totalTime);
 
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
@@ -616,125 +694,125 @@ const char* getSyscallName(int syscallIndex) {
             return "close";
         case NACL_sys_getcwd:
             return "getcwd";
-        case SYS_MUNMAP:
+        case NACL_sys_MUNMAP:
             return "munmap";
-        case SYS_ACCESS:
+        case NACL_sys_ACCESS:
             return "access";
-        case SYS_OPEN:
+        case NACL_sys_OPEN:
             return "open";    
-        case SYS_GETGID:
+        case NACL_sys_GETGID:
             return "getgid";
-        case SYS_GETEGID:
+        case NACL_sys_GETEGID:
             return "getegid";
-        case SYS_SELECT:
+        case NACL_sys_SELECT:
             return "select";
-        case SYS_EPOLL_CREATE:
+        case NACL_sys_EPOLL_CREATE:
             return "epoll_create";
-        case SYS_EPOLL_CTL:
+        case NACL_sys_EPOLL_CTL:
             return "epoll_ctl";
-        case SYS_EPOLL_WAIT:
+        case NACL_sys_EPOLL_WAIT:
             return "epoll_wait";
-        case SYS_BIND:
+        case NACL_sys_BIND:
             return "bind";
-        case SYS_LISTEN:
+        case NACL_sys_LISTEN:
             return "listen";
-        case SYS_POLL:
+        case NACL_sys_POLL:
             return "poll";
-        case SYS_FCNTL_GET:
+        case NACL_sys_FCNTL_GET:
             return "fcntl_get";
-        case SYS_TRUNCATE:
+        case NACL_sys_TRUNCATE:
             return "truncate";
-        case SYS_FTRUNCATE:
+        case NACL_sys_FTRUNCATE:
             return "ftruncate";
-        case SYS_CONNECT:
+        case NACL_sys_CONNECT:
             return "connect";
-        case SYS_ACCEPT:
+        case NACL_sys_ACCEPT:
             return "accept";
-        case SYS_FLOCK:
+        case NACL_sys_FLOCK:
             return "flock";
-        case SYS_GETSOCKOPT:
+        case NACL_sys_GETSOCKOPT:
             return "getsockopt";
-        case SYS_SETSOCKOPT:
+        case NACL_sys_SETSOCKOPT:
             return "setsockopt";
-        case SYS_FSTATFS:
+        case NACL_sys_FSTATFS:
             return "fstatfs";
-        case SYS_STATFS:
+        case NACL_sys_STATFS:
             return "statfs";
-        case SYS_GETSOCKNAME:
+        case NACL_sys_GETSOCKNAME:
             return "getsockname";
-        case SYS_GETPEERNAME:
+        case NACL_sys_GETPEERNAME:
             return "getpeername";
-        case SYS_SOCKET:
+        case NACL_sys_SOCKET:
             return "socket";
-        case SYS_SEND:
+        case NACL_sys_SEND:
             return "send";
-        case SYS_SENDTO:
+        case NACL_sys_SENDTO:
             return "sendto";
-        case SYS_RECV:
+        case NACL_sys_RECV:
             return "recv";
-        case SYS_RECVFROM:
+        case NACL_sys_RECVFROM:
             return "recvfrom";
-        case SYS_SHMAT:
+        case NACL_sys_SHMAT:
             return "shmat";
-        case SYS_SHMGET:
+        case NACL_sys_SHMGET:
             return "shmget";
-        case SYS_SHMDT:
+        case NACL_sys_SHMDT:
             return "shmdt";
-        case SYS_SHMCTL:
+        case NACL_sys_SHMCTL:
             return "shmctl";
-        case SYS_SOCKETPAIR:
+        case NACL_sys_SOCKETPAIR:
             return "socketpair";
-        case SYS_NANOSLEEP:
+        case NACL_sys_NANOSLEEP:
             return "nanosleep";
-        case SYS_GETTIMEOFDAY:
+        case NACL_sys_GETTIMEOFDAY:
             return "gettimeofday";
-        case SYS_LINK:
+        case NACL_sys_LINK:
             return "link";
-        case SYS_UNLINK:
+        case NACL_sys_UNLINK:
             return "unlink";
-        case SYS_RENAME:
+        case NACL_sys_RENAME:
             return "rename";
-        case SYS_RMDIR:
+        case NACL_sys_RMDIR:
             return "rmdir";
-        case SYS_CHDIR:
+        case NACL_sys_CHDIR:
             return "chdir";
-        case SYS_CHMOD:
+        case NACL_sys_CHMOD:
             return "chmod";
-        case SYS_FCHMOD:
+        case NACL_sys_FCHMOD:
             return "fchmod";
-        case SYS_FCHDIR:
+        case NACL_sys_FCHDIR:
             return "fchdir";
-        case SYS_FSYNC:
+        case NACL_sys_FSYNC:
             return "fsync";
-        case SYS_FDATASYNC:
+        case NACL_sys_FDATASYNC:
             return "fdatasync";
-        case SYS_SYNC_FILE_RANGE:
+        case NACL_sys_SYNC_FILE_RANGE:
             return "syncfilerange";
-        case SYS_EXIT:
+        case NACL_sys_EXIT:
             return "exit";
-        case SYS_DUP:
+        case NACL_sys_DUP:
             return "dup";
-        case SYS_DUP2:
+        case NACL_sys_DUP2:
             return "dup2";
-        case SYS_DUP3:
+        case NACL_sys_DUP3:
             return "dup3";
-        case SYS_GETDENTS:
+        case NACL_sys_GETDENTS:
             return "getdents";
-        case SYS_PREAD:
+        case NACL_sys_PREAD:
             return "pread";
-        case SYS_WRITE:
+        case NACL_sys_WRITE:
             return "write";
-        case SYS_PWRITE:
+        case NACL_sys_PWRITE:
             return "pwrite";
-        case SYS_IOCTL:
+        case NACL_sys_IOCTL:
             return "ioctl";
-        case SYS_LSTAT:
+        case NACL_sys_LSTAT:
             return "lstat";
-        case SYS_STAT:
+        case NACL_sys_STAT:
             return "stat";
-        case SYS_GETPID:
+        case NACL_sys_GETPID:
             return "getpid";
-        case SYS_GETPPID:
+        case NACL_sys_GETPPID:
             return "getppid";
         default:
             return "unknown";
@@ -743,232 +821,264 @@ const char* getSyscallName(int syscallIndex) {
 
 
 
-void NaClStraceRmdir(int cageid, const char *path, int retval) {
+void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_RMDIR].count++;
-    syscallStats[SYS_RMDIR].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_rmdir].count++;
+    syscallStats[NACL_sys_rmdir].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_RMDIR].errorCount++;
+        syscallStats[NACL_sys_rmdir].errorCount++;
     }
+
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+
+    // Calculate and print individual syscall stats for rmdir
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_rmdir].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_rmdir].count > 0 
+                                     ? (double)syscallStats[NACL_sys_rmdir].totalTime / syscallStats[NACL_sys_rmdir].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_rmdir(%s) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceChdir(int cageid, const char *path, int retval) {
+void NaClStraceChdir(int cageid, const char *path, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_CHDIR].count++;
-    syscallStats[SYS_CHDIR].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_chdir].count++;
+    syscallStats[NACL_sys_chdir].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_CHDIR].errorCount++;
+        syscallStats[NACL_sys_chdir].errorCount++;
     }
+
+// Calculate and print individual syscall stats for chdir
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_chdir].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_chdir].count > 0 
+                                 ? (double)syscallStats[NACL_sys_chdir].totalTime / syscallStats[NACL_sys_chdir].count / 1000000000.0
+                                 : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+
+
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d NACL_sys_chdir(%s) = %d (Total time: %.9f seconds)\n", cageid, path, retval, (double)elapsedTime / 1000000000.0);
+    #endif
+}
+
+
+void NaClStraceChmod(int cageid, const char *path, int mode, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_chmod].count++;
+    syscallStats[NACL_sys_chmod].totalTime += elapsedTime;
+    if (retval < 0) {
+        syscallStats[NACL_sys_chmod].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_chmod].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_chmod].count > 0 
+                                     ? (double)syscallStats[NACL_sys_chmod].totalTime / syscallStats[NACL_sys_chmod].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_chmod(%s, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, mode, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceChmod(int cageid, const char *path, int mode, int retval) {
+void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_CHMOD].count++;
-    syscallStats[SYS_CHMOD].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_fchmod].count++;
+    syscallStats[NACL_sys_fchmod].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_CHMOD].errorCount++;
+        syscallStats[NACL_sys_fchmod].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fchmod].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fchmod].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fchmod].totalTime / syscallStats[NACL_sys_fchmod].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d chmod(%s, %d) = %d\n", cageid, path, mode, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_fchmod(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, mode, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFchmod(int cageid, int fd, int mode, int retval) {
+void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_FCHMOD].count++;
-    syscallStats[SYS_FCHMOD].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_fchdir].count++;
+    syscallStats[NACL_sys_fchdir].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_FCHMOD].errorCount++;
+        syscallStats[NACL_sys_fchdir].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fchdir].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fchdir].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fchdir].totalTime / syscallStats[NACL_sys_fchdir].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fchmod(%d, %d) = %d\n", cageid, fd, mode, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_fchdir(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFchdir(int cageid, int fd, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-    long long endTime = gettimens();
-    syscallStats[SYS_FCHDIR].count++;
-    syscallStats[SYS_FCHDIR].totalTime += (endTime - startTime);
-    if (retval < 0) {
-        syscallStats[SYS_FCHDIR].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fchdir(%d) = %d\n", cageid, fd, retval);
-    #endif
-}
 
-void NaClStraceFsync(int cageid, int fd, int ret) {
+void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_FSYNC].count++;
-    syscallStats[SYS_FSYNC].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_fsync].count++;
+    syscallStats[NACL_sys_fsync].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FSYNC].errorCount++;
+        syscallStats[NACL_sys_fsync].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fsync].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fsync].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fsync].totalTime / syscallStats[NACL_sys_fsync].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fsync(%d) = %d\n", cageid, fd, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_fsync(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFdatasync(int cageid, int fd, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FDATASYNC].count++;
-    syscallStats[SYS_FDATASYNC].totalTime += (endTime - startTime);
+void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_fdatasync].count++;
+    syscallStats[NACL_sys_fdatasync].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FDATASYNC].errorCount++;
+        syscallStats[NACL_sys_fdatasync].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fdatasync].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fdatasync].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fdatasync].totalTime / syscallStats[NACL_sys_fdatasync].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_fdatasync(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SYNC_FILE_RANGE].count++;
-    syscallStats[SYS_SYNC_FILE_RANGE].totalTime += (endTime - startTime);
+void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_sync_file_range].count++;
+    syscallStats[NACL_sys_sync_file_range].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SYNC_FILE_RANGE].errorCount++;
+        syscallStats[NACL_sys_sync_file_range].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_sync_file_range].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_sync_file_range].count > 0 
+                                     ? (double)syscallStats[NACL_sys_sync_file_range].totalTime / syscallStats[NACL_sys_sync_file_range].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_sync_file_range(%d, %ld, %ld, %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, offset, nbytes, flags, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
+void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
     syscallStats[NACL_sys_getcwd].count++;
-    syscallStats[NACL_sys_getcwd].totalTime += endTime - startTime;
+    syscallStats[NACL_sys_getcwd].totalTime += elapsedTime;
     if (retval < 0) {
         syscallStats[NACL_sys_getcwd].errorCount++;
     }
-    #endif
-#ifdef TRACING_INDIVIDUAL_CALLS
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
+    // Calculate and print individual syscall stats for getcwd
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getcwd].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getcwd].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getcwd].totalTime / syscallStats[NACL_sys_getcwd].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+
+    #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
-    free(strBuf);
-#endif
-
-}
-void NaClStraceLink(int cageid, char* from, char* to, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-    long long endTime = gettimens();
-    syscallStats[SYS_LINK].count++;
-    syscallStats[SYS_LINK].totalTime += (endTime - startTime);
-    if (retval < 0) {
-        syscallStats[SYS_LINK].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    char *strBuf1 = formatStringArgument(from);
-    char *strBuf2 = formatStringArgument(to);
-    fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
-    free(strBuf1);
-    free(strBuf2);
-    #endif
-}
-
-void NaClStraceUnlink(int cageid, char* pathname, int retval){
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_UNLINK].count++;
-    syscallStats[SYS_UNLINK].totalTime += (endTime - startTime);
-    if (retval < 0) {
-        syscallStats[SYS_UNLINK].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    char *strBuf = formatStringArgument(pathname);
-    fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, strBuf ? strBuf : "NULL", retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_getcwd(%s, %zu) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", size, retval, (double)elapsedTime / 1000000000.0);
     free(strBuf);
     #endif
 }
 
-void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval) {
+void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_RENAME].count++;
-    syscallStats[SYS_RENAME].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_link].count++;
+    syscallStats[NACL_sys_link].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_RENAME].errorCount++;
+        syscallStats[NACL_sys_link].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_link].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_link].count > 0 
+                                     ? (double)syscallStats[NACL_sys_link].totalTime / syscallStats[NACL_sys_link].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    char *strBuf1 = formatStringArgument(oldpath);
-    char *strBuf2 = formatStringArgument(newpath);
-    fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
-    free(strBuf1);
-    free(strBuf2);
+    fprintf(tracingOutputFile, "%d NACL_sys_link(\"%s\", \"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, from, to, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
+
+void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_unlink].count++;
+    syscallStats[NACL_sys_unlink].totalTime += elapsedTime;
+    if (retval < 0) {
+        syscallStats[NACL_sys_unlink].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_unlink].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_unlink].count > 0 
+                                     ? (double)syscallStats[NACL_sys_unlink].totalTime / syscallStats[NACL_sys_unlink].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d NACL_sys_unlink(\"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pathname, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_rename].count++;
+    syscallStats[NACL_sys_rename].totalTime += elapsedTime;
+    if (retval < 0) {
+        syscallStats[NACL_sys_rename].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_rename].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_rename].count > 0 
+                                     ? (double)syscallStats[NACL_sys_rename].totalTime / syscallStats[NACL_sys_rename].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d NACL_sys_rename(\"%s\", \"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldpath, newpath, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long time) {
     #ifdef TRACING_DASHC
@@ -998,425 +1108,498 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
 
 
 
-void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval) {
+void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    syscallStats[SYS_MUNMAP].count++;
-    syscallStats[SYS_MUNMAP].totalTime += endTime - startTime;
+    syscallStats[NACL_sys_munmap].count++;
+    syscallStats[NACL_sys_munmap].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_MUNMAP].errorCount++;
+        syscallStats[NACL_sys_munmap].errorCount++;
     }
-    #endif
-#ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
-#endif    
-}
-void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
     
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SHMAT].count++;
-    syscallStats[SYS_SHMAT].totalTime += (endTime - startTime);
+    // Calculate and print individual syscall stats for munmap
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_munmap].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_munmap].count > 0 
+                                     ? (double)syscallStats[NACL_sys_munmap].totalTime / syscallStats[NACL_sys_munmap].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d NACL_sys_munmap(0x%08"NACL_PRIxPTR", %zu) = %d (Total time: %.9f seconds)\n", cageid, sysaddr, length, retval, (double)elapsedTime / 1000000000.0);
+    #endif
+}
+void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_shmat].count++;
+    syscallStats[NACL_sys_shmat].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SHMAT].errorCount++;
+        syscallStats[NACL_sys_shmat].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmat].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmat].count > 0 
+                                     ? (double)syscallStats[NACL_sys_shmat].totalTime / syscallStats[NACL_sys_shmat].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_shmat(%d, %p, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmid, shmaddr, shmflg, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval) {
+void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_SHMGET].count++;
-    syscallStats[SYS_SHMGET].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_shmget].count++;
+    syscallStats[NACL_sys_shmget].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SHMGET].errorCount++;
+        syscallStats[NACL_sys_shmget].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmget].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmget].count > 0 
+                                     ? (double)syscallStats[NACL_sys_shmget].totalTime / syscallStats[NACL_sys_shmget].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d shmget(%d, %zu, %d) = %d\n", cageid, key, size, shmflg, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_shmget(%d, %zu, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, key, size, shmflg, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceShmdt(int cageid, void *shmaddr, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SHMDT].count++;
-    syscallStats[SYS_SHMDT].totalTime += (endTime - startTime);
+void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_shmdt].count++;
+    syscallStats[NACL_sys_shmdt].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SHMDT].errorCount++;
+        syscallStats[NACL_sys_shmdt].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmdt].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmdt].count > 0 
+                                     ? (double)syscallStats[NACL_sys_shmdt].totalTime / syscallStats[NACL_sys_shmdt].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d shmdt(%p) = %d\n", cageid, shmaddr, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_shmdt(%p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmaddr, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
+
 }
 
-void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval) {
+void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_SHMCTL].count++;
-    syscallStats[SYS_SHMCTL].totalTime += (endTime - startTime);
+    syscallStats[NACL_sys_shmctl].count++;
+    syscallStats[NACL_sys_shmctl].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SHMCTL].errorCount++;
+        syscallStats[NACL_sys_shmctl].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmctl].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmctl].count > 0 
+                                     ? (double)syscallStats[NACL_sys_shmctl].totalTime / syscallStats[NACL_sys_shmctl].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d shmctl(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, shmid, cmd, bufsysaddr, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_shmctl(%d, %d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmid, cmd, bufsysaddr, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SOCKETPAIR].count++;
-    syscallStats[SYS_SOCKETPAIR].totalTime += (endTime - startTime);
+
+void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_socketpair].count++;
+    syscallStats[NACL_sys_socketpair].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_SOCKETPAIR].errorCount++;
+        syscallStats[NACL_sys_socketpair].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_socketpair].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_socketpair].count > 0 
+                                     ? (double)syscallStats[NACL_sys_socketpair].totalTime / syscallStats[NACL_sys_socketpair].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d socketpair(%d, %d, %d, %p, %p) = %d\n", cageid, domain, type, protocol, (void *)lindfds, retval);
+    fprintf(tracingOutputFile, "%d NACL_sys_socketpair(%d, %d, %d, %p, %p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, domain, type, protocol, (void *)lindfds, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-    // ... original nanosleep functionality ...
 
-    long long endTime = gettimens();
-    syscallStats[SYS_NANOSLEEP].count++;
-    syscallStats[SYS_NANOSLEEP].totalTime += (endTime - startTime);
+void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_nanosleep].count++;
+    syscallStats[NACL_sys_nanosleep].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_NANOSLEEP].errorCount++;
+        syscallStats[NACL_sys_nanosleep].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_nanosleep].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_nanosleep].count > 0 
+                                     ? (double)syscallStats[NACL_sys_nanosleep].totalTime / syscallStats[NACL_sys_nanosleep].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d nanosleep(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, req, rem, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_nanosleep(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, req, rem, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceSchedYield(int cageid, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SCHEDYIELD].count++;
-    syscallStats[SYS_SCHEDYIELD].totalTime += (endTime - startTime);
+void NaClStraceSchedYield(int cageid, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_sched_yield].count++;
+    syscallStats[NACL_sys_sched_yield].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_SCHEDYIELD].errorCount++;
+        syscallStats[NACL_sys_sched_yield].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_sched_yield].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_sched_yield].count > 0 
+                                     ? (double)syscallStats[NACL_sys_sched_yield].totalTime / syscallStats[NACL_sys_sched_yield].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d schedyield() = %d\n", cageid, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_sched_yield() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETTIMEOFDAY].count++;
-    syscallStats[SYS_GETTIMEOFDAY].totalTime += (endTime - startTime);
+void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_gettimeofday].count++;
+    syscallStats[NACL_sys_gettimeofday].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETTIMEOFDAY].errorCount++;
+        syscallStats[NACL_sys_gettimeofday].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_gettimeofday].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_gettimeofday].count > 0 
+                                     ? (double)syscallStats[NACL_sys_gettimeofday].totalTime / syscallStats[NACL_sys_gettimeofday].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, tv, tz, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, tv, tz, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_CLOCKGETCOMMON].count++;
-    syscallStats[SYS_CLOCKGETCOMMON].totalTime += (endTime - startTime);
+void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_clockgetcommon].count++;
+    syscallStats[NACL_sys_clockgetcommon].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_CLOCKGETCOMMON].errorCount++;
+        syscallStats[NACL_sys_clockgetcommon].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_clockgetcommon].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_clockgetcommon].count > 0 
+                                     ? (double)syscallStats[NACL_sys_clockgetcommon].totalTime / syscallStats[NACL_sys_clockgetcommon].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d\n", cageid, clk_id, ts_addr, time_func, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, clk_id, ts_addr, time_func, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFork(int cageid, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FORK].count++;
-    syscallStats[SYS_FORK].totalTime += (endTime - startTime);
+void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_fork].count++;
+    syscallStats[NACL_sys_fork].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FORK].errorCount++;
+        syscallStats[NACL_sys_fork].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fork].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fork].count > 0 
+                                     ? (double)syscallStats[NACL_sys_fork].totalTime / syscallStats[NACL_sys_fork].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_fork() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_EXECVE].count++;
-    syscallStats[SYS_EXECVE].totalTime += (endTime - startTime);
+void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_execve].count++;
+    syscallStats[NACL_sys_execve].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_EXECVE].errorCount++;
+        syscallStats[NACL_sys_execve].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_execve].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_execve].count > 0 
+                                     ? (double)syscallStats[NACL_sys_execve].totalTime / syscallStats[NACL_sys_execve].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t)argv, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_execve(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, (uintptr_t)argv, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_EXECV].count++;
-    syscallStats[SYS_EXECV].totalTime += (endTime - startTime);
+void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_execv].count++;
+    syscallStats[NACL_sys_execv].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_EXECV].errorCount++;
+        syscallStats[NACL_sys_execv].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_execv].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_execv].count > 0 
+                                     ? (double)syscallStats[NACL_sys_execv].totalTime / syscallStats[NACL_sys_execv].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t) argv, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_execv(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, (uintptr_t)argv, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_WAITPID].count++;
-    syscallStats[SYS_WAITPID].totalTime += (endTime - startTime);
+void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_waitpid].count++;
+    syscallStats[NACL_sys_waitpid].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_WAITPID].errorCount++;
+        syscallStats[NACL_sys_waitpid].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_waitpid].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_waitpid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_waitpid].totalTime / syscallStats[NACL_sys_waitpid].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pid, sysaddr, options, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGethostname(int cageid, char *name, size_t len, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETHOSTNAME].count++;
-    syscallStats[SYS_GETHOSTNAME].totalTime += (endTime - startTime);
+void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_GETHOSTNAME].count++;
+    syscallStats[NACL_sys_GETHOSTNAME].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETHOSTNAME].errorCount++;
+        syscallStats[NACL_sys_GETHOSTNAME].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_GETHOSTNAME].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_GETHOSTNAME].count > 0 
+                                     ? (double)syscallStats[NACL_sys_GETHOSTNAME].totalTime / syscallStats[NACL_sys_GETHOSTNAME].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument(name);
-    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, strBuf ? strBuf : "NULL", len, ret, (double)elapsedTime / 1000000000.0, percentTime);
     free(strBuf);
     #endif
 }
 
-void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETIFADDRS].count++;
-    syscallStats[SYS_GETIFADDRS].totalTime += (endTime - startTime);
+void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_GETIFADDRS].count++;
+    syscallStats[NACL_sys_GETIFADDRS].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETIFADDRS].errorCount++;
+        syscallStats[NACL_sys_GETIFADDRS].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_GETIFADDRS].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_GETIFADDRS].count > 0 
+                                     ? (double)syscallStats[NACL_sys_GETIFADDRS].totalTime / syscallStats[NACL_sys_GETIFADDRS].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, strBuf ? strBuf : "NULL", len, ret, (double)elapsedTime / 1000000000.0, percentTime);
     free(strBuf);
     #endif
 }
 
-void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SOCKET].count++;
-    syscallStats[SYS_SOCKET].totalTime += (endTime - startTime);
+void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_SOCKET].count++;
+    syscallStats[NACL_sys_SOCKET].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_SOCKET].errorCount++;
+        syscallStats[NACL_sys_SOCKET].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SOCKET].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SOCKET].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SOCKET].totalTime / syscallStats[NACL_SYS_SOCKET].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d\n", cageid, domain, type, protocol, ret);
-    #endif
-}
-
-void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int flags, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_SEND].count++;
-    syscallStats[SYS_SEND].totalTime += (endTime - startTime);
-    if (ret < 0) {
-        syscallStats[SYS_SEND].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret);
-    #endif
-}
-
-void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_SENDTO].count++;
-    syscallStats[SYS_SENDTO].totalTime += (endTime - startTime);
-    if (ret < 0) {
-        syscallStats[SYS_SENDTO].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret);
-    #endif
-}
-
-void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_RECV].count++;
-    syscallStats[SYS_RECV].totalTime += (endTime - startTime);
-    if (ret < 0) {
-        syscallStats[SYS_RECV].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret);
-    #endif
-}
-
-void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags, uintptr_t src_addr, socklen_t *addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_RECVFROM].count++;
-    syscallStats[SYS_RECVFROM].totalTime += (endTime - startTime);
-    if (ret < 0) {
-        syscallStats[SYS_RECVFROM].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, buf, len, flags, src_addr, (uintptr_t)addrlen, ret);
-    #endif
-}
-
-void NaClStraceShutdown(int cageid, int sockfd, int how, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-
-    long long endTime = gettimens();
-    syscallStats[SYS_SHUTDOWN].count++;
-    syscallStats[SYS_SHUTDOWN].totalTime += (endTime - startTime);
-    if (ret < 0) {
-        syscallStats[SYS_SHUTDOWN].errorCount++;
-    }
-    #endif
-    
-    #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d\n", cageid, sockfd, how, ret);
+    fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, domain, type, protocol, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
 
-void NaClStraceGetuid(int cageid, int ret) {
+void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int flags, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_SEND].count++;
+    syscallStats[NACL_SYS_SEND].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_SYS_SEND].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SEND].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SEND].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SEND].totalTime / syscallStats[NACL_SYS_SEND].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_SENDTO].count++;
+    syscallStats[NACL_SYS_SENDTO].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_SYS_SENDTO].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SENDTO].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SENDTO].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SENDTO].totalTime / syscallStats[NACL_SYS_SENDTO].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_RECV].count++;
+    syscallStats[NACL_SYS_RECV].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_SYS_RECV].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_RECV].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_RECV].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_RECV].totalTime / syscallStats[NACL_SYS_RECV].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags, uintptr_t src_addr, socklen_t *addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_RECVFROM].count++;
+    syscallStats[NACL_SYS_RECVFROM].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_SYS_RECVFROM].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_RECVFROM].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_RECVFROM].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_RECVFROM].totalTime / syscallStats[NACL_SYS_RECVFROM].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, buf, len, flags, src_addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_SHUTDOWN].count++;
+    syscallStats[NACL_SYS_SHUTDOWN].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_SYS_SHUTDOWN].errorCount++;
+    }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SHUTDOWN].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SHUTDOWN].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SHUTDOWN].totalTime / syscallStats[NACL_SYS_SHUTDOWN].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, how, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+
+void NaClStraceGetuid(int cageid, int ret, long long time) {
 #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    long long elapsedTime = endTime - startTime;
     syscallStats[NACL_sys_getuid].count++;
-    syscallStats[NACL_sys_getuid].totalTime += elapsedTime;
+    syscallStats[NACL_sys_getuid].totalTime += time;
     if (ret < 0) {
         syscallStats[NACL_sys_getuid].errorCount++;
     }
+    
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
+    
+    // Calculate and print individual syscall stats for getuid
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getuid].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getuid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getuid].totalTime / syscallStats[NACL_sys_getuid].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
+    
 #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
+    fprintf(tracingOutputFile, "%d getuid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)time / 1000000000.0);
 #endif
 }
+
 
 
 void NaClStraceGeteuid(int cageid, int ret, long long time) {
@@ -1446,419 +1629,498 @@ void NaClStraceGeteuid(int cageid, int ret, long long time) {
 
 
 
-void NaClStraceGetgid(int cageid, int ret) {
-#ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    syscallStats[SYS_GETGID].count++;
-    syscallStats[SYS_GETGID].totalTime += endTime - startTime;
-    if (ret < 0) {
-        syscallStats[SYS_GETGID].errorCount++;
-    }
-#endif
-#ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
-#endif
-}
-
-
-void NaClStraceGetegid(int cageid, int ret) {
+void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-
-    long long endTime = gettimens();
-    syscallStats[SYS_GETEGID].count++;
-    syscallStats[SYS_GETEGID].totalTime += endTime - startTime;
+    syscallStats[NACL_sys_getgid].count++;
+    syscallStats[NACL_sys_getgid].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETEGID].errorCount++;
+        syscallStats[NACL_sys_getgid].errorCount++;
     }
+
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+
+    // Calculate and print individual syscall stats for getgid
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getgid].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getgid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getgid].totalTime / syscallStats[NACL_sys_getgid].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+
     #ifdef TRACING_INDIVIDUAL_CALLS
-
-    fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_getgid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)elapsedTime / 1000000000.0);
     #endif
-
 }
 
-void NaClStraceFlock(int cageid, int fd, int operation, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FLOCK].count++;
-    syscallStats[SYS_FLOCK].totalTime += (endTime - startTime);
+
+void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_getegid].count++;
+    syscallStats[NACL_sys_getegid].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FLOCK].errorCount++;
+        syscallStats[NACL_sys_getegid].errorCount++;
     }
+
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+
+    // Calculate and print individual syscall stats for getegid
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getegid].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getegid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getegid].totalTime / syscallStats[NACL_sys_getegid].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
+
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d flock(%d, %d) = %d\n", cageid, fd, operation, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_getegid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)elapsedTime / 1000000000.0);
     #endif
 }
 
-void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *optval, socklen_t *optlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETSOCKOPT].count++;
-    syscallStats[SYS_GETSOCKOPT].totalTime += (endTime - startTime);
+void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_FLOCK].count++;
+    syscallStats[NACL_SYS_FLOCK].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETSOCKOPT].errorCount++;
+        syscallStats[NACL_SYS_FLOCK].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_FLOCK].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_FLOCK].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_FLOCK].totalTime / syscallStats[NACL_SYS_FLOCK].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret);
+    fprintf(tracingOutputFile, "%d flock(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, operation, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const void *optval, socklen_t optlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SETSOCKOPT].count++;
-    syscallStats[SYS_SETSOCKOPT].totalTime += (endTime - startTime);
+void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *optval, socklen_t *optlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_GETSOCKOPT].count++;
+    syscallStats[NACL_SYS_GETSOCKOPT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_SETSOCKOPT].errorCount++;
+        syscallStats[NACL_SYS_GETSOCKOPT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_GETSOCKOPT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_GETSOCKOPT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_GETSOCKOPT].totalTime / syscallStats[NACL_SYS_GETSOCKOPT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, level, optname, (uintptr_t)optval, optlen, ret);
+    fprintf(tracingOutputFile, "%d getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FSTATFS].count++;
-    syscallStats[SYS_FSTATFS].totalTime += (endTime - startTime);
+void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const void *optval, socklen_t optlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_SETSOCKOPT].count++;
+    syscallStats[NACL_SYS_SETSOCKOPT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FSTATFS].errorCount++;
+        syscallStats[NACL_SYS_SETSOCKOPT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SETSOCKOPT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SETSOCKOPT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SETSOCKOPT].totalTime / syscallStats[NACL_SYS_SETSOCKOPT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, buf, ret);
+    fprintf(tracingOutputFile, "%d setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, level, optname, (uintptr_t)optval, optlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_STATFS].count++;
-    syscallStats[SYS_STATFS].totalTime += (endTime - startTime);
+void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_FSTATFS].count++;
+    syscallStats[NACL_SYS_FSTATFS].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_STATFS].errorCount++;
+        syscallStats[NACL_SYS_FSTATFS].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_FSTATFS].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_FSTATFS].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_FSTATFS].totalTime / syscallStats[NACL_SYS_FSTATFS].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, formatStringArgument(pathname), buf, ret);
+    fprintf(tracingOutputFile, "%d fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, buf, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETSOCKNAME].count++;
-    syscallStats[SYS_GETSOCKNAME].totalTime += (endTime - startTime);
+void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_STATFS].count++;
+    syscallStats[NACL_SYS_STATFS].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETSOCKNAME].errorCount++;
+        syscallStats[NACL_SYS_STATFS].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_STATFS].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_STATFS].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_STATFS].totalTime / syscallStats[NACL_SYS_STATFS].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
+    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, formatStringArgument(pathname), buf, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_GETPEERNAME].count++;
-    syscallStats[SYS_GETPEERNAME].totalTime += (endTime - startTime);
+void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_GETSOCKNAME].count++;
+    syscallStats[NACL_SYS_GETSOCKNAME].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_GETPEERNAME].errorCount++;
+        syscallStats[NACL_SYS_GETSOCKNAME].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_GETSOCKNAME].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_GETSOCKNAME].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_GETSOCKNAME].totalTime / syscallStats[NACL_SYS_GETSOCKNAME].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
+    fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceAccess(int cageid, char *path, int mode, int ret) {
+
+void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-
-    // ... original access functionality ...
-
-    long long endTime = gettimens();
-    syscallStats[SYS_ACCESS].count++;
-    syscallStats[SYS_ACCESS].totalTime += endTime - startTime;
+    syscallStats[NACL_SYS_GETPEERNAME].count++;
+    syscallStats[NACL_SYS_GETPEERNAME].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_ACCESS].errorCount++;
+        syscallStats[NACL_SYS_GETPEERNAME].errorCount++;
     }
-    #endif
-#ifdef TRACING_INDIVIDUAL_CALLS
 
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_GETPEERNAME].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_GETPEERNAME].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_GETPEERNAME].totalTime / syscallStats[NACL_SYS_GETPEERNAME].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+    
+    #ifdef TRACING_INDIVIDUAL_CALLS
+    fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    #endif
+}
+
+
+void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_sys_access].count++;
+    syscallStats[NACL_sys_access].totalTime += elapsedTime;
+    if (ret < 0) {
+        syscallStats[NACL_sys_access].errorCount++;
+    }
+
+    // Update total time for all syscalls (in seconds)
+    totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
+
+    // Calculate and print individual syscall stats for access
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_access].totalTime / 1000000000.0; // Convert to seconds
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_access].count > 0 
+                                     ? (double)syscallStats[NACL_sys_access].totalTime / syscallStats[NACL_sys_access].count / 1000000000.0 // Convert to seconds
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    #endif
+
+    #ifdef TRACING_INDIVIDUAL_CALLS
     char *strBuf = formatStringArgument(path);
-    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
+    fprintf(tracingOutputFile, "%d NACL_sys_access(%s, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", mode, ret, (double)elapsedTime / 1000000000.0);
     free(strBuf);
-#endif
-
+    #endif
 }
-void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_TRUNCATE].count++;
-    syscallStats[SYS_TRUNCATE].totalTime += (endTime - startTime);
+void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_TRUNCATE].count++;
+    syscallStats[NACL_SYS_TRUNCATE].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_TRUNCATE].errorCount++;
+        syscallStats[NACL_SYS_TRUNCATE].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_TRUNCATE].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_TRUNCATE].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_TRUNCATE].totalTime / syscallStats[NACL_SYS_TRUNCATE].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d\n", cageid, path, length, ret);
+    fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, length, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFtruncate(int cageid, int fd, int length, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FTRUNCATE].count++;
-    syscallStats[SYS_FTRUNCATE].totalTime += (endTime - startTime);
+void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_FTRUNCATE].count++;
+    syscallStats[NACL_SYS_FTRUNCATE].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FTRUNCATE].errorCount++;
+        syscallStats[NACL_SYS_FTRUNCATE].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_FTRUNCATE].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_FTRUNCATE].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_FTRUNCATE].totalTime / syscallStats[NACL_SYS_FTRUNCATE].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d ftruncate(%d, %d) = %d\n", cageid, fd, length, ret);
+    fprintf(tracingOutputFile, "%d ftruncate(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, length, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_CONNECT].count++;
-    syscallStats[SYS_CONNECT].totalTime += (endTime - startTime);
+void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_CONNECT].count++;
+    syscallStats[NACL_SYS_CONNECT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_CONNECT].errorCount++;
+        syscallStats[NACL_SYS_CONNECT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_CONNECT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_CONNECT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_CONNECT].totalTime / syscallStats[NACL_SYS_CONNECT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
+    fprintf(tracingOutputFile, "%d connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_ACCEPT].count++;
-    syscallStats[SYS_ACCEPT].totalTime += (endTime - startTime);
+void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_ACCEPT].count++;
+    syscallStats[NACL_SYS_ACCEPT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_ACCEPT].errorCount++;
+        syscallStats[NACL_SYS_ACCEPT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_ACCEPT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_ACCEPT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_ACCEPT].totalTime / syscallStats[NACL_SYS_ACCEPT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
+    fprintf(tracingOutputFile, "%d accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_BIND].count++;
-    syscallStats[SYS_BIND].totalTime += (endTime - startTime);
+void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_BIND].count++;
+    syscallStats[NACL_SYS_BIND].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_BIND].errorCount++;
+        syscallStats[NACL_SYS_BIND].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_BIND].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_BIND].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_BIND].totalTime / syscallStats[NACL_SYS_BIND].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
+    fprintf(tracingOutputFile, "%d bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceListen(int cageid, int sockfd, int backlog, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_LISTEN].count++;
-    syscallStats[SYS_LISTEN].totalTime += (endTime - startTime);
+void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_LISTEN].count++;
+    syscallStats[NACL_SYS_LISTEN].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_LISTEN].errorCount++;
+        syscallStats[NACL_SYS_LISTEN].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_LISTEN].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_LISTEN].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_LISTEN].totalTime / syscallStats[NACL_SYS_LISTEN].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d listen(%d, %d) = %d\n", cageid, sockfd, backlog, ret);
+    fprintf(tracingOutputFile, "%d listen(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, backlog, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_POLL].count++;
-    syscallStats[SYS_POLL].totalTime += (endTime - startTime);
+void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_POLL].count++;
+    syscallStats[NACL_SYS_POLL].totalTime += elapsedTime;
     if (retval < 0) {
-        syscallStats[SYS_POLL].errorCount++;
+        syscallStats[NACL_SYS_POLL].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_POLL].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_POLL].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_POLL].totalTime / syscallStats[NACL_SYS_POLL].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %lu, %d) = %d\n", cageid, fds, nfds, timeout, retval);
+    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %lu, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fds, nfds, timeout, retval, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_FCNTL_GET].count++;
-    syscallStats[SYS_FCNTL_GET].totalTime += (endTime - startTime);
+void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_FCNTL_GET].count++;
+    syscallStats[NACL_SYS_FCNTL_GET].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FCNTL_GET].errorCount++;
+        syscallStats[NACL_SYS_FCNTL_GET].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_FCNTL_GET].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_FCNTL_GET].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_FCNTL_GET].totalTime / syscallStats[NACL_SYS_FCNTL_GET].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
+    fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, cmd, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret) {
+
+void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
-    long long endTime = gettimens();
-    syscallStats[SYS_FCNTL].count++;
-    syscallStats[SYS_FCNTL].totalTime += (endTime - startTime);
+    syscallStats[NACL_SYS_FCNTL].count++;
+    syscallStats[NACL_SYS_FCNTL].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_FCNTL].errorCount++;
+        syscallStats[NACL_SYS_FCNTL].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_FCNTL].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_FCNTL].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_FCNTL].totalTime / syscallStats[NACL_SYS_FCNTL].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
+    fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, cmd, set_op, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceEpollCreate(int cageid, int size, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_EPOLL_CREATE].count++;
-    syscallStats[SYS_EPOLL_CREATE].totalTime += (endTime - startTime);
+void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_EPOLL_CREATE].count++;
+    syscallStats[NACL_SYS_EPOLL_CREATE].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_EPOLL_CREATE].errorCount++;
+        syscallStats[NACL_SYS_EPOLL_CREATE].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_EPOLL_CREATE].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_EPOLL_CREATE].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_EPOLL_CREATE].totalTime / syscallStats[NACL_SYS_EPOLL_CREATE].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
+    fprintf(tracingOutputFile, "%d epollcreate(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, size, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_EPOLL_CTL].count++;
-    syscallStats[SYS_EPOLL_CTL].totalTime += (endTime - startTime);
+void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_EPOLL_CTL].count++;
+    syscallStats[NACL_SYS_EPOLL_CTL].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_EPOLL_CTL].errorCount++;
+        syscallStats[NACL_SYS_EPOLL_CTL].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_EPOLL_CTL].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_EPOLL_CTL].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_EPOLL_CTL].totalTime / syscallStats[NACL_SYS_EPOLL_CTL].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, epfd, op, fd, event, ret);
+    fprintf(tracingOutputFile, "%d epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, epfd, op, fd, event, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_EPOLL_WAIT].count++;
-    syscallStats[SYS_EPOLL_WAIT].totalTime += (endTime - startTime);
+void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_EPOLL_WAIT].count++;
+    syscallStats[NACL_SYS_EPOLL_WAIT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_EPOLL_WAIT].errorCount++;
+        syscallStats[NACL_SYS_EPOLL_WAIT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_EPOLL_WAIT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_EPOLL_WAIT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_EPOLL_WAIT].totalTime / syscallStats[NACL_SYS_EPOLL_WAIT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d\n", cageid, epfd, events, maxevents, timeout, ret);
+    fprintf(tracingOutputFile, "%d epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, epfd, events, maxevents, timeout, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
 
-void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret) {
-    #ifdef TRACING_DASHC
-    long long startTime = gettimens();
-    
 
-    long long endTime = gettimens();
-    syscallStats[SYS_SELECT].count++;
-    syscallStats[SYS_SELECT].totalTime += (endTime - startTime);
+void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) {
+    #ifdef TRACING_DASHC
+    syscallStats[NACL_SYS_SELECT].count++;
+    syscallStats[NACL_SYS_SELECT].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[SYS_SELECT].errorCount++;
+        syscallStats[NACL_SYS_SELECT].errorCount++;
     }
+
+    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_SELECT].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_SELECT].count > 0 
+                                     ? (double)syscallStats[NACL_SYS_SELECT].totalTime / syscallStats[NACL_SYS_SELECT].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     #ifdef TRACING_INDIVIDUAL_CALLS
-    fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
+    fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret, (double)elapsedTime / 1000000000.0, percentTime);
     #endif
 }
