@@ -537,9 +537,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
 
     ret = lind_dup(oldfd, nap->cage_id);
 
-    #ifdef TRACING
-    NaClStraceDup(nap->cage_id, oldfd, ret);
-    #endif
+    
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -569,9 +567,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
 
     ret = lind_dup2(oldfd, newfd, nap->cage_id);
 
-    #ifdef TRACING
-    NaClStraceDup2(nap->cage_id, oldfd, newfd, ret);
-    #endif
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -724,16 +719,13 @@ int32_t NaClSysClose(struct NaClAppThread *natp, int d) {
     ret = lind_close(d, nap->cage_id);
 
     #ifdef TRACING
-    NaClStraceClose(nap->cage_id, d, ret);
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceCloseTotalTime(nap->cage_id, totaltime);
+    NaClStraceClose(nap->cage_id, d, ret,totaltime);
     #endif
 
     return ret;
 }
-
-//add timers
 
 int32_t NaClSysGetdents(struct NaClAppThread *natp,
                         int                  d,
@@ -747,6 +739,8 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     int32_t retval = -NACL_ABI_EINVAL;
     ssize_t getdents_ret;
     uintptr_t sysaddr;
+
+    
 
     /*
      * Generic NaClCopyOutToUser is not sufficient, since buffer size
@@ -773,6 +767,9 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
      * cause mmap to be slower on Windows.
      */
     NaClXMutexLock(&nap->mu);
+    #ifdef TRACING
+    long long starttime = gettimens();
+    #endif
     getdents_ret = lind_getdents(d, (void *)sysaddr, count, nap->cage_id);
     NaClXMutexUnlock(&nap->mu);  // Drop addr space lock
 
@@ -791,11 +788,14 @@ int32_t NaClSysGetdents(struct NaClAppThread *natp,
     }
 
     #ifdef TRACING
-    NaClStraceGetdents(nap->cage_id, d, dirp, count, retval); // Corrected arguments
+    long long endtime = gettimens();
+    long long totaltime = endtime - starttime;
+    NaClStraceGetdents(nap->cage_id, d, dirp, count, retval, totaltime); // Corrected arguments
     #endif
 
     return retval;
 }
+
 
 
 // Lind: I/O calls.
@@ -2661,6 +2661,9 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
 
   /* finally lets create the segment */
   topbits = (long) sysaddr & 0xffffffff00000000L;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
   mapbottom = lind_shmat(shmid, (void *) sysaddr, shmflg, nap->cage_id);
 
   /* If we return a value higher than 0xffffffffu - 256
@@ -2735,7 +2738,9 @@ cleanup:
   NaClLog(3, "NaClSysShmat: returning 0x%08"NACL_PRIxPTR"\n", map_result);
 
   #ifdef TRACING
-  NaClStraceShmat(nap->cage_id, shmid, (void *) sysaddr, shmflg, map_result);
+    long long endtime = gettimens();
+    long long totaltime = endtime - starttime;
+  NaClStraceShmat(nap->cage_id, shmid, (void *) sysaddr, shmflg, map_result,totaltime);
   #endif
 
   return map_result;     
@@ -3578,10 +3583,11 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 
   retval = NaClGetTimeOfDay(&now);
   if (retval) {
-    #ifdef TRACING
-    NaClStraceGetTimeOfDay(natp->nap->cage_id, (uintptr_t) tv, (uintptr_t) tz, retval);
-    #endif
-    return retval;
+      #ifdef TRACING
+      long long endtime = gettimens();
+      long long totaltime = endtime - starttime;
+      NaClStraceGetTimeOfDay(natp->nap->cage_id, (uintptr_t) tv, (uintptr_t) tz, retval, totaltime);
+      #endif
   }
 #if !NACL_WINDOWS
   /*
@@ -3598,11 +3604,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
     return -NACL_ABI_EFAULT;
   }
 
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceGetTimeOfDay(natp->nap->cage_id, (uintptr_t) tv, (uintptr_t) tz, retval, totaltime);
-  #endif
+
 
   return 0;
 }
@@ -3819,7 +3821,6 @@ fail:
   long long totaltime = endtime - starttime;
   NaClStraceExecve(nap->cage_id, path, argv, envp, ret, totaltime);
 
-  NaClStraceExecve(nap->cage_id, path, argv, ret);
   #endif
 
   return ret; 
@@ -3912,6 +3913,9 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
   lind_exec(child_cage_id, nap->cage_id);
 
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
@@ -4080,7 +4084,9 @@ fail:
   free(binary);
 
   #ifdef TRACING
-  NaClStraceExecv(nap->cage_id, path, argv, ret);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceExecv(nap->cage_id, path, argv, ret, totaltime);
   #endif
 
   return ret;
@@ -4094,7 +4100,7 @@ fail:
  * We use the NaClCheckZombies/NaClAddZombies/NaClRemoveZombies functions from sel_ldr.c to manage these zombies
  * Zombies are added to a parents zombie list when a child exits, in the NaClReportExitStatus function in sel_ldr_standard.c
  */
-//check this
+//check this timer -start 
 int32_t NaClSysWaitpid(struct NaClAppThread *natp,
                        int pid,
                        uint32_t *stat_loc,
@@ -4109,6 +4115,9 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   int pid_max = fork_num + 1;
   int ret = 0;
   struct NaClZombie* zombie;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
 
@@ -4176,9 +4185,10 @@ out:
   NaClLog(1, "[NaClSysWaitpid] status = %d \n", stat_loc_ptr ? *stat_loc_ptr : 0);
   NaClLog(1, "[NaClSysWaitpid] options = %d \n", options);
   NaClLog(1, "[NaClSysWaitpid] ret = %d \n", ret);
-
   #ifdef TRACING
-  NaClStraceWaitpid(nap->cage_id, pid, sysaddr, options, ret);
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceWaitpid(nap->cage_id, pid, sysaddr, options, ret, totaltime);
   #endif
 
   return ret;
@@ -4309,9 +4319,7 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   int32_t ret;
   struct NaClApp *nap = natp->nap;
   
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+
   
   const void *sysbufaddr = (const void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, len, NACL_ABI_PROT_READ);
   NaClLog(2, "Cage %d Entered NaClSysSend(0x%08"NACL_PRIxPTR", "
