@@ -599,7 +599,6 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
     int ret = NaClSysDup2(natp, oldfd, newfd);
 
     #ifdef TRACING
-    NaClStraceDup3(nap->cage_id, oldfd, newfd, flags, ret);
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
     NaClStraceDup3TotalTime(nap->cage_id, totaltime);
@@ -3649,8 +3648,8 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
 
   #ifdef TRACING
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, retval, totaltime);
+  long long elapsedTime = endtime - starttime;
+  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr, retval, elapsedTime);
   #endif
 
   return retval;
@@ -3818,8 +3817,8 @@ fail:
 
   #ifdef TRACING
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceExecve(nap->cage_id, path, argv, envp, ret, totaltime);
+  long long elapsedTime = endtime - starttime;
+  NaClStraceExecve(nap->cage_id, path, argv, envp, ret, elapsedTime);
 
   #endif
 

@@ -1755,15 +1755,15 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elap
 
 void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    syscallStats[NACL_SYS_STATFS].count++;
-    syscallStats[NACL_SYS_STATFS].totalTime += elapsedTime;
+    syscallStats[NACL_sys_statfs].count++;
+    syscallStats[NACL_sys_statfs].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[NACL_SYS_STATFS].errorCount++;
+        syscallStats[NACL_sys_statfs].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_STATFS].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_STATFS].count > 0 
-                                     ? (double)syscallStats[NACL_SYS_STATFS].totalTime / syscallStats[NACL_SYS_STATFS].count / 1000000000.0
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_statfs].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_statfs].count > 0 
+                                     ? (double)syscallStats[NACL_sys_statfs].totalTime / syscallStats[NACL_sys_statfs].count / 1000000000.0
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
@@ -2033,15 +2033,15 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
 
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    syscallStats[NACL_SYS_EPOLL_CREATE].count++;
-    syscallStats[NACL_SYS_EPOLL_CREATE].totalTime += elapsedTime;
+    syscallStats[NACL_sys_epoll_create].count++;
+    syscallStats[NACL_sys_epoll_create].totalTime += elapsedTime;
     if (ret < 0) {
-        syscallStats[NACL_SYS_EPOLL_CREATE].errorCount++;
+        syscallStats[NACL_sys_epoll_create].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_EPOLL_CREATE].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_EPOLL_CREATE].count > 0 
-                                     ? (double)syscallStats[NACL_SYS_EPOLL_CREATE].totalTime / syscallStats[NACL_SYS_EPOLL_CREATE].count / 1000000000.0
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_epoll_create].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_epoll_create].count > 0 
+                                     ? (double)syscallStats[NACL_sys_epoll_create].totalTime / syscallStats[NACL_sys_epoll_create].count / 1000000000.0
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
