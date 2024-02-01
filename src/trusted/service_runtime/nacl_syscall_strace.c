@@ -674,7 +674,7 @@ void printFinalSyscallStats() {
 }
 
 // Helper function to get syscall name from its index
-const char* getSyscallName(int syscallIndex) {
+cconst char* getSyscallName(int syscallIndex) {
     switch (syscallIndex) {
         case NACL_sys_mkdir:
             return "mkdir";
@@ -694,130 +694,131 @@ const char* getSyscallName(int syscallIndex) {
             return "close";
         case NACL_sys_getcwd:
             return "getcwd";
-        case NACL_sys_MUNMAP:
+        case NACL_sys_munmap:
             return "munmap";
-        case NACL_sys_ACCESS:
+        case NACL_sys_access:
             return "access";
-        case NACL_sys_OPEN:
-            return "open";    
-        case NACL_sys_GETGID:
+        case NACL_sys_open:
+            return "open";
+        case NACL_sys_getgid:
             return "getgid";
-        case NACL_sys_GETEGID:
+        case NACL_sys_getegid:
             return "getegid";
-        case NACL_sys_SELECT:
+        case NACL_sys_select:
             return "select";
-        case NACL_sys_EPOLL_CREATE:
+        case NACL_sys_epoll_create:
             return "epoll_create";
-        case NACL_sys_EPOLL_CTL:
+        case NACL_sys_epoll_ctl:
             return "epoll_ctl";
-        case NACL_sys_EPOLL_WAIT:
+        case NACL_sys_epoll_wait:
             return "epoll_wait";
-        case NACL_sys_BIND:
+        case NACL_sys_bind:
             return "bind";
-        case NACL_sys_LISTEN:
+        case NACL_sys_listen:
             return "listen";
-        case NACL_sys_POLL:
+        case NACL_sys_poll:
             return "poll";
-        case NACL_sys_FCNTL_GET:
+        case NACL_sys_fcntl_get:
             return "fcntl_get";
-        case NACL_sys_TRUNCATE:
+        case NACL_sys_truncate:
             return "truncate";
-        case NACL_sys_FTRUNCATE:
+        case NACL_sys_ftruncate:
             return "ftruncate";
-        case NACL_sys_CONNECT:
+        case NACL_sys_connect:
             return "connect";
-        case NACL_sys_ACCEPT:
+        case NACL_sys_accept:
             return "accept";
-        case NACL_sys_FLOCK:
+        case NACL_sys_flock:
             return "flock";
-        case NACL_sys_GETSOCKOPT:
+        case NACL_sys_getsockopt:
             return "getsockopt";
-        case NACL_sys_SETSOCKOPT:
+        case NACL_sys_setsockopt:
             return "setsockopt";
-        case NACL_sys_FSTATFS:
+        case NACL_sys_fstatfs:
             return "fstatfs";
-        case NACL_sys_STATFS:
+        case NACL_sys_statfs:
             return "statfs";
-        case NACL_sys_GETSOCKNAME:
+        case NACL_sys_getsockname:
             return "getsockname";
-        case NACL_sys_GETPEERNAME:
+        case NACL_sys_getpeername:
             return "getpeername";
-        case NACL_sys_SOCKET:
+        case NACL_sys_socket:
             return "socket";
-        case NACL_sys_SEND:
+        case NACL_sys_send:
             return "send";
-        case NACL_sys_SENDTO:
+        case NACL_sys_sendto:
             return "sendto";
-        case NACL_sys_RECV:
+        case NACL_sys_recv:
             return "recv";
-        case NACL_sys_RECVFROM:
+        case NACL_sys_recvfrom:
             return "recvfrom";
-        case NACL_sys_SHMAT:
+        case NACL_sys_shmat:
             return "shmat";
-        case NACL_sys_SHMGET:
+        case NACL_sys_shmget:
             return "shmget";
-        case NACL_sys_SHMDT:
+        case NACL_sys_shmdt:
             return "shmdt";
-        case NACL_sys_SHMCTL:
+        case NACL_sys_shmctl:
             return "shmctl";
-        case NACL_sys_SOCKETPAIR:
+        case NACL_sys_socketpair:
             return "socketpair";
-        case NACL_sys_NANOSLEEP:
+        case NACL_sys_nanosleep:
             return "nanosleep";
-        case NACL_sys_GETTIMEOFDAY:
+        case NACL_sys_gettimeofday:
             return "gettimeofday";
-        case NACL_sys_LINK:
+        case NACL_sys_link:
             return "link";
-        case NACL_sys_UNLINK:
+        case NACL_sys_unlink:
             return "unlink";
-        case NACL_sys_RENAME:
+        case NACL_sys_rename:
             return "rename";
-        case NACL_sys_RMDIR:
+        case NACL_sys_rmdir:
             return "rmdir";
-        case NACL_sys_CHDIR:
+        case NACL_sys_chdir:
             return "chdir";
-        case NACL_sys_CHMOD:
+        case NACL_sys_chmod:
             return "chmod";
-        case NACL_sys_FCHMOD:
+        case NACL_sys_fchmod:
             return "fchmod";
-        case NACL_sys_FCHDIR:
+        case NACL_sys_fchdir:
             return "fchdir";
-        case NACL_sys_FSYNC:
+        case NACL_sys_fsync:
             return "fsync";
-        case NACL_sys_FDATASYNC:
+        case NACL_sys_fdatasync:
             return "fdatasync";
-        case NACL_sys_SYNC_FILE_RANGE:
-            return "syncfilerange";
-        case NACL_sys_EXIT:
+        case NACL_sys_sync_file_range:
+            return "sync_file_range";
+        case NACL_sys_exit:
             return "exit";
-        case NACL_sys_DUP:
+        case NACL_sys_dup:
             return "dup";
-        case NACL_sys_DUP2:
+        case NACL_sys_dup2:
             return "dup2";
-        case NACL_sys_DUP3:
+        case NACL_sys_dup3:
             return "dup3";
-        case NACL_sys_GETDENTS:
+        case NACL_sys_getdents:
             return "getdents";
-        case NACL_sys_PREAD:
+        case NACL_sys_pread:
             return "pread";
-        case NACL_sys_WRITE:
+        case NACL_sys_write:
             return "write";
-        case NACL_sys_PWRITE:
+        case NACL_sys_pwrite:
             return "pwrite";
-        case NACL_sys_IOCTL:
+        case NACL_sys_ioctl:
             return "ioctl";
-        case NACL_sys_LSTAT:
+        case NACL_sys_lstat:
             return "lstat";
-        case NACL_sys_STAT:
+        case NACL_sys_stat:
             return "stat";
-        case NACL_sys_GETPID:
+        case NACL_sys_getpid:
             return "getpid";
-        case NACL_sys_GETPPID:
+        case NACL_sys_getppid:
             return "getppid";
         default:
             return "unknown";
     }
 }
+
 
 
 
