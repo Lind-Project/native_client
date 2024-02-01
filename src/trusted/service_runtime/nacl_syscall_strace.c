@@ -674,7 +674,7 @@ void printFinalSyscallStats() {
 }
 
 // Helper function to get syscall name from its index
-cconst char* getSyscallName(int syscallIndex) {
+const char* getSyscallName(int syscallIndex) {
     switch (syscallIndex) {
         case NACL_sys_mkdir:
             return "mkdir";
