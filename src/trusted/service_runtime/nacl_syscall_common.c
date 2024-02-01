@@ -467,9 +467,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp, int32_t *desc_addr) {
     int32_t retval = -NACL_ABI_EINVAL;
     int32_t desc;
 
-    #ifdef TRACING
-    long long starttime = gettimens();
-    #endif
+     
 
     NaClLog(3,
             ("NaClSysNameService(0x%08"NACL_PRIxPTR","
@@ -514,11 +512,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp, int32_t *desc_addr) {
     }
 
 done:
-    #ifdef TRACING
-    long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStraceNameService(nap->cage_id, totaltime);
-    #endif
+    
 
     return retval;
 }
@@ -542,7 +536,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceDupTotalTime(nap->cage_id, totaltime);
+    NaClStraceDup(nap->cage_id, totaltime);
     #endif
 
     return ret;
@@ -571,7 +565,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceDup2TotalTime(nap->cage_id, totaltime);
+    NaClStraceDup2(nap->cage_id, totaltime);
     #endif
 
     return ret;
@@ -3320,9 +3314,7 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
 cleanup:
   NaClLog(2, "%s\n", "nanosleep done.");
 
-  #ifdef TRACING
-  NaClStraceNanosleep(nap->cage_id, (uintptr_t)&t_sleep, (uintptr_t)remptr, retval);
-  #endif
+  
 
   return retval;
 }
@@ -3331,9 +3323,7 @@ int32_t NaClSysSchedYield(struct NaClAppThread *natp) {
   UNREFERENCED_PARAMETER(natp);
   NaClThreadYield();
 
-  #ifdef TRACING
-  NaClStraceSchedYield(natp->nap->cage_id, 0);
-  #endif
+  
 
   return 0;
 }
