@@ -11,85 +11,7 @@
 #include <time.h>
 #include <stdbool.h>
 #define NUM_SYSCALLS 200 
-// #define NACL_sys_mkdir 131 
-// #define NACL_sys_mmap 2 
-// #define NACL_sys_geteuid 3
-// #define NACL_sys_getuid 4
-// #define NACL_sys_read 5
-// #define NACL_sys_lseek 6
-// #define NACL_sys_fstat 7
-// #define NACL_sys_close 8
-// #define NACL_sys_getcwd 9
-// #define NACL_sys_munmap 10
-// #define SYS_ACCESS 11
-// #define SYS_OPEN 12
-// #define SYS_GETGID 13
-// #define SYS_GETEGID 14
-// #define SYS_SELECT 15
-// #define SYS_FCNTL 16
-// #define SYS_EPOLL_CREATE 17
-// #define SYS_EPOLL_CTL 18
-// #define SYS_EPOLL_WAIT 19
-// #define SYS_BIND 20
-// #define SYS_LISTEN 21
-// #define SYS_POLL 22
-// #define SYS_FCNTL_GET 23
-// #define SYS_TRUNCATE 24
-// #define SYS_FTRUNCATE 25
-// #define SYS_CONNECT 26
-// #define SYS_ACCEPT 27
-// #define SYS_FLOCK 28
-// #define SYS_GETSOCKOPT 29
-// #define SYS_SETSOCKOPT 30
-// #define SYS_FSTATFS 31
-// #define SYS_STATFS 32
-// #define SYS_GETSOCKNAME 33
-// #define SYS_GETPEERNAME 34
-// #define SYS_SOCKET 35
-// #define SYS_SEND 36
-// #define SYS_SENDTO 37
-// #define SYS_RECV 38
-// #define SYS_RECVFROM 39
-// #define SYS_SHUTDOWN 40
-// #define SYS_FORK 41
-// #define SYS_EXECVE 42
-// #define SYS_EXECV 43
-// #define SYS_WAITPID 44
-// #define SYS_GETHOSTNAME 45
-// #define SYS_GETIFADDRS 46
-// #define SYS_SHMAT 47
-// #define SYS_SHMGET 48
-// #define SYS_SHMDT 49
-// #define SYS_SHMCTL 50
-// #define SYS_SOCKETPAIR 51
-// #define SYS_NANOSLEEP 52
-// #define SYS_SCHEDYIELD 53
-// #define SYS_GETTIMEOFDAY 54
-// #define SYS_CLOCKGETCOMMON 55
-// #define SYS_LINK 56
-// #define SYS_UNLINK 57
-// #define SYS_RENAME 58
-// #define SYS_RMDIR 59
-// #define SYS_CHDIR 60
-// #define SYS_CHMOD 61
-// #define SYS_FCHMOD 62
-// #define SYS_FCHDIR 63
-// #define SYS_FSYNC 64
-// #define SYS_FDATASYNC 65
-// #define SYS_SYNC_FILE_RANGE 66
-// #define SYS_EXIT 67
-// #define SYS_DUP 68
-// #define SYS_DUP2 69
-// #define SYS_DUP3 70
-// #define SYS_GETDENTS 71
-// #define SYS_PREAD 72
-// #define SYS_WRITE 73
-// #define SYS_PWRITE 74
-// #define SYS_IOCTL 75
-// #define SYS_LSTAT 76
-// #define SYS_STAT 77
-// #define SYS_GETPID 78
-// #define SYS_GETPPID 79
+
 
 FILE *tracingOutputFile = NULL;
 long long totalSyscallsTime = 0; // Total time for all syscalls
@@ -630,9 +552,6 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
-    fprintf(tracingOutputFile, "Total mkdir time: %lld ns\n", totalMkdirTime);
-    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[NACL_sys_lstat].totalTime);
-
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
