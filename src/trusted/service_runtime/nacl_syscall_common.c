@@ -536,7 +536,7 @@ int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceDup(nap->cage_id, totaltime);
+    NaClStraceDup(nap->cage_id, oldfd, ret, totaltime);
     #endif
 
     return ret;
@@ -565,7 +565,7 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceDup2(nap->cage_id, totaltime);
+    NaClStraceDup2(nap->cage_id, oldfd, newfd, totaltime);
     #endif
 
     return ret;
@@ -595,7 +595,7 @@ int32_t NaClSysDup3(struct NaClAppThread  *natp,
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceDup3(nap->cage_id, oldfd, newfd, flags, ret, totaltime);
+    NaClStraceDup3(nap->cage_id, oldfd, newfd, flags, totaltime);
     #endif
 
     return ret;
