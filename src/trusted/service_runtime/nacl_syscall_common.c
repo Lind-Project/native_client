@@ -424,10 +424,7 @@ int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
 int32_t NaClSysThreadExit(struct NaClAppThread *natp, int32_t *stack_flag) {
     uint32_t zero = 0;
 
-    #ifdef TRACING
-    long long starttime = gettimens();
-    #endif
-
+    
     NaClLog(4, "NaClSysThreadExit(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR"\n",
             (uintptr_t)natp,
             (uintptr_t)stack_flag);
@@ -450,12 +447,7 @@ int32_t NaClSysThreadExit(struct NaClAppThread *natp, int32_t *stack_flag) {
     host_thread = &natp->host_thread;
     lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
-    #ifdef TRACING
-    long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStraceThreadExit(natp->nap->cage_id, totaltime);
-    #endif
-
+    
     NaClAppThreadTeardown(natp);
 
     /* NOTREACHED */
