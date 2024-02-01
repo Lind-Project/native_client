@@ -174,12 +174,12 @@ char* formatStringArgument(const char *input) {
 
 void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
     #ifdef TRACING_DASHC
-    syscallStats[NACL_SYS_GETPID].count++;
-    syscallStats[NACL_SYS_GETPID].totalTime += elapsedTime;
+    syscallStats[NACL_sys_getpid].count++;
+    syscallStats[NACL_sys_getpid].totalTime += elapsedTime;
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_SYS_GETPID].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_SYS_GETPID].count > 0 
-                                     ? (double)syscallStats[NACL_SYS_GETPID].totalTime / syscallStats[NACL_SYS_GETPID].count / 1000000000.0
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getpid].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getpid].count > 0 
+                                     ? (double)syscallStats[NACL_sys_getpid].totalTime / syscallStats[NACL_sys_getpid].count / 1000000000.0
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
@@ -631,7 +631,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 void printFinalSyscallStats() {
     #ifdef TRACING_DASHC
     fprintf(tracingOutputFile, "Total mkdir time: %lld ns\n", totalMkdirTime);
-    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[NACL_SYS_LSTAT].totalTime);
+    fprintf(tracingOutputFile, "Total lstat time: %lld ns\n", syscallStats[NACL_sys_lstat].totalTime);
 
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
