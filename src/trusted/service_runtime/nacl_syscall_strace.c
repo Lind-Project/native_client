@@ -166,12 +166,12 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_close].errorCount++;
     }
 
-    // // Calculate and print individual syscall stats for close
-    // double totalTimeInSeconds = (double)syscallStats[NACL_sys_close].totalTime / 1000000000.0;
-    // double avgTimePerCallInSeconds = syscallStats[NACL_sys_close].count > 0 
-    //                                  ? (double)syscallStats[NACL_sys_close].totalTime / syscallStats[NACL_sys_close].count / 1000000000.0
-    //                                  : 0.0;
-    // double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    // Calculate and print individual syscall stats for close
+    double totalTimeInSeconds = (double)syscallStats[NACL_sys_close].totalTime / 1000000000.0;
+    double avgTimePerCallInSeconds = syscallStats[NACL_sys_close].count > 0 
+                                     ? (double)syscallStats[NACL_sys_close].totalTime / syscallStats[NACL_sys_close].count / 1000000000.0
+                                     : 0.0;
+    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
 
     #ifdef TRACING_INDIVIDUAL_CALLS
