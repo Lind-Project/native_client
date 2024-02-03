@@ -25,7 +25,8 @@ long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in micr
 int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
- 
+int strace_c = 1;
+
 static long long totalMkdirTime = 0;
 static long long totalLstatTime = 0;
 // this defines the number of characters we display for printing a string buf
@@ -150,11 +151,14 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long lo
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
 
-    #ifdef TRACING_INDIVIDUAL_CALLS
+    
     char *strBuf = formatStringArgument(path);
-    fprintf(tracingOutputFile, "%d NACL_sys_open(%s, %d, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", flags, mode, fd, (double)elapsedTime / 1000000000.0);
+    if (strace_c) {
+        // Print detailed information for each syscall when strace_c is enabled
+        fprintf(tracingOutputFile, "%d NACL_sys_open(%s, %d, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", flags, mode, fd, (double)elapsedTime / 1000000000.0);
+    }
     free(strBuf);
-    #endif
+   
 }
 
 
