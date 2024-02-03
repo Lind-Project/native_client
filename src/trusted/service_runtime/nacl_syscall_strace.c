@@ -172,7 +172,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     //                                  ? (double)syscallStats[NACL_sys_close].totalTime / syscallStats[NACL_sys_close].count / 1000000000.0
     //                                  : 0.0;
     // double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
-    // #endif
+    #endif
 
     #ifdef TRACING_INDIVIDUAL_CALLS
     fprintf(tracingOutputFile, "%d NACL_sys_close(%d) = %d (Total time: %.9f seconds)\n", cageid, d, ret, (double)elapsedTime / 1000000000.0);
