@@ -1418,7 +1418,7 @@ void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int f
     
     if (strace_c) {
     fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
-    #endif
+    }
 }
 
 
