@@ -100,11 +100,7 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
     syscallStats[NACL_sys_getpid].count++;
     syscallStats[NACL_sys_getpid].totalTime += elapsedTime;
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getpid].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getpid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getpid].totalTime / syscallStats[NACL_sys_getpid].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    
     #endif
     
     if (strace_c) {
@@ -116,10 +112,7 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     #ifdef TRACING_DASHC
     syscallStats[NACL_sys_getppid].count++;
     syscallStats[NACL_sys_getppid].totalTime += elapsedTime;
-      if (fd < 0) {
-        syscallStats[NACL_sys_getppid].errorCount++;
-    }
-    //add 
+     
     #endif
 
     if (strace_c) {
