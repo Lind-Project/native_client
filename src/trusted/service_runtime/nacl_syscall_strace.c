@@ -754,7 +754,7 @@ void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsed
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_rmdir(%s) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
     }
 }
 
