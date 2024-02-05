@@ -116,13 +116,10 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     #ifdef TRACING_DASHC
     syscallStats[NACL_sys_getppid].count++;
     syscallStats[NACL_sys_getppid].totalTime += elapsedTime;
-
-    // Calculate and print individual syscall stats for getppid
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getppid].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getppid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getppid].totalTime / syscallStats[NACL_sys_getppid].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+      if (fd < 0) {
+        syscallStats[NACL_sys_getppid].errorCount++;
+    }
+    //add 
     #endif
 
     if (strace_c) {
@@ -143,12 +140,7 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long lo
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for open
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_open].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_open].count > 0 
-                                     ? (double)syscallStats[NACL_sys_open].totalTime / syscallStats[NACL_sys_open].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
 
     
@@ -170,12 +162,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_close].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for close
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_close].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_close].count > 0 
-                                     ? (double)syscallStats[NACL_sys_close].totalTime / syscallStats[NACL_sys_close].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    
     #endif
 
     if (strace_c) {
@@ -195,12 +182,6 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret, long lo
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for read
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_read].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_read].count > 0 
-                                     ? (double)syscallStats[NACL_sys_read].totalTime / syscallStats[NACL_sys_read].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
     
 if (strace_c) {
@@ -220,12 +201,7 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for exit
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_exit].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_exit].count > 0 
-                                     ? (double)syscallStats[NACL_sys_exit].totalTime / syscallStats[NACL_sys_exit].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {    
@@ -244,12 +220,7 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for dup
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup].count > 0 
-                                     ? (double)syscallStats[NACL_sys_dup].totalTime / syscallStats[NACL_sys_dup].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -265,12 +236,7 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
         syscallStats[NACL_sys_dup2].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for dup2
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup2].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup2].count > 0 
-                                     ? (double)syscallStats[NACL_sys_dup2].totalTime / syscallStats[NACL_sys_dup2].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -287,12 +253,7 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long l
         syscallStats[NACL_sys_dup3].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for dup3
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_dup3].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_dup3].count > 0 
-                                     ? (double)syscallStats[NACL_sys_dup3].totalTime / syscallStats[NACL_sys_dup3].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
     
     if (strace_c) {
@@ -309,11 +270,7 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
         syscallStats[NACL_sys_getdents].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getdents].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getdents].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getdents].totalTime / syscallStats[NACL_sys_getdents].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    
     #endif
     
     if (strace_c) {
@@ -330,11 +287,7 @@ void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int 
         syscallStats[NACL_sys_pread].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_pread].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_pread].count > 0 
-                                     ? (double)syscallStats[NACL_sys_pread].totalTime / syscallStats[NACL_sys_pread].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
     
     if (strace_c) {
@@ -350,11 +303,6 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
         syscallStats[NACL_sys_write].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_write].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_write].count > 0 
-                                     ? (double)syscallStats[NACL_sys_write].totalTime / syscallStats[NACL_sys_write].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     char *strBuf = formatStringArgument((char *)buf);
     
@@ -374,12 +322,7 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
         syscallStats[NACL_sys_pwrite].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for pwrite
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_pwrite].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_pwrite].count > 0 
-                                     ? (double)syscallStats[NACL_sys_pwrite].totalTime / syscallStats[NACL_sys_pwrite].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     char *strBuf = formatStringArgument((char *)buf);
     
@@ -402,12 +345,7 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, l
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for lseek
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_lseek].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_lseek].count > 0 
-                                     ? (double)syscallStats[NACL_sys_lseek].totalTime / syscallStats[NACL_sys_lseek].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
 #endif
     
 if (strace_c) {
@@ -424,12 +362,7 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
         syscallStats[NACL_sys_ioctl].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for ioctl
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_ioctl].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_ioctl].count > 0 
-                                     ? (double)syscallStats[NACL_sys_ioctl].totalTime / syscallStats[NACL_sys_ioctl].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -449,12 +382,6 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long l
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for fstat
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fstat].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fstat].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fstat].totalTime / syscallStats[NACL_sys_fstat].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
 #endif
     
 if (strace_c) {
@@ -470,12 +397,7 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, lo
         syscallStats[NACL_sys_stat].errorCount++;
     }
 
-    // Calculate and print individual syscall stats for stat
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_stat].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_stat].count > 0 
-                                     ? (double)syscallStats[NACL_sys_stat].totalTime / syscallStats[NACL_sys_stat].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
 
     if (strace_c) {
@@ -745,12 +667,7 @@ void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsed
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for rmdir
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_rmdir].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_rmdir].count > 0 
-                                     ? (double)syscallStats[NACL_sys_rmdir].totalTime / syscallStats[NACL_sys_rmdir].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
     
     if (strace_c) {
@@ -766,12 +683,7 @@ void NaClStraceChdir(int cageid, const char *path, int retval, long long elapsed
         syscallStats[NACL_sys_chdir].errorCount++;
     }
 
-// Calculate and print individual syscall stats for chdir
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_chdir].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_chdir].count > 0 
-                                 ? (double)syscallStats[NACL_sys_chdir].totalTime / syscallStats[NACL_sys_chdir].count / 1000000000.0
-                                 : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
 
 
@@ -789,11 +701,7 @@ void NaClStraceChmod(int cageid, const char *path, int mode, int retval, long lo
         syscallStats[NACL_sys_chmod].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_chmod].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_chmod].count > 0 
-                                     ? (double)syscallStats[NACL_sys_chmod].totalTime / syscallStats[NACL_sys_chmod].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -809,11 +717,7 @@ void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapse
         syscallStats[NACL_sys_fchmod].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fchmod].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fchmod].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fchmod].totalTime / syscallStats[NACL_sys_fchmod].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -829,11 +733,7 @@ void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
         syscallStats[NACL_sys_fchdir].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fchdir].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fchdir].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fchdir].totalTime / syscallStats[NACL_sys_fchdir].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -850,11 +750,7 @@ void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_fsync].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fsync].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fsync].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fsync].totalTime / syscallStats[NACL_sys_fsync].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     
     if (strace_c) {
@@ -871,11 +767,6 @@ void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_fdatasync].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fdatasync].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fdatasync].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fdatasync].totalTime / syscallStats[NACL_sys_fdatasync].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -892,11 +783,7 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
         syscallStats[NACL_sys_sync_file_range].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_sync_file_range].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_sync_file_range].count > 0 
-                                     ? (double)syscallStats[NACL_sys_sync_file_range].totalTime / syscallStats[NACL_sys_sync_file_range].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     if (strace_c) {
     fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
@@ -915,12 +802,7 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long 
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for getcwd
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getcwd].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getcwd].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getcwd].totalTime / syscallStats[NACL_sys_getcwd].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     char *strBuf = formatStringArgument(buf);
 
@@ -939,11 +821,7 @@ void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elap
         syscallStats[NACL_sys_link].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_link].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_link].count > 0 
-                                     ? (double)syscallStats[NACL_sys_link].totalTime / syscallStats[NACL_sys_link].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     char *strBuf1 = formatStringArgument(from);
     char *strBuf2 = formatStringArgument(to);
@@ -965,11 +843,6 @@ void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedT
         syscallStats[NACL_sys_unlink].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_unlink].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_unlink].count > 0 
-                                     ? (double)syscallStats[NACL_sys_unlink].totalTime / syscallStats[NACL_sys_unlink].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     char *strBuf = formatStringArgument(pathname);
 
@@ -989,11 +862,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
         syscallStats[NACL_sys_rename].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_rename].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_rename].count > 0 
-                                     ? (double)syscallStats[NACL_sys_rename].totalTime / syscallStats[NACL_sys_rename].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    
     #endif
     char *strBuf1 = formatStringArgument(oldpath);
     char *strBuf2 = formatStringArgument(newpath);
@@ -1015,12 +884,7 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for mmap
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_mmap].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_mmap].count > 0 
-                                     ? (double)syscallStats[NACL_sys_mmap].totalTime / syscallStats[NACL_sys_mmap].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     
     if (strace_c) {
@@ -1043,12 +907,7 @@ void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, 
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for munmap
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_munmap].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_munmap].count > 0 
-                                     ? (double)syscallStats[NACL_sys_munmap].totalTime / syscallStats[NACL_sys_munmap].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
 
     if (strace_c) {
@@ -1063,11 +922,7 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
         syscallStats[NACL_sys_shmat].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmat].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmat].count > 0 
-                                     ? (double)syscallStats[NACL_sys_shmat].totalTime / syscallStats[NACL_sys_shmat].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -1083,11 +938,6 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
         syscallStats[NACL_sys_shmget].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmget].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmget].count > 0 
-                                     ? (double)syscallStats[NACL_sys_shmget].totalTime / syscallStats[NACL_sys_shmget].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1104,11 +954,7 @@ void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTim
         syscallStats[NACL_sys_shmdt].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmdt].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmdt].count > 0 
-                                     ? (double)syscallStats[NACL_sys_shmdt].totalTime / syscallStats[NACL_sys_shmdt].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -1125,11 +971,6 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int 
         syscallStats[NACL_sys_shmctl].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shmctl].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shmctl].count > 0 
-                                     ? (double)syscallStats[NACL_sys_shmctl].totalTime / syscallStats[NACL_sys_shmctl].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1147,11 +988,6 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *l
         syscallStats[NACL_sys_socketpair].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_socketpair].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_socketpair].count > 0 
-                                     ? (double)syscallStats[NACL_sys_socketpair].totalTime / syscallStats[NACL_sys_socketpair].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1210,11 +1046,6 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, lon
         syscallStats[NACL_sys_gettimeofday].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_gettimeofday].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_gettimeofday].count > 0 
-                                     ? (double)syscallStats[NACL_sys_gettimeofday].totalTime / syscallStats[NACL_sys_gettimeofday].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1231,11 +1062,7 @@ void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_
         syscallStats[NACL_sys_clock].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_clock].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_clock].count > 0 
-                                     ? (double)syscallStats[NACL_sys_clock].totalTime / syscallStats[NACL_sys_clock].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -1253,11 +1080,7 @@ void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_fork].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fork].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fork].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fork].totalTime / syscallStats[NACL_sys_fork].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     
     if (strace_c) {
@@ -1274,11 +1097,6 @@ void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, 
         syscallStats[NACL_sys_execve].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_execve].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_execve].count > 0 
-                                     ? (double)syscallStats[NACL_sys_execve].totalTime / syscallStats[NACL_sys_execve].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1295,11 +1113,7 @@ void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, l
         syscallStats[NACL_sys_execv].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_execv].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_execv].count > 0 
-                                     ? (double)syscallStats[NACL_sys_execv].totalTime / syscallStats[NACL_sys_execv].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1316,11 +1130,7 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
         syscallStats[NACL_sys_waitpid].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_waitpid].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_waitpid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_waitpid].totalTime / syscallStats[NACL_sys_waitpid].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     
     if (strace_c) {
@@ -1337,11 +1147,7 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long lon
         syscallStats[NACL_sys_gethostname].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_gethostname].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_gethostname].count > 0 
-                                     ? (double)syscallStats[NACL_sys_gethostname].totalTime / syscallStats[NACL_sys_gethostname].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
     char *strBuf = formatStringArgument(name);
 
@@ -1361,11 +1167,6 @@ void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long 
         syscallStats[NACL_sys_getifaddrs].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getifaddrs].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getifaddrs].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getifaddrs].totalTime / syscallStats[NACL_sys_getifaddrs].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     char *strBuf = formatStringArgument(buf);
     if (strace_c) {
@@ -1385,11 +1186,7 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, l
         syscallStats[NACL_sys_socket].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_socket].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_socket].count > 0 
-                                     ? (double)syscallStats[NACL_sys_socket].totalTime / syscallStats[NACL_sys_socket].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1406,11 +1203,7 @@ void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int fla
         syscallStats[NACL_sys_send].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_send].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_send].count > 0 
-                                     ? (double)syscallStats[NACL_sys_send].totalTime / syscallStats[NACL_sys_send].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1427,11 +1220,6 @@ void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int f
         syscallStats[NACL_sys_sendto].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_sendto].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_sendto].count > 0 
-                                     ? (double)syscallStats[NACL_sys_sendto].totalTime / syscallStats[NACL_sys_sendto].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1448,11 +1236,7 @@ void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, in
         syscallStats[NACL_sys_recv].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_recv].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_recv].count > 0 
-                                     ? (double)syscallStats[NACL_sys_recv].totalTime / syscallStats[NACL_sys_recv].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1469,11 +1253,7 @@ void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags
         syscallStats[NACL_sys_recvfrom].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_recvfrom].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_recvfrom].count > 0 
-                                     ? (double)syscallStats[NACL_sys_recvfrom].totalTime / syscallStats[NACL_sys_recvfrom].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1489,11 +1269,6 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elap
         syscallStats[NACL_sys_shutdown].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_shutdown].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_shutdown].count > 0 
-                                     ? (double)syscallStats[NACL_sys_shutdown].totalTime / syscallStats[NACL_sys_shutdown].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1514,12 +1289,7 @@ void NaClStraceGetuid(int cageid, int ret, long long time) {
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)time / 1000000000.0; // Convert from nanoseconds to seconds
     
-    // Calculate and print individual syscall stats for getuid
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getuid].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getuid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getuid].totalTime / syscallStats[NACL_sys_getuid].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
 #endif
     
 if (strace_c) {
@@ -1540,12 +1310,7 @@ void NaClStraceGeteuid(int cageid, int ret, long long time) {
     // Update total time for all syscalls
     totalSyscallsTime += time;
     
-    // Calculate and print individual syscall stats for geteuid
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_geteuid].totalTime / 1000000000.0;
-    long long avgTimePerCallInMicroseconds = syscallStats[NACL_sys_geteuid].count > 0 
-                                             ? syscallStats[NACL_sys_geteuid].totalTime / syscallStats[NACL_sys_geteuid].count / 1000
-                                             : 0;
-    double percentTime = 100.0 * totalTimeInSeconds / (totalSyscallsTime / 1000000000.0);
+
     #endif
     
     if (strace_c) {
@@ -1567,12 +1332,6 @@ void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for getgid
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getgid].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getgid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getgid].totalTime / syscallStats[NACL_sys_getgid].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
 
     if (strace_c) {
@@ -1593,12 +1352,7 @@ void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for getegid
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getegid].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getegid].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getegid].totalTime / syscallStats[NACL_sys_getegid].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
 
     if (strace_c) {
@@ -1615,11 +1369,7 @@ void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elaps
         syscallStats[NACL_sys_flock].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_flock].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_flock].count > 0 
-                                     ? (double)syscallStats[NACL_sys_flock].totalTime / syscallStats[NACL_sys_flock].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1636,11 +1386,6 @@ void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *
         syscallStats[NACL_sys_getsockopt].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getsockopt].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getsockopt].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getsockopt].totalTime / syscallStats[NACL_sys_getsockopt].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1657,11 +1402,6 @@ void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const 
         syscallStats[NACL_sys_setsockopt].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_setsockopt].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_setsockopt].count > 0 
-                                     ? (double)syscallStats[NACL_sys_setsockopt].totalTime / syscallStats[NACL_sys_setsockopt].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1677,12 +1417,6 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elap
     if (ret < 0) {
         syscallStats[NACL_sys_fstatfs].errorCount++;
     }
-
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fstatfs].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fstatfs].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fstatfs].totalTime / syscallStats[NACL_sys_fstatfs].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1699,11 +1433,6 @@ void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, 
         syscallStats[NACL_sys_statfs].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_statfs].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_statfs].count > 0 
-                                     ? (double)syscallStats[NACL_sys_statfs].totalTime / syscallStats[NACL_sys_statfs].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1720,11 +1449,7 @@ void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
         syscallStats[NACL_sys_getsockname].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getsockname].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getsockname].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getsockname].totalTime / syscallStats[NACL_sys_getsockname].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1741,11 +1466,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
         syscallStats[NACL_sys_getpeername].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_getpeername].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_getpeername].count > 0 
-                                     ? (double)syscallStats[NACL_sys_getpeername].totalTime / syscallStats[NACL_sys_getpeername].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+   
     #endif
     
     if (strace_c) {
@@ -1765,12 +1486,7 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elaps
     // Update total time for all syscalls (in seconds)
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
-    // Calculate and print individual syscall stats for access
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_access].totalTime / 1000000000.0; // Convert to seconds
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_access].count > 0 
-                                     ? (double)syscallStats[NACL_sys_access].totalTime / syscallStats[NACL_sys_access].count / 1000000000.0 // Convert to seconds
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
         char *strBuf = formatStringArgument(path);
 
@@ -1788,11 +1504,7 @@ void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long lon
         syscallStats[NACL_sys_truncate].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_truncate].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_truncate].count > 0 
-                                     ? (double)syscallStats[NACL_sys_truncate].totalTime / syscallStats[NACL_sys_truncate].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1809,11 +1521,7 @@ void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elap
         syscallStats[NACL_sys_ftruncate].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_ftruncate].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_ftruncate].count > 0 
-                                     ? (double)syscallStats[NACL_sys_ftruncate].totalTime / syscallStats[NACL_sys_ftruncate].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+  
     #endif
     
     if (strace_c) {
@@ -1830,11 +1538,7 @@ void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen
         syscallStats[NACL_sys_connect].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_connect].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_connect].count > 0 
-                                     ? (double)syscallStats[NACL_sys_connect].totalTime / syscallStats[NACL_sys_connect].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+ 
     #endif
     
     if (strace_c) {
@@ -1851,11 +1555,7 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
         syscallStats[NACL_sys_accept].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_accept].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_accept].count > 0 
-                                     ? (double)syscallStats[NACL_sys_accept].totalTime / syscallStats[NACL_sys_accept].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1872,11 +1572,6 @@ void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, i
         syscallStats[NACL_sys_bind].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_bind].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_bind].count > 0 
-                                     ? (double)syscallStats[NACL_sys_bind].totalTime / syscallStats[NACL_sys_bind].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1893,11 +1588,6 @@ void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long el
         syscallStats[NACL_sys_listen].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_listen].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_listen].count > 0 
-                                     ? (double)syscallStats[NACL_sys_listen].totalTime / syscallStats[NACL_sys_listen].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1914,11 +1604,6 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
         syscallStats[NACL_sys_poll].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_poll].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_poll].count > 0 
-                                     ? (double)syscallStats[NACL_sys_poll].totalTime / syscallStats[NACL_sys_poll].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
@@ -1935,11 +1620,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedT
         syscallStats[NACL_sys_fcntl_get].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fcntl_get].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fcntl_get].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fcntl_get].totalTime / syscallStats[NACL_sys_fcntl_get].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1956,11 +1637,7 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
         syscallStats[NACL_sys_fcntl_set].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_fcntl_set].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_fcntl_set].count > 0 
-                                     ? (double)syscallStats[NACL_sys_fcntl_set].totalTime / syscallStats[NACL_sys_fcntl_set].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -1977,11 +1654,7 @@ void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime)
         syscallStats[NACL_sys_epoll_create].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_epoll_create].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_epoll_create].count > 0 
-                                     ? (double)syscallStats[NACL_sys_epoll_create].totalTime / syscallStats[NACL_sys_epoll_create].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    
     #endif
     
     if (strace_c) {
@@ -1998,11 +1671,7 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
         syscallStats[NACL_sys_epoll_ctl].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_epoll_ctl].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_epoll_ctl].count > 0 
-                                     ? (double)syscallStats[NACL_sys_epoll_ctl].totalTime / syscallStats[NACL_sys_epoll_ctl].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -2019,11 +1688,7 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
         syscallStats[NACL_sys_epoll_wait].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_epoll_wait].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_epoll_wait].count > 0 
-                                     ? (double)syscallStats[NACL_sys_epoll_wait].totalTime / syscallStats[NACL_sys_epoll_wait].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+
     #endif
     
     if (strace_c) {
@@ -2040,11 +1705,6 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
         syscallStats[NACL_sys_select].errorCount++;
     }
 
-    double totalTimeInSeconds = (double)syscallStats[NACL_sys_select].totalTime / 1000000000.0;
-    double avgTimePerCallInSeconds = syscallStats[NACL_sys_select].count > 0 
-                                     ? (double)syscallStats[NACL_sys_select].totalTime / syscallStats[NACL_sys_select].count / 1000000000.0
-                                     : 0.0;
-    double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
     if (strace_c) {
