@@ -1346,7 +1346,7 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long lon
     char *strBuf = formatStringArgument(name);
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
+    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
     }
     free(strBuf);
 
