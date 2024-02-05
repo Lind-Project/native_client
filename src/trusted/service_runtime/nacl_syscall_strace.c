@@ -108,7 +108,7 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d getpid() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pid, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
     }
 }
 
@@ -126,7 +126,7 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_getppid() = %d (Total time: %.9f seconds)\n", cageid, pid, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
     }
 }
 
@@ -155,7 +155,7 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long lo
     char *strBuf = formatStringArgument(path);
     if (strace_c) {
         // Print detailed information for each syscall when strace_c is enabled
-        fprintf(tracingOutputFile, "%d NACL_sys_open(%s, %d, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", flags, mode, fd, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
     }
     free(strBuf);
    
@@ -179,7 +179,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_close(%d) = %d (Total time: %.9f seconds)\n", cageid, d, ret, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
     }
 }
 
@@ -204,7 +204,7 @@ void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret, long lo
 #endif
     
 if (strace_c) {
-    fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d (Total time: %.9f seconds)\n", cageid, d, buf, count, ret, (double)time / 1000000000.0);
+    fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 }
 }
 
@@ -228,7 +228,8 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     
-    if (strace_c) {    fprintf(tracingOutputFile, "%d NACL_sys_exit() = %d (Total time: %.9f seconds)\n", cageid, status, (double)elapsedTime / 1000000000.0);
+    if (strace_c) {    
+    fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
 }}
 
 
@@ -252,7 +253,7 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_dup(%d) = %d (Total time: %.9f seconds)\n", cageid, oldfd, ret, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d dup(%d) = %d\n", cageid, oldfd, ret);
     }
 }
 
@@ -273,7 +274,7 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_dup2(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldfd, newfd, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d dup2(%d, %d) = %d\n", cageid, oldfd, newfd, ret);
     }
 }
 
@@ -295,7 +296,7 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long l
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_dup3(%d, %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldfd, newfd, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
     }
 }
 
@@ -316,7 +317,7 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_getdents(%d, %p, %zu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, drip, count, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret);
     }
 }
 
@@ -337,7 +338,7 @@ void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_pread(%d, %p, %d, %ld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, buf, count, offset, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %ld) = %d\n", cageid, d, buf, count, offset, ret);
     }
 }
 
@@ -355,12 +356,13 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+    char *strBuf = formatStringArgument((char *)buf);
     
     if (strace_c) {
-    char *strBuf = formatStringArgument((char *)buf);
-    fprintf(tracingOutputFile, "%d NACL_sys_write(%d, \"%s\", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, strBuf ? strBuf : "NULL", count, ret, (double)elapsedTime / 1000000000.0, percentTime);
-    free(strBuf);
+    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
     }
+    free(strBuf);
+    
 }
 
 
@@ -379,12 +381,13 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+    char *strBuf = formatStringArgument((char *)buf);
     
     if (strace_c) {
-    char *strBuf = formatStringArgument((char *)buf);
-    fprintf(tracingOutputFile, "%d NACL_sys_pwrite(%d, \"%s\", %d, %lld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval, (double)elapsedTime / 1000000000.0, percentTime);
-    free(strBuf);
+    fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %jd) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval);
     }
+    free(strBuf);
+    
 }
 
 
@@ -408,7 +411,7 @@ void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, l
 #endif
     
 if (strace_c) {
-    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds)\n", cageid, d, offset, whence, ret, (double)time / 1000000000.0);
+    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 }
 }
 
@@ -430,7 +433,7 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_ioctl(%d, %lu, %p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, request, arg_ptr, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
     }
 }
 
@@ -455,7 +458,7 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long l
 #endif
     
 if (strace_c) {
-    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds)\n", cageid, d, result, retval, (double)time / 1000000000.0);
+    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
 }
 }
 
@@ -476,7 +479,7 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, lo
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_stat(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds)\n", cageid, path, result, retval, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
     }
 }
 
@@ -499,7 +502,7 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %lld ns)\n", cageid, path, result, retval, time);
+    fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
     }
 }
 
@@ -546,7 +549,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
     #endif
     if (strace_c) {
 
-    fprintf(tracingOutputFile, "%d mkdir(%s, %o) = %d (%lld ns)\n", cageid, path, mode, retval, totaltime);
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     }
 
 }
@@ -773,7 +776,7 @@ void NaClStraceChdir(int cageid, const char *path, int retval, long long elapsed
 
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_chdir(%s) = %d (Total time: %.9f seconds)\n", cageid, path, retval, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
     }
 }
 
@@ -794,7 +797,7 @@ void NaClStraceChmod(int cageid, const char *path, int mode, int retval, long lo
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_chmod(%s, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, mode, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d chmod(%s, %d) = %d\n", cageid, path, mode, retval);
     }
 }
 
@@ -814,7 +817,7 @@ void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapse
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_fchmod(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, mode, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fchmod(%d, %d) = %d\n", cageid, fd, mode, retval);
     }
 }
 
@@ -834,7 +837,7 @@ void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_fchdir(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fchdir(%d) = %d\n", cageid, fd, retval);
     }
 }
 
@@ -855,7 +858,7 @@ void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_fsync(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fsync(%d) = %d\n", cageid, fd, ret);
    }
 }
 
@@ -876,7 +879,7 @@ void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_fdatasync(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
     }
 }
 
@@ -896,7 +899,7 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_sync_file_range(%d, %ld, %ld, %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, offset, nbytes, flags, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
     }
 }
 
@@ -919,12 +922,13 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long 
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+    char *strBuf = formatStringArgument(buf);
 
     if (strace_c) {
-    char *strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d NACL_sys_getcwd(%s, %zu) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", size, retval, (double)elapsedTime / 1000000000.0);
-    free(strBuf);
+    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
     }
+    free(strBuf);
+    
 }
 
 void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elapsedTime) {
@@ -941,10 +945,15 @@ void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elap
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+    char *strBuf1 = formatStringArgument(from);
+    char *strBuf2 = formatStringArgument(to);
+    fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_link(\"%s\", \"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, from, to, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
     }
+    free(strBuf1);
+    free(strBuf2);
 }
 
 
@@ -962,10 +971,13 @@ void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedT
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
+    char *strBuf = formatStringArgument(pathname);
+
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_unlink(\"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pathname, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, strBuf ? strBuf : "NULL", retval);
     }
+    free(strBuf);
+
 }
 
 
@@ -983,10 +995,13 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
+    char *strBuf1 = formatStringArgument(oldpath);
+    char *strBuf2 = formatStringArgument(newpath);
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_rename(\"%s\", \"%s\") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, oldpath, newpath, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
     }
+    free(strBuf1);
+    free(strBuf2);
 }
 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long time) {
@@ -1009,7 +1024,7 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d mmap(0x%08"NACL_PRIxPTR", %zu, %d, %d, %d, %"NACL_PRId32") = %d (Total time: %.9f seconds)\n", cageid, (uintptr_t)start, length, prot, flags, d, offset, retval, (double)time / 1000000000.0);
+    fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
     }
 }
 
@@ -1037,7 +1052,7 @@ void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, 
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_munmap(0x%08"NACL_PRIxPTR", %zu) = %d (Total time: %.9f seconds)\n", cageid, sysaddr, length, retval, (double)elapsedTime / 1000000000.0);
+   fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR", %zu) = %d\n", cageid, sysaddr, length, retval);
     }
 }
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval, long long elapsedTime) {
@@ -1056,7 +1071,7 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_shmat(%d, %p, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmid, shmaddr, shmflg, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
     }
 }
 
@@ -1076,7 +1091,7 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_shmget(%d, %zu, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, key, size, shmflg, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d shmget(%d, %zu, %d) = %d\n", cageid, key, size, shmflg, retval);
     }
 }
 
@@ -1097,7 +1112,7 @@ void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTim
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_shmdt(%p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmaddr, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d shmdt(%p) = %d\n", cageid, shmaddr, retval);
     }
 
 }
@@ -1118,7 +1133,7 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_shmctl(%d, %d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, shmid, cmd, bufsysaddr, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d shmctl(%d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, shmid, cmd, bufsysaddr, retval);
     }
 }
 
@@ -1140,8 +1155,8 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *l
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_socketpair(%d, %d, %d, %p, %p) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, domain, type, protocol, (void *)lindfds, retval, (double)elapsedTime / 1000000000.0, percentTime);
-    }
+    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n", 
+            cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);    }
 }
 
 
@@ -1203,7 +1218,7 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, lon
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, tv, tz, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, tv, tz, ret);
     }
 }
 
@@ -1224,8 +1239,9 @@ void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, clk_id, ts_addr, time_func, ret, (double)elapsedTime / 1000000000.0, percentTime);
-    }
+    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR") = %d\n",
+    cageid, clk_id, ts_addr, time_func, ret
+    );    }
 }
 
 
@@ -1245,7 +1261,7 @@ void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_fork() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
     }
 }
 
@@ -1266,7 +1282,7 @@ void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_execve(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, (uintptr_t)argv, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t)argv, ret);
     }
 }
 
@@ -1287,7 +1303,7 @@ void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, l
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_execv(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, (uintptr_t)argv, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t) argv, ret);
     }
 }
 
@@ -1308,7 +1324,7 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, pid, sysaddr, options, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
     }
 }
 
@@ -1327,12 +1343,13 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long lon
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
-    if (strace_c) {
     char *strBuf = formatStringArgument(name);
-    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, strBuf ? strBuf : "NULL", len, ret, (double)elapsedTime / 1000000000.0, percentTime);
-    free(strBuf);
+
+    if (strace_c) {
+    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, pid, sysaddr, options, ret);
     }
+    free(strBuf);
+
 }
 
 
@@ -1350,12 +1367,13 @@ void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long 
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
-    
-    if (strace_c) {
     char *strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, strBuf ? strBuf : "NULL", len, ret, (double)elapsedTime / 1000000000.0, percentTime);
-    free(strBuf);
+    if (strace_c) {
+    
+    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    
     }
+    free(strBuf);
 }
 
 
@@ -1375,7 +1393,7 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, l
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, domain, type, protocol, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d\n", cageid, domain, type, protocol, ret);
 }
 }
 
@@ -1396,7 +1414,7 @@ void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int fla
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret);
     }
 }
 
@@ -1417,7 +1435,7 @@ void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int f
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret);
     }
 }
 
@@ -1438,7 +1456,7 @@ void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, in
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t)buf, len, flags, ret);
     }
 }
 
@@ -1459,7 +1477,7 @@ void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, buf, len, flags, src_addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d recvfrom(%d, %p"NACL_PRIxPTR", %ld, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, buf, len, flags, src_addr, (uintptr_t)addrlen, ret);
     }
 }
 
@@ -1479,7 +1497,7 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elap
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, how, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d\n", cageid, sockfd, how, ret);
     }
 }
 
@@ -1505,7 +1523,7 @@ void NaClStraceGetuid(int cageid, int ret, long long time) {
 #endif
     
 if (strace_c) {
-    fprintf(tracingOutputFile, "%d getuid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)time / 1000000000.0);
+    fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
 }
 }
 
@@ -1532,7 +1550,7 @@ void NaClStraceGeteuid(int cageid, int ret, long long time) {
     
     if (strace_c) {
     // Print the syscall information
-    fprintf(tracingOutputFile, "%d geteuid() = %d (Total time: %lld ns)\n", cageid, ret, time);
+    fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
     }
 }
 
@@ -1558,7 +1576,7 @@ void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_getgid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
    }
 }
 
@@ -1584,7 +1602,7 @@ void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
     #endif
 
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d NACL_sys_getegid() = %d (Total time: %.9f seconds)\n", cageid, ret, (double)elapsedTime / 1000000000.0);
+    fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
 }
 }
 
@@ -1605,7 +1623,7 @@ void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elaps
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d flock(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, operation, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d flock(%d, %d) = %d\n", cageid, fd, operation, ret);
     }
 }
 
@@ -1626,7 +1644,7 @@ void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, level, optname, (uintptr_t)optval, (uintptr_t)optlen, ret);
     }
 }
 
@@ -1647,7 +1665,7 @@ void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, level, optname, (uintptr_t)optval, optlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, level, optname, (uintptr_t)optval, optlen, ret);
     }
 }
 
@@ -1668,7 +1686,7 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elap
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, d, buf, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fstatfs(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, buf, ret);
     }
 }
 
@@ -1689,7 +1707,7 @@ void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, formatStringArgument(pathname), buf, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, formatStringArgument(pathname), buf, ret);
     }
 }
 
@@ -1710,7 +1728,7 @@ void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
     }
 }
 
@@ -1731,7 +1749,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
     }
 }
 
@@ -1754,12 +1772,12 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elaps
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
     #endif
+        char *strBuf = formatStringArgument(path);
 
     if (strace_c) {
-    char *strBuf = formatStringArgument(path);
-    fprintf(tracingOutputFile, "%d NACL_sys_access(%s, %d) = %d (Total time: %.9f seconds)\n", cageid, strBuf ? strBuf : "NULL", mode, ret, (double)elapsedTime / 1000000000.0);
-    free(strBuf);
+    fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
     }
+        free(strBuf);
 }
 
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long long elapsedTime) {
@@ -1778,7 +1796,7 @@ void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long lon
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, path, length, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d\n", cageid, path, length, ret);
     }
 }
 
@@ -1799,7 +1817,7 @@ void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elap
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d ftruncate(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, length, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d ftruncate(%d, %d) = %d\n", cageid, fd, length, ret);
     }
 }
 
@@ -1820,7 +1838,7 @@ void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d connect(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
     }
 }
 
@@ -1841,7 +1859,7 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d accept(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, sockfd, addr, (uintptr_t)addrlen, ret);
     }
 }
 
@@ -1862,7 +1880,7 @@ void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, i
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, addr, addrlen, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d bind(%d, 0x%08"NACL_PRIxPTR", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
     }
 }
 
@@ -1883,7 +1901,7 @@ void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long el
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d listen(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, sockfd, backlog, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d listen(%d, %d) = %d\n", cageid, sockfd, backlog, ret);
     }
 }
 
@@ -1904,7 +1922,7 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %lu, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fds, nfds, timeout, retval, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d poll(0x%08"NACL_PRIxPTR", %lu, %d) = %d\n", cageid, fds, nfds, timeout, retval);
     }
 }
 
@@ -1925,7 +1943,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedT
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, cmd, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
     }
 }
 
@@ -1946,7 +1964,7 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, fd, cmd, set_op, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
     }
 }
 
@@ -1967,7 +1985,7 @@ void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime)
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d epollcreate(%d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, size, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
     }
 }
 
@@ -1988,7 +2006,7 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, epfd, op, fd, event, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, epfd, op, fd, event, ret);
     }
 }
 
@@ -2009,7 +2027,7 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, epfd, events, maxevents, timeout, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d epollwait(%d, 0x%08"NACL_PRIxPTR", %d, %d) = %d\n", cageid, epfd, events, maxevents, timeout, ret);
     }
 }
 
@@ -2030,6 +2048,6 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
     #endif
     
     if (strace_c) {
-    fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret, (double)elapsedTime / 1000000000.0, percentTime);
+    fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
     }
 }
