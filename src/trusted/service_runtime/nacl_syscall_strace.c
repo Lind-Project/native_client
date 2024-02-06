@@ -308,9 +308,9 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
     if (ret < 0) {
         syscallStats[NACL_sys_write].errorCount++;
     }
-
-    char *strBuf = formatStringArgument((char *)buf);
     #else
+    char *strBuf = formatStringArgument((char *)buf);
+    
     if (strace_c) {
     fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
     }
@@ -824,9 +824,9 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long 
     totalSyscallsTime += (double)elapsedTime / 1000000000.0; // Convert from nanoseconds to seconds
 
 
-    
-    char *strBuf = formatStringArgument(buf);
     #else
+    char *strBuf = formatStringArgument(buf);
+ 
     if (strace_c) {
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
     }
