@@ -137,9 +137,9 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long lo
   
     
 
-    
+    #else 
     char *strBuf = formatStringArgument(path);
-    #else
+
     if (strace_c) {
         // Print detailed information for each syscall when strace_c is enabled
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
