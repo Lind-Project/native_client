@@ -25,8 +25,7 @@ long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in micr
 int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
-int strace_c = 1;
-
+int strace_c = 0;
 static long long totalMkdirTime = 0;
 static long long totalLstatTime = 0;
 // this defines the number of characters we display for printing a string buf
