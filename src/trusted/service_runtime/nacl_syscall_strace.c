@@ -249,20 +249,17 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
 
 
 void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
-    #ifdef TRACING_DASHC
-    syscallStats[NACL_sys_dup3].count++;
-    syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
-    if (ret < 0) {
-        syscallStats[NACL_sys_dup3].errorCount++;
+     if (strace_c) {
+        // Update syscall statistics for NACL_sys_dup3
+        syscallStats[NACL_sys_dup3].count++;
+        syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
+        if (ret < 0) {
+            syscallStats[NACL_sys_dup3].errorCount++;
+        }
+    } else {
+        // Log the syscall invocation and result when not collecting statistics
+        fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
     }
-
-  
-    #else
-    
-    if (strace_c) {
-    fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
-    }
-    #endif
 }
 
 
@@ -444,11 +441,11 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
-    #ifdef TRACING_DASHC
     // Time for this call in nanoseconds
+    if (strace_c) {
     syscallStats[NACL_sys_mkdir].count++;
     syscallStats[NACL_sys_mkdir].totalTime += totaltime;
-    totalSyscallsTime += totaltime; // Update total time for all syscalls
+    //totalSyscallsTime += totaltime; // Update total time for all syscalls
     if (retval < 0) {
         syscallStats[NACL_sys_mkdir].errorCount++;
     }
@@ -479,13 +476,11 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
     // long long avgMicrosecondsPerCall = totalCalls > 0 ? totalMicroseconds / totalCalls : 0;
     
     // totalMkdirTime += totaltime;
-    
-    #else
-    if (strace_c) {
+    }
+    else{
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     }
-    #endif
 
 }
 
