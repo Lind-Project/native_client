@@ -25,7 +25,7 @@ long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in micr
 int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
-int strace_c = 0;
+int strace_C = 0;
 static long long totalMkdirTime = 0;
 static long long totalLstatTime = 0;
 // this defines the number of characters we display for printing a string buf
@@ -276,7 +276,7 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
     fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret);
     }
     }
-}
+
 
 void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret, long long elapsedTime) {
     if (strace_C){
@@ -310,7 +310,7 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
     }
     free(strBuf);
     }    
-}
+
 
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval, long long elapsedTime) {
@@ -329,8 +329,9 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %jd) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval);
     }
     free(strBuf);
-    }    
-}
+    }
+        
+
 
 
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long time) {
@@ -350,7 +351,7 @@ if (strace_C){
 
     fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 }
-}}
+}
 
 
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret, long long elapsedTime) {
@@ -367,7 +368,7 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
     
     fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
     }
-    }}
+    }
 
 
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long time) {
@@ -386,7 +387,7 @@ if (strace_C){
 
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
 }
-}}
+}
 
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, long long elapsedTime) {
     if (strace_C){
@@ -403,7 +404,7 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, lo
     fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, result, retval);
     }
     }
-    }
+    
 
 
 
@@ -434,7 +435,7 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
     // Time for this call in nanoseconds
-    
+    if (strace_C){
     syscallStats[NACL_sys_mkdir].count++;
     syscallStats[NACL_sys_mkdir].totalTime += totaltime;
     //totalSyscallsTime += totaltime; // Update total time for all syscalls
@@ -473,8 +474,8 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
     fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     }
-
 }
+
 
 
 void printFinalSyscallStats() {
@@ -1755,7 +1756,7 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
 
 
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (strace_c){
     syscallStats[NACL_sys_select].count++;
     syscallStats[NACL_sys_select].totalTime += elapsedTime;
     if (ret < 0) {
