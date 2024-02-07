@@ -120,29 +120,19 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
 
 
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long long elapsedTime) {
-    #ifdef TRACING_DASHC
+    if (strace_C){
     syscallStats[NACL_sys_open].count++;
     syscallStats[NACL_sys_open].totalTime += elapsedTime;
     if (fd < 0) {
         syscallStats[NACL_sys_open].errorCount++;
     }
-
-    // Update total time for all syscalls (in seconds)
-
-  
-    
-
-    #else
-    char *strBuf = formatStringArgument(path);
-
-    
-        // Print detailed information for each syscall when strace_c is enabled
-    fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
-    
-    free(strBuf);
-   #endif
+    } 
+    else {
+        char *strBuf = formatStringArgument(path);
+        fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
+        free(strBuf);
+    }
 }
-
 void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     if (strace_C){
     syscallStats[NACL_sys_close].count++;
@@ -150,7 +140,6 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     if (ret < 0) {
         syscallStats[NACL_sys_close].errorCount++;
     }
-
     
     } else {
 
