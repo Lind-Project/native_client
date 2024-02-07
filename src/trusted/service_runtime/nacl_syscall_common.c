@@ -345,8 +345,8 @@ int32_t NaClIoctlAclCheck(struct NaClApp  *nap, //Unused for now
 }
 
 int32_t NaClSysGetpid(struct NaClAppThread *natp) {
-    int32_t pid;
-    struct NaClApp *nap = natp->nap;
+  int32_t pid;
+  struct NaClApp *nap = natp->nap;
 
     NaClLog(2, "Cage %d Entered NaClSysGetpid(0x%08"NACL_PRIxPTR")\n", nap->cage_id, (uintptr_t)natp);
 
@@ -364,31 +364,30 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
 
     NaClLog(2, "NaClSysGetpid: returning %d\n", pid);
 
-    return pid;
+  return pid;
 }
 
 
 int32_t NaClSysGetppid(struct NaClAppThread *natp) {
-    int32_t ppid;
-    struct NaClApp *nap = natp->nap;
+  int32_t ppid;
+  struct NaClApp *nap = natp->nap;
 
-    NaClLog(2, "Cage %d Entered NaClSysGetppid(0x%08"NACL_PRIxPTR")\n", nap->cage_id, (uintptr_t)natp);
+  NaClLog(2, "Cage %d Entered NaClSysGetppid(0x%08"NACL_PRIxPTR")\n", nap->cage_id, (uintptr_t)natp);
 
-    #ifdef TRACING
-    long long starttime = gettimens();
-    #endif
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+  ppid = lind_getppid(nap->cage_id);
 
-    ppid = lind_getppid(nap->cage_id);
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceGetppid(nap->cage_id, ppid, totaltime);
+  #endif
 
-    #ifdef TRACING
-    long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStraceGetppid(nap->cage_id, ppid, totaltime);
-    #endif
+  NaClLog(2, "NaClSysGetppid: returning %d\n", ppid);
 
-    NaClLog(2, "NaClSysGetppid: returning %d\n", ppid);
-
-    return ppid;
+  return ppid;
 }
 
 
@@ -843,12 +842,12 @@ int32_t NaClSysPread(struct NaClAppThread *natp,
                      void *buf,
                      size_t count,
                      off_t offset) { 
-    struct NaClApp *nap = natp->nap;
-    int32_t retval = -NACL_ABI_EINVAL;
-    ssize_t read_result = -NACL_ABI_EINVAL;
-    uintptr_t sysaddr;
-    size_t log_bytes;
-    char const *ellipsis = "";
+  struct NaClApp *nap = natp->nap;
+  int32_t retval = -NACL_ABI_EINVAL;
+  ssize_t read_result = -NACL_ABI_EINVAL;
+  uintptr_t sysaddr;
+  size_t log_bytes;
+  char const *ellipsis = "";
 
     
 
@@ -892,7 +891,7 @@ int32_t NaClSysPread(struct NaClAppThread *natp,
     }
 
     /* This cast is safe because we clamped count above.*/
-    retval = (int32_t) read_result;
+  retval = (int32_t) read_result;
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -959,12 +958,12 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       const void *buf,
                       size_t count,
                       off_t offset) {
-    struct NaClApp *nap = natp->nap;
-    int32_t retval = -NACL_ABI_EINVAL;
-    ssize_t write_result = -NACL_ABI_EINVAL;
-    uintptr_t sysaddr;
-    char const *ellipsis = "";
-    size_t log_bytes;
+  struct NaClApp *nap = natp->nap;
+  int32_t retval = -NACL_ABI_EINVAL;
+  ssize_t write_result = -NACL_ABI_EINVAL;
+  uintptr_t sysaddr;
+  char const *ellipsis = "";
+  size_t log_bytes;
 
    
 
@@ -1024,26 +1023,26 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
                      int d,
                      nacl_abi_off_t *offp,
                      int whence) {
-    struct NaClApp *nap = natp->nap;
-    nacl_abi_off_t offset;
-    nacl_off64_t retval64;
-    int32_t retval = -NACL_ABI_EINVAL;
+  struct NaClApp *nap = natp->nap;
+  nacl_abi_off_t offset;
+  nacl_off64_t retval64;
+  int32_t retval = -NACL_ABI_EINVAL;
 
     #ifdef TRACING
     long long starttime = gettimens();
     #endif
 
-    NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
+  NaClLog(2, "Entered NaClSysLseek(0x%08"NACL_PRIxPTR", %d,"
             " 0x%08"NACL_PRIxPTR", %d)\n",
             (uintptr_t) natp, d, (uintptr_t) offp, whence);
 
-    if (d < 0) return -NACL_ABI_EBADF;
+  if (d < 0) return -NACL_ABI_EBADF;
 
-    if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) return -NACL_ABI_EFAULT;
+  if (!NaClCopyInFromUser(nap, &offset, (uintptr_t) offp, sizeof(offset))) return -NACL_ABI_EFAULT;
 
-    NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
+  NaClLog(4, "offset 0x%08"NACL_PRIxNACL_OFF"\n", offset);
 
-    retval64 = lind_lseek(d, offset, whence, nap->cage_id);
+  retval64 = lind_lseek(d, offset, whence, nap->cage_id);
 
     if (NaClOff64IsNegErrno(&retval64)) {
         retval = (int32_t) retval64;
@@ -1062,7 +1061,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     NaClStraceLseek(nap->cage_id, d, whence, (uintptr_t) &offset, (int) retval, totaltime);
     #endif
 
-    return retval;
+  return retval;
 }
 
 
