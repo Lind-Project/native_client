@@ -247,7 +247,7 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
 
 
 void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
-     
+        if (strace_C){
         // Update syscall statistics for NACL_sys_dup3
         syscallStats[NACL_sys_dup3].count++;
         syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
@@ -262,7 +262,7 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long l
 
 
 void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, long long elapsedTime) {
-    if (strace_c){
+    if (strace_C){
     syscallStats[NACL_sys_getdents].count++;
     syscallStats[NACL_sys_getdents].totalTime += elapsedTime;
     if (ret < 0) {
@@ -307,9 +307,10 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
     
     
     fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
-    }
+    
     free(strBuf);
     }    
+}
 
 
 
@@ -327,9 +328,10 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     
     
     fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %jd) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t)offset, retval);
-    }
+    
     free(strBuf);
     }
+}
         
 
 
@@ -817,9 +819,9 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long 
  
     
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
-    }
-    free(strBuf);
     
+    free(strBuf);
+    }
     
 }
 //check
@@ -838,10 +840,10 @@ void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elap
     
     
     fprintf(tracingOutputFile, "%d link(%s, %s) = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
-    }
+    
     free(strBuf1);
     free(strBuf2);
-    
+    }
 }
 
 
@@ -858,9 +860,9 @@ void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedT
 
     
     fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, strBuf ? strBuf : "NULL", retval);
-    }
-    free(strBuf);
     
+    free(strBuf);
+    }
 
 }
 
@@ -879,9 +881,10 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
     char *strBuf2 = formatStringArgument(newpath);
     
     fprintf(tracingOutputFile, "%d rename(\"%s\", \"%s\") = %d\n", cageid, strBuf1 ? strBuf1 : "NULL", strBuf2 ? strBuf2 : "NULL", retval);
-    }
+    
     free(strBuf1);
     free(strBuf2);
+    }
     
 }
 
@@ -1179,8 +1182,9 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long lon
 
     
     fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
-    }
+    
     free(strBuf);
+    }
     
 
 }
@@ -1200,9 +1204,9 @@ void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long 
     
     fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
     
-    }
-    free(strBuf);
     
+    free(strBuf);
+    }
 }
 
 
@@ -1537,8 +1541,8 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elaps
 
     
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
+    free(strBuf);
     }
-        free(strBuf);
         
 }
 
@@ -1756,7 +1760,7 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
 
 
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) {
-    if (strace_c){
+    if (strace_C){
     syscallStats[NACL_sys_select].count++;
     syscallStats[NACL_sys_select].totalTime += elapsedTime;
     if (ret < 0) {
