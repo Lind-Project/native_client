@@ -112,7 +112,7 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     syscallStats[NACL_sys_getppid].count++;
     syscallStats[NACL_sys_getppid].totalTime += elapsedTime;
      
-    #else
+        #else
 
     if (strace_c) {
     fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
