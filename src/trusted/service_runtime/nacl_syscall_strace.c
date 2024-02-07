@@ -397,9 +397,6 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
     }
 }
 
-<<<<<<< HEAD
-
-
 void printFinalSyscallStats() {
     if (strace_C){
 
@@ -579,8 +576,6 @@ const char* getSyscallName(int syscallIndex) {
 
 
 
-=======
->>>>>>> 08b2ff13348268b6238ae5d0218a0a6ceb41a008
 void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsedTime) {
     if (strace_C){
     syscallStats[NACL_sys_rmdir].count++;
