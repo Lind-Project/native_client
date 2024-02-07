@@ -25,7 +25,7 @@ long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in micr
 int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
-int strace_C = 1;
+int strace_C = 0;
 static long long totalMkdirTime = 0;
 static long long totalLstatTime = 0;
 // this defines the number of characters we display for printing a string buf
@@ -50,12 +50,15 @@ void NaClStraceSetOutputFile(char *path) {
         }
         tracingOutputFile = newFile;
     }
+    #ifdef TRACING_DASHC
+    strace_C = 1
+    #endif
 }
 
 void NaClStraceCloseFile() {
     //ifdef dashC, do the format prints
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
-        if (strace_C){
+        if (!strace_C){
         printFinalSyscallStats(); // Print the final statistics
         }
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
@@ -95,7 +98,7 @@ char* formatStringArgument(const char *input) {
 }
 //noerror
 void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getpid].count++;
     syscallStats[NACL_sys_getpid].totalTime += elapsedTime;
 
@@ -106,7 +109,7 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
 }
 //noerror
 void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getppid].count++;
     syscallStats[NACL_sys_getppid].totalTime += elapsedTime;
     } 
@@ -120,7 +123,7 @@ void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
 
 
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_open].count++;
     syscallStats[NACL_sys_open].totalTime += elapsedTime;
     if (fd < 0) {
@@ -134,7 +137,7 @@ void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long lo
     }
 }
 void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_close].count++;
     syscallStats[NACL_sys_close].totalTime += elapsedTime;
     if (ret < 0) {
@@ -151,7 +154,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
 
 
 void NaClStraceRead(int cageid, int d, void *buf, size_t count, int ret, long long time) {
-if (strace_C){
+if (!strace_C){
     syscallStats[NACL_sys_read].count++;
     syscallStats[NACL_sys_read].totalTime += time;
     if (ret < 0) {
@@ -165,7 +168,7 @@ if (strace_C){
 
 
 void NaClStraceExit(int cageid, int status, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_exit].count++;
     syscallStats[NACL_sys_exit].totalTime += elapsedTime;
     if (status != 0) {
@@ -179,7 +182,7 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
 }
 
 void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_dup].count++;
     syscallStats[NACL_sys_dup].totalTime += elapsedTime;
     if (ret < 0) {
@@ -197,7 +200,7 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
 }
 
 void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_dup2].count++;
     syscallStats[NACL_sys_dup2].totalTime += elapsedTime;
     if (ret < 0) {
@@ -215,7 +218,7 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
 
 
 void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
-        if (strace_C){
+        if (!strace_C){
         syscallStats[NACL_sys_dup3].count++;
         syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
         if (ret < 0) {
@@ -228,7 +231,7 @@ void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long l
 
 
 void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getdents].count++;
     syscallStats[NACL_sys_getdents].totalTime += elapsedTime;
     if (ret < 0) {
@@ -243,7 +246,7 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
 
 
 void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_pread].count++;
     syscallStats[NACL_sys_pread].totalTime += elapsedTime;
     if (ret < 0) {
@@ -260,7 +263,7 @@ void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int 
 }
 
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_write].count++;
     syscallStats[NACL_sys_write].totalTime += elapsedTime;
     if (ret < 0) {
@@ -279,7 +282,7 @@ void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long
 
 
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_pwrite].count++;
     syscallStats[NACL_sys_pwrite].totalTime += elapsedTime;
     if (retval < 0) {
@@ -298,7 +301,7 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
 }
 
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long time) {
-if (strace_C){
+if (!strace_C){
     syscallStats[NACL_sys_lseek].count++;
     syscallStats[NACL_sys_lseek].totalTime += time;
     if (ret < 0) {
@@ -312,7 +315,7 @@ if (strace_C){
 
 
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_ioctl].count++;
     syscallStats[NACL_sys_ioctl].totalTime += elapsedTime;
     if (ret < 0) {
@@ -325,7 +328,7 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
 
 
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long time) { 
-    if (strace_C){
+    if (!strace_C){
         syscallStats[NACL_sys_fstat].count++;
         syscallStats[NACL_sys_fstat].totalTime += time;
         if (retval < 0) {
@@ -337,7 +340,7 @@ void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long l
 }
 
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_stat].count++;
     syscallStats[NACL_sys_stat].totalTime += elapsedTime;
     if (retval < 0) {
@@ -356,7 +359,7 @@ void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, lo
 
 
 void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t retval, long long time) {
-    if (strace_C){
+    if (!strace_C){
 
     syscallStats[NACL_sys_lstat].count++;
     syscallStats[NACL_sys_lstat].totalTime += time;
@@ -382,7 +385,7 @@ void NaClStraceLStat(int cageid, const char* path, uintptr_t result, int32_t ret
 
 void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long long totaltime)  {
     // Time for this call in nanoseconds
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_mkdir].count++;
     syscallStats[NACL_sys_mkdir].totalTime += totaltime;
     if (retval < 0) {
@@ -397,7 +400,7 @@ void NaClStraceMkdir(int cageid, const char *path, int mode, int retval, long lo
 
 
 void printFinalSyscallStats() {
-    if (strace_C){
+    if (!strace_C){
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
@@ -576,7 +579,7 @@ const char* getSyscallName(int syscallIndex) {
 
 
 void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_rmdir].count++;
     syscallStats[NACL_sys_rmdir].totalTime += elapsedTime;
     if (retval < 0) {
@@ -589,7 +592,7 @@ void NaClStraceRmdir(int cageid, const char *path, int retval, long long elapsed
 }
 
 void NaClStraceChdir(int cageid, const char *path, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_chdir].count++;
     syscallStats[NACL_sys_chdir].totalTime += elapsedTime;
     if (retval < 0) {
@@ -602,7 +605,7 @@ void NaClStraceChdir(int cageid, const char *path, int retval, long long elapsed
 
 
 void NaClStraceChmod(int cageid, const char *path, int mode, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_chmod].count++;
     syscallStats[NACL_sys_chmod].totalTime += elapsedTime;
     if (retval < 0) {
@@ -614,7 +617,7 @@ void NaClStraceChmod(int cageid, const char *path, int mode, int retval, long lo
 }
 
 void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fchmod].count++;
     syscallStats[NACL_sys_fchmod].totalTime += elapsedTime;
     if (retval < 0) {
@@ -626,7 +629,7 @@ void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapse
 }
 
 void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fchdir].count++;
     syscallStats[NACL_sys_fchdir].totalTime += elapsedTime;
     if (retval < 0) {
@@ -639,7 +642,7 @@ void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
 
 
 void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fsync].count++;
     syscallStats[NACL_sys_fsync].totalTime += elapsedTime;
     if (ret < 0) {
@@ -652,7 +655,7 @@ void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
 
 
 void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fdatasync].count++;
     syscallStats[NACL_sys_fdatasync].totalTime += elapsedTime;
     if (ret < 0) {
@@ -665,7 +668,7 @@ void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
 
 
 void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_sync_file_range].count++;
     syscallStats[NACL_sys_sync_file_range].totalTime += elapsedTime;
     if (retval < 0) {
@@ -678,7 +681,7 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
 
 
 void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getcwd].count++;
     syscallStats[NACL_sys_getcwd].totalTime += elapsedTime;
     if (retval < 0) {
@@ -692,7 +695,7 @@ void NaClStraceGetcwd(int cageid, char *buf, size_t size, int retval, long long 
 }
 //check
 void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_link].count++;
     syscallStats[NACL_sys_link].totalTime += elapsedTime;
     if (retval < 0) {
@@ -709,7 +712,7 @@ void NaClStraceLink(int cageid, char* from, char* to, int retval, long long elap
 
 
 void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_unlink].count++;
     syscallStats[NACL_sys_unlink].totalTime += elapsedTime;
     if (retval < 0) {
@@ -725,7 +728,7 @@ void NaClStraceUnlink(int cageid, char* pathname, int retval, long long elapsedT
 
 
 void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_rename].count++;
     syscallStats[NACL_sys_rename].totalTime += elapsedTime;
     if (retval < 0) {
@@ -741,7 +744,7 @@ void NaClStraceRename(int cageid, const char *oldpath, const char *newpath, int 
 }
 
 void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long time) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_mmap].count++;
     syscallStats[NACL_sys_mmap].totalTime += time;
     if (retval < 0) {
@@ -755,7 +758,7 @@ void NaClStraceMmap(int cageid, void *start, size_t length, int prot, int flags,
 
 
 void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_munmap].count++;
     syscallStats[NACL_sys_munmap].totalTime += elapsedTime;
     if (retval < 0) {
@@ -766,7 +769,7 @@ void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, 
     }
 }
 void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_shmat].count++;
     syscallStats[NACL_sys_shmat].totalTime += elapsedTime;
     if (retval < 0) {
@@ -778,7 +781,7 @@ void NaClStraceShmat(int cageid, int shmid, void *shmaddr, int shmflg, int retva
 }
 
 void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_shmget].count++;
     syscallStats[NACL_sys_shmget].totalTime += elapsedTime;
     if (retval < 0) {
@@ -791,7 +794,7 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
 
 
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_shmdt].count++;
     syscallStats[NACL_sys_shmdt].totalTime += elapsedTime;
     if (retval < 0) {
@@ -803,7 +806,7 @@ void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTim
 }
 
 void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_shmctl].count++;
     syscallStats[NACL_sys_shmctl].totalTime += elapsedTime;
     if (retval < 0) {
@@ -815,7 +818,7 @@ void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int 
 }
 
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_socketpair].count++;
     syscallStats[NACL_sys_socketpair].totalTime += elapsedTime;
     if (retval < 0) {
@@ -829,7 +832,7 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *l
 }
 
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_gettimeofday].count++;
     syscallStats[NACL_sys_gettimeofday].totalTime += elapsedTime;
     if (ret < 0) {
@@ -846,7 +849,7 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, lon
 
 //check this again the NACL_sys_clock
 void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_clock].count++;
     syscallStats[NACL_sys_clock].totalTime += elapsedTime;
     if (ret < 0) {
@@ -860,7 +863,7 @@ void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_
 
 
 void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fork].count++;
     syscallStats[NACL_sys_fork].totalTime += elapsedTime;
     if (ret < 0) {
@@ -876,7 +879,7 @@ void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
 
 
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_execve].count++;
     syscallStats[NACL_sys_execve].totalTime += elapsedTime;
     if (ret < 0) {
@@ -891,7 +894,7 @@ void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, 
 
 
 void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_execv].count++;
     syscallStats[NACL_sys_execv].totalTime += elapsedTime;
     if (ret < 0) {
@@ -905,7 +908,7 @@ void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, l
 
 
 void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_waitpid].count++;
     syscallStats[NACL_sys_waitpid].totalTime += elapsedTime;
     if (ret < 0) {
@@ -920,7 +923,7 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
 
 
 void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_gethostname].count++;
     syscallStats[NACL_sys_gethostname].totalTime += elapsedTime;
     if (ret < 0) {
@@ -935,7 +938,7 @@ void NaClStraceGethostname(int cageid, char *name, size_t len, int ret, long lon
 
 
 void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getifaddrs].count++;
     syscallStats[NACL_sys_getifaddrs].totalTime += elapsedTime;
     if (ret < 0) {
@@ -950,7 +953,7 @@ void NaClStraceGetifaddrs(int cageid, char *buf, size_t len, int ret, long long 
 
 
 void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_socket].count++;
     syscallStats[NACL_sys_socket].totalTime += elapsedTime;
     if (ret < 0) {
@@ -965,7 +968,7 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, l
 
 
 void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int flags, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_send].count++;
     syscallStats[NACL_sys_send].totalTime += elapsedTime;
     if (ret < 0) {
@@ -979,7 +982,7 @@ void NaClStraceSend(int cageid, int sockfd, const void *buf, size_t len, int fla
 
 
 void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_sendto].count++;
     syscallStats[NACL_sys_sendto].totalTime += elapsedTime;
     if (ret < 0) {
@@ -993,7 +996,7 @@ void NaClStraceSendto(int cageid, int sockfd, const void *buf, size_t len, int f
 
 
 void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_recv].count++;
     syscallStats[NACL_sys_recv].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1006,7 +1009,7 @@ void NaClStraceRecv(int cageid, int sockfd, void *buf, size_t len, int flags, in
 
 
 void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags, uintptr_t src_addr, socklen_t *addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_recvfrom].count++;
     syscallStats[NACL_sys_recvfrom].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1018,7 +1021,7 @@ void NaClStraceRecvfrom(int cageid, int sockfd, void *buf, size_t len, int flags
 }
 
 void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_shutdown].count++;
     syscallStats[NACL_sys_shutdown].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1033,7 +1036,7 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elap
 
 void NaClStraceGetuid(int cageid, int ret, long long time) {
 
-    if (strace_C){
+    if (!strace_C){
         syscallStats[NACL_sys_getuid].count++;
         syscallStats[NACL_sys_getuid].totalTime += time;
         if (ret < 0) {
@@ -1047,7 +1050,7 @@ void NaClStraceGetuid(int cageid, int ret, long long time) {
 
 
 void NaClStraceGeteuid(int cageid, int ret, long long time) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_geteuid].count++;
     syscallStats[NACL_sys_geteuid].totalTime += time;
     if (ret < 0) {
@@ -1060,7 +1063,7 @@ void NaClStraceGeteuid(int cageid, int ret, long long time) {
 }
 
 void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getgid].count++;
     syscallStats[NACL_sys_getgid].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1074,7 +1077,7 @@ void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
 }
 
 void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getegid].count++;
     syscallStats[NACL_sys_getegid].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1088,7 +1091,7 @@ void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
 
 
 void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_flock].count++;
     syscallStats[NACL_sys_flock].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1101,7 +1104,7 @@ void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elaps
 
 
 void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *optval, socklen_t *optlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getsockopt].count++;
     syscallStats[NACL_sys_getsockopt].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1115,7 +1118,7 @@ void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void *
 
 
 void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const void *optval, socklen_t optlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_setsockopt].count++;
     syscallStats[NACL_sys_setsockopt].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1128,7 +1131,7 @@ void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname, const 
 
 
 void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fstatfs].count++;
     syscallStats[NACL_sys_fstatfs].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1141,7 +1144,7 @@ void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elap
 
 
 void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_statfs].count++;
     syscallStats[NACL_sys_statfs].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1155,7 +1158,7 @@ void NaClStraceStatfs(int cageid, const char *pathname, uintptr_t buf, int ret, 
 
 
 void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getsockname].count++;
     syscallStats[NACL_sys_getsockname].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1168,7 +1171,7 @@ void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
 
 
 void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_getpeername].count++;
     syscallStats[NACL_sys_getpeername].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1181,7 +1184,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t *ad
 
 
 void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_access].count++;
     syscallStats[NACL_sys_access].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1196,7 +1199,7 @@ void NaClStraceAccess(int cageid, char *path, int mode, int ret, long long elaps
 }
 
 void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_truncate].count++;
     syscallStats[NACL_sys_truncate].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1209,7 +1212,7 @@ void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long lon
 
 
 void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_ftruncate].count++;
     syscallStats[NACL_sys_ftruncate].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1222,7 +1225,7 @@ void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elap
 
 
 void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_connect].count++;
     syscallStats[NACL_sys_connect].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1235,7 +1238,7 @@ void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen
 
 
 void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_accept].count++;
     syscallStats[NACL_sys_accept].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1248,7 +1251,7 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
 
 
 void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_bind].count++;
     syscallStats[NACL_sys_bind].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1261,7 +1264,7 @@ void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, i
 
 
 void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_listen].count++;
     syscallStats[NACL_sys_listen].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1274,7 +1277,7 @@ void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long el
 
 
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_poll].count++;
     syscallStats[NACL_sys_poll].totalTime += elapsedTime;
     if (retval < 0) {
@@ -1287,7 +1290,7 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
 
 
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fcntl_get].count++;
     syscallStats[NACL_sys_fcntl_get].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1300,7 +1303,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedT
 
 
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_fcntl_set].count++;
     syscallStats[NACL_sys_fcntl_set].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1313,7 +1316,7 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
 
 
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_epoll_create].count++;
     syscallStats[NACL_sys_epoll_create].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1327,7 +1330,7 @@ void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime)
 
 
 void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_epoll_ctl].count++;
     syscallStats[NACL_sys_epoll_ctl].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1340,7 +1343,7 @@ void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, i
 
 
 void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_epoll_wait].count++;
     syscallStats[NACL_sys_epoll_wait].totalTime += elapsedTime;
     if (ret < 0) {
@@ -1353,7 +1356,7 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
 
 
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) {
-    if (strace_C){
+    if (!strace_C){
     syscallStats[NACL_sys_select].count++;
     syscallStats[NACL_sys_select].totalTime += elapsedTime;
     if (ret < 0) {
