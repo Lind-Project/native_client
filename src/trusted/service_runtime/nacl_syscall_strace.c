@@ -50,19 +50,20 @@ void NaClStraceSetOutputFile(char *path) {
         }
         tracingOutputFile = newFile;
     }
-    #ifdef TRACING_DASHC
-    strace_C = 1
-    #endif
 }
 
 void NaClStraceCloseFile() {
-    //ifdef dashC, do the format prints
+    //if strace_C is on, do the format prints
     if (tracingOutputFile != NULL && tracingOutputFile != stderr) {
         if (strace_C){
         printFinalSyscallStats(); // Print the final statistics
         }
         if (fclose(tracingOutputFile) != 0) perror("Error closing file");
     }
+}
+
+void NaClStraceEnableDashc() {
+    strace_C = 1;
 }
 
 // replace all the line breaks in the string by "\\n" to make outputs tidy
