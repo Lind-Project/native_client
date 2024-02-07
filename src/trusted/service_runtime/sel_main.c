@@ -444,7 +444,7 @@ int NaClSelLdrMain(int argc, char **argv) {
       case 'p':
         if (optarg == 'c') {
           NaClStraceEnableDashc();
-          printf("-c option enabled\n")
+          printf("-c option enabled\n");
         }
         break;
 
