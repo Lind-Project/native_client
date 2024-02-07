@@ -93,7 +93,7 @@ char* formatStringArgument(const char *input) {
 
     return output;
 }
-
+//noerror
 void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
     if (strace_C){
     syscallStats[NACL_sys_getpid].count++;
@@ -104,7 +104,7 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
         fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
     }
 }
-
+//noerror
 void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
     if (strace_C){
     syscallStats[NACL_sys_getppid].count++;
@@ -156,12 +156,8 @@ if (strace_C){
     syscallStats[NACL_sys_read].totalTime += time;
     if (ret < 0) {
         syscallStats[NACL_sys_read].errorCount++;
-    }
-    
-    
+    }   
 } else {
-    
-
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
 }
 
@@ -175,19 +171,12 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
     if (status != 0) {
         syscallStats[NACL_sys_exit].errorCount++;
     }
-    
-    
-   
-    } else {
-    
-        
+  
+    } else {      
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
-
-
 }
 
 }
-
 
 void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
     if (strace_C){
@@ -197,7 +186,6 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
         syscallStats[NACL_sys_dup].errorCount++;
     }
     
-    // Update total time for all syscalls (in seconds)
     
    
     } else {
@@ -228,14 +216,12 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
 
 void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
         if (strace_C){
-        // Update syscall statistics for NACL_sys_dup3
         syscallStats[NACL_sys_dup3].count++;
         syscallStats[NACL_sys_dup3].totalTime += elapsedTime;
         if (ret < 0) {
             syscallStats[NACL_sys_dup3].errorCount++;
         }
     } else {
-        // Log the syscall invocation and result when not collecting statistics
         fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
     }
 }
@@ -251,11 +237,9 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
 
     
     } else {
-    
-    
-    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret);
-    }
-    }
+    fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret); 
+}
+}
 
 
 void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret, long long elapsedTime) {
@@ -312,9 +296,6 @@ void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offse
     free(strBuf);
     }
 }
-        
-
-
 
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long time) {
 if (strace_C){
@@ -323,14 +304,9 @@ if (strace_C){
     if (ret < 0) {
         syscallStats[NACL_sys_lseek].errorCount++;
     }
-    
-    // Update total time for all syscalls (in seconds)
-    
  
-} else {
-    
-
-    fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
+    } else {
+        fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR", %d) = %d\n", cageid, d, offset, whence, ret);
 }
 }
 
@@ -342,31 +318,22 @@ void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, in
     if (ret < 0) {
         syscallStats[NACL_sys_ioctl].errorCount++;
     }
-
-
     } else {
-    
-    
     fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
     }
     }
 
 
-void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long time) {
-if (strace_C){
-    syscallStats[NACL_sys_fstat].count++;
-    syscallStats[NACL_sys_fstat].totalTime += time;
-    if (retval < 0) {
-        syscallStats[NACL_sys_fstat].errorCount++;
-    }
-    
-    // Update total time for all syscalls (in seconds)
-    
-} else {
-    
-
-    fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
-}
+void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long time) { 
+    if (strace_C){
+        syscallStats[NACL_sys_fstat].count++;
+        syscallStats[NACL_sys_fstat].totalTime += time;
+        if (retval < 0) {
+            syscallStats[NACL_sys_fstat].errorCount++;
+            }    
+    } else {
+        fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR") = %d\n", cageid, d, result, retval);
+        }
 }
 
 void NaClStraceStat(int cageid, char* path, uintptr_t result, int32_t retval, long long elapsedTime) {
@@ -860,49 +827,6 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *l
     }
     
 }
-
-
-// void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret, long long elapsedTime) {
-//     if (strace_C){
-//     syscallStats[NACL_sys_nanosleep].count++;
-//     syscallStats[NACL_sys_nanosleep].totalTime += elapsedTime;
-//     if (ret < 0) {
-//         syscallStats[NACL_sys_nanosleep].errorCount++;
-//     }
-
-//     double totalTimeInSeconds = (double)syscallStats[NACL_sys_nanosleep].totalTime / 1000000000.0;
-//     double avgTimePerCallInSeconds = syscallStats[NACL_sys_nanosleep].count > 0 
-//                                      ? (double)syscallStats[NACL_sys_nanosleep].totalTime / syscallStats[NACL_sys_nanosleep].count / 1000000000.0
-//                                      : 0.0;
-//     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
-//     } else {
-    
-//     
-//     fprintf(tracingOutputFile, "%d NACL_sys_nanosleep(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR") = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, req, rem, ret, (double)elapsedTime / 1000000000.0, percentTime);
-//     }
-// }
-
-
-// void NaClStraceSchedYield(int cageid, int ret, long long elapsedTime) {
-//     if (strace_C){
-//     syscallStats[NACL_sys_sched_yield].count++;
-//     syscallStats[NACL_sys_sched_yield].totalTime += elapsedTime;
-//     if (ret < 0) {
-//         syscallStats[NACL_sys_sched_yield].errorCount++;
-//     }
-
-//     double totalTimeInSeconds = (double)syscallStats[NACL_sys_sched_yield].totalTime / 1000000000.0;
-//     double avgTimePerCallInSeconds = syscallStats[NACL_sys_sched_yield].count > 0 
-//                                      ? (double)syscallStats[NACL_sys_sched_yield].totalTime / syscallStats[NACL_sys_sched_yield].count / 1000000000.0
-//                                      : 0.0;
-//     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
-//     } else {
-    
-//     
-//     fprintf(tracingOutputFile, "%d NACL_sys_sched_yield() = %d (Total time: %.9f seconds, Percent of total time: %.2f%%)\n", cageid, ret, (double)elapsedTime / 1000000000.0, percentTime);
-//     }
-// }
-
 
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) {
     if (strace_C){
