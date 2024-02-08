@@ -26,16 +26,6 @@ if os.environ.get('TRACING_ENABLED') == '1':
     env.Append(CFLAGS=['-DTRACING=1'])
     env.Append(CPPFLAGS=['-DTRACING=1'])
     env.Append(CXXFLAGS=['-DTRACING=1'])
-if os.environ.get('TRACING_DASHC') == '1':
-    env.Append(CCFLAGS=['-DTRACING_DASHC=1'])
-    env.Append(CFLAGS=['-DTRACING_DASHC=1'])
-    env.Append(CPPFLAGS=['-DTRACING_DASHC=1'])
-    env.Append(CXXFLAGS=['-DTRACING_DASHC=1'])
-if os.environ.get('TRACING_INDIVIDUAL_CALLS') == '1':
-    env.Append(CCFLAGS=['-DTRACING_INDIVIDUAL_CALLS=1'])
-    env.Append(CFLAGS=['-DTRACING_INDIVIDUAL_CALLS=1'])
-    env.Append(CPPFLAGS=['-DTRACING_INDIVIDUAL_CALLS=1'])
-    env.Append(CXXFLAGS=['-DTRACING_INDIVIDUAL_CALLS=1'])
 STRACE_DEFAULT_PATH = ""
 path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
 env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
