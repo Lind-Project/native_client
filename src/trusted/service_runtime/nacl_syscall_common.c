@@ -1383,28 +1383,27 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
 }
 
 int32_t NaClSysFchdir(struct NaClAppThread *natp, int fd) {
-    int32_t ret;
-    struct NaClApp *nap = natp->nap;
-    long long starttime = 0;
-    long long endtime = 0;
-    long long totaltime = 0;
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  long long starttime = 0;
+  long long endtime = 0;
+  long long totaltime = 0;
 
-    NaClLog(2, "Cage %d Entered NaClSysFchdir(0x%08"NACL_PRIxPTR", %d)\n",
+  NaClLog(2, "Cage %d Entered NaClSysFchdir(0x%08"NACL_PRIxPTR", %d)\n",
             nap->cage_id, (uintptr_t) natp, fd);
+  #ifdef TRACING
+  starttime = gettimens();
+  #endif
 
-    #ifdef TRACING
-    starttime = gettimens();
-    #endif
+  ret = lind_fchdir(fd, nap->cage_id);
 
-    ret = lind_fchdir(fd, nap->cage_id);
+  #ifdef TRACING
+  endtime = gettimens();
+  totaltime = endtime - starttime;
+  NaClStraceFchdir(nap->cage_id, fd, ret, totaltime);
+  #endif
 
-    #ifdef TRACING
-    endtime = gettimens();
-    totaltime = endtime - starttime;
-    NaClStraceFchdir(nap->cage_id, fd, ret, totaltime);
-    #endif
-
-    return ret;
+  return ret;
 }
 
 
