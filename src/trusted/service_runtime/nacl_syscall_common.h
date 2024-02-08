@@ -446,8 +446,14 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
 int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);
 int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
+<<<<<<< HEAD
 void printFinalSyscallStats();
 long long gettimens();
+=======
+extern long long gettimens();
+void AddToTotalMkdirTime(long long time);
+void PrintTotalMkdirTime();
+>>>>>>> 305184aa8ce2666edb62ef3bf5287b872e7c944c
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */
