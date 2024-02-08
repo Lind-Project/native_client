@@ -180,7 +180,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Zp:";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Zp";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
@@ -442,10 +442,7 @@ int NaClSelLdrMain(int argc, char **argv) {
         }
         break;
       case 'p':
-        if (strcmp(optarg, "c") == 0) {
           NaClStraceEnableDashc();
-          printf("-c option enabled\n");
-        }
         break;
 
       default:
