@@ -990,8 +990,8 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     #endif
     write_result = lind_pwrite(d, (void *) sysaddr, count, offset, nap->cage_id);
 
-    /* This cast is safe because we clamped count above. */
-    retval = (int32_t) write_result;
+  /* This cast is safe because we clamped count above. */
+  retval = (int32_t) write_result;
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -999,7 +999,7 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     NaClStracePWrite(nap->cage_id, d, (void *) sysaddr, count, offset, (int) retval, totaltime);
     #endif
 
-    return retval;
+  return retval;
 }
 
 /*
@@ -1423,10 +1423,10 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
     long long starttime = gettimens();
     #endif
 
-    NaClLog(2, "Cage %d Entered NaClSysFdatasync(0x%08"NACL_PRIxPTR", %d)\n",
-            nap->cage_id, (uintptr_t) natp, fd);
+  NaClLog(2, "Cage %d Entered NaClSysFdatasync(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd);
 
-    ret = lind_fdatasync(fd, nap->cage_id);
+  ret = lind_fdatasync(fd, nap->cage_id);
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -1434,7 +1434,7 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
     NaClStraceFdatasync(nap->cage_id, fd, ret, totaltime);
     #endif
 
-    return ret;
+  return ret;
 }
 
 int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,int fd,off_t offset,off_t nbytes,uint32_t flags) {
@@ -2468,7 +2468,6 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
         NaClLog(LOG_FATAL, "NaClSysShmget: shmid returned by lind does not exist!\n");
     }
   }
-
   return retval;
 }
 
@@ -2750,7 +2749,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
   length = shmtable[shmid].size;
 
-  // When the shmid entry is freed, we decrement the shm refcount
+// When the shmid entry is freed, we decrement the shm refcount
   NaClVmmapRemove(&nap->mem_map,
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
@@ -2978,8 +2977,6 @@ int32_t NaClSysMutexCreate(struct NaClAppThread *natp) {
   NaClLog(3,
           ("NaClSysMutexCreate(0x%08"NACL_PRIxPTR") = %d\n"),
           (uintptr_t) natp, retval);
-
-
   return retval;
 }
 
@@ -3088,7 +3085,6 @@ int32_t NaClSysCondBroadcast(struct NaClAppThread  *natp,
           (uintptr_t)natp, cond_handle);
 
   retval = lind_cond_broadcast(cond_handle, nap->cage_id);
- 
   return retval;
 }
 
@@ -3266,18 +3262,12 @@ int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
 
 cleanup:
   NaClLog(2, "%s\n", "nanosleep done.");
-
-  
-
   return retval;
 }
 
 int32_t NaClSysSchedYield(struct NaClAppThread *natp) {
   UNREFERENCED_PARAMETER(natp);
   NaClThreadYield();
-
-  
-
   return 0;
 }
 
