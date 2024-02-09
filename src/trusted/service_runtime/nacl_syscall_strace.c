@@ -139,7 +139,6 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     }else {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
   }
-
 }
 
 void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long long time) {
@@ -152,7 +151,6 @@ void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long l
   } else {
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
   }
-
 }
 
 void NaClStraceExit(int cageid, int status, long long elapsedTime) {
@@ -165,7 +163,6 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
   } else {
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
 }
-
 }
 
 void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
@@ -179,7 +176,6 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long elapsedTime) {
 
     fprintf(tracingOutputFile, "%d dup(%d) = %d\n", cageid, oldfd, ret);
   }
-
 }
 
 void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsedTime) {
@@ -192,7 +188,6 @@ void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long elapsed
   } else {
     fprintf(tracingOutputFile, "%d dup2(%d, %d) = %d\n", cageid, oldfd, newfd, ret);
   }
-
 }
 
 void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long elapsedTime) {
@@ -229,7 +224,6 @@ void NaClStracePread(int cageid, int d, void * buf, int count, off_t offset, int
   } else {
     fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %ld) = %d\n", cageid, d, buf, count, offset, ret);
   }
-
 }
 
 void NaClStraceWrite(int cageid, int d, void * buf, int count, int ret, long long elapsedTime) {
@@ -769,7 +763,6 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * 
     fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n",
       cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
   }
-
 }
 
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) {
@@ -809,7 +802,6 @@ void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
   } else {
     fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
   }
-
 }
 
 void NaClStraceExecve(int cageid, char
@@ -854,7 +846,6 @@ void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int 
     fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"
       NACL_PRIxPTR ", %d) = %d\n", cageid, pid, sysaddr, options, ret);
   }
-
 }
 
 void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long long elapsedTime) {
@@ -910,7 +901,6 @@ void NaClStraceSend(int cageid, int sockfd,
     fprintf(tracingOutputFile, "%d send(%d, 0x%08"
       NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
-
 }
 
 void NaClStraceSendto(int cageid, int sockfd,
@@ -926,7 +916,6 @@ void NaClStraceSendto(int cageid, int sockfd,
       NACL_PRIxPTR ", %ld, %d, 0x%08"
       NACL_PRIxPTR ", %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret);
   }
-
 }
 
 void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, int ret, long long elapsedTime) {
@@ -1004,7 +993,6 @@ void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
   } else {
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
 }
-
 }
 
 void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
