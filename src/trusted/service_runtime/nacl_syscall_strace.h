@@ -45,8 +45,6 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long elapsedTime) ;
 void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long elapsedTime) ;
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval, long long elapsedTime) ;
-// void NaClStraceNanosleep(int cageid, uintptr_t req, uintptr_t rem, int ret, long long elapsedTime) ;
-//void NaClStraceSchedYield(int cageid, int ret, long long elapsedTime) ;
 void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) ;
 void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret, long long elapsedTime) ;
 void NaClStraceFork(int cageid, int ret, long long elapsedTime) ;
