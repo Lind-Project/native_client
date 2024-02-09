@@ -23,7 +23,6 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 
-
 #include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
 
 #include "native_client/src/include/nacl_assert.h"
@@ -367,7 +366,6 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
   return pid;
 }
 
-
 int32_t NaClSysGetppid(struct NaClAppThread *natp) {
   int32_t ppid;
   struct NaClApp *nap = natp->nap;
@@ -389,7 +387,6 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
 
   return ppid;
 }
-
 
 int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
     struct NaClApp *nap = natp->nap;
@@ -418,7 +415,6 @@ int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
     /* NOTREACHED */
     return -NACL_ABI_EINVAL;
 }
-
 
 int32_t NaClSysThreadExit(struct NaClAppThread *natp, int32_t *stack_flag) {
     uint32_t zero = 0;
@@ -558,7 +554,6 @@ int32_t NaClSysDup2(struct NaClAppThread  *natp,
 
   return ret;
 }
-
 
 int32_t NaClSysDup3(struct NaClAppThread  *natp,
                     int                   oldfd,
@@ -946,7 +941,6 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   return retval;
 }
 
-
 int32_t NaClSysPwrite(struct NaClAppThread *natp,
                       int d,
                       const void *buf,
@@ -1008,7 +1002,6 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
     return retval;
 }
 
-
 /*
  * This implements 64-bit offsets, so we use |offp| as an in/out
  * address so we can have a 64 bit return value.
@@ -1058,7 +1051,6 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
   return retval;
 }
 
-
 int32_t NaClSysIoctl(struct NaClAppThread *natp,
                      int                  d,
                      unsigned long        request,
@@ -1099,8 +1091,6 @@ int32_t NaClSysIoctl(struct NaClAppThread *natp,
   return retval;
 }
 
-
-
 int32_t NaClSysFstat(struct NaClAppThread *natp,
                      int                  d,
                      struct nacl_abi_stat *nasp) {
@@ -1136,7 +1126,6 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
 
   return retval;
 }
-
 
 int32_t NaClSysStat(struct NaClAppThread  *natp,
                     const char            *pathname,
@@ -1177,7 +1166,6 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
 
     return retval;
 }
-
 
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
                     const char            *pathname,
@@ -1279,7 +1267,6 @@ int32_t NaClSysRmdir(struct NaClAppThread *natp,
   return retval;
 }
 
-
 int32_t NaClSysChdir(struct NaClAppThread *natp,
                      uint32_t             pathname) {
   struct NaClApp *nap = natp->nap;
@@ -1313,7 +1300,6 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
 
   return retval;
 }
-
 
 int32_t NaClSysChmod(struct NaClAppThread *natp,
                      uint32_t             pathname,
@@ -1404,8 +1390,6 @@ int32_t NaClSysFchdir(struct NaClAppThread *natp, int fd) {
   return ret;
 }
 
-
-
 int32_t NaClSysFsync(struct NaClAppThread *natp, int fd) {
     int32_t ret;
     struct NaClApp *nap = natp->nap;
@@ -1431,7 +1415,6 @@ int32_t NaClSysFsync(struct NaClAppThread *natp, int fd) {
   return ret;
 }
 
-
 int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
     int32_t ret;
     struct NaClApp *nap = natp->nap;
@@ -1453,7 +1436,6 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
 
     return ret;
 }
-
 
 int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,int fd,off_t offset,off_t nbytes,uint32_t flags) {
     int32_t ret;
@@ -1517,7 +1499,6 @@ int32_t NaClSysGetcwd(struct NaClAppThread *natp, char *buf, size_t size) {
   return retval;
 }
 
-
 int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
   struct NaClApp *nap = natp->nap;
   char srcpath[NACL_CONFIG_PATH_MAX];
@@ -1543,7 +1524,6 @@ int32_t NaClSysLink(struct NaClAppThread *natp, char* from, char* to) {
   return retval;
 }
 
-
 int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
   struct NaClApp *nap = natp->nap;
   char path[NACL_CONFIG_PATH_MAX];
@@ -1565,7 +1545,6 @@ int32_t NaClSysUnlink(struct NaClAppThread *natp, char* pathname) {
 
   return retval;
 }
-
 
 int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const char *newpath) {
   struct NaClApp *nap = natp->nap;
@@ -2791,7 +2770,6 @@ cleanup:
   return retval;
 }
 
-
 int32_t NaClSysShmctl(struct NaClAppThread        *natp,
                       int                         shmid,
                       int                         cmd,
@@ -2842,7 +2820,6 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
   return retval;
 }
 
-
 int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  domain,
                           int                  type,
@@ -2875,7 +2852,6 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
 
   return retval;
 }
-
 
 int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr) {
@@ -3172,7 +3148,7 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   int retval = lind_sem_wait(sem, nap->cage_id);
 
   return retval;
- }
+}
 
 int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
                             uint32_t              sem) {
@@ -3571,9 +3547,6 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
   if (!NaClCopyOutToUser(natp->nap, (uintptr_t)tv, &now, sizeof(now))) {
     return -NACL_ABI_EFAULT;
   }
-
-
-
   return 0;
 }
 
@@ -4254,7 +4227,6 @@ int32_t NaClSysGetifaddrs(struct NaClAppThread *natp, char *buf, size_t len) {
   return ret;
 }
 
-
 int32_t NaClSysSocket(struct NaClAppThread *natp, int domain, int type, int protocol) {
   int32_t ret;
   struct NaClApp *nap = natp->nap;
@@ -4312,7 +4284,6 @@ int32_t NaClSysSend(struct NaClAppThread *natp, int sockfd, size_t len, int flag
 
   return ret;
 }
-
 
 int32_t NaClSysSendto(struct NaClAppThread *natp, int sockfd, const void *buf, size_t len,
                          int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
@@ -4464,7 +4435,6 @@ int32_t NaClSysShutdown(struct NaClAppThread *natp, int sockfd, int how)
   return ret;
 }
 
-
 int32_t NaClSysGetuid(struct NaClAppThread *natp)
 {
   struct NaClApp *nap = natp->nap;
@@ -4484,7 +4454,6 @@ int32_t NaClSysGetuid(struct NaClAppThread *natp)
 
   return ret;
 }
-
 
 int32_t NaClSysGeteuid(struct NaClAppThread *natp)
 {
@@ -4634,7 +4603,6 @@ int32_t NaClSysSetsockopt(struct NaClAppThread *natp, int sockfd, int level, int
 
   return ret;
 }
-
 
 int32_t NaClSysFstatfs(struct NaClAppThread *natp,
                        int                  d,
@@ -5056,7 +5024,6 @@ int32_t NaClSysFcntlSet(struct NaClAppThread *natp, int fd, int cmd, long set_op
 
   return ret;
 }
-
 
 int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout) {
   struct NaClApp *nap = natp->nap;
