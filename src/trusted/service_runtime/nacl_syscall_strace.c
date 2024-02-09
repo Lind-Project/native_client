@@ -169,7 +169,7 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
 
   } else {
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
-  }
+}
 
 }
 
@@ -853,10 +853,9 @@ void NaClStraceExecve(int cageid, char
       syscallStats[NACL_sys_execve].errorCount++;
     }
   } else {
-
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"
-      NACL_PRIxPTR ") = %d\n", cageid, path, (uintptr_t) argv, ret);
-  }
+    NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
+}
 
 }
 
@@ -929,8 +928,7 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, l
 
   } else {
     fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d\n", cageid, domain, type, protocol, ret);
-  }
-
+    }
 }
 
 void NaClStraceSend(int cageid, int sockfd,
@@ -1051,7 +1049,7 @@ void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
     }
   } else {
     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
-  }
+}
 
 }
 
@@ -1159,9 +1157,8 @@ void NaClStraceAccess(int cageid, char * path, int mode, int ret, long long elap
     if (ret < 0) {
       syscallStats[NACL_sys_access].errorCount++;
     }
-
-  } else {
-    char * strBuf = formatStringArgument(path);
+    }else {
+    char *strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
     free(strBuf);
   }
