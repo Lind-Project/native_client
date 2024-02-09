@@ -164,7 +164,7 @@ static void PrintUsage(void) {
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
           " -t toggle runtime statistics\n"
-          " -p [s/c], s for per-call tracing, c minics strace's -c functionality"
+          " -p enable strace -c functionality"
           );  /* easier to add new flags/lines */
 }
 
