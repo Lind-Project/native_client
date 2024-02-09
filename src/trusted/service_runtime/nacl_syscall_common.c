@@ -2081,7 +2081,7 @@ int32_t NaClSysMmapIntern(struct NaClApp        *nap,
 
   return (int32_t) map_result;
 }
-//check this
+
 int32_t NaClSysMmap(struct NaClAppThread  *natp,
                     void                  *start,
                     size_t                length,
@@ -2494,7 +2494,6 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
 
   return retval;
 }
-//check this
 
 int32_t NaClSysShmat(struct NaClAppThread  *natp,
                      int                   shmid,
@@ -3794,7 +3793,6 @@ fail:
 
   return ret; 
 }
-//check this
 int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *argv) {
   struct NaClApp *nap = natp->nap;
   struct NaClApp *nap_child = 0;
@@ -4069,7 +4067,6 @@ fail:
  * We use the NaClCheckZombies/NaClAddZombies/NaClRemoveZombies functions from sel_ldr.c to manage these zombies
  * Zombies are added to a parents zombie list when a child exits, in the NaClReportExitStatus function in sel_ldr_standard.c
  */
-//check this timer -start 
 int32_t NaClSysWaitpid(struct NaClAppThread *natp,
                        int pid,
                        uint32_t *stat_loc,

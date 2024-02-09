@@ -88,3 +88,4 @@ void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, 
 void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) ;
 void printFinalSyscallStats();
 const char* getSyscallName(int syscallIndex);
+

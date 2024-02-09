@@ -102,8 +102,7 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
   if (strace_C) {
     syscallStats[NACL_sys_getpid].count++;
     syscallStats[NACL_sys_getpid].totalTime += elapsedTime;
-
-  } else {
+    }else {
     fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
   }
 }
@@ -139,8 +138,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
     if (ret < 0) {
       syscallStats[NACL_sys_close].errorCount++;
     }
-
-  } else {
+    }else {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
   }
 
@@ -657,7 +655,7 @@ void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long
     free(strBuf);
   }
 }
-//check
+
 void NaClStraceLink(int cageid, char * from, char * to, int retval, long long elapsedTime) {
   if (strace_C) {
     syscallStats[NACL_sys_link].count++;
@@ -813,7 +811,6 @@ void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, lon
 
 }
 
-//check this again the NACL_sys_clock
 void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long elapsedTime) {
   if (strace_C) {
     syscallStats[NACL_sys_clock].count++;
@@ -1036,7 +1033,7 @@ void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
     }
   } else {
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
-  }
+    }
 
 }
 
