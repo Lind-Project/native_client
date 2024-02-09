@@ -498,7 +498,7 @@ int32_t NaClSysNameService(struct NaClAppThread *natp, int32_t *desc_addr) {
     }
 
 done:
-    return retval;
+  return retval;
 }
 
 int32_t NaClSysDup(struct NaClAppThread *natp, int oldfd) {
@@ -1083,7 +1083,7 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
                      struct nacl_abi_stat *nasp) {
   struct NaClApp        *nap = natp->nap;
   int32_t               retval = -NACL_ABI_EINVAL;
-  struct lind_stat     result;
+  struct lind_stat  result;
 
   NaClLog(2, "Entered NaClSysFstat(0x%08"NACL_PRIxPTR
            ", %d, 0x%08"NACL_PRIxPTR")\n",
@@ -1136,10 +1136,10 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
     starttime = gettimens();
     #endif
 
-    retval = lind_xstat(path, &result, nap->cage_id);
-    if (!retval) {
-        if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
-    }
+  retval = lind_xstat(path, &result, nap->cage_id);
+  if (!retval) {
+      if (!NaClCopyOutToUser(nap, (uintptr_t) buf, &result, sizeof(result))) return -NACL_ABI_EFAULT;
+  }
 
     #ifdef TRACING
     endtime = gettimens();
@@ -1147,7 +1147,7 @@ int32_t NaClSysStat(struct NaClAppThread  *natp,
     NaClStraceStat(nap->cage_id, path, &result, retval, totaltime);
     #endif
 
-    return retval;
+  return retval;
 }
 
 int32_t NaClSysLStat(struct NaClAppThread  *natp,
@@ -1406,10 +1406,10 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
     long long starttime = gettimens();
     #endif
 
-    NaClLog(2, "Cage %d Entered NaClSysFdatasync(0x%08"NACL_PRIxPTR", %d)\n",
-            nap->cage_id, (uintptr_t) natp, fd);
+  NaClLog(2, "Cage %d Entered NaClSysFdatasync(0x%08"NACL_PRIxPTR", %d)\n",
+          nap->cage_id, (uintptr_t) natp, fd);
 
-    ret = lind_fdatasync(fd, nap->cage_id);
+  ret = lind_fdatasync(fd, nap->cage_id);
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -1417,7 +1417,7 @@ int32_t NaClSysFdatasync(struct NaClAppThread *natp, int fd) {
     NaClStraceFdatasync(nap->cage_id, fd, ret, totaltime);
     #endif
 
-    return ret;
+  return ret;
 }
 
 int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,int fd,off_t offset,off_t nbytes,uint32_t flags) {
@@ -1553,8 +1553,6 @@ int32_t NaClSysRename(struct NaClAppThread *natp, const char *oldpath, const cha
 
   return retval;
 }
-
-
 
 int NaClSysCommonAddrRangeContainsExecutablePages(struct NaClApp *nap,
                                                   uintptr_t usraddr,
@@ -2421,8 +2419,6 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
 
   NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %lu, %d)\n",
            (uintptr_t)natp, key, size, shmflg);
-  
-  
 
   alloc_rounded_size = NaClRoundAllocPage(size);
   if (alloc_rounded_size != size) {
@@ -2690,8 +2686,6 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
   NaClLog(2, "Entered NaClSysShmdt(0x%08"NACL_PRIxPTR" ,""0x%08"NACL_PRIxPTR")\n",
            (uintptr_t)natp, (uintptr_t)shmaddr); 
-  
-  
 
   if (!NaClIsAllocPageMultiple((uintptr_t) shmaddr)) {
     NaClLog(2, "%s\n", "start addr not allocation multiple");
@@ -2730,7 +2724,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
     goto cleanup;
   }
 
-  if ((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+  if((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
       NaClLog(LOG_FATAL, "NaClSysShmdt: nonsense shmid returned by lind_shmdt!");
 
   length = shmtable[shmid].size;
@@ -3485,8 +3479,6 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
   int                     retval;
   struct nacl_abi_timeval now;
 
-  
-
   UNREFERENCED_PARAMETER(tz);
 
   NaClLog(3,
@@ -3495,7 +3487,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
           (uintptr_t) natp, (uintptr_t) tv, (uintptr_t) tz);
 
   /*
-   * tz is not supported in Linux, nor is it supported by glibc, since
+   * tz is not supported in linux, nor is it supported by glibc, since
    * tzset(3) and the zoneinfo file should be used instead.
    *
    * TODO(bsy) Do we make the zoneinfo directory available to
@@ -3529,7 +3521,6 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
   }
   return 0;
 }
-
 
 /* convenience typedef */
 typedef int clock_func(nacl_clockid_t, struct nacl_abi_timespec *);
@@ -4295,7 +4286,6 @@ int32_t NaClSysRecv(struct NaClAppThread *natp, int sockfd, size_t len, int flag
   struct NaClApp *nap = natp->nap;
 
   void *sysbufaddr = (void*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, len, NACL_ABI_PROT_WRITE);
-
   NaClLog(2, "Cage %d Entered NaClSysRecv(0x%08"NACL_PRIxPTR", "
           "%d, %ld, %d, 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t) natp, sockfd, len, flags, (uintptr_t) buf);
