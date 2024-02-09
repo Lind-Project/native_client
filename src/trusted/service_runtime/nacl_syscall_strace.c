@@ -318,8 +318,7 @@ void NaClStraceLStat(int cageid,
 
     syscallStats[NACL_sys_lstat].count++;
     syscallStats[NACL_sys_lstat].totalTime += time;
-    totalLstatTime += time; // Add total time for lstat
-
+    
     if (retval < 0) {
       syscallStats[NACL_sys_lstat].errorCount++;
     }
