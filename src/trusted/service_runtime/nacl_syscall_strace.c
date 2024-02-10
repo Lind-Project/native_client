@@ -96,6 +96,14 @@ char * formatStringArgument(const char * input) {
   return output;
 }
 
+void stracec_increment(int syscallnum, long long elapsedTime, int retval) {
+    syscallStats[syscallnum].count++;
+    syscallStats[syscallnum].totalTime += elapsedTime;
+    if (retval < 0) {
+        syscallStats[syscallnum].errorCount++;
+    }
+}
+
 void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
   if (strace_C) {
     syscallStats[NACL_sys_getpid].count++;
@@ -326,18 +334,12 @@ void NaClStraceLStat(int cageid,
 
 }
 
-void NaClStraceMkdir(int cageid,
-  const char * path, int mode, int retval, long long totaltime) {
-  // Time for this call in nanoseconds
-  if (strace_C) {
-    syscallStats[NACL_sys_mkdir].count++;
-    syscallStats[NACL_sys_mkdir].totalTime += totaltime;
-    if (retval < 0) {
-      syscallStats[NACL_sys_mkdir].errorCount++;
+void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long long elapsedTime) {
+    if (strace_C) {
+        stracec_increment(NACL_sys_mkdir, elapsedTime, retval);
+    } else {
+        fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     }
-  } else {
-    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-  }
 }
 
 void printFinalSyscallStats() {
@@ -529,15 +531,11 @@ void NaClStraceRmdir(int cageid,
   }
 }
 
-void NaClStraceChdir(int cageid,
-  const char * path, int retval, long long elapsedTime) {
+void NaClStraceChdir(int cageid,const char * path, int retval, long long elapsedTime) {
   if (strace_C) {
-    syscallStats[NACL_sys_chdir].count++;
-    syscallStats[NACL_sys_chdir].totalTime += elapsedTime;
-    if (retval < 0) {
-      syscallStats[NACL_sys_chdir].errorCount++;
+        stracec_increment(NACL_sys_chdir, elapsedTime, retval);
     }
-  } else {
+   else {
     fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
   }
 }
