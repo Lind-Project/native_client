@@ -95,7 +95,7 @@ char* formatStringArgument(const char *input) {
     return output;
 }
 
-void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
+void NaClStraceGetpid(int cageid, int pid, long long elapsedTime, int error) {
     #ifdef TRACING_DASHC
     syscallStats[NACL_sys_getpid].count++;
     syscallStats[NACL_sys_getpid].totalTime += elapsedTime;
@@ -105,6 +105,9 @@ void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
                                      ? (double)syscallStats[NACL_sys_getpid].totalTime / syscallStats[NACL_sys_getpid].count / 1000000000.0
                                      : 0.0;
     double percentTime = 100.0 * totalTimeInSeconds / totalSyscallsTime;
+    if (error < 0) {
+      syscallStats[NACL_sys_getpid].errorCount++;
+    }
     #endif
     
     if (strace_c) {
