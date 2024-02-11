@@ -96,83 +96,83 @@ char * formatStringArgument(const char * input) {
   return output;
 }
 
-void stracec_increment(int syscallnum, long long elapsedTime, int retval) {
+void stracec_increment(int syscallnum, long long totaltime, int retval) {
     syscallStats[syscallnum].count++;
-    syscallStats[syscallnum].totalTime += elapsedTime;
+    syscallStats[syscallnum].totalTime += totaltime;
     if (retval < 0) {
         syscallStats[syscallnum].errorCount++;
     }
 }
 
-void NaClStraceGetpid(int cageid, int pid, long long elapsedTime) {
+void NaClStraceGetpid(int cageid, int pid, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getpid, elapsedTime, 0);
+    stracec_increment(NACL_sys_getpid, totaltime, 0);
     }else {
     fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
   }
 }
 
-void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) {
+void NaClStraceGetppid(int cageid, int pid, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getppid, elapsedTime, 0);
+    stracec_increment(NACL_sys_getppid, totaltime, 0);
   } else {
 
     fprintf(tracingOutputFile, "%d getppid() = %d\n", cageid, pid);
 }
 }
 
-void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long long elapsedTime) {
+void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_open, elapsedTime, fd);
+    stracec_increment(NACL_sys_open, totaltime, fd);
   } else {
     char * strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d open(%s, %d, %d) = %d\n", cageid, path, flags, mode, fd);
     free(strBuf);
   }
 }
-void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) {
+void NaClStraceClose(int cageid, int d, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_close, elapsedTime, ret);
+    stracec_increment(NACL_sys_close, totaltime, ret);
   }else {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
   }
 }
 
-void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long long elapsedTime) {
+void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_read, elapsedTime, ret);
+    stracec_increment(NACL_sys_read, totaltime, ret);
   }else {
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
   }
 }
 
-void NaClStraceExit(int cageid, int status, long long elapsedTime) {
+void NaClStraceExit(int cageid, int status, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_exit, elapsedTime, status != 0 ? -1 : 0); // Treat non-zero as error for consistency
+    stracec_increment(NACL_sys_exit, totaltime, status != 0 ? -1 : 0); // Treat non-zero as error for consistency
   } else {
     fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
 }
 }
 
-void NaClStraceGetdents(int cageid, int d, void * drip, size_t count, int ret, long long elapsedTime) {
+void NaClStraceGetdents(int cageid, int d, void * drip, size_t count, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getdents, elapsedTime, ret);
+    stracec_increment(NACL_sys_getdents, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d getdents(%d, %p, %zu) = %d\n", cageid, d, drip, count, ret);
   }
 }
 
-void NaClStracePread(int cageid, int d, void * buf, int count, off_t offset, int ret, long long elapsedTime) {
+void NaClStracePread(int cageid, int d, void * buf, int count, off_t offset, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_pread, elapsedTime, ret);
+    stracec_increment(NACL_sys_pread, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d pread(%d, %p, %d, %ld) = %d\n", cageid, d, buf, count, offset, ret);
   }
 }
 
-void NaClStraceWrite(int cageid, int d, void * buf, int count, int ret, long long elapsedTime) {
+void NaClStraceWrite(int cageid, int d, void * buf, int count, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_write, elapsedTime, ret);
+    stracec_increment(NACL_sys_write, totaltime, ret);
   } else {
     char * strBuf = formatStringArgument((char * ) buf);
     fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, ret);
@@ -181,9 +181,9 @@ void NaClStraceWrite(int cageid, int d, void * buf, int count, int ret, long lon
 }
 
 void NaClStracePWrite(int cageid, int d,
-  const void * buf, int count, off_t offset, int retval, long long elapsedTime) {
+  const void * buf, int count, off_t offset, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_pwrite, elapsedTime, retval);
+    stracec_increment(NACL_sys_pwrite, totaltime, retval);
   } else {
     char * strBuf = formatStringArgument((char * ) buf);
     fprintf(tracingOutputFile, "%d pwrite(%d, \"%s\", %d, %jd) = %d\n", cageid, d, strBuf ? strBuf : "NULL", count, (intmax_t) offset, retval);
@@ -191,50 +191,50 @@ void NaClStracePWrite(int cageid, int d,
   }
 }
 
-void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long elapsedTime) {
+void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_lseek, elapsedTime, ret);
+    stracec_increment(NACL_sys_lseek, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d lseek(%d, 0x%08"NACL_PRIxPTR ", %d) = %d\n", cageid, d, offset, whence, ret);
   }
 }
 
-void NaClStraceIoctl(int cageid, int d, unsigned long request, void * arg_ptr, int ret, long long elapsedTime) {
+void NaClStraceIoctl(int cageid, int d, unsigned long request, void * arg_ptr, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_ioctl, elapsedTime, ret);
+    stracec_increment(NACL_sys_ioctl, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d ioctl(%d, %lu, %p) = %d\n", cageid, d, request, arg_ptr, ret);
   }
 }
 
-void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long elapsedTime) {
+void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fstat, elapsedTime, retval);
+    stracec_increment(NACL_sys_fstat, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d fstat(%d, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, d, result, retval);
   }
 }
 
-void NaClStraceStat(int cageid, char * path, uintptr_t result, int32_t retval, long long elapsedTime) {
+void NaClStraceStat(int cageid, char * path, uintptr_t result, int32_t retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_stat, elapsedTime, retval);
+    stracec_increment(NACL_sys_stat, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d stat(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, path, result, retval);
   }
 }
 
 void NaClStraceLStat(int cageid,
-  const char * path, uintptr_t result, int32_t retval, long long elapsedTime) {
+  const char * path, uintptr_t result, int32_t retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_lstat, elapsedTime, retval);
+    stracec_increment(NACL_sys_lstat, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d lstat(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, path, result, retval);
   }
 }
 
-void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long long elapsedTime) {
+void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long long totaltime) {
     if (strace_C) {
-        stracec_increment(NACL_sys_mkdir, elapsedTime, retval);
+        stracec_increment(NACL_sys_mkdir, totaltime, retval);
     } else {
         fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
     }
@@ -417,73 +417,73 @@ const char * getSyscallName(int syscallIndex) {
 }
 
 void NaClStraceRmdir(int cageid,
-  const char * path, int retval, long long elapsedTime) {
+  const char * path, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_rmdir, elapsedTime, retval);
+    stracec_increment(NACL_sys_rmdir, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d rmdir(%s) = %d\n", cageid, path, retval);
   }
 }
 
-void NaClStraceChdir(int cageid,const char * path, int retval, long long elapsedTime) {
+void NaClStraceChdir(int cageid,const char * path, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_chdir, elapsedTime, retval);
+    stracec_increment(NACL_sys_chdir, totaltime, retval);
     }else {
       fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
   }
 }
 
-void NaClStraceChmod(int cageid, const char * path, int mode, int retval, long long elapsedTime) {
+void NaClStraceChmod(int cageid, const char * path, int mode, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_chmod, elapsedTime, retval);
+    stracec_increment(NACL_sys_chmod, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d chmod(%s, %d) = %d\n", cageid, path, mode, retval);
   }
 }
 
-void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long elapsedTime) {
+void NaClStraceFchmod(int cageid, int fd, int mode, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fchmod, elapsedTime, retval);
+    stracec_increment(NACL_sys_fchmod, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d fchmod(%d, %d) = %d\n", cageid, fd, mode, retval);
   }
 }
 
-void NaClStraceFchdir(int cageid, int fd, int retval, long long elapsedTime) {
+void NaClStraceFchdir(int cageid, int fd, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fchdir, elapsedTime, retval);
+    stracec_increment(NACL_sys_fchdir, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d fchdir(%d) = %d\n", cageid, fd, retval);
   }
 }
 
-void NaClStraceFsync(int cageid, int fd, int ret, long long elapsedTime) {
+void NaClStraceFsync(int cageid, int fd, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fsync, elapsedTime, ret);
+    stracec_increment(NACL_sys_fsync, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fsync(%d) = %d\n", cageid, fd, ret);
   }
 }
 
-void NaClStraceFdatasync(int cageid, int fd, int ret, long long elapsedTime) {
+void NaClStraceFdatasync(int cageid, int fd, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fdatasync, elapsedTime, ret);
+    stracec_increment(NACL_sys_fdatasync, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fdatasync(%d) = %d\n", cageid, fd, ret);
   }
 }
 
-void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval, long long elapsedTime) {
+void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uint32_t flags, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_sync_file_range, elapsedTime, retval);
+    stracec_increment(NACL_sys_sync_file_range, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
   }
 }
 
-void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long elapsedTime) {
+void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getcwd, elapsedTime, retval);
+    stracec_increment(NACL_sys_getcwd, totaltime, retval);
   } else {
     char * strBuf = formatStringArgument(buf);
     fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
@@ -491,9 +491,9 @@ void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long
   }
 }
 
-void NaClStraceLink(int cageid, char * from, char * to, int retval, long long elapsedTime) {
+void NaClStraceLink(int cageid, char * from, char * to, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_link, elapsedTime, retval);
+    stracec_increment(NACL_sys_link, totaltime, retval);
   } else {
     char * strBuf1 = formatStringArgument(from);
     char * strBuf2 = formatStringArgument(to);
@@ -503,9 +503,9 @@ void NaClStraceLink(int cageid, char * from, char * to, int retval, long long el
   }
 }
 
-void NaClStraceUnlink(int cageid, char * pathname, int retval, long long elapsedTime) {
+void NaClStraceUnlink(int cageid, char * pathname, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_unlink, elapsedTime, retval);
+    stracec_increment(NACL_sys_unlink, totaltime, retval);
   } else {
     char * strBuf = formatStringArgument(pathname);
     fprintf(tracingOutputFile, "%d unlink(\"%s\") = %d\n", cageid, strBuf ? strBuf : "NULL", retval);
@@ -513,9 +513,9 @@ void NaClStraceUnlink(int cageid, char * pathname, int retval, long long elapsed
   }
 }
 
-void NaClStraceRename(int cageid, const char * oldpath, const char * newpath, int retval, long long elapsedTime) {
+void NaClStraceRename(int cageid, const char * oldpath, const char * newpath, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_rename, elapsedTime, retval);
+    stracec_increment(NACL_sys_rename, totaltime, retval);
   } else {
     char * strBuf1 = formatStringArgument(oldpath);
     char * strBuf2 = formatStringArgument(newpath);
@@ -525,81 +525,81 @@ void NaClStraceRename(int cageid, const char * oldpath, const char * newpath, in
   }
 }
 
-void NaClStraceMmap(int cageid, void * start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long elapsedTime) {
+void NaClStraceMmap(int cageid, void * start, size_t length, int prot, int flags, int d, uintptr_t offset, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_mmap, elapsedTime, retval);
+    stracec_increment(NACL_sys_mmap, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d mmap(%p, %zu, %d, %d, %d, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, start, length, prot, flags, d, offset, retval);
   }
 
 }
 
-void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, long long elapsedTime) {
+void NaClStraceMunmap(int cageid, uintptr_t sysaddr, size_t length, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_munmap, elapsedTime, retval);
+    stracec_increment(NACL_sys_munmap, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d munmap(0x%08"NACL_PRIxPTR ", %zu) = %d\n", cageid, sysaddr, length, retval);
   }
 }
-void NaClStraceShmat(int cageid, int shmid, void * shmaddr, int shmflg, int retval, long long elapsedTime) {
+void NaClStraceShmat(int cageid, int shmid, void * shmaddr, int shmflg, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_shmat, elapsedTime, retval);
+    stracec_increment(NACL_sys_shmat, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmat(%d, %p, %d) = %d\n", cageid, shmid, shmaddr, shmflg, retval);
   }
 }
 
-void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, long long elapsedTime) {
+void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_shmget, elapsedTime, retval);
+    stracec_increment(NACL_sys_shmget, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmget(%d, %zu, %d) = %d\n", cageid, key, size, shmflg, retval);
   }
 }
 
-void NaClStraceShmdt(int cageid, void * shmaddr, int retval, long long elapsedTime) {
+void NaClStraceShmdt(int cageid, void * shmaddr, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_shmdt, elapsedTime, retval);
+    stracec_increment(NACL_sys_shmdt, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmdt(%p) = %d\n", cageid, shmaddr, retval);
   }
 }
 
-void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long elapsedTime) {
+void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_shmctl, elapsedTime, retval);
+    stracec_increment(NACL_sys_shmctl, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmctl(%d, %d, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, shmid, cmd, bufsysaddr, retval);
   }
 }
 
-void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * lindfds, int retval, long long elapsedTime) {
+void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * lindfds, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_socketpair, elapsedTime, retval);
+    stracec_increment(NACL_sys_socketpair, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
   }
 }
 
-void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long elapsedTime) {
+void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_gettimeofday, elapsedTime, ret);
+    stracec_increment(NACL_sys_gettimeofday, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, tv, tz, ret);
   }
 }
 
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long elapsedTime) {
+void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_clock, elapsedTime, ret);
+    stracec_increment(NACL_sys_clock, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, clk_id, ts_addr, time_func, ret);
   }
 }
 
-void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
+void NaClStraceFork(int cageid, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fork, elapsedTime, ret);
+    stracec_increment(NACL_sys_fork, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
   }
@@ -607,9 +607,9 @@ void NaClStraceFork(int cageid, int ret, long long elapsedTime) {
 
 void NaClStraceExecve(int cageid, char
   const * path, char *
-  const * argv, int ret, long long elapsedTime) {
+  const * argv, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_execve, elapsedTime, ret);
+    stracec_increment(NACL_sys_execve, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
 }
@@ -617,25 +617,25 @@ void NaClStraceExecve(int cageid, char
 
 void NaClStraceExecv(int cageid, char
   const * path, char *
-  const * argv, int ret, long long elapsedTime) {
+  const * argv, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_execv, elapsedTime, ret);
+    stracec_increment(NACL_sys_execv, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, path, (uintptr_t) argv, ret);
   }
 }
 
-void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long elapsedTime) {
+void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_waitpid, elapsedTime, ret);
+    stracec_increment(NACL_sys_waitpid, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR ", %d) = %d\n", cageid, pid, sysaddr, options, ret);
   }
 }
 
-void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long long elapsedTime) {
+void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_gethostname, elapsedTime, ret);
+    stracec_increment(NACL_sys_gethostname, totaltime, ret);
   } else {
     char * strBuf = formatStringArgument(name);
     fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
@@ -643,9 +643,9 @@ void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long lo
   }
 }
 
-void NaClStraceGetifaddrs(int cageid, char * buf, size_t len, int ret, long long elapsedTime) {
+void NaClStraceGetifaddrs(int cageid, char * buf, size_t len, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getifaddrs, elapsedTime, ret);
+    stracec_increment(NACL_sys_getifaddrs, totaltime, ret);
   } else {
     char * strBuf = formatStringArgument(buf);
     fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
@@ -653,51 +653,51 @@ void NaClStraceGetifaddrs(int cageid, char * buf, size_t len, int ret, long long
   }
 }
 
-void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, long long elapsedTime) {
+void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_socket, elapsedTime, ret);
+    stracec_increment(NACL_sys_socket, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d socket(%d, %d, %d) = %d\n", cageid, domain, type, protocol, ret);
     }
 }
 
 void NaClStraceSend(int cageid, int sockfd,
-  const void * buf, size_t len, int flags, int ret, long long elapsedTime) {
+  const void * buf, size_t len, int flags, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_send, elapsedTime, ret);
+    stracec_increment(NACL_sys_send, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
 }
 
 void NaClStraceSendto(int cageid, int sockfd,
-  const void * buf, size_t len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret, long long elapsedTime) {
+  const void * buf, size_t len, int flags, uintptr_t dest_addr, socklen_t addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_sendto, elapsedTime, ret);
+    stracec_increment(NACL_sys_sendto, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR ", %ld, %d, 0x%08"NACL_PRIxPTR ", %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, dest_addr, addrlen, ret);
   }
 }
 
-void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, int ret, long long elapsedTime) {
+void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_recv, elapsedTime, ret);
+    stracec_increment(NACL_sys_recv, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
 }
 
-void NaClStraceRecvfrom(int cageid, int sockfd, void * buf, size_t len, int flags, uintptr_t src_addr, socklen_t * addrlen, int ret, long long elapsedTime) {
+void NaClStraceRecvfrom(int cageid, int sockfd, void * buf, size_t len, int flags, uintptr_t src_addr, socklen_t * addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_recvfrom, elapsedTime, ret);
+    stracec_increment(NACL_sys_recvfrom, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d recvfrom(%d, %p"NACL_PRIxPTR ", %ld, %d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, buf, len, flags, src_addr, (uintptr_t) addrlen, ret);
   }
 }
 
-void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long elapsedTime) {
+void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_shutdown, elapsedTime, ret);
+    stracec_increment(NACL_sys_shutdown, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d\n", cageid, sockfd, how, ret);
   }
@@ -720,84 +720,84 @@ void NaClStraceGeteuid(int cageid, int ret, long long time) {
   }
 }
 
-void NaClStraceGetgid(int cageid, int ret, long long elapsedTime) {
+void NaClStraceGetgid(int cageid, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getgid, elapsedTime, ret);
+    stracec_increment(NACL_sys_getgid, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
 }
 }
 
-void NaClStraceGetegid(int cageid, int ret, long long elapsedTime) {
+void NaClStraceGetegid(int cageid, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getegid, elapsedTime, ret);
+    stracec_increment(NACL_sys_getegid, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
 }
 }
 
-void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long elapsedTime) {
+void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_flock, elapsedTime, ret);
+    stracec_increment(NACL_sys_flock, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d flock(%d, %d) = %d\n", cageid, fd, operation, ret);
   }
 }
 
-void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void * optval, socklen_t * optlen, int ret, long long elapsedTime) {
+void NaClStraceGetsockopt(int cageid, int sockfd, int level, int optname, void * optval, socklen_t * optlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getsockopt, elapsedTime, ret);
+    stracec_increment(NACL_sys_getsockopt, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d getsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, level, optname, (uintptr_t) optval, (uintptr_t) optlen, ret);
   }
 }
 
 void NaClStraceSetsockopt(int cageid, int sockfd, int level, int optname,
-  const void * optval, socklen_t optlen, int ret, long long elapsedTime) {
+  const void * optval, socklen_t optlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_setsockopt, elapsedTime, ret);
+    stracec_increment(NACL_sys_setsockopt, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d setsockopt(%d, %d, %d, 0x%08"NACL_PRIxPTR ", %u) = %d\n", cageid, sockfd, level, optname, (uintptr_t) optval, optlen, ret);
   }
 }
 
-void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long elapsedTime) {
+void NaClStraceFstatfs(int cageid, int d, uintptr_t buf, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fstatfs, elapsedTime, ret);
+    stracec_increment(NACL_sys_fstatfs, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fstatfs(%d, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, d, buf, ret);
   }
 }
 
 void NaClStraceStatfs(int cageid,
-  const char * pathname, uintptr_t buf, int ret, long long elapsedTime) {
+  const char * pathname, uintptr_t buf, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_statfs, elapsedTime, ret);
+    stracec_increment(NACL_sys_statfs, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d statfs(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, formatStringArgument(pathname), buf, ret);
   }
 }
 
-void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long elapsedTime) {
+void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getsockname, elapsedTime, ret);
+    stracec_increment(NACL_sys_getsockname, totaltime, ret);
 
   } else {
     fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, addr, (uintptr_t) addrlen, ret);
   }
 }
 
-void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long elapsedTime) {
+void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_getpeername, elapsedTime, ret);
+    stracec_increment(NACL_sys_getpeername, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d getpeername(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, addr, (uintptr_t) addrlen, ret);
   }
 }
 
-void NaClStraceAccess(int cageid, char * path, int mode, int ret, long long elapsedTime) {
+void NaClStraceAccess(int cageid, char * path, int mode, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_access, elapsedTime, ret);
+    stracec_increment(NACL_sys_access, totaltime, ret);
     }else {
     char *strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
@@ -805,34 +805,34 @@ void NaClStraceAccess(int cageid, char * path, int mode, int ret, long long elap
   }
 }
 
-void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long long elapsedTime) {
+void NaClStraceTruncate(int cageid, uint32_t path, int length, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_truncate, elapsedTime, ret);
+    stracec_increment(NACL_sys_truncate, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d truncate(%u, %d) = %d\n", cageid, path, length, ret);
   }
 }
 
-void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long elapsedTime) {
+void NaClStraceFtruncate(int cageid, int fd, int length, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_ftruncate, elapsedTime, ret);
+    stracec_increment(NACL_sys_ftruncate, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d ftruncate(%d, %d) = %d\n", cageid, fd, length, ret);
   }
 }
 
-void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
+void NaClStraceConnect(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_connect, elapsedTime, ret);
+    stracec_increment(NACL_sys_connect, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d connect(%d, 0x%08"
       NACL_PRIxPTR ", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
   }
 }
 
-void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long elapsedTime) {
+void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_accept, elapsedTime, ret);
+    stracec_increment(NACL_sys_accept, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d accept(%d, 0x%08"
       NACL_PRIxPTR ", 0x%08"
@@ -840,75 +840,75 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t * addrle
   }
 }
 
-void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long elapsedTime) {
+void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_bind, elapsedTime, ret);
+    stracec_increment(NACL_sys_bind, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d bind(%d, 0x%08"
       NACL_PRIxPTR ", %u) = %d\n", cageid, sockfd, addr, addrlen, ret);
   }
 }
 
-void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long elapsedTime) {
+void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_listen, elapsedTime, ret);
+    stracec_increment(NACL_sys_listen, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d listen(%d, %d) = %d\n", cageid, sockfd, backlog, ret);
   }
 }
 
-void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long elapsedTime) {
+void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_poll, elapsedTime, retval);
+    stracec_increment(NACL_sys_poll, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d poll(0x%08"
       NACL_PRIxPTR ", %lu, %d) = %d\n", cageid, fds, nfds, timeout, retval);
   }
 }
 
-void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long elapsedTime) {
+void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fcntl_get, elapsedTime, ret);
+    stracec_increment(NACL_sys_fcntl_get, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
   }
 }
 
-void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long elapsedTime) {
+void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fcntl_set, elapsedTime, ret);
+    stracec_increment(NACL_sys_fcntl_set, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
   }
 }
 
-void NaClStraceEpollCreate(int cageid, int size, int ret, long long elapsedTime) {
+void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_epoll_create, elapsedTime, ret);
+    stracec_increment(NACL_sys_epoll_create, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
   }
 }
 
-void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret, long long elapsedTime) {
+void NaClStraceEpollCtl(int cageid, int epfd, int op, int fd, uintptr_t event, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_epoll_ctl, elapsedTime, ret);
+    stracec_increment(NACL_sys_epoll_ctl, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d epollctl(%d, %d, %d, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, epfd, op, fd, event, ret);
   }
 }
 
-void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret, long long elapsedTime) {
+void NaClStraceEpollWait(int cageid, int epfd, uintptr_t events, int maxevents, int timeout, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_epoll_wait, elapsedTime, ret);
+    stracec_increment(NACL_sys_epoll_wait, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d epollwait(%d, 0x%08"NACL_PRIxPTR ", %d, %d) = %d\n", cageid, epfd, events, maxevents, timeout, ret);
   }
 }
 
-void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long elapsedTime) {
+void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefds, uintptr_t exceptfds, uintptr_t timeout, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_select, elapsedTime, ret);
+    stracec_increment(NACL_sys_select, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
   }
