@@ -809,10 +809,10 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   retval = (int32_t) read_result;
   // Get the end time
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
+  long long elapsedTime = endtime - starttime;
   
   #ifdef TRACING
-  NaClStraceRead(nap->cage_id, d, (void *)sysaddr, count, retval, totaltime);
+  NaClStraceRead(nap->cage_id, d, (void *)sysaddr, count, retval, elapsedTime);
   #endif
 
   return retval;
@@ -1033,8 +1033,8 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
 
     #ifdef TRACING
     long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStraceLseek(nap->cage_id, d, whence, (uintptr_t) &offset, (int) retval, totaltime);
+    long long elapsedTime = endtime - starttime;
+    NaClStraceLseek(nap->cage_id, d, whence, (uintptr_t) &offset, (int) retval, elapsedTime);
     #endif
 
   return retval;
@@ -1105,8 +1105,8 @@ int32_t NaClSysFstat(struct NaClAppThread *natp,
 
   #ifdef TRACING
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceFstat(nap->cage_id, d, (uintptr_t) &result, retval, totaltime);
+  long long elapsedTime = endtime - starttime;
+  NaClStraceFstat(nap->cage_id, d, (uintptr_t) &result, retval, elapsedTime);
   #endif
 
   return retval;
@@ -1177,8 +1177,8 @@ int32_t NaClSysLStat(struct NaClAppThread  *natp,
 
   #ifdef TRACING
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceLStat(nap->cage_id, path, &result, retval, totaltime);
+  long long elapsedTime = endtime - starttime;
+  NaClStraceLStat(nap->cage_id, path, &result, retval, elapsedTime);
   #endif
 
   return retval;
@@ -2091,8 +2091,8 @@ cleanup:
 
   #ifdef TRACING
   long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceMmap(nap->cage_id, start, length, prot, flags, d, offset, retval, totaltime);
+  long long elapsedTime = endtime - starttime;
+  NaClStraceMmap(nap->cage_id, start, length, prot, flags, d, offset, retval, elapsedTime);
   #endif
 
   return retval;
