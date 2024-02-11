@@ -359,8 +359,10 @@ int32_t NaClSysGetpid(struct NaClAppThread *natp) {
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceGetpid(nap->cage_id, pid, totaltime);
+    int error2 = (pid == -1) ? -1 : 0; // Assuming -1 indicates an error
+    NaClStraceGetpid(nap->cage_id, pid, totaltime, error2); // Modified to include error
     #endif
+    
 
     NaClLog(2, "NaClSysGetpid: returning %d\n", pid);
 
