@@ -154,6 +154,31 @@ void NaClStraceExit(int cageid, int status, long long totaltime) {
 }
 }
 
+void NaClStraceDup(int cageid, int oldfd, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_dup, totaltime, ret);
+  } else {
+
+    fprintf(tracingOutputFile, "%d dup(%d) = %d\n", cageid, oldfd, ret);
+  }
+}
+
+void NaClStraceDup2(int cageid, int oldfd, int newfd, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_dup2, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d dup2(%d, %d) = %d\n", cageid, oldfd, newfd, ret);
+  }
+}
+
+void NaClStraceDup3(int cageid, int oldfd, int newfd, int flags, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_dup3, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d dup3(%d, %d, %d) = %d\n", cageid, oldfd, newfd, flags, ret);
+  }
+}
+
 void NaClStraceGetdents(int cageid, int d, void * drip, size_t count, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_getdents, totaltime, ret);
