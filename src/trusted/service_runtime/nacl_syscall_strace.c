@@ -433,8 +433,7 @@ void NaClStraceChdir(int cageid,const char * path, int retval, long long elapsed
   }
 }
 
-void NaClStraceChmod(int cageid,
-  const char * path, int mode, int retval, long long elapsedTime) {
+void NaClStraceChmod(int cageid, const char * path, int mode, int retval, long long elapsedTime) {
   if (strace_C) {
     stracec_increment(NACL_sys_chmod, elapsedTime, retval);
   } else {
@@ -514,9 +513,7 @@ void NaClStraceUnlink(int cageid, char * pathname, int retval, long long elapsed
   }
 }
 
-void NaClStraceRename(int cageid,
-  const char * oldpath,
-    const char * newpath, int retval, long long elapsedTime) {
+void NaClStraceRename(int cageid, const char * oldpath, const char * newpath, int retval, long long elapsedTime) {
   if (strace_C) {
     stracec_increment(NACL_sys_rename, elapsedTime, retval);
   } else {
