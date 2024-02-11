@@ -213,7 +213,7 @@ void NaClStraceExit(int cageid, int status, long long elapsedTime) {
     #ifdef TRACING_DASHC
     syscallStats[NACL_sys_exit].count++;
     syscallStats[NACL_sys_exit].totalTime += elapsedTime;
-    if (status != 0) {
+    if (status = 0) {
         syscallStats[NACL_sys_exit].errorCount++;
     }
     
