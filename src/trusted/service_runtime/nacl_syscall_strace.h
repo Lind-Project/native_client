@@ -6,7 +6,7 @@
 #include "native_client/src/include/portability.h"
 void NaClStraceSetOutputFile(char *path);
 void NaClStraceCloseFile();
-void NaClStraceGetpid(int cageid, int pid, long long elapsedTime);
+void NaClStraceGetpid(int cageid, int pid, long long elapsedTime, int error);
 void NaClStraceGetppid(int cageid, int pid, long long elapsedTime) ;
 void NaClStraceOpen(int cageid, char* path, int flags, int mode, int fd, long long elapsedTime) ;
 void NaClStraceClose(int cageid, int d, int ret, long long elapsedTime) ;
