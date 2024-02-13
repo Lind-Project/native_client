@@ -272,6 +272,7 @@ void printFinalSyscallStats() {
 
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
+    double totalusec=0.0;
 
     for (int i = 0; i < NUM_SYSCALLS; i++) {
       if (syscallStats[i].count > 0) {
@@ -284,13 +285,14 @@ void printFinalSyscallStats() {
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
         totalSeconds += totalTimeInSeconds;
+        totalusec +=avgTimePerCallInMicroseconds;
       }
     }
 
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
-      totalSeconds, totalCalls, totalErrors);
+    fprintf(tracingOutputFile, "100.00    %.9f   %.9f        %lld       %lld       total\n",
+    totalSeconds, totalusec, totalCalls, totalErrors);
   }
 }
 
