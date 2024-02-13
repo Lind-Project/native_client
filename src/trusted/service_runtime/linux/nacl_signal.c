@@ -26,6 +26,7 @@
 #include "native_client/src/trusted/service_runtime/thread_suspension.h"
 #include "native_client/src/trusted/service_runtime/nacl_stack_safety.h"
 #include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 
 
 /*
