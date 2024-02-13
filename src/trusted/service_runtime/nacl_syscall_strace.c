@@ -107,7 +107,7 @@ void stracec_increment(int syscallnum, long long totaltime, int retval) {
 void NaClStraceGetpid(int cageid, int pid, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_getpid, totaltime, 0);
-    }else {
+    } else {
     fprintf(tracingOutputFile, "%d getpid() = %d\n", cageid, pid);
   }
 }
@@ -133,7 +133,7 @@ void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long l
 void NaClStraceClose(int cageid, int d, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_close, totaltime, ret);
-  }else {
+  } else {
     fprintf(tracingOutputFile, "%d close(%d) = %d\n", cageid, d, ret);
   }
 }
@@ -141,7 +141,7 @@ void NaClStraceClose(int cageid, int d, int ret, long long totaltime) {
 void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_read, totaltime, ret);
-  }else {
+  } else {
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
   }
 }
@@ -158,7 +158,6 @@ void NaClStraceDup(int cageid, int oldfd, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_dup, totaltime, ret);
   } else {
-
     fprintf(tracingOutputFile, "%d dup(%d) = %d\n", cageid, oldfd, ret);
   }
 }
@@ -453,7 +452,7 @@ void NaClStraceRmdir(int cageid,
 void NaClStraceChdir(int cageid,const char * path, int retval, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_chdir, totaltime, retval);
-    }else {
+    } else {
       fprintf(tracingOutputFile, "%d chdir(%s) = %d\n", cageid, path, retval);
   }
 }
@@ -806,9 +805,8 @@ void NaClStraceStatfs(int cageid,
 void NaClStraceGetsockname(int cageid, int sockfd, uintptr_t addr, socklen_t * addrlen, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_getsockname, totaltime, ret);
-
-  } else {
-    fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, addr, (uintptr_t) addrlen, ret);
+    } else {
+      fprintf(tracingOutputFile, "%d getsockname(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, sockfd, addr, (uintptr_t) addrlen, ret);
   }
 }
 
@@ -823,7 +821,7 @@ void NaClStraceGetpeername(int cageid, int sockfd, uintptr_t addr, socklen_t * a
 void NaClStraceAccess(int cageid, char * path, int mode, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_access, totaltime, ret);
-    }else {
+    } else {
     char *strBuf = formatStringArgument(path);
     fprintf(tracingOutputFile, "%d access(%s, %d) = %d\n", cageid, strBuf ? strBuf : "NULL", mode, ret);
     free(strBuf);
