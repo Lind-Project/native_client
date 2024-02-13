@@ -146,18 +146,28 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSeg):
 
         /* only save the callee saved registers */
 DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallThreadCaptureFault):
+
         movq    %rbx, NACL_THREAD_CONTEXT_OFFSET_RBX(%rdx)
         movq    %rbp, NACL_THREAD_CONTEXT_OFFSET_RBP(%rdx)
         /*
          * Record the value of %rsp that we will restore when
          * returning to untrusted code from the syscall.
+         * Because the signal handler can clobber RSP in the
+         * thread context we must use that value if present
          */
         leaq    8(%rsp), %rcx
+        xchgq   %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx) 
+        cmpb    $0, NACL_THREAD_PENDING_SIGNAL_OFFSET(%rdx)
+        je NaClSyscallSegSPSet
+        cmpq    %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx)
+        jbe NaClSyscallSegSPSet
         movq    %rcx, NACL_THREAD_CONTEXT_OFFSET_RSP(%rdx)
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegSPSet):
+        
         movq    %r12, NACL_THREAD_CONTEXT_OFFSET_R12(%rdx)
         movq    %r13, NACL_THREAD_CONTEXT_OFFSET_R13(%rdx)
-        movq    %r14, NACL_THREAD_CONTEXT_OFFSET_R14(%rdx)
         /* r15 need not be saved, since it is immutable from user code */
+        /* r14 need not be saved, since it is not specified  in user code behavior */
 
         /*
          * Save the x87 FPU control word.  This is callee-saved,
@@ -212,6 +222,7 @@ DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegRegsSaved):
         hlt
         /* noret */
 #endif
+DEFINE_GLOBAL_HIDDEN_IDENTIFIER(NaClSyscallSegEnd):
 
         /*
          * untrusted stack after call to NaClSyscallCSegHook:
@@ -254,3 +265,77 @@ ENDMACRO
          */
         tls_syscall NaClGetTlsFastPath1, NaClGetTlsFastPath1RspRestored, NaClGetTlsFastPath1End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE1
         tls_syscall NaClGetTlsFastPath2, NaClGetTlsFastPath2RspRestored, NaClGetTlsFastPath2End, NACL_THREAD_CONTEXT_OFFSET_TLS_VALUE2
+
+
+/*
+ * --------------------------------------------------------------------------------------------------------------------------
+ * Returning from an untrusted signal handler
+ * --------------------------------------------------------------------------------------------------------------------------
+ * 
+ * This function's address is put onto the stack immediately under the signal handler's stack frame such that it is called
+ * as soon as the untrusted signal handler returns. This function is loaded into the trampoline at NaClPatchRegTrampolineCall
+ * called from sel_ldr.c, and lives in cage memory. First it calls into another trampoline entry for NaClSysSigmaskSigreturn
+ * which resets the sigprocmask of the thread which was set by sigaction, and also unsets some natp bookkeeping.
+ *
+ * After that it restores all registers to the values they should be in untrusted. However this created an issue--
+ * when we wanted to restore to the previous untrusted state we had to be at a point where every register contains
+ * the correct value for the untrusted state except for the instruction pointer. The question then arises, where is
+ * the instruction pointer to be restored from? The answer is either a static address, on the untrusted stack, a fixed
+ * trusted address, or nowhere. It may be possible to store some sort of protected thread local stack data structure
+ * for addreses of received signals but as the fixed trusted address can't handle multiple signals called on top of
+ * each other and the untrusted address leaves us very vulnerable to TOCTTOUs, we decided that we had little choice
+ * but to reserve the r14 register expressly for this purpose--any use of it within untrusted code is undefined.
+ * The rip and rsp values are importantly masked to 32 byte aligned addresses, see the comment at the top of
+ * linux/nacl_signal.c for more information, and the flags register is masked on the stack although this is pretty useless
+ * We make sure to restore the flags as it's crucial that things like OF and SF are restored.
+ *
+ * - Jonathan Singer
+ */
+
+.globl NaClTrampolineRegRestore
+.hidden NaClTrampolineRegRestore
+
+.align 32
+NaClTrampolineRegRestore:
+# restore sigprocmask using custom syscall
+# we must return to a 32 byte address,so pad with nops
+.nops 23
+    lea 130(%rip), %rax
+    call *%rax # 128 + 2 where instruction is 2 bytes for this indirect call, this points to the address of the NaClSysSigmaskSigreturn trampoline entry
+# we do this as an indirect call so that the call being at the end of a 32 byte section is easier
+.align 32
+    addl $64, %esp /* skip unused fields */
+    addq %r15, %rsp
+    popq %rax
+    popq %rcx
+    popq %rdx
+    popq %rbx
+    popq %rsi #we avoid restoring rsp in this manner, so pop to a scratch register to be clobbered
+    popq %rsi #use a scratch register for rbp too
+    movl %esi, %ebp
+    addq %r15, %rbp
+    popq %rsi
+    popq %rdi
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+.align 32
+    addl $16, %esp # skip restoring r14, r15
+    addq %r15, %rsp
+    popq %r14
+    addl $24, %esp #skip flags for now, other unused fields
+    addq %r15, %rsp
+.align 32
+#    andl $0xffffffe0, %r14d
+    movl %r14d, %r14d
+    addq %r15, %r14
+    andl $0x7ff, (%rsp) #this is cleared by the system anyway, but can't hurt
+    popfq #now restore flags from the duplicate location
+    popq %rsp
+    movl %esp, %esp
+    lea (%rsp, %r15), %rsp
+    jmp *%r14
+    

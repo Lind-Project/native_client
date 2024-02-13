@@ -158,6 +158,10 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClSignalStackRegister(natp->signal_stack);
 
+  sigset_t s; // clear the sigmask in case of fork/jmp out of a signal handler
+  sigemptyset(&s);
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
+
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
   NaClLog(1, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
   NaClLog(1, "stack_ptr  = 0x%016"NACL_PRIxPTR"\n", NaClGetThreadCtxSp(&natp->user));
@@ -252,6 +256,8 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     CHECK(thread_idx == nacl_user[thread_idx]->tls_idx);
 
   }
+
+  rustposix_thread_init(natp->nap->cage_id, (uint64_t)&natp->pendingsignal);
 
   lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
 
@@ -444,6 +450,10 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
    * Set these early, in case NaClTlsAllocate() wants to examine them.
    */
   natp->nap = nap;
+
+  natp->signatpflag = false;
+  natp->pendingsignal = false;
+  natp->single_stepping_signum = 0;
 
   natp->thread_num = -1;  /* illegal index */
   natp->host_thread_is_defined = 0;

@@ -20,6 +20,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <sys/shm.h>
+#include <signal.h>
 
 EXTERN_C_BEGIN
 
@@ -30,6 +31,7 @@ struct NaClSocketAddress;
 struct NaClDesc;
 struct NaClImcMsgHdr;
 struct nacl_abi_stat;
+struct nacl_abi_sigaction;
 struct rusage;
 struct sockaddr;
 
@@ -446,6 +448,11 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
 int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);
 int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
+int32_t NaClSysSigaction (struct NaClAppThread *natp, int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat);
+int32_t NaClSysKill (struct NaClAppThread *natp, int targetcageid, int sig);
+int32_t NaClSysSigprocmask (struct NaClAppThread *natp, int how, const uint64_t *nacl_set, uint64_t *nacl_oldset);
+int32_t NaClSysLindsetitimer (struct NaClAppThread *natp, int which, const struct itimerval *new_value, struct itimerval *old_value);
+int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp);
 void printFinalSyscallStats();
 long long gettimens();
 EXTERN_C_END

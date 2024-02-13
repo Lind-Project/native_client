@@ -594,6 +594,10 @@ void  NaClLoadTrampoline(struct NaClApp *nap) {
                              nap->mem_start + NACL_SYSCALL_START_ADDR
                              + (NACL_SYSCALL_BLOCK_SIZE *
                                 NACL_sys_second_tls_get));
+  NaClPatchOneTrampoline(nap, nap->mem_start + NACL_SYSCALL_START_ADDR + NACL_SYSCALL_BLOCK_SIZE * NACL_sys_sigmask_sigreturn);
+  NaClPatchRegTrampolineCall(nap->mem_start + NACL_SYSCALL_START_ADDR
+                             + (NACL_SYSCALL_BLOCK_SIZE *
+                                NACL_sys_reg_restore));
 #endif
 
   NACL_TEST_INJECTION(ChangeTrampolines, (nap));

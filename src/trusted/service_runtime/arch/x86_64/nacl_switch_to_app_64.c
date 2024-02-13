@@ -14,6 +14,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_globals.h"
 #include "native_client/src/trusted/service_runtime/nacl_switch_to_app.h"
 #include "native_client/src/trusted/cpu_features/arch/x86/cpu_x86.h"
+#include "native_client/src/trusted/service_runtime/nacl_exception.h"
+#include <string.h>
 
 #if NACL_WINDOWS
 # define NORETURN_PTR
@@ -21,7 +23,7 @@
 # define NORETURN_PTR NORETURN
 #endif
 
-static NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
+NORETURN_PTR void (*NaClSwitch)(struct NaClThreadContext *context);
 
 void NaClInitSwitchToApp(struct NaClApp *nap) {
   /* TODO(jfb) Use a safe cast here. */
@@ -31,6 +33,31 @@ void NaClInitSwitchToApp(struct NaClApp *nap) {
   } else {
     NaClSwitch = NaClSwitchSSE;
   }
+}
+
+static bool NaClMaskRestore(struct NaClAppThread* natp) {
+  struct NaClExceptionFrame* rsp_frame;
+  natp->signatpflag = false;
+  if(!natp->pendingsignal) {
+    return false;
+  }
+  natp->pendingsignal = false;
+  rsp_frame = (struct NaClExceptionFrame*) (uintptr_t) natp->user.rsp;
+  rsp_frame->context.regs.rax = natp->user.sysret;
+  return true;
+}
+
+/*
+ * Not really different that NaClStartThreadInApp, since when we start
+ * a thread in x86_64 we do not need to save any extra state (e.g.,
+ * segment registers) as in the x86_32 case.  We do not, however, save
+ * the stack pointer, since o/w we will slowly exhaust the trusted
+ * stack.
+ */
+
+NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
+  NaClMaskRestore(natp);
+  NaClSwitch(&natp->user);
 }
 
 NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
@@ -83,18 +110,6 @@ NORETURN void NaClStartThreadInApp(struct NaClAppThread *natp,
   /* This sets up a stack containing a return address that has unwind info. */
   NaClSwitchSavingStackPtr(context, &context->trusted_stack_ptr, NaClSwitch);
 #else
-  NaClSwitch(context);
+  NaClSwitchToApp(natp);
 #endif
-}
-
-/*
- * Not really different that NaClStartThreadInApp, since when we start
- * a thread in x86_64 we do not need to save any extra state (e.g.,
- * segment registers) as in the x86_32 case.  We do not, however, save
- * the stack pointer, since o/w we will slowly exhaust the trusted
- * stack.
- */
-
-NORETURN void NaClSwitchToApp(struct NaClAppThread *natp) {
-  NaClSwitch(&natp->user);
 }

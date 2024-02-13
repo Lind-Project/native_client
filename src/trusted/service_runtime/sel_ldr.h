@@ -790,6 +790,7 @@ int NaClMakeDispatchAddrs(struct NaClApp *nap);
 
 void NaClPatchOneTrampolineCall(uintptr_t call_target_addr,
                                 uintptr_t target_addr);
+void NaClPatchRegTrampolineCall(uintptr_t target_addr);
 
 #endif
 

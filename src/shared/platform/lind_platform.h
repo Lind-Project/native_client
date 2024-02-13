@@ -20,6 +20,8 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <sys/shm.h>
+#include <sys/time.h>
+#include <signal.h>
 
 /* avoid errors caused by conflicts with feature_test_macros(7) */
 #undef _POSIX_C_SOURCE
@@ -132,11 +134,16 @@
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
+#define LIND_safe_sys_sigaction		    147
+#define LIND_safe_sys_kill		        148
+#define LIND_safe_sys_sigprocmask	    149
+#define LIND_safe_sys_lindsetitimer	    150
 
-#define LIND_safe_fs_fchdir		161
-#define LIND_safe_fs_fsync		162
-#define LIND_safe_fs_fdatasync		163
-#define LIND_safe_fs_sync_file_range	164
+
+#define LIND_safe_fs_fchdir             161
+#define LIND_safe_fs_fsync              162
+#define LIND_safe_fs_fdatasync          163
+#define LIND_safe_fs_sync_file_range    164
 
 
 union RustArg {
@@ -165,6 +172,12 @@ union RustArg {
     const struct sockaddr *dispatch_constsockaddrstruct;
     struct lind_shmid_ds *dispatch_shmidstruct;
     int *dispatch_pipearray;
+    struct nacl_abi_sigaction *dispatch_naclabisigactionstruct;
+    const struct nacl_abi_sigaction *dispatch_constnaclabisigactionstruct;
+    uint64_t *dispatch_naclsigset;
+    const uint64_t *dispatch_constnaclsigset;
+    struct itimerval *dispatch_structitimerval;
+    const struct itimerval *dispatch_conststructitimerval;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
@@ -273,6 +286,10 @@ int lind_getpid(int cageid);
 int lind_getppid(int cageid);
 int lind_exec(int newcageid, int cageid);
 int lind_exit(int status, int cageid);
+int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat, int cageid);
+int lind_kill(int targetcageid, int sig, int cageid);
+int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid);
+int lind_lindsetitimer(int which, const struct itimerval *new_value, struct itimerval *old_value, int cageid);
 
 
 #endif /* LIND_PLATFORM_H_ */

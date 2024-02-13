@@ -126,6 +126,21 @@ void  NaClPatchOneTrampolineCall(uintptr_t  call_target_addr,
   NaClApplyPatchToMemory(&patch_info);
 }
 
+void  NaClPatchRegTrampolineCall(uintptr_t  target_addr) {
+  struct NaClPatchInfo  patch_info;
+
+  NaClPatchInfoCtor(&patch_info);
+
+  patch_info.num_abs64 = 0;
+  patch_info.num_abs32 = 0;
+
+  patch_info.dst = target_addr;
+  patch_info.src = (uintptr_t) &NaClTrampolineRegRestore;
+  patch_info.nbytes = NACL_REGRESTORE_SIZE;
+
+  NaClApplyPatchToMemory(&patch_info);
+}
+
 void NaClPatchOneTrampoline(struct NaClApp *nap, uintptr_t target_addr) {
   NaClPatchOneTrampolineCall(nap->nacl_syscall_addr, target_addr);
 }

@@ -142,7 +142,6 @@
 #define NACL_sys_waitpid                120
 #define NACL_sys_wait                   121
 #define NACL_sys_wait4                  122
-#define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
 
 #define NACL_sys_gethostname            125
@@ -173,15 +172,26 @@
 #define NACL_sys_getpeername            145
 #define NACL_sys_getifaddrs             146
 
+#define NACL_sys_sigaction		        147
+#define NACL_sys_kill			        148
+#define NACL_sys_sigprocmask            149
+#define NACL_sys_lindsetitimer		    150
+
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
-
 #define NACL_sys_fchdir                 161
 #define NACL_sys_fsync                  162
 #define NACL_sys_fdatasync              163
 #define NACL_sys_sync_file_range        164
 
+
+#define NACL_sys_reg_restore            250
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore_reserved_slot2    251
+#define __reg_restore_reserved_slot3    252
+#define __reg_restore_reserved_slot4    253
+#define NACL_sys_sigmask_sigreturn      255
 
 #define NACL_MAX_SYSCALLS               256
 

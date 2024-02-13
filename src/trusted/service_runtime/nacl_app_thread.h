@@ -27,6 +27,8 @@ EXTERN_C_BEGIN
 struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
 
+void rustposix_thread_init(uint64_t cageid, uint64_t signalflag);
+
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
   THREAD_LAUNCH_FORK,
@@ -81,6 +83,9 @@ struct NaClAppThread {
    * TODO(mseaborn): Rename it to a more descriptive name.
    */
   struct NaClThreadContext  user;
+
+  bool                      signatpflag; //is the natp set up to receive signals?
+  bool                      pendingsignal; 
 
   struct NaClMutex          mu;
 
@@ -157,6 +162,8 @@ struct NaClAppThread {
    * Protected by mu
    */
   int                       dynamic_delete_generation;
+
+  int                       single_stepping_signum; //0 to indicate none
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
