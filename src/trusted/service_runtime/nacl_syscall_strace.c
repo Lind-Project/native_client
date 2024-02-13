@@ -359,11 +359,11 @@ void NaClStraceLStat(int cageid,
 }
 
 void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long long totaltime) {
-    if (strace_C) {
-        stracec_increment(NACL_sys_mkdir, totaltime, retval);
-    } else {
-        fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-    }
+  if (strace_C) {
+    stracec_increment(NACL_sys_mkdir, totaltime, retval);
+  } else {
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+}
 }
 
 void NaClStraceRmdir(int cageid,
