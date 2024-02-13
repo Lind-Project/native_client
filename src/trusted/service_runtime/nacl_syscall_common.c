@@ -5085,11 +5085,7 @@ int32_t NaClSysSelect(struct NaClAppThread *natp, int nfds, fd_set *readfds,
   fd_set *syswritefds = NULL;
   fd_set *sysreadfds = NULL;
   fd_set *sysexceptfds = NULL;
-<<<<<<< HEAD
-  struct timeval* nacltimeout = NULL;
-=======
   struct timeval *nacltimeout = NULL;
->>>>>>> develop
 
   NaClLog(2, "Cage %d Entered NaClSysSelect(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n",
           nap->cage_id, (uintptr_t)natp, nfds, (uintptr_t)readfds, (uintptr_t)writefds, (uintptr_t)exceptfds, (uintptr_t)timeout);
