@@ -696,6 +696,7 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         "\n** User exited program with signal %d.\n",
         sig);
     NaClSignalErrorMessage(tmp);
+    NaClStraceCloseFile();
     NaClExit(-sig);
   }
 
