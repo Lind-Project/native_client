@@ -19,6 +19,7 @@ typedef struct {
   long long count; // Number of times the syscall was called
   long long totalTime; // Total time spent in the syscall (in nanoseconds)
   long long errorCount; // Number of errors encountered in the syscall
+  long long percent; //% of time taken for each syscall
 }SyscallStats;
 
 long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in microseconds)
@@ -271,7 +272,7 @@ void printFinalSyscallStats() {
 
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
-    double totalpercent =0.0;
+    double totalPercent =0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
       totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
     }
@@ -281,12 +282,13 @@ void printFinalSyscallStats() {
         long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
+        totalPercent += percentTime; 
         fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
                     percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
                     syscallStats[i].errorCount, getSyscallName(i));
         totalCalls += syscallStats[i].count;            
         totalErrors += syscallStats[i].errorCount;
-        totalpercent += percentTime;
+        
         
       }
     }
@@ -294,7 +296,7 @@ void printFinalSyscallStats() {
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
     fprintf(tracingOutputFile, "%d          %.9f      0           %lld       %lld            total\n",
-      totalpercent,totalSeconds, totalCalls, totalErrors);
+      totalPercent,totalSeconds, totalCalls, totalErrors);
   }
 }
 
