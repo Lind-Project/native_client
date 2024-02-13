@@ -279,7 +279,7 @@ void printFinalSyscallStats() {
         long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
-        fprintf(tracingOutputFile, "100.00    %.9f   %lld        %lld       %lld       %s\n",
+        fprintf(tracingOutputFile, "0.00    %.9f   %lld        %lld       %lld       %s\n",
           totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
