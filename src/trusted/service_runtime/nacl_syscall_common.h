@@ -453,6 +453,8 @@ int32_t NaClSysKill (struct NaClAppThread *natp, int targetcageid, int sig);
 int32_t NaClSysSigprocmask (struct NaClAppThread *natp, int how, const uint64_t *nacl_set, uint64_t *nacl_oldset);
 int32_t NaClSysLindsetitimer (struct NaClAppThread *natp, int which, const struct itimerval *new_value, struct itimerval *old_value);
 int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp);
+void printFinalSyscallStats();
+long long gettimens();
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */

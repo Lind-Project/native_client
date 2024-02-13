@@ -164,6 +164,7 @@ static void PrintUsage(void) {
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
           " -t toggle runtime statistics\n"
+          " -p [s/c], s for per-call tracing, c minics strace's -c functionality"
           );  /* easier to add new flags/lines */
 }
 
@@ -179,7 +180,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Zp";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
@@ -439,6 +440,9 @@ int NaClSelLdrMain(int argc, char **argv) {
            NaClLog(1, "%s\n", "fixed_feature_cpu_mode is not supported");
            exit(EXIT_FAILURE);
         }
+        break;
+      case 'p':
+          NaClStraceEnableDashc();
         break;
 
       default:
