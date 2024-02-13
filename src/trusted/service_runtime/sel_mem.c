@@ -1,1020 +1,952 @@
 /*
- * Copyright (c) 2012 The Native Client Authors. All rights reserved.
+ * Copyright (c) 2011 The Native Client Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
 
 /*
- * NaCl Simple/secure ELF loader (NaCl SEL). The main entry point for the binary.
+ * NaCl Simple/secure ELF loader (NaCl SEL) memory map.
  */
+
 #include "native_client/src/include/portability.h"
-#include "native_client/src/include/portability_io.h"
 
-#if NACL_OSX
-#  include <crt_externs.h>
-#endif
-
-#if NACL_LINUX
-#  include <getopt.h>
-#endif
-
-#include <stdio.h>
+#include <assert.h>
+#include <fcntl.h>
 #include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
-/* avoid errors caused by conflicts with feature_test_macros(7) */
-#undef _POSIX_C_SOURCE
-#undef _XOPEN_SOURCE
+#include "native_client/src/include/nacl_platform.h"
+#include "native_client/src/include/portability.h"
 
-#include "native_client/src/shared/gio/gio.h"
-#include "native_client/src/shared/imc/nacl_imc_c.h"
 #include "native_client/src/shared/platform/nacl_check.h"
-#include "native_client/src/shared/platform/nacl_exit.h"
 #include "native_client/src/shared/platform/nacl_log.h"
-#include "native_client/src/shared/platform/nacl_sync.h"
-#include "native_client/src/shared/platform/nacl_sync_checked.h"
-#include "native_client/src/shared/platform/lind_platform.h"
-#include "native_client/src/shared/srpc/nacl_srpc.h"
-
+#include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/trusted/desc/nacl_desc_base.h"
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
-#include "native_client/src/trusted/fault_injection/fault_injection.h"
-#include "native_client/src/trusted/fault_injection/test_injection.h"
-#include "native_client/src/trusted/perf_counter/nacl_perf_counter.h"
-#include "native_client/src/trusted/service_runtime/env_cleanser.h"
+#include "native_client/src/trusted/service_runtime/sel_mem.h"
+#include "native_client/src/trusted/service_runtime/sel_util.h"
+#include "native_client/src/trusted/service_runtime/sel_ldr.h"
+#include "native_client/src/trusted/service_runtime/nacl_config.h"
+
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
-#include "native_client/src/trusted/service_runtime/load_file.h"
-#include "native_client/src/trusted/service_runtime/nacl_app.h"
-#include "native_client/src/trusted/service_runtime/nacl_all_modules.h"
-#include "native_client/src/trusted/service_runtime/nacl_bootstrap_channel_error_reporter.h"
-#include "native_client/src/trusted/service_runtime/nacl_debug_init.h"
-#include "native_client/src/trusted/service_runtime/nacl_error_log_hook.h"
-#include "native_client/src/trusted/service_runtime/nacl_globals.h"
-#include "native_client/src/trusted/service_runtime/nacl_signal.h"
-#include "native_client/src/trusted/service_runtime/nacl_syscall_common.h"
-#include "native_client/src/trusted/service_runtime/nacl_valgrind_hooks.h"
-#include "native_client/src/trusted/service_runtime/osx/mach_exception_handler.h"
-#include "native_client/src/trusted/service_runtime/outer_sandbox.h"
-#include "native_client/src/trusted/service_runtime/sel_ldr.h"
-#include "native_client/src/trusted/service_runtime/sel_qualify.h"
-#include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
-#include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
-#include "native_client/src/shared/platform/aligned_malloc.h"
-#include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
+#include "native_client/src/trusted/service_runtime/include/sys/mman.h"
 
+#define START_ENTRIES   5   /* tramp+text, rodata, data, bss, stack */
+#define REMOVE_MARKED_DEBUG 0
 
-#include "native_client/src/trusted/service_runtime/sel_ldr.h"
-#include "native_client/src/trusted/service_runtime/include/bits/nacl_syscalls.h"
-#include <time.h>
-#include <sys/shm.h>
-#include <sys/mman.h>
-
-#if !NACL_OSX
-# define NaClEnableOuterSandbox NULL
-#endif
-
-
-extern struct NaClMutex ccmut;
-extern struct NaClCondVar cccv;
-extern int cagecount;
-static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
-
-void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
-  g_enable_outer_sandbox_func = func;
-}
-
-static void VmentryPrinter(void *state, struct NaClVmmapEntry *vmep) {
-  UNREFERENCED_PARAMETER(state);
-  fprintf(stderr, "page num 0x%06x\n", (uint32_t)vmep->page_num);
-  fprintf(stderr, "num pages %d\n", (uint32_t)vmep->npages);
-  fprintf(stderr, "prot bits %x\n", vmep->prot);
-}
-
-static void PrintVmmap(struct NaClApp *nap) {
-  NaClXMutexLock(&nap->mu);
-  NaClVmmapVisit(&nap->mem_map, VmentryPrinter, NULL);
-  NaClXMutexUnlock(&nap->mu);
-}
-
-struct redir {
-  struct redir                  *next;
-  int                           nacl_desc;
-  enum { HOST_DESC, IMC_DESC }  tag;
-  union {
-    struct { int d; int mode; } host;
-    NaClHandle                  handle;
-    struct NaClSocketAddress    addr;
-  } u;
-};
-
-int ImportModeMap(char opt) {
-  switch (opt) {
-    case 'h':
-      return O_RDWR;
-    case 'r':
-      return O_RDONLY;
-    case 'w':
-      return O_WRONLY;
-  }
-  NaClLog(1, "option %c not understood as a host descriptor import mode\n", opt);
-  exit(1);
-  /* NOTREACHED */
-}
-
-static void PrintUsage(void) {
-  /* NOTE: this is broken up into multiple statements to work around
-           the constant string size limit */
-  fprintf(stderr,
-          "Usage: sel_ldr [-h d:D] [-r d:D] [-w d:D] [-i d:D]\n"
-          "               [-f nacl_file]\n"
-          "               [-l log_file]\n"
-          "               [-X d] [-acFglQRsSQv]\n"
-          "               -- [nacl_file] [args]\n"
-          "\n");
-  fprintf(stderr,
-          " -h\n"
-          " -r\n"
-          " -w associate a host POSIX descriptor D with app desc d\n"
-          "    that was opened in O_RDWR, O_RDONLY, and O_WRONLY modes\n"
-          "    respectively\n"
-          " -i associates an IMC handle D with app desc d\n"
-          " -f file to load; if omitted, 1st arg after \"--\" is loaded\n"
-          " -k forcibly disable the use of the CoW loadable kernel module\n"
-          " -B additional ELF file to load as a blob library\n"
-          " -v increases verbosity\n"
-          " -X create a bound socket and export the address via an\n"
-          "    IMC message to a corresponding inherited IMC app descriptor\n"
-          "    (use -1 to create the bound socket / address descriptor\n"
-          "    pair, but that no export via IMC should occur)\n");
-  fprintf(stderr,
-          " -R an RPC supplies the NaCl module.\n"
-          "    No nacl_file argument is expected, and the -f flag cannot be\n"
-          "    used with this flag.\n"
-          "\n"
-          " (testing flags)\n"
-          " -a allow file access plus some other syscalls! dangerous!\n"
-          " -c ignore validator! dangerous! Repeating this option twice skips\n"
-          "    validation completely.\n"
-          " -F fuzz testing; quit after loading NaCl app\n"
-          " -g enable gdb debug stub.  Not secure on x86-64 Windows.\n"
-          " -l <file>  write log output to the given file\n"
-          " -Q disable platform qualification (dangerous!)\n"
-          " -s safely stub out non-validating instructions\n"
-          " -S enable signal handling.  Not supported on Windows.\n"
-          " -E <name=value>|<name> set an environment variable\n"
-          " -Z use fixed feature x86 CPU mode\n"
-          " -t toggle runtime statistics\n"
-          " -p [s/c], s for per-call tracing, c minics strace's -c functionality"
-          );  /* easier to add new flags/lines */
-}
-
-static const struct option longopts[] = {
-  { "r_debug", required_argument, NULL, 'D' },
-  { "reserved_at_zero", required_argument, NULL, 'z' },
-  { NULL, 0, NULL, 0 }
-};
-
-static int my_getopt(int argc, char *const *argv, const char *shortopts) {
-  return getopt_long(argc, argv, shortopts, longopts, NULL);
-}
-
-#if NACL_LINUX
-# define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Zp";
-#else
-# define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
-# define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
-  static const char *const optstring = "aB:ceE:f:Fgh:i:l:Qr:RsStvw:X:Z";
-#endif
-
-double LindGetTime(void) {
-  struct timespec tp;
-
-  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
-    perror( "clock gettime" );
-    exit( EXIT_FAILURE );
-  }
-
-  return (tp.tv_sec + ((double)tp.tv_nsec / 1000000000.0));
-}
-
-int NaClSelLdrMain(int argc, char **argv) {
-  int                           opt;
-  char                          *rest;
-  struct NaClApp                *nap;
-  struct redir                  *entry;
-  struct redir                  *redir_queue;
-  struct redir                  **redir_qend;
-  struct NaClDesc               *blob_file = NULL;
-  struct GioFile                gout;
-  struct DynArray               env_vars;
-  struct NaClPerfCounter        time_all_main;
-  struct NaClEnvCleanser        env_cleanser;
-  NaClErrorCode                 errcode = LOAD_INTERNAL;
-  int                           rpc_supplies_nexe = 0;
-  int                           export_addr_to = -1;
-  int                           ret_code;
-  int                           verbosity = 0;
-  int                           fuzzing_quit_after_load = 0;
-  int                           debug_mode_bypass_acl_checks = 0;
-  int                           debug_mode_ignore_validator = 0;
-  int                           skip_qualification = 0;
-  int                           handle_signals = 0;
-  int                           enable_debug_stub = 0;
-  char                          *blob_library_file = NULL;
-  char                          *log_file = NULL;
-  const char                    **envp;
-  double                        nacl_main_begin;
-  double                        nacl_main_finish;
-  double                        nacl_initialization_finish;
-  double                        nacl_main_spent;
-  double                        nacl_initialization_spent;
-  double                        nacl_user_program_begin;
-  double                        nacl_user_program_finish;
-  double                        nacl_user_program_spent;
-  int                           toggle_time_info = 0;
-  #ifdef SYSCALL_TIMING
-  double                        nacl_syscall_total_time;
-  double                        lind_syscall_total_time;
-  #endif
-
-#if NACL_OSX
-  /* Mac dynamic libraries cannot access the environ variable directly. */
-  envp = (const char **)*_NSGetEnviron();
-#else
-  /* Overzealous code style check is overzealous. */
-  /* @IGNORE_LINES_FOR_CODE_HYGIENE[1] */
-  extern char **environ;
-  envp = (const char **)environ;
-#endif
-
-  nacl_syscall_counter = 0;
-  lind_syscall_counter = 0;
-  nacl_syscall_trace_level_counter = 0;
-  ret_code = 1;
-  redir_queue = NULL;
-  redir_qend = &redir_queue;
-
-  nacl_main_begin = LindGetTime();
-  
-  cagecount = 0;
-
-  InitializeShmtable();
-  nap = NaClAlignedMalloc(sizeof(*nap), __alignof(struct NaClApp));
-
-  /* Initialize cage early on to avoid Cage 0 */
-  InitializeCage(nap, 1);
-
-  if (!NaClMutexCtor(&ccmut)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count mutex");
-  }
-    if (!NaClCondVarCtor(&cccv)) {
-    NaClLog(LOG_FATAL, "%s\n", "Failed to initialize cage count cv");
-  }
-
-  if (!DynArrayCtor(&nap->children, 16)) {
-    NaClLog(1, "%s\n", "Failed to initialize children list");
-  }
-
-  LaunchThreadReaper();
-
-  NaClAllModulesInit();
-  NaClBootstrapChannelErrorReporterInit();
-  NaClErrorLogHookInit(NaClBootstrapChannelErrorReporter, nap);
-
-  verbosity = NaClLogGetVerbosity();
-
-  NaClPerfCounterCtor(&time_all_main, "SelMain");
-  fflush(NULL);
-  NaClDebugExceptionHandlerStandaloneHandleArgs(argc, argv);
-
-  if (!GioFileRefCtor(&gout, stdout)) {
-    NaClLog(1, "%s\n", "Could not create general standard output channel");
-    exit(1);
-  }
-  if (!NaClAppCtor(nap)) {
-    NaClLog(1, "%s\n", "NaClAppCtor() failed");
-  }
-  if (!DynArrayCtor(&env_vars, 0)) {
-    NaClLog(1, "%s\n", "Failed to allocate env var array");
-  }
-
-  #if defined(TRACING)
-  NaClStraceSetOutputFile("strace_output.txt");
-  #endif
-
-  /*
-   * On platforms with glibc getopt, require POSIXLY_CORRECT behavior,
-   * viz, no reordering of the arglist -- stop argument processing as
-   * soon as an unrecognized argument is encountered, so that, for
-   * example, in the invocation
-   *
-   *   sel_ldr foo.nexe -vvv
-   *
-   * the -vvv flags are made available to the nexe, rather than being
-   * consumed by getopt.  This makes the behavior of the Linux build
-   * of sel_ldr consistent with the Windows and OSX builds.
-   */
-  while ((opt = getopt(argc, argv, optstring)) != -1) {
-    switch (opt) {
-      case 'a':
-        NaClLog(1, "%s\n", "DEBUG MODE ENABLED (bypass acl)");
-        debug_mode_bypass_acl_checks = 1;
-        break;
-      case 'B':
-        blob_library_file = optarg;
-        break;
-      case 'c':
-        ++debug_mode_ignore_validator;
-        break;
-      case 'D':
-        NaClHandleRDebug(optarg, argv[0]);
-        break;
-      case 'e':
-        nap->enable_exception_handling = 1;
-        break;
-      case 'E':
-        /*
-         * For simplicity, we treat the environment variables as a
-         * list of strings rather than a key/value mapping.  We do not
-         * try to prevent duplicate keys or require the strings to be
-         * of the form "KEY=VALUE".  This is in line with how execve()
-         * works in Unix.
-         *
-         * We expect that most callers passing "-E" will either pass
-         * in a fixed list or will construct the list using a
-         * high-level language, in which case de-duplicating keys
-         * outside of sel_ldr is easier.  However, we could do
-         * de-duplication here if it proves to be worthwhile.
-         */
-        if (!DynArraySet(&env_vars, env_vars.num_entries, optarg)) {
-          NaClLog(1, "%s\n", "Adding item to env_vars failed");
-        }
-        break;
-      case 'f':
-        nap->nacl_file = optarg;
-        break;
-      case 'F':
-        fuzzing_quit_after_load = 1;
-        break;
-      case 'g':
-        enable_debug_stub = 1;
-        break;
-      case 'h': /* fallthrough */
-      case 'r': /* fallthrough */
-      case 'w':
-        /* import host descriptor */
-        entry = malloc(sizeof *entry);
-        if (!entry) {
-          NaClLog(1, "%s\n", "No memory for redirection queue");
-          exit(EXIT_FAILURE);
-        }
-        entry->next = NULL;
-        entry->nacl_desc = strtol(optarg, &rest, 0);
-        entry->tag = HOST_DESC;
-        entry->u.host.d = strtol(rest + 1, NULL, 0);
-        entry->u.host.mode = ImportModeMap(opt);
-        *redir_qend = entry;
-        redir_qend = &entry->next;
-        break;
-      case 'i':
-        /* import IMC handle */
-        entry = malloc(sizeof *entry);
-        if (NULL == entry) {
-          NaClLog(1, "%s\n", "No memory for redirection queue");
-          exit(1);
-        }
-        entry->next = NULL;
-        entry->nacl_desc = strtol(optarg, &rest, 0);
-        entry->tag = IMC_DESC;
-        entry->u.handle = (NaClHandle)strtol(rest + 1, NULL, 0);
-        *redir_qend = entry;
-        redir_qend = &entry->next;
-        break;
-      case 'l':
-        log_file = optarg;
-        break;
-      case 'Q':
-        NaClLog(1, "%s\n",
-                 "PLATFORM QUALIFICATION DISABLED BY -Q - "
-                "Native Client's sandbox will be unreliable!\n");
-        skip_qualification = 1;
-        break;
-      case 'R':
-        rpc_supplies_nexe = 1;
-        break;
-      /* case 'r':  with 'h' and 'w' above */
-      case 's':
-        if (nap->validator->stubout_mode_implemented) {
-          nap->validator_stub_out_mode = 1;
-        } else {
-           NaClLog(1, "%s\n", "stub_out_mode is not supported, disabled");
-        }
-        break;
-      case 'S':
-        handle_signals = 1;
-        break;
-      case 't':
-        toggle_time_info = 1;
-        break;
-      case 'v':
-        ++verbosity;
-        NaClLogIncrVerbosity();
-        break;
-      /* case 'w':  with 'h' and 'r' above */
-      case 'X':
-        export_addr_to = strtol(optarg, NULL, 0);
-        break;
-      case 'z':
-        NaClHandleReservedAtZero(optarg);
-        break;
-      case 'Z':
-        if (nap->validator->readonly_text_implemented) {
-          NaClLog(1, "%s\n", "Enabling Fixed-Feature CPU Mode");
-          nap->fixed_feature_cpu_mode = 1;
-          if (!nap->validator->FixCPUFeatures(nap->cpu_features)) {
-            NaClLog(1, "%s\n", "This CPU lacks features required by fixed-function CPU mode.");
-            exit(EXIT_FAILURE);
-          }
-        } else {
-           NaClLog(1, "%s\n", "fixed_feature_cpu_mode is not supported");
-           exit(EXIT_FAILURE);
-        }
-        break;
-      case 'p':
-          NaClStraceEnableDashc();
-        break;
-
-      default:
-        NaClLog(1, "ERROR: unknown option: [%c]\n\n", opt);
-        PrintUsage();
-        exit(-1);
-    }
-  }
-
-  lindrustinit(verbosity);
-
-  if (debug_mode_ignore_validator == 1) {
-    NaClLog(1, "%s\n", "DEBUG MODE ENABLED (ignore validator)");
-  } else if (debug_mode_ignore_validator > 1) {
-    NaClLog(1, "%s\n", "DEBUG MODE ENABLED (skip validator)");
-  }
-
-  if (verbosity) {
-    int        ix;
-    char const *separator = "";
-    (void)separator;
-    NaClLog(1, "%s", "sel_ldr argument list:");
-    for (ix = 0; ix < argc; ++ix) {
-      NaClLog(1, "%s%s", separator, argv[ix]);
-      separator = " ";
-      (void)separator;
-    }
-    NaClLog(1, "%s", "\n");
-  }
-
-  if (debug_mode_bypass_acl_checks) {
-    NaClInsecurelyBypassAllAclChecks();
-  }
-
-  /*
-   * change stdout/stderr to log file now, so that subsequent error
-   * messages will go there.  unfortunately, error messages that
-   * result from getopt processing -- usually out-of-memory, which
-   * shouldn't happen -- won't show up.
-   */
-  if (log_file) {
-    NaClLogSetFile(log_file);
-  }
-
-  if (rpc_supplies_nexe) {
-    if (nap->nacl_file) {
-      NaClLog(LOG_FATAL, "%s\n", "sel_ldr: mutually exclusive flags -f and -R both used");
-    }
-    /* post: NULL == nap->nacl_file */
-    if (export_addr_to < 0) {
-      NaClLog(LOG_FATAL, "%s\n", "sel_ldr: -R requires -X to set up secure command channel");
-    }
-  } else {
-    if (!nap->nacl_file && optind > argc) {
-      NaClLog(LOG_FATAL, "%s\n", "No nacl file specified");
-    }
-    /* post: NULL != nap->nacl_file */
-    if (!nap->nacl_file && optind < argc) {
-      nap->nacl_file = argv[optind];
-      ++optind;
-    }
-  }
-  /*
-   * either nap->nacl_file or rpc_supplies_nexe
-   * must be non-NULL, but not both
-   */
-  CHECK(!!nap->nacl_file ^ !!rpc_supplies_nexe);
-
-  /* to be passed to NaClMain, eventually... */
-  argv[--optind] = "NaClMain";
-  nap->ignore_validator_result = debug_mode_ignore_validator > 0;
-  nap->skip_validator = debug_mode_ignore_validator > 1;
 
 /*
- * `_HOST_OSX` is defined so that
- * `if (... && _HOST_OSX)` expands
- * to a valid conditional in when
- * run through a linter
+ * The memory map structure is a simple array of memory regions which
+ * may have different access protections.  We do not yet merge regions
+ * with the same access protections together to reduce the region
+ * number, but may do so in the future.
  *
- * -jp
+ * Regions are described by (relative) starting page number, the
+ * number of pages, and the protection that the pages should have.
  */
-#if NACL_OSX
-# define _HOST_OSX 1
-#else
-# define _HOST_OSX 0
-#endif
-  if (getenv("NACL_UNTRUSTED_EXCEPTION_HANDLING")) {
-    nap->enable_exception_handling = 1;
+struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
+                                          size_t            npages,
+                                          int               prot,
+                                          int               maxprot,
+                                          int               flags,
+                                          int               shmid,
+                                          struct NaClDesc   *desc,
+                                          nacl_off64_t      offset,
+                                          nacl_off64_t      file_size) {
+  struct NaClVmmapEntry *entry;
+
+  NaClLog(4,
+          "NaClVmmapEntryMake(0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
+          "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n",
+          page_num, npages, prot, flags, (uintptr_t) desc, offset);
+  entry = (struct NaClVmmapEntry *) malloc(sizeof *entry);
+  if (NULL == entry) {
+    return 0;
   }
-  /*
-   * TODO(mseaborn): Always enable the Mach exception handler on Mac
-   * OS X, and remove handle_signals and sel_ldr's "-S" option.
-   */
-  if (nap->enable_exception_handling || enable_debug_stub || (handle_signals && _HOST_OSX)) {
-#if NACL_WINDOWS
-    nap->attach_debug_exception_handler_func = NaClDebugExceptionHandlerStandaloneAttach;
-#elif NACL_LINUX
-    /* NaCl's signal handler is always enabled on Linux. */
-#elif NACL_OSX
-    if (!NaClInterceptMachExceptions()) {
-      NaClLog(1, "%s\n", "ERROR setting up Mach exception interception.");
-      exit(-1);
-    }
-#else
-# error Unknown host OS
-#endif
+  NaClLog(4, "entry: 0x%"NACL_PRIxPTR"\n", (uintptr_t) entry);
+  entry->page_num = page_num;
+  entry->npages = npages;
+  entry->prot = prot;
+  entry->maxprot = maxprot;
+  entry->flags = flags;
+  entry->shmid = shmid;
+  entry->removed = 0;
+  entry->desc = desc;
+  if (desc != NULL) {
+    NaClDescRef(desc);
   }
-#undef _HOST_OSX
+  entry->offset = offset;
+  entry->file_size = file_size;
+  return entry;
+}
 
-  errcode = LOAD_OK;
 
-  /*
-   * in order to report load error to the browser plugin through the
-   * secure command channel, we do not immediate jump to cleanup code
-   * on error.  rather, we continue processing (assuming earlier
-   * errors do not make it inappropriate) until the secure command
-   * channel is set up, and then bail out.
-   */
+void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
+  NaClLog(4,
+          ("NaClVmmapEntryFree(0x%08"NACL_PRIxPTR
+           "): (0x%"NACL_PRIxPTR",0x%"NACL_PRIxS","
+           "0x%x,0x%x,0x%"NACL_PRIxPTR",0x%"NACL_PRIx64")\n"),
+          (uintptr_t) entry,
+          entry->page_num, entry->npages, entry->prot,
+          entry->flags, (uintptr_t) entry->desc, entry->offset);
 
-  /*
-   * Ensure the platform qualification checks pass.
-   *
-   * NACL_DANGEROUS_SKIP_QUALIFICATION_TEST is used by tsan / memcheck
-   * (see src/third_party/valgrind/).
-   */
-  if (!skip_qualification && getenv("NACL_DANGEROUS_SKIP_QUALIFICATION_TEST")) {
-    NaClLog(1, "%s\n",
-            "PLATFORM QUALIFICATION DISABLED BY ENVIRONMENT - "
-            "Native Client's sandbox will be unreliable!");
-    skip_qualification = 1;
-  }
+  if (entry->desc != NULL) {
+    NaClDescSafeUnref(entry->desc);
+  } else if (entry->flags & NACL_ABI_MAP_SHARED && entry->shmid != -1) {
+    //If it's a mapping for a shmid entry, then we need to decrement the shm refcount
+    //This might happen on an explicit shmdt, or on a munmap or exit/exec
+    int shmid = entry->shmid;
 
-  if (!skip_qualification) {
-    /* TODO: fix gdb segfaults caused by this function */
-    NaClErrorCode pq_error = LOAD_OK;
-    /* NaClErrorCode pq_error = NACL_FI_VAL("pq", NaClErrorCode, NaClRunSelQualificationTests()); */
-    if (LOAD_OK != pq_error) {
-      errcode = pq_error;
-      nap->module_load_status = pq_error;
-      NaClLog(1, "%d: Error while loading \"%s\": %s\n",
-              __LINE__,
-              !nap->nacl_file ? nap->nacl_file : "(no file, to-be-supplied-via-RPC)",
-              NaClErrorString(errcode));
+    if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+      NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+
+    shmtable[shmid].count -= 1;
+
+    if(shmtable[shmid].rmid && shmtable[shmid].count == 0) {
+      clear_shmentry(shmid);
     }
   }
 
-#if NACL_LINUX
-  NaClSignalHandlerInit();
-#endif
-  /*
-   * Patch the Windows exception dispatcher to be safe in the case of
-   * faults inside x86-64 sandboxed code.  The sandbox is not secure
-   * on 64-bit Windows without this.
-   */
-#if (NACL_WINDOWS && NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 64)
-  NaClPatchWindowsExceptionDispatcher();
-#endif
-  NaClSignalTestCrashOnStartup();
-
-  /*
-   * Open both files first because (on Mac OS X at least)
-   * NaClAppLoadFile() enables an outer sandbox.
-   */
-  if (blob_library_file) {
-    NaClFileNameForValgrind(blob_library_file);
-    blob_file = (struct NaClDesc *) NaClDescIoDescOpen(blob_library_file,
-                                                       NACL_ABI_O_RDONLY, 0);
-    if (!blob_file) {
-      perror("sel_main");
-      NaClLog(1, "Cannot open \"%s\".\n", blob_library_file);
-      exit(EXIT_FAILURE);
-    }
-    NaClPerfCounterMark(&time_all_main, "SnapshotBlob");
-    NaClPerfCounterIntervalLast(&time_all_main);
-  }
-
-  NaClAppInitialDescriptorHookup(nap);
-
-  if (!rpc_supplies_nexe) {
-    if (LOAD_OK == errcode) {
-      NaClLog(2, "Loading nacl file %s (non-RPC)\n", nap->nacl_file);
-      errcode = NaClAppLoadFileFromFilename(nap, nap->nacl_file);
-
-      if (LOAD_OK != errcode) {
-        NaClLog(1, "%d: Error while loading \"%s\": %s\n",
-                __LINE__,
-                nap->nacl_file,
-                NaClErrorString(errcode));
-        fprintf(stderr,
-                ("Using the wrong type of nexe (nacl-x86-32"
-                 " on an x86-64 or vice versa)\n"
-                 "or a corrupt nexe file may be"
-                 " responsible for this error.\n"));
-      }
-
-      NaClPerfCounterMark(&time_all_main, "AppLoadEnd");
-      NaClPerfCounterIntervalLast(&time_all_main);
-
-      NaClXMutexLock(&nap->mu);
-      nap->module_load_status = errcode;
-      NaClXCondVarBroadcast(&nap->cv);
-      NaClXMutexUnlock(&nap->mu);
-    }
-
-    if (fuzzing_quit_after_load) {
-      exit(EXIT_SUCCESS);
-    }
-  }
-
-  /*
-   * Execute additional I/O redirections.  NB: since the NaClApp
-   * takes ownership of host / IMC socket descriptors, all but
-   * the first run will not get access if the NaClApp closes
-   * them.  Currently a normal NaClApp process exit does not
-   * close descriptors, since the underlying host OS will do so
-   * as part of service runtime exit.
-   */
-  NaClLog(4, "Processing I/O redirection/inheritance from command line\n");
-  for (entry = redir_queue; entry && entry->next; entry = entry->next) {
-    switch (entry->tag) {
-      case HOST_DESC:
-        NaClAddHostDescriptor(nap, entry->u.host.d,
-                              entry->u.host.mode, entry->nacl_desc);
-        break;
-      case IMC_DESC:
-        NaClAddImcHandle(nap, entry->u.handle, entry->nacl_desc);
-        break;
-    }
-  }
   free(entry);
+}
 
-  /*
-   * If export_addr_to is set to a non-negative integer, we create a
-   * bound socket and socket address pair and bind the former to
-   * descriptor NACL_SERVICE_PORT_DESCRIPTOR (3 [see sel_ldr.h]) and
-   * the latter to descriptor NACL_SERVICE_ADDRESS_DESCRIPTOR (4).
-   * The socket address is sent to the export_addr_to descriptor.
-   *
-   * The service runtime also accepts a connection on the bound socket
-   * and spawns a secure command channel thread to service it.
-   */
-  if (0 <= export_addr_to) {
-    NaClCreateServiceSocket(nap);
-    /*
-     * LOG_FATAL errors that occur before NaClSetUpBootstrapChannel will
-     * not be reported via the crash log mechanism (for Chromium
-     * embedding of NaCl, shown in the JavaScript console).
-     *
-     * Some errors, such as due to NaClRunSelQualificationTests, do not
-     * trigger a LOG_FATAL but instead set module_load_status to be sent
-     * in the start_module RPC reply.  Log messages associated with such
-     * errors would be seen, since NaClSetUpBootstrapChannel will get
-     * called.
-     */
-    NaClSetUpBootstrapChannel(nap, (NaClHandle) export_addr_to);
-    /*
-     * NB: spawns a thread that uses the command channel.  we do
-     * this after NaClAppLoadFile so that NaClApp object is more
-     * fully populated.  Hereafter any changes to nap should be done
-     * while holding locks.
-     */
-    NaClSecureCommandChannel(nap);
-  }
-
-  /*
-   * May have created a thread, so need to synchronize uses of nap
-   * contents henceforth.
-   */
-
-  if (rpc_supplies_nexe) {
-    errcode = NaClWaitForLoadModuleStatus(nap);
-    NaClPerfCounterMark(&time_all_main, "WaitForLoad");
-    NaClPerfCounterIntervalLast(&time_all_main);
-  } else {
-    /**************************************************************************
-     * TODO(bsy): This else block should be made unconditional and
-     * invoked after the LoadModule RPC completes, eliminating the
-     * essentially dulicated code in latter part of NaClLoadModuleRpc.
-     * This cannot be done until we have full saucer separation
-     * technology, since Chrome currently uses sel_main_chrome.c and
-     * relies on the functionality of the duplicated code.
-     *************************************************************************/
-    if (LOAD_OK == errcode) {
-      if (verbosity) {
-        gprintf((struct Gio *) &gout, "printing NaClApp details\n");
-        NaClAppPrintDetails(nap, (struct Gio *) &gout);
-      }
-
-      /*
-       * Finish setting up the NaCl App.  On x86-32, this means
-       * allocating segment selectors.  On x86-64 and ARM, this is
-       * (currently) a no-op.
-       */
-      errcode = NaClAppPrepareToLaunch(nap);
-      if (LOAD_OK != errcode) {
-        nap->module_load_status = errcode;
-        NaClLog(1, "NaClAppPrepareToLaunch returned %d", errcode);
-      }
-    }
-
-    /* Give debuggers a well known point at which xlate_base is known.  */
-    NaClGdbHook(nap);
-  }
 
 /*
- * `_HOST_OSX` is defined so that
- * `if (... && _HOST_OSX)` expands
- * to a valid conditional in when
- * run through a linter
- *
- * -jp
+ * Print debug.
  */
-#if NACL_OSX
-# define _HOST_OSX 1
-#else
-# define _HOST_OSX 0
+void NaClVmentryPrint(void                  *state,
+                      struct NaClVmmapEntry *vmep) {
+  UNREFERENCED_PARAMETER(state);
+
+  printf("page num 0x%06x\n", (uint32_t)vmep->page_num);
+  printf("num pages %d\n", (uint32_t)vmep->npages);
+  printf("prot bits %x\n", vmep->prot);
+  printf("flags %x\n", vmep->flags);
+  fflush(stdout);
+}
+
+
+void NaClVmmapDebug(struct NaClVmmap *self,
+                    char             *msg) {
+  puts(msg);
+  NaClVmmapVisit(self, NaClVmentryPrint, (void *) 0);
+  fflush(stdout);
+}
+
+
+int NaClVmmapCtor(struct NaClVmmap *self) {
+  self->size = START_ENTRIES;
+  if (SIZE_T_MAX / sizeof *self->vmentry < self->size) {
+    return 0;
+  }
+  self->vmentry = calloc(self->size, sizeof *self->vmentry);
+  if (!self->vmentry) {
+    return 0;
+  }
+  self->nvalid = 0;
+  self->is_sorted = 1;
+  self->cached_entry = NULL;
+  return 1;
+}
+
+
+void NaClVmmapDtor(struct NaClVmmap *self) {
+  size_t i;
+
+  for (i = 0; i < self->nvalid; ++i) {
+    NaClVmmapEntryFree(self->vmentry[i]);
+  }
+  free(self->vmentry);
+  self->vmentry = 0;
+}
+
+/*
+ * Comparison function for qsort.  Should never encounter a
+ * removed/invalid entry.
+ */
+
+static int NaClVmmapCmpEntries(void const  *vleft,
+                               void const  *vright) {
+  struct NaClVmmapEntry const *const *left =
+      (struct NaClVmmapEntry const *const *) vleft;
+  struct NaClVmmapEntry const *const *right =
+      (struct NaClVmmapEntry const *const *) vright;
+
+  return (int) ((*left)->page_num - (*right)->page_num);
+}
+
+
+static void NaClVmmapRemoveMarked(struct NaClVmmap *self) {
+  size_t  i;
+  size_t  last;
+
+  if (0 == self->nvalid)
+    return;
+
+#if REMOVE_MARKED_DEBUG
+  NaClVmmapDebug(self, "Before RemoveMarked");
 #endif
   /*
-   * Tell the debug stub to bind a TCP port before enabling the outer
-   * sandbox.  This is only needed on Mac OS X since that is the only
-   * platform where we have an outer sandbox in standalone sel_ldr.
-   * In principle this call should work on all platforms, but Windows
-   * XP seems to have some problems when we do bind()/listen() on a
-   * separate thread from accept().
+   * Linearly scan with a move-end-to-front strategy to get rid of
+   * marked-to-be-removed entries.
    */
-  if (enable_debug_stub && _HOST_OSX) {
-    if (!NaClDebugBindSocket()) {
-      exit(1);
-    }
-  }
-#undef _HOST_OSX
 
   /*
-   * Enable the outer sandbox, if one is defined.  Do this as soon as
-   * possible.
+   * Invariant:
    *
-   * This must come after NaClWaitForLoadModuleStatus(), which waits
-   * for another thread to have called NaClAppLoadFile().
-   * NaClAppLoadFile() does not work inside the Mac outer sandbox in
-   * standalone sel_ldr when using a dynamic code area because it uses
-   * NaClCreateMemoryObject() which opens a file in /tmp.
+   * forall j in [0, self->nvalid): NULL != self->vmentry[j]
+   */
+  for (last = self->nvalid; last > 0 && self->vmentry[--last]->removed; ) {
+    NaClVmmapEntryFree(self->vmentry[last]);
+    self->vmentry[last] = NULL;
+  }
+  if (last == 0 && self->vmentry[0]->removed) {
+    NaClLog(LOG_FATAL, "No valid entries in VM map\n");
+    return;
+  }
+
+  /*
+   * Post condition of above loop:
    *
-   * We cannot enable the sandbox if file access is enabled.
+   * forall j in [0, last]: NULL != self->vmentry[j]
+   *
+   * 0 <= last < self->nvalid && !self->vmentry[last]->removed
    */
-  if (!NaClAclBypassChecks && g_enable_outer_sandbox_func) {
-    g_enable_outer_sandbox_func();
-  }
-
-  if (blob_library_file) {
-    if (nap->irt_loaded) {
-      NaClLog(1, "%s\n", "IRT loaded via command channel; ignoring -B irt");
-    } else if (LOAD_OK == errcode) {
-      NaClLog(2, "Loading blob file %s\n", blob_library_file);
-      errcode = NaClAppLoadFileDynamically(nap, blob_file,
-                                           NULL);
-      if (LOAD_OK == errcode) {
-        nap->irt_loaded = 1;
-      } else {
-        NaClLog(1, "%d: Error while loading \"%s\": %s\n", __LINE__,
-                blob_library_file,
-                NaClErrorString(errcode));
-      }
-      NaClPerfCounterMark(&time_all_main, "BlobLoaded");
-      NaClPerfCounterIntervalLast(&time_all_main);
-    }
-
-    NaClDescUnref(blob_file);
-    if (verbosity) {
-      gprintf((struct Gio *) &gout, "printing post-IRT NaClApp details\n");
-      NaClAppPrintDetails(nap, (struct Gio *) &gout);
-    }
-  }
+  CHECK(last < self->nvalid);
+  CHECK(!self->vmentry[last]->removed);
+  /*
+   * and,
+   *
+   * forall j in (last, self->nvalid): NULL == self->vmentry[j]
+   */
 
   /*
-   * Print out a marker for scripts to use to mark the start of app
-   * output.
+   * Loop invariant: forall j in [0, i):  !self->vmentry[j]->removed
    */
-  NaClLog(1, "NACL: Application output follows\n");
-
-  /*
-   * Make sure all the file buffers are flushed before entering
-   * the application code.
-   */
-  fflush(NULL);
-
-  if (nap->secure_service) {
-    NaClErrorCode start_result;
+  for (i = 0; i < last; ++i) {
+    if (!self->vmentry[i]->removed) {
+      continue;
+    }
     /*
-     * wait for start_module RPC call on secure channel thread.
+     * post condition: self->vmentry[i]->removed
+     *
+     * swap with entry at self->vmentry[last].
      */
-    start_result = NaClWaitForStartModuleCommand(nap);
-    NaClPerfCounterMark(&time_all_main, "WaitedForStartModuleCommand");
-    NaClPerfCounterIntervalLast(&time_all_main);
-    if (LOAD_OK == errcode) {
-      errcode = start_result;
+
+    NaClVmmapEntryFree(self->vmentry[i]);
+    self->vmentry[i] = self->vmentry[last];
+    self->vmentry[last] = NULL;
+
+    /*
+     * Invariants here:
+     *
+     * forall j in [last, self->nvalid): NULL == self->vmentry[j]
+     *
+     * forall j in [0, i]: !self->vmentry[j]->removed
+     */
+
+    while (--last > i && self->vmentry[last]->removed) {
+      NaClVmmapEntryFree(self->vmentry[last]);
+      self->vmentry[last] = NULL;
+    }
+    /*
+     * since !self->vmentry[i]->removed, we are guaranteed that
+     * !self->vmentry[last]->removed when the while loop terminates.
+     *
+     * forall j in (last, self->nvalid):
+     *  NULL == self->vmentry[j]->removed
+     */
+  }
+  /* i == last */
+  /* forall j in [0, last]: !self->vmentry[j]->removed */
+  /* forall j in (last, self->nvalid): NULL == self->vmentry[j] */
+  self->nvalid = last + 1;
+
+  self->is_sorted = 0;
+#if REMOVE_MARKED_DEBUG
+  NaClVmmapDebug(self, "After RemoveMarked");
+#endif
+}
+
+
+void NaClVmmapMakeSorted(struct NaClVmmap  *self) {
+  if (self->is_sorted)
+    return;
+
+  NaClVmmapRemoveMarked(self);
+
+  qsort(self->vmentry,
+        self->nvalid,
+        sizeof *self->vmentry,
+        NaClVmmapCmpEntries);
+  self->is_sorted = 1;
+#if REMOVE_MARKED_DEBUG
+  NaClVmmapDebug(self, "After Sort");
+#endif
+}
+
+static void NaClVmmapAddShmid(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot,
+                              int               maxprot,
+                              int               flags,
+                              int               shmid,
+                              struct NaClDesc   *desc,
+                              nacl_off64_t      offset,
+                              nacl_off64_t      file_size) {
+  struct NaClVmmapEntry *entry;
+
+  NaClLog(2,
+          ("NaClVmmapAddShmid(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIx64")\n"),
+          (uintptr_t) self, page_num, npages, prot, maxprot, flags,
+          (uintptr_t) desc, offset);
+  if (self->nvalid == self->size) {
+    size_t                    new_size = 2 * self->size;
+    struct NaClVmmapEntry     **new_map;
+
+    new_map = realloc(self->vmentry, new_size * sizeof *new_map);
+    if (NULL == new_map) {
+      NaClLog(LOG_FATAL, "NaClVmmapAddShmid: could not allocate memory\n");
+      return;
+    }
+    self->vmentry = new_map;
+    self->size = new_size;
+  }
+  /* self->nvalid < self->size */
+  entry = NaClVmmapEntryMake(page_num, npages, prot, maxprot, flags, shmid,
+      desc, offset, file_size);
+
+  self->vmentry[self->nvalid] = entry;
+  self->is_sorted = 0;
+  ++self->nvalid;
+}
+
+void NaClVmmapAdd(struct NaClVmmap  *self,
+                  uintptr_t         page_num,
+                  size_t            npages,
+                  int               prot,
+                  int               maxprot,
+                  int               flags,
+                  struct NaClDesc   *desc,
+                  nacl_off64_t      offset,
+                  nacl_off64_t      file_size) {
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, /*shmid=*/ -1, desc, offset, file_size);
+}
+
+/*
+ * Update the virtual memory map.  Deletion is handled by a remove
+ * flag, since a NULL desc just means that the memory is backed by the
+ * system paging file.
+ */
+static void NaClVmmapUpdate(struct NaClVmmap  *self,
+                            uintptr_t         page_num,
+                            size_t            npages,
+                            int               prot,
+                            int               maxprot,
+                            int               flags,
+                            int               shmid,
+                            int               remove,
+                            struct NaClDesc   *desc,
+                            nacl_off64_t      offset,
+                            nacl_off64_t      file_size) {
+  /* update existing entries or create new entry as needed */
+  size_t                i;
+  uintptr_t             new_region_end_page = page_num + npages;
+
+  NaClLog(2,
+          ("NaClVmmapUpdate(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIxS", 0x%x, 0x%x, %d, 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIx64")\n"),
+          (uintptr_t) self, page_num, npages, prot, flags,
+          remove, (uintptr_t) desc, offset);
+  NaClVmmapMakeSorted(self);
+
+  CHECK(npages > 0);
+
+  for (i = 0; i < self->nvalid; i++) {
+    struct NaClVmmapEntry *ent = self->vmentry[i];
+    uintptr_t             ent_end_page = ent->page_num + ent->npages;
+    nacl_off64_t          additional_offset =
+        (new_region_end_page - ent->page_num) << NACL_PAGESHIFT;
+
+
+    if (ent->page_num < page_num && new_region_end_page < ent_end_page) {
+      /*
+       * Split existing mapping into two parts, with new mapping in
+       * the middle.
+       */
+      NaClVmmapAddShmid(self,
+                        new_region_end_page,
+                        ent_end_page - new_region_end_page,
+                        ent->prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + additional_offset,
+                        ent->file_size);
+      ent->npages = page_num - ent->page_num;
+      break;
+    } else if (ent->page_num < page_num && page_num < ent_end_page) {
+      /* New mapping overlaps end of existing mapping. */
+      ent->npages = page_num - ent->page_num;
+    } else if (ent->page_num < new_region_end_page &&
+               new_region_end_page < ent_end_page) {
+      /* New mapping overlaps start of existing mapping. */
+      ent->page_num = new_region_end_page;
+      ent->npages = ent_end_page - new_region_end_page;
+      ent->offset += additional_offset;
+      break;
+    } else if (page_num <= ent->page_num &&
+               ent_end_page <= new_region_end_page) {
+      /* New mapping covers all of the existing mapping. */
+      ent->removed = 1;
+      if (ent == self->cached_entry) self->cached_entry = NULL;
+    } else {
+      /* No overlap */
+      assert(new_region_end_page <= ent->page_num || ent_end_page <= page_num);
     }
   }
 
+  if (!remove) {
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, shmid, desc, offset, file_size);
+  }
+
+  NaClVmmapRemoveMarked(self);
+}
+
+void NaClVmmapAddWithOverwrite(struct NaClVmmap   *self,
+                               uintptr_t          page_num,
+                               size_t             npages,
+                               int                prot,
+                               int                maxprot,
+                               int                flags,
+                               struct NaClDesc    *desc,
+                               nacl_off64_t       offset,
+                               nacl_off64_t       file_size) {
+  NaClVmmapUpdate(self,
+                  page_num,
+                  npages,
+                  prot,
+                  maxprot,
+                  flags,
+                  /* shmid= */ -1,
+                  /* remove= */ 0,
+                  desc,
+                  offset,
+                  file_size);
+}
+
+void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
+                                       uintptr_t          page_num,
+                                       size_t             npages,
+                                       int                prot,
+                                       int                maxprot,
+                                       int                flags,
+                                       int                shmid,
+                                       struct NaClDesc    *desc,
+                                       nacl_off64_t       offset,
+                                       nacl_off64_t       file_size) {
+  NaClVmmapUpdate(self,
+                  page_num,
+                  npages,
+                  prot,
+                  maxprot,
+                  flags,
+                  shmid,
+                  /* remove= */ 0,
+                  desc,
+                  offset,
+                  file_size);
+}
+
+void NaClVmmapRemove(struct NaClVmmap   *self,
+                     uintptr_t          page_num,
+                     size_t             npages) {
+  NaClVmmapUpdate(self,
+                  page_num,
+                  npages,
+                  /* prot= */ 0,
+                  /* maxprot= */0,
+                  /* flags= */ 0,
+                  /* shmid= */ -1,
+                  /* remove= */ 1,
+                  /* desc= */NULL,
+                  /* offset= */0,
+                  /* file_size= */0);
+}
+
+int NaClVmmapChangeProt(struct NaClVmmap   *self,
+                        uintptr_t          page_num,
+                        size_t             npages,
+                        int                prot) {
+  size_t      i;
+  size_t      nvalid;
+  uintptr_t   new_region_end_page = page_num + npages;
+
   /*
-   * error reporting done; can quit now if there was an error earlier.
+   * NaClVmmapCheckExistingMapping should be always called before
+   * NaClVmmapChangeProt proceeds to ensure that valid mapping exists
+   * as modifications cannot be rolled back.
    */
-  if (LOAD_OK != errcode) {
-    NaClLog(4,
-            "Not running app code since errcode is %s (%d)\n",
-            NaClErrorString(errcode),
-            errcode);
-    goto done;
+  if (!NaClVmmapCheckExistingMapping(self, page_num, npages, prot)) {
+    return 0;
   }
 
-  if (!DynArraySet(&env_vars, env_vars.num_entries, NULL)) {
-    NaClLog(1, "%s\n", "Adding env_vars NULL terminator failed");
+  NaClLog(2,
+          ("NaClVmmapChangeProt(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
+           ", 0x%"NACL_PRIxS", 0x%x)\n"),
+          (uintptr_t) self, page_num, npages, prot);
+  NaClVmmapMakeSorted(self);
+
+  /*
+   * This loop & interval boundary tests closely follow those in
+   * NaClVmmapUpdate. When updating those, do not forget to update them
+   * at both places where appropriate.
+   * TODO(phosek): use better data structure which will support intervals
+   */
+
+  for (i = 0, nvalid = self->nvalid; i < nvalid && npages > 0; i++) {
+    struct NaClVmmapEntry *ent = self->vmentry[i];
+    uintptr_t             ent_end_page = ent->page_num + ent->npages;
+    nacl_off64_t          additional_offset =
+        (new_region_end_page - ent->page_num) << NACL_PAGESHIFT;
+
+    if (ent->page_num < page_num && new_region_end_page < ent_end_page) {
+      /* Split existing mapping into two parts */
+      NaClVmmapAddShmid(self,
+                        new_region_end_page,
+                        ent_end_page - new_region_end_page,
+                        ent->prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + additional_offset,
+                        ent->file_size);
+      ent->npages = page_num - ent->page_num;
+      /* Add the new mapping into the middle. */
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        npages,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + (page_num - ent->page_num),
+                        ent->file_size);
+      break;
+    } else if (ent->page_num < page_num && page_num < ent_end_page) {
+      /* New mapping overlaps end of existing mapping. */
+      ent->npages = page_num - ent->page_num;
+      /* Add the overlapping part of the mapping. */
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        ent_end_page - page_num,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + (page_num - ent->page_num),
+                        ent->file_size);
+      /* The remaining part (if any) will be added in other iteration. */
+      page_num = ent_end_page;
+      npages = new_region_end_page - ent_end_page;
+    } else if (ent->page_num < new_region_end_page &&
+               new_region_end_page < ent_end_page) {
+      /* New mapping overlaps start of existing mapping, split it. */
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        npages,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset,
+                        ent->file_size);
+      ent->page_num = new_region_end_page;
+      ent->npages = ent_end_page - new_region_end_page;
+      ent->offset += additional_offset;
+      break;
+    } else if (page_num <= ent->page_num &&
+               ent_end_page <= new_region_end_page) {
+      /* New mapping covers all of the existing mapping. */
+      page_num = ent_end_page;
+      npages = new_region_end_page - ent_end_page;
+      ent->prot = prot;
+    } else {
+      /* No overlap */
+      assert(new_region_end_page <= ent->page_num || ent_end_page <= page_num);
+    }
+  }
+  return 1;
+}
+
+int NaClVmmapEntryMaxProt(struct NaClVmmapEntry *entry) {
+  int flags = PROT_NONE;
+
+  if (entry->desc != NULL && 0 == (entry->flags & NACL_ABI_MAP_PRIVATE)) {
+    int o_flags = (*NACL_VTBL(NaClDesc, entry->desc)->GetFlags)(entry->desc);
+    switch (o_flags & NACL_ABI_O_ACCMODE) {
+      case NACL_ABI_O_RDONLY:
+        flags = NACL_ABI_PROT_READ;
+        break;
+      case NACL_ABI_O_WRONLY:
+        flags = NACL_ABI_PROT_WRITE;
+        break;
+      case NACL_ABI_O_RDWR:
+        flags = NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE;
+        break;
+      default:
+        NaClLog(LOG_FATAL, "Internal error: illegal O_ACCMODE\n");
+        break;
+    }
+  } else {
+    flags = NACL_ABI_PROT_READ | NACL_ABI_PROT_WRITE;
   }
 
-  NaClEnvCleanserCtor(&env_cleanser, 0);
-  if (!NaClEnvCleanserInit(&env_cleanser, envp,
-          (char const *const *)env_vars.ptr_array)) {
-    NaClLog(1, "%s\n", "Failed to initialise env cleanser");
+  return flags;
+}
+
+int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
+                                  uintptr_t         page_num,
+                                  size_t            npages,
+                                  int               prot) {
+  size_t      i;
+  uintptr_t   region_end_page = page_num + npages;
+
+  NaClLog(2,
+          ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
+           ", 0x%"NACL_PRIxS", 0x%x)\n"),
+          (uintptr_t) self, page_num, npages, prot);
+
+  if (0 == self->nvalid) {
+    return 0;
+  }
+  NaClVmmapMakeSorted(self);
+
+  for (i = 0; i < self->nvalid; ++i) {
+    struct NaClVmmapEntry   *ent = self->vmentry[i];
+    uintptr_t               ent_end_page = ent->page_num + ent->npages;
+    int                     flags = ent->maxprot;
+
+    if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
+      /* The mapping is inside existing entry. */
+      return 0 == (prot & (~flags));
+    } else if (ent->page_num <= page_num && page_num < ent_end_page) {
+      /* The mapping overlaps the entry. */
+      if (0 != (prot & (~flags))) {
+        return 0;
+      }
+      page_num = ent_end_page;
+      npages = region_end_page - ent_end_page;
+    } else if (page_num < ent->page_num) {
+      /* The mapping without backing store. */
+      return 0;
+    }
+  }
+  return 0;
+}
+
+int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot) {
+  size_t      i;
+  uintptr_t   region_end_page = page_num + npages;
+
+  if (0 == self->nvalid) {
+    return 0;
   }
 
-  if (enable_debug_stub) {
-    if (!NaClDebugInit(nap)) {
-      goto done;
+  // Caching entries to improve I/O speed
+
+  if (self->cached_entry) {
+    struct NaClVmmapEntry   *ent = self->cached_entry;
+    uintptr_t               ent_end_page = ent->page_num + ent->npages;
+    int                     flags = ent->prot;
+   
+    //If the page does not not have PROT_NONE, force the PROT_READ flag
+    //This behavior is unspeicified by POSIX, but Linux acts in this way
+    if((flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
+                NACL_ABI_PROT_WRITE)) != PROT_NONE){
+        flags |= PROT_READ;
+    }
+
+    if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
+      /* The mapping is inside existing entry. */
+      if (!(prot & (~flags))) return ent_end_page;
     }
   }
 
-  NACL_TEST_INJECTION(BeforeMainThreadLaunches, ());
-  if ((argv + optind)[3] == NULL) NaClLog(LOG_FATAL, "%s\n", "FATAL: You must specify a binary.");
+  NaClVmmapMakeSorted(self);
 
-  NaClLog(1, "[NaCl Main][Cage 1] argv[3]: %s \n\n", (argv + optind)[3]);
-  NaClLog(1, "[NaCl Main][Cage 1] argv[4]: %s \n\n", (argv + optind)[4]);
-  NaClLog(1, "[NaCl Main][Cage 1] argv num: %d \n\n", argc - optind);
+  for (i = 0; i < self->nvalid; ++i) {
+    struct NaClVmmapEntry   *ent = self->vmentry[i];
+    uintptr_t               ent_end_page = ent->page_num + ent->npages;
+    int                     flags = ent->prot;
+    
+    //If the page does not not have PROT_NONE, force the PROT_READ flag
+    //This behavior is unspeicified by POSIX, but Linux acts in this way
+    if((flags & (NACL_ABI_PROT_EXEC | NACL_ABI_PROT_READ | 
+                NACL_ABI_PROT_WRITE)) != PROT_NONE){
+        flags |= PROT_READ;
+    }
 
-  nap->argc = argc - optind;
-  nap->argv = calloc((nap->argc + 1), sizeof(char*));
-  for (int i = 0; i < nap->argc; i++) nap->argv[i] = strdup(argv[i + optind]);
-  nap->binary = strdup(argv[optind + 3]);
-
-  NaClLog(1, "%s\n\n", "[NaCl Main Loader] before creation of the cage to run user program!");
-  nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  nacl_initialization_finish = LindGetTime();
-  nap->tl_type = THREAD_LAUNCH_MAIN; //set main thread
-  if (!NaClCreateThread(NULL,
-                        nap,
-                        argc - optind,
-                        argv + optind,
-                        nap->clean_environ)) {
-    NaClLog(LOG_ERROR, "%s\n", "creating main thread failed");
-    goto done;
+    if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
+      /* The mapping is inside existing entry. */
+      self->cached_entry = ent;
+      if (!(prot & (~flags))) return ent_end_page;
+    } else if (ent->page_num <= page_num && page_num < ent_end_page) {
+      /* The mapping overlaps the entry. */
+      if (0 != (prot & (~flags))) {
+        return 0;
+      }
+      page_num = ent_end_page;
+      npages = region_end_page - ent_end_page;
+    } else if (page_num < ent->page_num) {
+      /* The mapping without backing store. */
+      return 0;
+    }
   }
-  nacl_user_program_begin = LindGetTime();
+  return 0;
+}
 
-  // ***********************************************************************
-  // yiwen: cleanup and exit
-  // ***********************************************************************
-  //NaClEnvCleanserDtor(&env_cleanser);
-  //JS: Fix!!! do reference counter or something?
-  NaClPerfCounterMark(&time_all_main, "CreateMainThread");
-  NaClPerfCounterIntervalLast(&time_all_main);
-  DynArrayDtor(&env_vars);
+static int NaClVmmapContainCmpEntries(void const *vkey,
+                                      void const *vent) {
+  struct NaClVmmapEntry const *const *key =
+      (struct NaClVmmapEntry const *const *) vkey;
+  struct NaClVmmapEntry const *const *ent =
+      (struct NaClVmmapEntry const *const *) vent;
 
-  /* yiwen: waiting for running cages to exit */
-  ret_code = NaClWaitForThreadToExit(nap);
+  NaClLog(5, "key->page_num   = 0x%05"NACL_PRIxPTR"\n", (*key)->page_num);
 
-  NaClXMutexLock(&ccmut);
-  while(cagecount > 0) {
-    NaClXCondVarWait(&cccv, &ccmut);
+  NaClLog(5, "entry->page_num = 0x%05"NACL_PRIxPTR"\n", (*ent)->page_num);
+  NaClLog(5, "entry->npages   = 0x%"NACL_PRIxS"\n", (*ent)->npages);
+
+  if ((*key)->page_num < (*ent)->page_num) return -1;
+  if ((*key)->page_num < (*ent)->page_num + (*ent)->npages) return 0;
+  return 1;
+}
+
+struct NaClVmmapEntry const *NaClVmmapFindPage(struct NaClVmmap *self,
+                                               uintptr_t        pnum) {
+  struct NaClVmmapEntry key;
+  struct NaClVmmapEntry *kptr;
+  struct NaClVmmapEntry *const *result_ptr;
+
+  NaClVmmapMakeSorted(self);
+  key.page_num = pnum;
+  kptr = &key;
+  result_ptr = ((struct NaClVmmapEntry *const *)
+                bsearch(&kptr,
+                        self->vmentry,
+                        self->nvalid,
+                        sizeof self->vmentry[0],
+                        NaClVmmapContainCmpEntries));
+  return result_ptr ? *result_ptr : NULL;
+}
+
+
+struct NaClVmmapIter *NaClVmmapFindPageIter(struct NaClVmmap      *self,
+                                            uintptr_t             pnum,
+                                            struct NaClVmmapIter  *space) {
+  struct NaClVmmapEntry key;
+  struct NaClVmmapEntry *kptr;
+  struct NaClVmmapEntry **result_ptr;
+
+  NaClVmmapMakeSorted(self);
+  key.page_num = pnum;
+  kptr = &key;
+  result_ptr = ((struct NaClVmmapEntry **)
+                bsearch(&kptr,
+                        self->vmentry,
+                        self->nvalid,
+                        sizeof self->vmentry[0],
+                        NaClVmmapContainCmpEntries));
+  space->vmmap = self;
+  if (NULL == result_ptr) {
+    space->entry_ix = self->nvalid;
+  } else {
+    space->entry_ix = result_ptr - self->vmentry;
   }
-  NaClXMutexUnlock(&ccmut);
-  nacl_user_program_finish = LindGetTime();
-  NaClPerfCounterMark(&time_all_main, "WaitForMainThread");
-  NaClPerfCounterIntervalLast(&time_all_main);
-  NaClPerfCounterMark(&time_all_main, "SelMainEnd");
-  NaClPerfCounterIntervalTotal(&time_all_main);
-  NaClEnvCleanserDtor(&env_cleanser);
-  DynArrayDtor(&env_vars);
+  return space;
+}
 
+
+int NaClVmmapIterAtEnd(struct NaClVmmapIter *nvip) {
+  return nvip->entry_ix >= nvip->vmmap->nvalid;
+}
+
+
+/*
+ * IterStar only permissible if not AtEnd
+ */
+struct NaClVmmapEntry *NaClVmmapIterStar(struct NaClVmmapIter *nvip) {
+  return nvip->vmmap->vmentry[nvip->entry_ix];
+}
+
+
+void NaClVmmapIterIncr(struct NaClVmmapIter *nvip) {
+  ++nvip->entry_ix;
+}
+
+
+/*
+ * Iterator becomes invalid after Erase.  We could have a version that
+ * keep the iterator valid by copying forward, but it is unclear
+ * whether that is needed.
+ */
+void NaClVmmapIterErase(struct NaClVmmapIter *nvip) {
+  struct NaClVmmap  *nvp;
+
+  nvp = nvip->vmmap;
+  free(nvp->vmentry[nvip->entry_ix]);
+  nvp->vmentry[nvip->entry_ix] = nvp->vmentry[--nvp->nvalid];
+  nvp->is_sorted = 0;
+}
+
+
+void  NaClVmmapVisit(struct NaClVmmap *self,
+                     void             (*fn)(void                  *state,
+                                            struct NaClVmmapEntry *entry),
+                     void             *state) {
+  size_t i;
+  size_t nentries;
+
+  NaClVmmapMakeSorted(self);
+  for (i = 0, nentries = self->nvalid; i < nentries; ++i) {
+    (*fn)(state, self->vmentry[i]);
+  }
+}
+
+
+/*
+ * Linear search, from high addresses down.
+ */
+uintptr_t NaClVmmapFindSpace(struct NaClVmmap *self,
+                             size_t           num_pages) {
+  size_t                i;
+  struct NaClVmmapEntry *vmep;
+  uintptr_t             end_page;
+  uintptr_t             start_page;
+
+  if (0 == self->nvalid)
+    return 0;
+  NaClVmmapMakeSorted(self);
+  for (i = self->nvalid; --i > 0; ) {
+    vmep = self->vmentry[i-1];
+    end_page = vmep->page_num + vmep->npages;  /* end page from previous */
+    start_page = self->vmentry[i]->page_num;  /* start page from current */
+    if (start_page - end_page >= num_pages) {
+      return start_page - num_pages;
+    }
+  }
+  return 0;
   /*
-   * exit_group or equiv kills any still running threads while module
-   * addr space is still valid.  otherwise we'd have to kill threads
-   * before we clean up the address space.
+   * in user addresses, page 0 is always trampoline, and user
+   * addresses are contained in system addresses, so returning a
+   * system page number of 0 can serve as error indicator: it is at
+   * worst the trampoline page, and likely to be below it.
    */
-
-  nacl_main_finish = LindGetTime();
-  NaClLog(1, "%s\n", "[NaClMain] End of the program! \n");
+}
 
 
-  if (toggle_time_info)
-  {
-    nacl_main_spent = (double)(nacl_main_finish - nacl_main_begin);
-    fprintf(stderr, "[TimeInfo] NaCl main program time spent = %f \n", nacl_main_spent);
-    nacl_initialization_spent = (double)(nacl_initialization_finish - nacl_main_begin);
-    fprintf(stderr, "[TimeInfo] NaCl initialization time spent = %f \n", nacl_initialization_spent);
-    nacl_user_program_spent = (double)(nacl_user_program_finish - nacl_user_program_begin);
-    fprintf(stderr, "[TimeInfo] NaCl user program time spent = %f \n", nacl_user_program_spent);
+/*
+ * Linear search, from high addresses down.  For mmap, so the starting
+ * address of the region found must be NACL_MAP_PAGESIZE aligned.
+ *
+ * For general mmap it is better to use as high an address as
+ * possible, since the stack size for the main thread is currently
+ * fixed, and the heap is the only thing that grows.
+ */
+uintptr_t NaClVmmapFindMapSpace(struct NaClVmmap *self,
+                                size_t           num_pages) {
+  size_t                i;
+  struct NaClVmmapEntry *vmep;
+  uintptr_t             end_page;
+  uintptr_t             start_page;
+
+  if (0 == self->nvalid)
+    return 0;
+  NaClVmmapMakeSorted(self);
+  num_pages = NaClRoundPageNumUpToMapMultiple(num_pages);
+
+  for (i = self->nvalid; --i > 0; ) {
+    vmep = self->vmentry[i-1];
+    end_page = vmep->page_num + vmep->npages;  /* end page from previous */
+    end_page = NaClRoundPageNumUpToMapMultiple(end_page);
+
+    start_page = self->vmentry[i]->page_num;  /* start page from current */
+    if (NACL_MAP_PAGESHIFT > NACL_PAGESHIFT) {
+
+      start_page = NaClTruncPageNumDownToMapMultiple(start_page);
+
+      if (start_page <= end_page) {
+        continue;
+      }
+    }
+    if (start_page - end_page >= num_pages) {
+      return start_page - num_pages;
+    }
   }
-
-
-#ifdef SYSCALL_TIMING
-  NaClLog(1, "%s\n", "[NaClMain] NaCl system call timing enabled! ");
-  NaClLog(1, "%s\n", "[NaClMain] Start printing out results now: ");
-  NaClLog(1, "[NaClMain] NaCl global system call counter = %d \n", nacl_syscall_counter);
-  NaClLog(1, "%s\n", "[NaClMain] Print out system call timing table: ");
-  nacl_syscall_total_time = 0.0;
-  for (size_t i = 0; i < NACL_MAX_SYSCALLS; i++) {
-    NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, nacl_syscall_invoked_times[i], nacl_syscall_execution_time[i]);
-    nacl_syscall_total_time +=  nacl_syscall_execution_time[i];
-  }
-
-  NaClLog(1, "[NaClMain] NaCl system call total time: %f \n\n", nacl_syscall_total_time);
-  NaClLog(1, "[NaClMain] Lind system call counter = %d \n", lind_syscall_counter);
-  NaClLog(1, "%s\n", "[NaClMain] Print out Lind system call timing table: ");
-  lind_syscall_total_time = 0.0;
-  for (size_t i = 0; i < LIND_MAX_SYSCALLS; i++) {
-    NaClLog(1, "sys_num: %d, invoked times: %d, execution time: %f \n", i, lind_syscall_invoked_times[i], lind_syscall_execution_time[i]);
-    lind_syscall_total_time +=  lind_syscall_execution_time[i];
-  }
-
-  NaClLog(1, "[NaClMain] Lind system call total time: %f \n", lind_syscall_total_time);
-  NaClLog(1, "%s\n", "[NaClMain] Results printing out: done! ");
-#endif
-
-  lindrustfinalize();
-  NaClStraceCloseFile();
-  NaClCondVarDtor(&cccv);
-  NaClMutexDtor(&ccmut);
-  DestroyReaper();
-  NaClExit(ret_code);
-
-done:
-  fflush(NULL);
-
-  if (verbosity) {
-    gprintf((struct Gio *) &gout, "exiting -- printing NaClApp details\n");
-    NaClAppPrintDetails(nap, (struct Gio *) &gout);
-    printf("Dumping vmmap.\n"); fflush(NULL);
-    PrintVmmap(nap);
-    fflush(NULL);
-  }
-
+  return 0;
   /*
-   * If there is a secure command channel, we sent an RPC reply with
-   * the reason that the nexe was rejected.  If we exit now, that
-   * reply may still be in-flight and the various channel closure (esp
-   * reverse channel) may be detected first.  This would result in a
-   * crash being reported, rather than the error in the RPC reply.
-   * Instead, we wait for the hard-shutdown on the command channel.
+   * in user addresses, page 0 is always trampoline, and user
+   * addresses are contained in system addresses, so returning a
+   * system page number of 0 can serve as error indicator: it is at
+   * worst the trampoline page, and likely to be below it.
    */
-  if (LOAD_OK != errcode) {
-    NaClBlockIfCommandChannelExists(nap);
+}
+
+
+/*
+ * Linear search, from uaddr up.
+ */
+uintptr_t NaClVmmapFindMapSpaceAboveHint(struct NaClVmmap *self,
+                                         uintptr_t        uaddr,
+                                         size_t           num_pages) {
+  size_t                nvalid;
+  size_t                i;
+  struct NaClVmmapEntry *vmep;
+  uintptr_t             usr_page;
+  uintptr_t             start_page;
+  uintptr_t             end_page;
+
+  NaClVmmapMakeSorted(self);
+
+  usr_page = uaddr >> NACL_PAGESHIFT;
+  num_pages = NaClRoundPageNumUpToMapMultiple(num_pages);
+
+  nvalid = self->nvalid;
+
+  for (i = 1; i < nvalid; ++i) {
+    vmep = self->vmentry[i-1];
+    end_page = vmep->page_num + vmep->npages;
+    end_page = NaClRoundPageNumUpToMapMultiple(end_page);
+
+    start_page = self->vmentry[i]->page_num;
+    if (NACL_MAP_PAGESHIFT > NACL_PAGESHIFT) {
+
+      start_page = NaClTruncPageNumDownToMapMultiple(start_page);
+
+      if (start_page <= end_page) {
+        continue;
+      }
+    }
+    if (end_page <= usr_page && usr_page < start_page) {
+      end_page = usr_page;
+    }
+    if (usr_page <= end_page && (start_page - end_page) >= num_pages) {
+      /* found a gap at or after uaddr that's big enough */
+      return end_page;
+    }
   }
-  NaClLog(1, "%s\n", "Done.");
-
-#if NACL_LINUX
-  NaClSignalHandlerFini();
-#endif
-  NaClAllModulesFini();
-
-  lindrustfinalize();
-  NaClStraceCloseFile();
-  NaClCondVarDtor(&cccv);
-  NaClMutexDtor(&ccmut);
-  DestroyReaper();
-
-  NaClExit(ret_code);
-
-  /* silence unused variable warnings until timing is implemented properly -jp */
-  UNREFERENCED_PARAMETER(nacl_main_spent);
-  UNREFERENCED_PARAMETER(nacl_initialization_spent);
-  UNREFERENCED_PARAMETER(nacl_user_program_begin);
-  UNREFERENCED_PARAMETER(nacl_user_program_finish);
-  UNREFERENCED_PARAMETER(nacl_user_program_spent);
-
-  /* NOT REACHED */
-  return ret_code;
+  return 0;
 }
