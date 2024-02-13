@@ -121,6 +121,119 @@ void NaClStraceGetppid(int cageid, int pid, long long totaltime) {
 }
 }
 
+void NaClStraceExit(int cageid, int status, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_exit, totaltime, status != 0 ? -1 : 0); // Treat non-zero as error for consistency
+  } else {
+    fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
+}
+}
+
+void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_gettimeofday, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, tv, tz, ret);
+  }
+}
+
+void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_clock, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, clk_id, ts_addr, time_func, ret);
+  }
+}
+
+void NaClStraceFork(int cageid, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_fork, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
+  }
+}
+
+void NaClStraceExecve(int cageid, char
+  const * path, char *
+  const * argv, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_execve, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
+}
+}
+
+void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_waitpid, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR ", %d) = %d\n", cageid, pid, sysaddr, options, ret);
+  }
+}
+
+void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_gethostname, totaltime, ret);
+  } else {
+    char * strBuf = formatStringArgument(name);
+    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    free(strBuf);
+  }
+}
+
+void NaClStraceGetifaddrs(int cageid, char * buf, size_t len, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_getifaddrs, totaltime, ret);
+  } else {
+    char * strBuf = formatStringArgument(buf);
+    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
+    free(strBuf);
+  }
+}
+
+void NaClStraceGetuid(int cageid, int ret, long long time) {
+
+  if (strace_C) {
+    stracec_increment(NACL_sys_getuid, time, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
+  }
+}
+
+void NaClStraceGeteuid(int cageid, int ret, long long time) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_geteuid, time, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
+  }
+}
+
+void NaClStraceGetgid(int cageid, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_getgid, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
+}
+}
+
+void NaClStraceGetegid(int cageid, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_getegid, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
+}
+}
+
+void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_getcwd, totaltime, retval);
+  } else {
+    char * strBuf = formatStringArgument(buf);
+    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
+    free(strBuf);
+  }
+}
+
 void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_open, totaltime, fd);
@@ -144,14 +257,6 @@ void NaClStraceRead(int cageid, int d, void * buf, size_t count, int ret, long l
   } else {
     fprintf(tracingOutputFile, "%d read(%d, %p, %zu) = %d\n", cageid, d, buf, count, ret);
   }
-}
-
-void NaClStraceExit(int cageid, int status, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_exit, totaltime, status != 0 ? -1 : 0); // Treat non-zero as error for consistency
-  } else {
-    fprintf(tracingOutputFile, "%d exit() = %d\n", cageid, status);
-}
 }
 
 void NaClStraceDup(int cageid, int oldfd, int ret, long long totaltime) {
@@ -264,182 +369,6 @@ void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long l
     }
 }
 
-void printFinalSyscallStats() {
-  if (strace_C) {
-
-    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-
-    long long totalCalls = 0, totalErrors = 0;
-    double totalSeconds = 0.0;
-
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-      if (syscallStats[i].count > 0) {
-        double totalTimeInSeconds = (double) syscallStats[i].totalTime / 1000000000.0;
-        long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
-          syscallStats[i].totalTime / syscallStats[i].count / 1000 :
-          0;
-        fprintf(tracingOutputFile, "0.00    %.9f   %lld        %lld       %lld       %s\n",
-          totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
-        totalCalls += syscallStats[i].count;
-        totalErrors += syscallStats[i].errorCount;
-        totalSeconds += totalTimeInSeconds;
-      }
-    }
-
-    // Print the total summary line
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
-      totalSeconds, totalCalls, totalErrors);
-  }
-}
-
-// Helper function to get syscall name from its index
-const char * getSyscallName(int syscallIndex) {
-  switch (syscallIndex) {
-  case NACL_sys_mkdir:
-    return "mkdir";
-  case NACL_sys_mmap:
-    return "mmap";
-  case NACL_sys_geteuid:
-    return "geteuid";
-  case NACL_sys_getuid:
-    return "getuid";
-  case NACL_sys_read:
-    return "read";
-  case NACL_sys_lseek:
-    return "lseek";
-  case NACL_sys_fstat:
-    return "fstat";
-  case NACL_sys_close:
-    return "close";
-  case NACL_sys_getcwd:
-    return "getcwd";
-  case NACL_sys_munmap:
-    return "munmap";
-  case NACL_sys_access:
-    return "access";
-  case NACL_sys_open:
-    return "open";
-  case NACL_sys_getgid:
-    return "getgid";
-  case NACL_sys_getegid:
-    return "getegid";
-  case NACL_sys_select:
-    return "select";
-  case NACL_sys_epoll_create:
-    return "epoll_create";
-  case NACL_sys_epoll_ctl:
-    return "epoll_ctl";
-  case NACL_sys_epoll_wait:
-    return "epoll_wait";
-  case NACL_sys_bind:
-    return "bind";
-  case NACL_sys_listen:
-    return "listen";
-  case NACL_sys_poll:
-    return "poll";
-  case NACL_sys_fcntl_get:
-    return "fcntl_get";
-  case NACL_sys_truncate:
-    return "truncate";
-  case NACL_sys_ftruncate:
-    return "ftruncate";
-  case NACL_sys_connect:
-    return "connect";
-  case NACL_sys_accept:
-    return "accept";
-  case NACL_sys_flock:
-    return "flock";
-  case NACL_sys_getsockopt:
-    return "getsockopt";
-  case NACL_sys_setsockopt:
-    return "setsockopt";
-  case NACL_sys_fstatfs:
-    return "fstatfs";
-  case NACL_sys_statfs:
-    return "statfs";
-  case NACL_sys_getsockname:
-    return "getsockname";
-  case NACL_sys_getpeername:
-    return "getpeername";
-  case NACL_sys_socket:
-    return "socket";
-  case NACL_sys_send:
-    return "send";
-  case NACL_sys_sendto:
-    return "sendto";
-  case NACL_sys_recv:
-    return "recv";
-  case NACL_sys_recvfrom:
-    return "recvfrom";
-  case NACL_sys_shmat:
-    return "shmat";
-  case NACL_sys_shmget:
-    return "shmget";
-  case NACL_sys_shmdt:
-    return "shmdt";
-  case NACL_sys_shmctl:
-    return "shmctl";
-  case NACL_sys_socketpair:
-    return "socketpair";
-  case NACL_sys_nanosleep:
-    return "nanosleep";
-  case NACL_sys_gettimeofday:
-    return "gettimeofday";
-  case NACL_sys_link:
-    return "link";
-  case NACL_sys_unlink:
-    return "unlink";
-  case NACL_sys_rename:
-    return "rename";
-  case NACL_sys_rmdir:
-    return "rmdir";
-  case NACL_sys_chdir:
-    return "chdir";
-  case NACL_sys_chmod:
-    return "chmod";
-  case NACL_sys_fchmod:
-    return "fchmod";
-  case NACL_sys_fchdir:
-    return "fchdir";
-  case NACL_sys_fsync:
-    return "fsync";
-  case NACL_sys_fdatasync:
-    return "fdatasync";
-  case NACL_sys_sync_file_range:
-    return "sync_file_range";
-  case NACL_sys_exit:
-    return "exit";
-  case NACL_sys_dup:
-    return "dup";
-  case NACL_sys_dup2:
-    return "dup2";
-  case NACL_sys_dup3:
-    return "dup3";
-  case NACL_sys_getdents:
-    return "getdents";
-  case NACL_sys_pread:
-    return "pread";
-  case NACL_sys_write:
-    return "write";
-  case NACL_sys_pwrite:
-    return "pwrite";
-  case NACL_sys_ioctl:
-    return "ioctl";
-  case NACL_sys_lstat:
-    return "lstat";
-  case NACL_sys_stat:
-    return "stat";
-  case NACL_sys_getpid:
-    return "getpid";
-  case NACL_sys_getppid:
-    return "getppid";
-  default:
-    return "unknown";
-  }
-}
-
 void NaClStraceRmdir(int cageid,
   const char * path, int retval, long long totaltime) {
   if (strace_C) {
@@ -502,16 +431,6 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
     stracec_increment(NACL_sys_sync_file_range, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d syncfilerange(%d, %ld, %ld, %u) = %d\n", cageid, fd, offset, nbytes, flags, retval);
-  }
-}
-
-void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_getcwd, totaltime, retval);
-  } else {
-    char * strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
-    free(strBuf);
   }
 }
 
@@ -605,40 +524,6 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * 
   }
 }
 
-void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_gettimeofday, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, tv, tz, ret);
-  }
-}
-
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_clock, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, clk_id, ts_addr, time_func, ret);
-  }
-}
-
-void NaClStraceFork(int cageid, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_fork, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d fork() = %d\n", cageid, ret);
-  }
-}
-
-void NaClStraceExecve(int cageid, char
-  const * path, char *
-  const * argv, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_execve, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
-}
-}
-
 void NaClStraceExecv(int cageid, char
   const * path, char *
   const * argv, int ret, long long totaltime) {
@@ -646,34 +531,6 @@ void NaClStraceExecv(int cageid, char
     stracec_increment(NACL_sys_execv, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, path, (uintptr_t) argv, ret);
-  }
-}
-
-void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_waitpid, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d waitpid(%d, 0x%08"NACL_PRIxPTR ", %d) = %d\n", cageid, pid, sysaddr, options, ret);
-  }
-}
-
-void NaClStraceGethostname(int cageid, char * name, size_t len, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_gethostname, totaltime, ret);
-  } else {
-    char * strBuf = formatStringArgument(name);
-    fprintf(tracingOutputFile, "%d gethostname(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
-    free(strBuf);
-  }
-}
-
-void NaClStraceGetifaddrs(int cageid, char * buf, size_t len, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_getifaddrs, totaltime, ret);
-  } else {
-    char * strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getifaddrs(%s, %lu) = %d\n", cageid, strBuf ? strBuf : "NULL", len, ret);
-    free(strBuf);
   }
 }
 
@@ -725,39 +582,6 @@ void NaClStraceShutdown(int cageid, int sockfd, int how, int ret, long long tota
   } else {
     fprintf(tracingOutputFile, "%d shutdown(%d, %d) = %d\n", cageid, sockfd, how, ret);
   }
-}
-
-void NaClStraceGetuid(int cageid, int ret, long long time) {
-
-  if (strace_C) {
-    stracec_increment(NACL_sys_getuid, time, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d getuid() = %d\n", cageid, ret);
-  }
-}
-
-void NaClStraceGeteuid(int cageid, int ret, long long time) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_geteuid, time, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d geteuid() = %d\n", cageid, ret);
-  }
-}
-
-void NaClStraceGetgid(int cageid, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_getgid, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d getgid() = %d\n", cageid, ret);
-}
-}
-
-void NaClStraceGetegid(int cageid, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_getegid, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d getegid() = %d\n", cageid, ret);
-}
 }
 
 void NaClStraceFlock(int cageid, int fd, int operation, int ret, long long totaltime) {
@@ -934,5 +758,183 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
     stracec_increment(NACL_sys_select, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
+  }
+}
+
+void printFinalSyscallStats() {
+  if (strace_C) {
+
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+
+    long long totalCalls = 0, totalErrors = 0;
+    double totalSeconds = 0.0;
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+      totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
+    }
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+      if (syscallStats[i].count > 0) {
+        double totalTimeInSeconds = (double) syscallStats[i].totalTime / 1000000000.0;
+        long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
+          syscallStats[i].totalTime / syscallStats[i].count / 1000 :
+          0;
+        double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
+        fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
+          totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
+        totalCalls += syscallStats[i].count;
+        totalErrors += syscallStats[i].errorCount;
+      }
+    }
+
+    // Print the total summary line
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
+      totalSeconds, totalCalls, totalErrors);
+  }
+}
+
+// Helper function to get syscall name from its index
+const char * getSyscallName(int syscallIndex) {
+  switch (syscallIndex) {
+  case NACL_sys_mkdir:
+    return "mkdir";
+  case NACL_sys_mmap:
+    return "mmap";
+  case NACL_sys_geteuid:
+    return "geteuid";
+  case NACL_sys_getuid:
+    return "getuid";
+  case NACL_sys_read:
+    return "read";
+  case NACL_sys_lseek:
+    return "lseek";
+  case NACL_sys_fstat:
+    return "fstat";
+  case NACL_sys_close:
+    return "close";
+  case NACL_sys_getcwd:
+    return "getcwd";
+  case NACL_sys_munmap:
+    return "munmap";
+  case NACL_sys_access:
+    return "access";
+  case NACL_sys_open:
+    return "open";
+  case NACL_sys_getgid:
+    return "getgid";
+  case NACL_sys_getegid:
+    return "getegid";
+  case NACL_sys_select:
+    return "select";
+  case NACL_sys_epoll_create:
+    return "epoll_create";
+  case NACL_sys_epoll_ctl:
+    return "epoll_ctl";
+  case NACL_sys_epoll_wait:
+    return "epoll_wait";
+  case NACL_sys_bind:
+    return "bind";
+  case NACL_sys_listen:
+    return "listen";
+  case NACL_sys_poll:
+    return "poll";
+  case NACL_sys_fcntl_get:
+    return "fcntl_get";
+  case NACL_sys_truncate:
+    return "truncate";
+  case NACL_sys_ftruncate:
+    return "ftruncate";
+  case NACL_sys_connect:
+    return "connect";
+  case NACL_sys_accept:
+    return "accept";
+  case NACL_sys_flock:
+    return "flock";
+  case NACL_sys_getsockopt:
+    return "getsockopt";
+  case NACL_sys_setsockopt:
+    return "setsockopt";
+  case NACL_sys_fstatfs:
+    return "fstatfs";
+  case NACL_sys_statfs:
+    return "statfs";
+  case NACL_sys_getsockname:
+    return "getsockname";
+  case NACL_sys_getpeername:
+    return "getpeername";
+  case NACL_sys_socket:
+    return "socket";
+  case NACL_sys_send:
+    return "send";
+  case NACL_sys_sendto:
+    return "sendto";
+  case NACL_sys_recv:
+    return "recv";
+  case NACL_sys_recvfrom:
+    return "recvfrom";
+  case NACL_sys_shmat:
+    return "shmat";
+  case NACL_sys_shmget:
+    return "shmget";
+  case NACL_sys_shmdt:
+    return "shmdt";
+  case NACL_sys_shmctl:
+    return "shmctl";
+  case NACL_sys_socketpair:
+    return "socketpair";
+  case NACL_sys_nanosleep:
+    return "nanosleep";
+  case NACL_sys_gettimeofday:
+    return "gettimeofday";
+  case NACL_sys_link:
+    return "link";
+  case NACL_sys_unlink:
+    return "unlink";
+  case NACL_sys_rename:
+    return "rename";
+  case NACL_sys_rmdir:
+    return "rmdir";
+  case NACL_sys_chdir:
+    return "chdir";
+  case NACL_sys_chmod:
+    return "chmod";
+  case NACL_sys_fchmod:
+    return "fchmod";
+  case NACL_sys_fchdir:
+    return "fchdir";
+  case NACL_sys_fsync:
+    return "fsync";
+  case NACL_sys_fdatasync:
+    return "fdatasync";
+  case NACL_sys_sync_file_range:
+    return "sync_file_range";
+  case NACL_sys_exit:
+    return "exit";
+  case NACL_sys_dup:
+    return "dup";
+  case NACL_sys_dup2:
+    return "dup2";
+  case NACL_sys_dup3:
+    return "dup3";
+  case NACL_sys_getdents:
+    return "getdents";
+  case NACL_sys_pread:
+    return "pread";
+  case NACL_sys_write:
+    return "write";
+  case NACL_sys_pwrite:
+    return "pwrite";
+  case NACL_sys_ioctl:
+    return "ioctl";
+  case NACL_sys_lstat:
+    return "lstat";
+  case NACL_sys_stat:
+    return "stat";
+  case NACL_sys_getpid:
+    return "getpid";
+  case NACL_sys_getppid:
+    return "getppid";
+  default:
+    return "unknown";
   }
 }
