@@ -21,9 +21,6 @@ typedef struct {
   long long errorCount; // Number of errors encountered in the syscall
 }SyscallStats;
 
-long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in microseconds)
-int totalSyscallsCount = 0;
-
 SyscallStats syscallStats[NUM_SYSCALLS];
 int strace_C = 0;
 // this defines the number of characters we display for printing a string buf
@@ -497,7 +494,7 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
     stracec_increment(NACL_sys_shmget, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmget(%d, %zu, %d) = %d\n", cageid, key, size, shmflg, retval);
-  }
+}
 }
 
 void NaClStraceShmdt(int cageid, void * shmaddr, int retval, long long totaltime) {
