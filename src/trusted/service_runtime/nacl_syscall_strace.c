@@ -934,7 +934,7 @@ void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, i
     syscallStats[NACL_sys_recv].count++;
     syscallStats[NACL_sys_recv].totalTime += elapsedTime;
     if (ret < 0) {
-      syscallStats[NACL_sys_recv].errorCount++;
+      syscallStats[NACL_sys_recv].errorCount++; 
     }
   } else {
     fprintf(tracingOutputFile, "%d recv(%d, 0x%08"
