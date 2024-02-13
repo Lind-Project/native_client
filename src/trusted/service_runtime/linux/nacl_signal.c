@@ -331,6 +331,8 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
        * the default behavior which is to exit the app with the signal
        * number as the error code.
        */
+      lindrustfinalize();
+      NaClStraceCloseFile();
       NaClExit(-sig);
     }
   }
