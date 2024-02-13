@@ -271,6 +271,7 @@ void printFinalSyscallStats() {
 
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
+    double totalpercent =0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
       totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
     }
@@ -285,7 +286,7 @@ void printFinalSyscallStats() {
                     syscallStats[i].errorCount, getSyscallName(i));
         totalCalls += syscallStats[i].count;            
         totalErrors += syscallStats[i].errorCount;
-        
+        totalpercent += percentTime;
         
       }
     }
