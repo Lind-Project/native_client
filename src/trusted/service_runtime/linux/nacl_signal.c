@@ -332,8 +332,6 @@ static void FindAndRunHandler(int sig, siginfo_t *info, void *uc) {
        * the default behavior which is to exit the app with the signal
        * number as the error code.
        */
-      lindrustfinalize();
-      NaClStraceCloseFile();
       NaClExit(-sig);
     }
   }
@@ -699,6 +697,8 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
         "\n** User exited program with signal %d.\n",
         sig);
     NaClSignalErrorMessage(tmp);
+    lindrustfinalize();
+    NaClStraceCloseFile();
     NaClExit(-sig);
   }
 
