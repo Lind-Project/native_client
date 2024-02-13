@@ -184,7 +184,7 @@ static int s_Signals[] = {
 #endif
   SIGSYS, /* Used to support a seccomp-bpf sandbox. */
   NACL_THREAD_SUSPEND_SIGNAL,
-  SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV, SIGCHLD, SIGALRM, SIGPIPE,
+  SIGINT, SIGTERM, SIGQUIT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV, SIGCHLD, SIGALRM, SIGPIPE,
   /* Handle SIGABRT in case someone sends it asynchronously using kill(). */
   SIGABRT, SIGUSR1, SIGUSR2
 };
