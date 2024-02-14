@@ -769,7 +769,7 @@ void printFinalSyscallStats() {
         maxSyscallNameLength = nameLength;
       }
     }
-
+    
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors ");
     fprintf(tracingOutputFile, "%-*s\n", maxSyscallNameLength, "syscall");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ");
@@ -788,7 +788,7 @@ void printFinalSyscallStats() {
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%05.2f    %.9f   %lld        %lld       %lld       %-*s\n",
+        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %lld       %lld       %-*s\n",
           percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
           syscallStats[i].errorCount, maxSyscallNameLength, getSyscallName(i));
         totalCalls += syscallStats[i].count;
