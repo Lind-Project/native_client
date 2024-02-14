@@ -19,11 +19,7 @@ typedef struct {
   long long count; // Number of times the syscall was called
   long long totalTime; // Total time spent in the syscall (in nanoseconds)
   long long errorCount; // Number of errors encountered in the syscall
-  long long percent; //% of time taken for each syscall
 }SyscallStats;
-
-long long totalSyscallsMicroseconds = 0; // Total time for all syscalls (in microseconds)
-int totalSyscallsCount = 0;
 
 SyscallStats syscallStats[NUM_SYSCALLS];
 int strace_C = 0;
@@ -225,6 +221,16 @@ void NaClStraceGetegid(int cageid, int ret, long long totaltime) {
 }
 }
 
+void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_getcwd, totaltime, retval);
+  } else {
+    char * strBuf = formatStringArgument(buf);
+    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
+    free(strBuf);
+  }
+}
+
 void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_open, totaltime, fd);
@@ -234,7 +240,6 @@ void NaClStraceOpen(int cageid, char * path, int flags, int mode, int fd, long l
     free(strBuf);
   }
 }
-
 void NaClStraceClose(int cageid, int d, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_close, totaltime, ret);
@@ -354,11 +359,11 @@ void NaClStraceLStat(int cageid,
 }
 
 void NaClStraceMkdir(int cageid, const char * path, int mode, int retval, long long totaltime) {
-    if (strace_C) {
-        stracec_increment(NACL_sys_mkdir, totaltime, retval);
-    } else {
-        fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
-    }
+  if (strace_C) {
+    stracec_increment(NACL_sys_mkdir, totaltime, retval);
+  } else {
+    fprintf(tracingOutputFile, "%d mkdir(%s, %d) = %d\n", cageid, path, mode, retval);
+}
 }
 
 void NaClStraceRmdir(int cageid,
@@ -426,16 +431,6 @@ void NaClStraceSyncFileRange(int cageid, int fd, off_t offset, off_t nbytes, uin
   }
 }
 
-void NaClStraceGetcwd(int cageid, char * buf, size_t size, int retval, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_getcwd, totaltime, retval);
-  } else {
-    char * strBuf = formatStringArgument(buf);
-    fprintf(tracingOutputFile, "%d getcwd(%s, %zu) = %d\n", cageid, strBuf ? strBuf : "NULL", size, retval);
-    free(strBuf);
-  }
-}
-
 void NaClStraceLink(int cageid, char * from, char * to, int retval, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_link, totaltime, retval);
@@ -499,7 +494,7 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
     stracec_increment(NACL_sys_shmget, totaltime, retval);
   } else {
     fprintf(tracingOutputFile, "%d shmget(%d, %zu, %d) = %d\n", cageid, key, size, shmflg, retval);
-  }
+}
 }
 
 void NaClStraceShmdt(int cageid, void * shmaddr, int retval, long long totaltime) {
@@ -793,7 +788,7 @@ void printFinalSyscallStats() {
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %-*s\n",
+        fprintf(tracingOutputFile, "%05.2f    %.9f   %lld        %lld       %lld       %-*s\n",
           percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
           syscallStats[i].errorCount, maxSyscallNameLength, getSyscallName(i));
         totalCalls += syscallStats[i].count;
@@ -809,43 +804,6 @@ void printFinalSyscallStats() {
       totalSeconds, totalCalls, totalErrors, maxSyscallNameLength, "total");
   }
 }
-
-
-// void printFinalSyscallStats() {
-//     if (strace_C) {
-
-//         fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
-//         fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-
-//         long long totalCalls = 0, totalErrors = 0;
-//         double totalSeconds = 0.0;
-
-//         // Calculate total time first
-//         for (int i = 0; i < NUM_SYSCALLS; i++) {
-//             totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
-//         }
-
-//         for (int i = 0; i < NUM_SYSCALLS; i++) {
-//             if (syscallStats[i].count > 0) {
-//                 double totalTimeInSeconds = (double)syscallStats[i].totalTime / 1000000000.0; // Convert nanoseconds to seconds
-//                 //double percentTime = totalSeconds > 0 ? (totalTimeInSeconds / totalSeconds) * 100.0 : 0.0; // Calculate %time
-//                 long long avgTimePerCallInMicroseconds = syscallStats[i].totalTime / syscallStats[i].count / 1000;
-//                 double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0 ;
-//                 fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
-//                     percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
-//                     syscallStats[i].errorCount, getSyscallName(i));
-
-//                 totalCalls += syscallStats[i].count;
-//                 totalErrors += syscallStats[i].errorCount;
-//             }
-//         }
-
-//         // Print the total summary line
-//         fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-//         fprintf(tracingOutputFile, "100.00    %.9f         0         %lld       %lld            total\n",
-//             totalSeconds, totalCalls, totalErrors);
-//     }
-// }
 
 // Helper function to get syscall name from its index
 const char * getSyscallName(int syscallIndex) {
