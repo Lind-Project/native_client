@@ -931,6 +931,22 @@ const char * getSyscallName(int syscallIndex) {
     return "getpid";
   case NACL_sys_getppid:
     return "getppid";
+  case NACL_sys_clock:
+    return "clock";
+  case NACL_sys_fork:
+    return "fork";
+  case NACL_sys_execve:
+    return "execve";
+  case NACL_sys_waitpid:
+    return "waitpid";
+  case NACL_sys_gethostname:
+    return "gethostname";
+  case NACL_sys_getifaddrs:
+    return "getifaddrs";
+  case NACL_sys_execv:
+    return "execv";
+  case NACL_sys_fcntl_set:
+    return "fcntlset";
   default:
     return "unknown";
   }
