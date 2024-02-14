@@ -761,11 +761,10 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 void printFinalSyscallStats() {
   if (strace_C) {
     
-    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors ");
+    fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors   syscall");
     
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ");
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
     
-
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
@@ -778,7 +777,7 @@ void printFinalSyscallStats() {
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %lld       %lld       \n",
+        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %lld       %lld       %-*s \n",
           percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
           syscallStats[i].errorCount, getSyscallName(i));
         totalCalls += syscallStats[i].count;
