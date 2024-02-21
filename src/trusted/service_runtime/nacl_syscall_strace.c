@@ -798,7 +798,7 @@ void printFinalSyscallStats() {
 
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00 %.9f          0       %lld       %lld     total\n",
+    fprintf(tracingOutputFile, "100.00 %.9f          0       %lld       %lld    total\n",
       totalSeconds, totalCalls, totalErrors);
   }
 }
@@ -958,7 +958,7 @@ const char * getSyscallName(int syscallIndex) {
   case NACL_sys_execv:
     return "execv";
   case NACL_sys_fcntl_set:
-    return "fcntlset";
+    return "fcntl_set";
   default:
     return "unknown";
   }
