@@ -517,7 +517,7 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * 
   if (strace_C) {
     stracec_increment(NACL_sys_socketpair, totaltime, retval);
   } else {
-    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
+    fprintf(tracingOutputFile, "%d socketpair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
   }
 }
 
@@ -776,7 +776,7 @@ void printFinalSyscallStats() {
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
+        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %lld       %lld       %s\n",
           percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
