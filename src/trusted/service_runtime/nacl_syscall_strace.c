@@ -761,8 +761,20 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 void printFinalSyscallStats() {
   if (strace_C) {
 
+    // First, find the maximum syscall name length for proper alignment
+    int maxSyscallNameLength = 0;
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+      int nameLength = strlen(getSyscallName(i));
+      if (nameLength > maxSyscallNameLength) {
+        maxSyscallNameLength = nameLength;
+      }
+    }
+
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(tracingOutputFile, "%-*s\n", maxSyscallNameLength, "syscall");
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+    for (int i = 0; i < maxSyscallNameLength; i++) fprintf(tracingOutputFile, "-");
+    fprintf(tracingOutputFile, "\n");
 
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
@@ -776,8 +788,10 @@ void printFinalSyscallStats() {
           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
           0;
         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %lld       %lld       %s\n",
-          percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count, syscallStats[i].errorCount, getSyscallName(i));
+        fprintf(tracingOutputFile, "%05.2f    %.9f   %5lld        %5lld       %5lld       %-*s\n",
+        percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
+        syscallStats[i].errorCount, maxSyscallNameLength, getSyscallName(i));
+
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
       }
@@ -785,11 +799,10 @@ void printFinalSyscallStats() {
 
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
-      totalSeconds, totalCalls, totalErrors);
+    fprintf(tracingOutputFile, "100.00  %.9f        0       %lld       %lld            total\n",
+      totalSeconds, totalCalls, totalErrors, "total");
   }
 }
-
 // Helper function to get syscall name from its index
 const char * getSyscallName(int syscallIndex) {
   switch (syscallIndex) {
