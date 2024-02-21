@@ -772,7 +772,7 @@ void printFinalSyscallStats() {
 
     fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors ");
     fprintf(tracingOutputFile, "%-*s\n", maxSyscallNameLength, "syscall");
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- ---------\n");
+    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ");
     for (int i = 0; i < maxSyscallNameLength; i++) fprintf(tracingOutputFile, "-");
     fprintf(tracingOutputFile, "\n");
 
@@ -799,7 +799,7 @@ void printFinalSyscallStats() {
 
     // Print the total summary line
     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00 %.9f          0        %lld      %lld            total\n",
+    fprintf(tracingOutputFile, "100.00 %.9f          0        %lld        %lld            total\n",
       totalSeconds, totalCalls, totalErrors, "total");
   }
 }
