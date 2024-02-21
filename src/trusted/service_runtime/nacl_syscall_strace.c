@@ -517,7 +517,7 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * 
   if (strace_C) {
     stracec_increment(NACL_sys_socketpair, totaltime, retval);
   } else {
-    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
+    fprintf(tracingOutputFile, "%d socketpair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
   }
 }
 
