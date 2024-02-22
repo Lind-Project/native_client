@@ -27,6 +27,13 @@ typedef struct {
     SyscallStats* stats;
 } SyscallSortEntry;
 
+typedef struct {
+    int syscallIndex;
+    SyscallStats* stats;
+    double percentTime; // Additional field to store the percentage of time
+} SyscallStatExtended;
+
+
 int compareSyscallStats(const void* a, const void* b) {
     SyscallSortEntry* entryA = (SyscallSortEntry*)a;
     SyscallSortEntry* entryB = (SyscallSortEntry*)b;
@@ -773,14 +780,6 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
   } else {
     fprintf(tracingOutputFile, "%d select(%d, 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, nfds, readfds, writefds, exceptfds, timeout, ret);
   }
-}
-
-int compareSyscallStatExtended(const void* a, const void* b) {
-    const SyscallStatExtended* statA = (const SyscallStatExtended*)a;
-    const SyscallStatExtended* statB = (const SyscallStatExtended*)b;
-    if (statB->percentTime > statA->percentTime) return 1;
-    if (statB->percentTime < statA->percentTime) return -1;
-    return 0;
 }
 
 // void printFinalSyscallStats() {
