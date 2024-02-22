@@ -804,7 +804,7 @@ void printFinalSyscallStats() {
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
-            fprintf(tracingOutputFile, "%05.2f  %0.9f   %11lld %9lld %9lld  %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %0.9f   %6lld %9lld %8lld  %s\n",
                    syscallTimes[i].percentTime,
                    (double)syscallStats[idx].totalTime / 1000000000.0,
                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
