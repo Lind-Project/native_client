@@ -24,25 +24,16 @@ typedef struct {
 
 typedef struct {
     int syscallIndex;
-    SyscallStats* stats;
-} SyscallSortEntry;
+    double percentTime;
+} SyscallPercent;
 
-typedef struct {
-    int syscallIndex;
-    SyscallStats* stats;
-    double percentTime; // Additional field to store the percentage of time
-} SyscallStatExtended;
-
-
-int compareSyscallStats(const void* a, const void* b) {
-    SyscallSortEntry* entryA = (SyscallSortEntry*)a;
-    SyscallSortEntry* entryB = (SyscallSortEntry*)b;
-
-    double totalSecondsA = (double)entryA->stats->totalTime / 1000000000.0;
-    double totalSecondsB = (double)entryB->stats->totalTime / 1000000000.0;
-
-    // Descending order
-    return (totalSecondsB - totalSecondsA) > 0 ? 1 : -1;
+// Comparison function for sorting SyscallPercent in descending order of % time
+int compareSyscallPercent(const void* a, const void* b) {
+    const SyscallPercent* entryA = (const SyscallPercent*)a;
+    const SyscallPercent* entryB = (const SyscallPercent*)b;
+    if (entryA->percentTime < entryB->percentTime) return 1;
+    if (entryA->percentTime > entryB->percentTime) return -1;
+    return 0;
 }
 
 SyscallStats syscallStats[NUM_SYSCALLS];
@@ -828,48 +819,46 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 
 void printFinalSyscallStats() {
     if (strace_C) {
-        // First, calculate total time across all syscalls for percentage calculations
-        long long totalNanoSeconds = 0;
+        // First, calculate total time across all syscalls to find the total seconds
+        double totalSeconds = 0.0;
         for (int i = 0; i < NUM_SYSCALLS; i++) {
-            totalNanoSeconds += syscallStats[i].totalTime;
+            totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
         }
-        double totalSeconds = (double)totalNanoSeconds / 1000000000.0;
 
-        // Allocate an array for sorting
-        SyscallSortEntry sortEntries[NUM_SYSCALLS];
-        int numEntries = 0;
+        // Create an array to hold the % time for each syscall
+        SyscallPercent percentages[NUM_SYSCALLS];
+        int validSyscalls = 0;
 
-        // Populate the array
         for (int i = 0; i < NUM_SYSCALLS; i++) {
             if (syscallStats[i].count > 0) {
-                sortEntries[numEntries].syscallIndex = i;
-                sortEntries[numEntries].stats = &syscallStats[i];
-                numEntries++;
+                percentages[validSyscalls].syscallIndex = i;
+                percentages[validSyscalls].percentTime = ((double)syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100.0;
+                validSyscalls++;
             }
         }
 
-        // Sort the array
-        qsort(sortEntries, numEntries, sizeof(SyscallSortEntry), compareSyscallStats);
+        // Sort the percentages array in descending order
+        qsort(percentages, validSyscalls, sizeof(SyscallPercent), compareSyscallPercent);
 
         // Print header
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscalls\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
 
-        // Iterate over sorted array to print stats
-        for (int i = 0; i < numEntries; i++) {
-            double totalTimeInSeconds = (double)sortEntries[i].stats->totalTime / 1000000000.0;
-            long long avgTimePerCallInMicroseconds = sortEntries[i].stats->count > 0 ?
-                sortEntries[i].stats->totalTime / sortEntries[i].stats->count / 1000 :
+        // Print sorted syscall statistics
+        for (int i = 0; i < validSyscalls; i++) {
+            int index = percentages[i].syscallIndex;
+            double totalTimeInSeconds = (double)syscallStats[index].totalTime / 1000000000.0;
+            long long avgTimePerCallInMicroseconds = syscallStats[index].count > 0 ?
+                syscallStats[index].totalTime / syscallStats[index].count / 1000 :
                 0;
-            double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
             fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
-                percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, sortEntries[i].stats->count, sortEntries[i].stats->errorCount, getSyscallName(sortEntries[i].syscallIndex));
+                percentages[i].percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[index].count, syscallStats[index].errorCount, getSyscallName(index));
         }
 
         // Print the total summary line
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
         fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
-            totalSeconds, totalNanoSeconds, totalNanoSeconds); // Update these values as per actual total calls and errors
+            totalSeconds, totalSeconds, totalSeconds); // Update these placeholders accordingly
     }
 }
 
