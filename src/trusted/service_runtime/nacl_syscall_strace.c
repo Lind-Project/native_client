@@ -774,7 +774,7 @@ int compareSyscallTime(const void *a, const void *b) {
     return 0;
 }
 
-void printSortedSyscallStats() {
+void printFinalSyscallStats() {
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
