@@ -10,8 +10,8 @@
 #include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 #include <time.h>
 #include <stdbool.h>
-#include <stdlib.h> 
 #define NUM_SYSCALLS 256
+#include <stdlib.h> // For qsort
 
 FILE * tracingOutputFile = NULL;
 long long totalSyscallsTime = 0; // Total time for all syscalls
@@ -21,20 +21,6 @@ typedef struct {
   long long totalTime; // Total time spent in the syscall (in nanoseconds)
   long long errorCount; // Number of errors encountered in the syscall
 }SyscallStats;
-
-typedef struct {
-    int syscallIndex;
-    double percentTime;
-} SyscallPercent;
-
-// Comparison function for sorting SyscallPercent in descending order of % time
-int compareSyscallPercent(const void* a, const void* b) {
-    const SyscallPercent* entryA = (const SyscallPercent*)a;
-    const SyscallPercent* entryB = (const SyscallPercent*)b;
-    if (entryA->percentTime < entryB->percentTime) return 1;
-    if (entryA->percentTime > entryB->percentTime) return -1;
-    return 0;
-}
 
 SyscallStats syscallStats[NUM_SYSCALLS];
 int strace_C = 0;
@@ -532,7 +518,7 @@ void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int * 
   if (strace_C) {
     stracec_increment(NACL_sys_socketpair, totaltime, retval);
   } else {
-    fprintf(tracingOutputFile, "%d socketpair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
+    fprintf(tracingOutputFile, "%d SocketPair(%d, %d, %d, [%d, %d]) = %d\n",cageid, domain, type, protocol, lindfds[0], lindfds[1], retval);
   }
 }
 
@@ -773,49 +759,21 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
   }
 }
 
-// void printFinalSyscallStats() {
-//   if (strace_C) {
 
-//     // First, find the maximum syscall name length for proper alignment
-//     int maxSyscallNameLength = 0;
-//     for (int i = 0; i < NUM_SYSCALLS; i++) {
-//       int nameLength = strlen(getSyscallName(i));
-//       if (nameLength > maxSyscallNameLength) {
-//         maxSyscallNameLength = nameLength;
-//       }
-//     }
+// Structure to hold the syscall index and its % time
+typedef struct {
+    int syscallIndex;
+    double percentTime;
+} SyscallPercent;
 
-//     fprintf(tracingOutputFile, "%% time  seconds     usecs/call     calls    errors ");
-//     fprintf(tracingOutputFile, "%-*s\n", maxSyscallNameLength, "syscall");
-//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ");
-//     for (int i = 0; i < maxSyscallNameLength; i++) fprintf(tracingOutputFile, "-");
-//     fprintf(tracingOutputFile, "\n");
-
-//     long long totalCalls = 0, totalErrors = 0;
-//     double totalSeconds = 0.0;
-//     for (int i = 0; i < NUM_SYSCALLS; i++) {
-//       totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
-//     }
-//     for (int i = 0; i < NUM_SYSCALLS; i++) {
-//       if (syscallStats[i].count > 0) {
-//         double totalTimeInSeconds = (double) syscallStats[i].totalTime / 1000000000.0;
-//         long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
-//           syscallStats[i].totalTime / syscallStats[i].count / 1000 :
-//           0;
-//         double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-//         fprintf(tracingOutputFile, "%05.2f  %.9f      %5lld     %5lld     %5lld  %-*s\n",
-//         percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
-//         syscallStats[i].errorCount, maxSyscallNameLength, getSyscallName(i));
-//         totalCalls += syscallStats[i].count;
-//         totalErrors += syscallStats[i].errorCount;
-//       }
-//     }
-
-//     // Print the total summary line
-//     fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-//     fprintf(tracingOutputFile, "100.00 %.9f          0       %lld       %lld   total\n", totalSeconds, totalCalls, totalErrors);
-//   }
-// }
+// Comparison function for sorting SyscallPercent in descending order of % time
+int compareSyscallPercent(const void* a, const void* b) {
+    const SyscallPercent* entryA = (const SyscallPercent*)a;
+    const SyscallPercent* entryB = (const SyscallPercent*)b;
+    if (entryA->percentTime < entryB->percentTime) return 1;
+    if (entryA->percentTime > entryB->percentTime) return -1;
+    return 0;
+}
 
 void printFinalSyscallStats() {
     if (strace_C) {
@@ -861,6 +819,7 @@ void printFinalSyscallStats() {
             totalSeconds, totalSeconds, totalSeconds); // Update these placeholders accordingly
     }
 }
+
 
 // Helper function to get syscall name from its index
 const char * getSyscallName(int syscallIndex) {
@@ -1003,22 +962,6 @@ const char * getSyscallName(int syscallIndex) {
     return "getpid";
   case NACL_sys_getppid:
     return "getppid";
-  case NACL_sys_clock:
-    return "clock";
-  case NACL_sys_fork:
-    return "fork";
-  case NACL_sys_execve:
-    return "execve";
-  case NACL_sys_waitpid:
-    return "waitpid";
-  case NACL_sys_gethostname:
-    return "gethostname";
-  case NACL_sys_getifaddrs:
-    return "getifaddrs";
-  case NACL_sys_execv:
-    return "execv";
-  case NACL_sys_fcntl_set:
-    return "fcntl_set";
   default:
     return "unknown";
   }
