@@ -808,7 +808,7 @@ void printFinalSyscallStats() {
 
         // Print the total summary line to the tracing output file
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %0.9f      %lld   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %0.9f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
 
