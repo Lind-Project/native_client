@@ -21,6 +21,19 @@ typedef struct {
   long long errorCount; // Number of errors encountered in the syscall
 }SyscallStats;
 
+typedef struct {
+    int syscallIndex;
+    double percentTime;
+} SyscallPercent;
+
+int compareSyscallPercent(const void* a, const void* b) {
+    const SyscallPercent* entryA = (const SyscallPercent*)a;
+    const SyscallPercent* entryB = (const SyscallPercent*)b;
+    if (entryA->percentTime < entryB->percentTime) return 1;
+    if (entryA->percentTime > entryB->percentTime) return -1;
+    return 0;
+}
+
 SyscallStats syscallStats[NUM_SYSCALLS];
 int strace_C = 0;
 // this defines the number of characters we display for printing a string buf
@@ -759,47 +772,48 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 }
 
 void printFinalSyscallStats() {
-  if (strace_C) {
+    if (strace_C) {
+        // First, calculate total time across all syscalls to find the total seconds
+        double totalSeconds = 0.0;
+        for (int i = 0; i < NUM_SYSCALLS; i++) {
+            totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
+        }
 
-    // First, find the maximum syscall name length for proper alignment
-    int maxSyscallNameLength = 0;
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-      int nameLength = strlen(getSyscallName(i));
-      if (nameLength > maxSyscallNameLength) {
-        maxSyscallNameLength = nameLength;
-      }
+        // Create an array to hold the % time for each syscall
+        SyscallPercent percentages[NUM_SYSCALLS];
+        int validSyscalls = 0;
+
+        for (int i = 0; i < NUM_SYSCALLS; i++) {
+            if (syscallStats[i].count > 0) {
+                percentages[validSyscalls].syscallIndex = i;
+                percentages[validSyscalls].percentTime = ((double)syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100.0;
+                validSyscalls++;
+            }
+        }
+
+        // Sort the percentages array in descending order
+        qsort(percentages, validSyscalls, sizeof(SyscallPercent), compareSyscallPercent);
+
+        // Print header
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+
+        // Print sorted syscall statistics
+        for (int i = 0; i < validSyscalls; i++) {
+            int index = percentages[i].syscallIndex;
+            double totalTimeInSeconds = (double)syscallStats[index].totalTime / 1000000000.0;
+            long long avgTimePerCallInMicroseconds = syscallStats[index].count > 0 ?
+                syscallStats[index].totalTime / syscallStats[index].count / 1000 :
+                0;
+            fprintf(tracingOutputFile, "%.2f    %.9f   %lld        %lld       %lld       %s\n",
+                percentages[i].percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[index].count, syscallStats[index].errorCount, getSyscallName(index));
+        }
+
+        // Print the total summary line
+        fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+        fprintf(tracingOutputFile, "100.00    %.9f      0       %lld       %lld            total\n",
+            totalSeconds, totalSeconds, totalSeconds); // Update these placeholders accordingly
     }
-
-    fprintf(tracingOutputFile, "%% time  seconds     usecs/call     calls    errors ");
-    fprintf(tracingOutputFile, "%-*s\n", maxSyscallNameLength, "syscall");
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ");
-    for (int i = 0; i < maxSyscallNameLength; i++) fprintf(tracingOutputFile, "-");
-    fprintf(tracingOutputFile, "\n");
-
-    long long totalCalls = 0, totalErrors = 0;
-    double totalSeconds = 0.0;
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-      totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert to seconds
-    }
-    for (int i = 0; i < NUM_SYSCALLS; i++) {
-      if (syscallStats[i].count > 0) {
-        double totalTimeInSeconds = (double) syscallStats[i].totalTime / 1000000000.0;
-        long long avgTimePerCallInMicroseconds = syscallStats[i].count > 0 ?
-          syscallStats[i].totalTime / syscallStats[i].count / 1000 :
-          0;
-        double percentTime = (totalTimeInSeconds / totalSeconds) * 100.0;
-        fprintf(tracingOutputFile, "%05.2f  %.9f      %5lld     %5lld     %5lld  %-*s\n",
-        percentTime, totalTimeInSeconds, avgTimePerCallInMicroseconds, syscallStats[i].count,
-        syscallStats[i].errorCount, maxSyscallNameLength, getSyscallName(i));
-        totalCalls += syscallStats[i].count;
-        totalErrors += syscallStats[i].errorCount;
-      }
-    }
-
-    // Print the total summary line
-    fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(tracingOutputFile, "100.00 %.9f          0       %lld       %lld   total\n", totalSeconds, totalCalls, totalErrors);
-  }
 }
 
 // Helper function to get syscall name from its index
