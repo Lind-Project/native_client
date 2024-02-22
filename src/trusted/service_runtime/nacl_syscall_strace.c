@@ -774,35 +774,43 @@ void printFinalSyscallStats() {
         long long totalCalls = 0, totalErrors = 0;
         double totalSeconds = 0.0;
         for (int i = 0; i < NUM_SYSCALLS; i++) {
-            totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
+            totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert nanoseconds to seconds
             totalCalls += syscallStats[i].count;
             totalErrors += syscallStats[i].errorCount;
         }
 
         SyscallTime syscallTimes[NUM_SYSCALLS];
-        for (int i = 0, validCount = 0; i < NUM_SYSCALLS; i++) {
+        int validCount = 0;
+        for (int i = 0; i < NUM_SYSCALLS; i++) {
             if (syscallStats[i].count > 0) {
-                syscallTimes[validCount++] = (SyscallTime){.index = i, .percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100};
+                syscallTimes[validCount].index = i;
+                syscallTimes[validCount].percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100; // Calculate % time
+                validCount++;
             }
         }
 
-        int validCount = sizeof(syscallTimes) / sizeof(syscallTimes[0]);
+        // Sort the syscallTimes array by percent time in descending order
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscalls\n");
-        fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
+        // Print the header to the tracing output file
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscalls\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+
+        // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
-            fprintf(tracingOutputFile, "%05.2f  %0.9f   %7lld   %6lld  %6lld      %s\n",
-                syscallTimes[i].percentTime,
-                (double)syscallStats[idx].totalTime / 1000000000.0,
-                syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
-                syscallStats[idx].count,
-                syscallStats[idx].errorCount,
-                getSyscallName(idx));
+            fprintf(tracingOutputFile, "%05.2f  %0.9f   %7lld   %6lld  %6lld     %s\n",
+                   syscallTimes[i].percentTime,
+                   (double)syscallStats[idx].totalTime / 1000000000.0,
+                   syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
+                   syscallStats[idx].count,
+                   syscallStats[idx].errorCount,
+                   getSyscallName(idx));
         }
-        fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
-        fprintf(tracingOutputFile, "100.00 %0.9f       0       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
+
+        // Print the total summary line to the tracing output file
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "100.00  %0.9f      %lld   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
 
