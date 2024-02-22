@@ -852,7 +852,7 @@ void printFinalSyscallStats() {
         qsort(sortEntries, numEntries, sizeof(SyscallSortEntry), compareSyscallStats);
 
         // Print header
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscall\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call     calls    errors syscalls\n");
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- --------- ----------------\n");
 
         // Iterate over sorted array to print stats
