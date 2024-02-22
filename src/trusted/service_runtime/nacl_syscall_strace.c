@@ -778,7 +778,7 @@ void printFinalSyscallStats() {
     long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
-        totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
+        totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0; // Convert nanoseconds to seconds
         totalCalls += syscallStats[i].count;
         totalErrors += syscallStats[i].errorCount;
     }
@@ -788,27 +788,33 @@ void printFinalSyscallStats() {
     for (int i = 0; i < NUM_SYSCALLS; i++) {
         if (syscallStats[i].count > 0) {
             syscallTimes[validCount].index = i;
-            syscallTimes[validCount].percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100;
+            syscallTimes[validCount].percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100; // Calculate % time
             validCount++;
         }
     }
 
+    // Sort the syscallTimes array by percent time in descending order
     qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-    printf("%% time     seconds  usecs/call     calls    errors syscall\n");
-    printf("------ ----------- ----------- --------- --------- ----------------\n");
+    // Print the header to stdout
+    fprintf(stdout, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(stdout, "------ ----------- ----------- --------- --------- ----------------\n");
+
+    // Print each syscall's stats to stdout
     for (int i = 0; i < validCount; i++) {
         int idx = syscallTimes[i].index;
-        printf("%05.2f  %0.9f   %11lld %9lld %9lld  %s\n",
+        fprintf(stdout, "%05.2f  %0.9f   %11lld %9lld %9lld  %s\n",
                syscallTimes[i].percentTime,
                (double)syscallStats[idx].totalTime / 1000000000.0,
-               syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
+               syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
                syscallStats[idx].count,
                syscallStats[idx].errorCount,
                getSyscallName(idx));
     }
-    printf("------ ----------- ----------- --------- --------- ----------------\n");
-    printf("100.00  %0.9f      %lld       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
+
+    // Print the total summary line to stdout
+    fprintf(stdout, "------ ----------- ----------- --------- --------- ----------------\n");
+    fprintf(stdout, "100.00  %0.9f      %lld       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
 }
 
 // Helper function to get syscall name from its index
