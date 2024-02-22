@@ -27,8 +27,9 @@ typedef struct {
 } SyscallTime;
 
 int compareSyscallTime(const void *a, const void *b) {
-    const double delta = ((const SyscallTime *)b)->percentTime - ((const SyscallTime *)a)->percentTime;
-    return (delta > 0) - (delta < 0);
+  const SyscallTime *syscallA = (const SyscallTime *)a;
+  const SyscallTime *syscallB = (const SyscallTime *)b;
+  return (syscallB->percentTime - syscallA->percentTime > 0) - (syscallA->percentTime - syscallB->percentTime > 0);
 }
 
 SyscallStats syscallStats[NUM_SYSCALLS];
