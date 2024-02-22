@@ -797,7 +797,7 @@ void printFinalSyscallStats() {
     qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
     // Print the header to stdout
-    fprintf(stdout, "%% time     seconds  usecs/call     calls    errors syscall\n");
+    fprintf(stdout, "%% time     seconds  usecs/call     calls    errors syscalls\n");
     fprintf(stdout, "------ ----------- ----------- --------- --------- ----------------\n");
 
     // Print each syscall's stats to stdout
@@ -814,7 +814,7 @@ void printFinalSyscallStats() {
 
     // Print the total summary line to stdout
     fprintf(stdout, "------ ----------- ----------- --------- --------- ----------------\n");
-    fprintf(stdout, "100.00  %0.9f      %lld       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
+    fprintf(stdout, "100.00  %0.9f      0       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
 }
 
 // Helper function to get syscall name from its index
