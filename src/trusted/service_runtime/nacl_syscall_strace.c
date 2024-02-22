@@ -767,47 +767,50 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 }
 
 int compareSyscallTime(const void *a, const void *b) {
-    SyscallTime *syscallA = (SyscallTime *)a;
-    SyscallTime *syscallB = (SyscallTime *)b;
-    return (syscallB->percentTime - syscallA->percentTime) > 0 ? 1 : -1;
+    const SyscallTime *syscallA = (const SyscallTime *)a;
+    const SyscallTime *syscallB = (const SyscallTime *)b;
+    if (syscallA->percentTime > syscallB->percentTime) return -1;
+    if (syscallA->percentTime < syscallB->percentTime) return 1;
+    return 0;
 }
 
 void printSortedSyscallStats() {
+    long long totalCalls = 0, totalErrors = 0;
     double totalSeconds = 0.0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
-        totalSeconds += syscallStats[i].totalTime / 1000000000.0;
+        totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
+        totalCalls += syscallStats[i].count;
+        totalErrors += syscallStats[i].errorCount;
     }
 
     SyscallTime syscallTimes[NUM_SYSCALLS];
-    int count = 0;
-
+    int validCount = 0;
     for (int i = 0; i < NUM_SYSCALLS; i++) {
         if (syscallStats[i].count > 0) {
-            syscallTimes[count].index = i;
-            syscallTimes[count].percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100;
-            count++;
+            syscallTimes[validCount].index = i;
+            syscallTimes[validCount].percentTime = (syscallStats[i].totalTime / 1000000000.0) / totalSeconds * 100;
+            validCount++;
         }
     }
 
-    qsort(syscallTimes, count, sizeof(SyscallTime), compareSyscallTime);
+    qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
     printf("%% time     seconds  usecs/call     calls    errors syscall\n");
     printf("------ ----------- ----------- --------- --------- ----------------\n");
-
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < validCount; i++) {
         int idx = syscallTimes[i].index;
         printf("%05.2f  %0.9f   %11lld %9lld %9lld  %s\n",
                syscallTimes[i].percentTime,
-               syscallStats[idx].totalTime / 1000000000.0,
-               syscallStats[idx].totalTime / syscallStats[idx].count / 1000,
+               (double)syscallStats[idx].totalTime / 1000000000.0,
+               syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
                syscallStats[idx].count,
                syscallStats[idx].errorCount,
                getSyscallName(idx));
     }
-    // Print the total summary line
     printf("------ ----------- ----------- --------- --------- ----------------\n");
-    printf("100.00  %0.9f      %0       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors); // Update these values accordingly
+    printf("100.00  %0.9f      %lld       %lld       %lld            total\n", totalSeconds, totalCalls, totalErrors);
 }
+
 // Helper function to get syscall name from its index
 const char * getSyscallName(int syscallIndex) {
   switch (syscallIndex) {
