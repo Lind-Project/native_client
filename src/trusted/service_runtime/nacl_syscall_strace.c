@@ -770,7 +770,7 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
 }
 
 void printFinalSyscallStats() {
-    if (strace_C && tracingOutputFile != NULL) {
+    if (strace_C) {
         long long totalCalls = 0, totalErrors = 0;
         double totalSeconds = 0.0;
         for (int i = 0; i < NUM_SYSCALLS; i++) {
