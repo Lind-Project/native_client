@@ -789,11 +789,9 @@ void printFinalSyscallStats() {
             }
         }
 
-        // Sort the syscallTimes array by percent time in descending order
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        // Print the header to the tracing output file
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscalls\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
 
         // Print each syscall's stats to the tracing output file
