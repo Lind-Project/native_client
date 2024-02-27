@@ -35,7 +35,6 @@
 #define NACL_sys_stat                   17
 #define NACL_sys_fstat                  18
 #define NACL_sys_chmod                  19
-/* no fchmod emulation on windows */
 
 #define NACL_sys_brk                    20
 #define NACL_sys_mmap                   21
@@ -46,6 +45,9 @@
 #define NACL_sys_mprotect               24
 
 #define NACL_sys_list_mappings          25
+
+#define NACL_sys_truncate               26
+#define NACL_sys_ftruncate              27
 
 #define NACL_sys_exit                   30
 #define NACL_sys_getpid                 31
@@ -86,6 +88,7 @@
 #define NACL_sys_imc_mem_obj_create     65
 #define NACL_sys_imc_socketpair         66
 
+#define NACL_sys_mutex_destroy          69
 #define NACL_sys_mutex_create           70
 #define NACL_sys_mutex_lock             71
 #define NACL_sys_mutex_trylock          72
@@ -94,6 +97,7 @@
 #define NACL_sys_cond_wait              75
 #define NACL_sys_cond_signal            76
 #define NACL_sys_cond_broadcast         77
+#define NACL_sys_cond_destroy           78
 #define NACL_sys_cond_timed_wait_abs    79
 
 #define NACL_sys_thread_create          80
@@ -107,10 +111,13 @@
 #define NACL_sys_exception_stack        88
 #define NACL_sys_exception_clear_flag   89
 
-#define NACL_sys_sem_create             100
-#define NACL_sys_sem_wait               101
-#define NACL_sys_sem_post               102
-#define NACL_sys_sem_get_value          103
+#define NACL_sys_sem_init               91
+#define NACL_sys_sem_wait               92
+#define NACL_sys_sem_trywait            93
+#define NACL_sys_sem_timedwait          94
+#define NACL_sys_sem_post               95
+#define NACL_sys_sem_destroy            96
+#define NACL_sys_sem_getvalue           97
 
 #define NACL_sys_dyncode_create         104
 #define NACL_sys_dyncode_modify         105
@@ -135,7 +142,6 @@
 #define NACL_sys_waitpid                120
 #define NACL_sys_wait                   121
 #define NACL_sys_wait4                  122
-#define NACL_sys_sigprocmask            123
 #define NACL_sys_lstat                  124
 
 #define NACL_sys_gethostname            125
@@ -151,7 +157,7 @@
 #define NACL_sys_rmdir                  132
 #define NACL_sys_statfs                 133
 #define NACL_sys_fstatfs                134
-
+#define NACL_sys_fchmod                 135
 #define NACL_sys_socket                 136
 #define NACL_sys_getsockopt             137
 #define NACL_sys_setsockopt             138
@@ -166,9 +172,26 @@
 #define NACL_sys_getpeername            145
 #define NACL_sys_getifaddrs             146
 
+#define NACL_sys_sigaction		        147
+#define NACL_sys_kill			        148
+#define NACL_sys_sigprocmask            149
+#define NACL_sys_lindsetitimer		    150
+
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
+#define NACL_sys_fchdir                 161
+#define NACL_sys_fsync                  162
+#define NACL_sys_fdatasync              163
+#define NACL_sys_sync_file_range        164
+
+
+#define NACL_sys_reg_restore            250
+//We need to reserve more slots as the reg restoration takes more than 32 bytes
+#define __reg_restore_reserved_slot2    251
+#define __reg_restore_reserved_slot3    252
+#define __reg_restore_reserved_slot4    253
+#define NACL_sys_sigmask_sigreturn      255
 
 #define NACL_MAX_SYSCALLS               256
 

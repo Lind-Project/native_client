@@ -11,6 +11,10 @@
 #ifndef __NATIVE_CLIENT_SERVICE_RUNTIME_ARCH_X86_64_NACL_SIGNAL_64_H__
 #define __NATIVE_CLIENT_SERVICE_RUNTIME_ARCH_X86_64_NACL_SIGNAL_64_H__ 1
 
+/* allow in case of assembler */
+#include "native_client/src/trusted/service_runtime/arch/x86_64/sel_rt_64.h"
+
+#if !defined(__ASSEMBLER__)
 #include "native_client/src/include/portability.h"
 
 /*
@@ -47,5 +51,36 @@ struct NaClSignalContext {
   uint32_t gs;
   uint32_t padding;  /* Pad to a multiple of 8 bytes */
 };
+
+NORETURN void NaClSwitchFromSignal(struct NaClSignalContext* ctx);
+NORETURN void NaClSwitchFromSignalTrusted(struct NaClSignalContext* ctx);
+NORETURN void NaClSwitchFromSignalTls(int sig, struct NaClThreadContext* ctx);
+
+#endif /* !defined(__ASSEMBLER__) */
+
+#define NACL_SIGNAL_CONTEXT_RAX_OFFSET 0
+#define NACL_SIGNAL_CONTEXT_RBX_OFFSET 8
+#define NACL_SIGNAL_CONTEXT_RCX_OFFSET 16
+#define NACL_SIGNAL_CONTEXT_RDX_OFFSET 24
+#define NACL_SIGNAL_CONTEXT_RSI_OFFSET 32
+#define NACL_SIGNAL_CONTEXT_RDI_OFFSET 40
+#define NACL_SIGNAL_CONTEXT_RBP_OFFSET 48
+#define NACL_SIGNAL_CONTEXT_STACK_PTR_OFFSET 56
+#define NACL_SIGNAL_CONTEXT_R8_OFFSET 64
+#define NACL_SIGNAL_CONTEXT_R9_OFFSET 72
+#define NACL_SIGNAL_CONTEXT_R10_OFFSET 80
+#define NACL_SIGNAL_CONTEXT_R11_OFFSET 88
+#define NACL_SIGNAL_CONTEXT_R12_OFFSET 96
+#define NACL_SIGNAL_CONTEXT_R13_OFFSET 104
+#define NACL_SIGNAL_CONTEXT_R14_OFFSET 112
+#define NACL_SIGNAL_CONTEXT_R15_OFFSET 120
+#define NACL_SIGNAL_CONTEXT_PROG_CTR_OFFSET 128
+#define NACL_SIGNAL_CONTEXT_FLAGS_OFFSET 136
+#define NACL_SIGNAL_CONTEXT_CS_OFFSET 140
+#define NACL_SIGNAL_CONTEXT_SS_OFFSET 144
+#define NACL_SIGNAL_CONTEXT_DS_OFFSET 148
+#define NACL_SIGNAL_CONTEXT_ES_OFFSET 152
+#define NACL_SIGNAL_CONTEXT_FS_OFFSET 156
+#define NACL_SIGNAL_CONTEXT_GS_OFFSET 160
 
 #endif /* __NATIVE_CLIENT_SERVICE_RUNTIME_ARCH_X86_64_NACL_SIGNAL_64_H__ */

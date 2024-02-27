@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <sys/time.h>
 
 #include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/shared/platform/nacl_log.h"
@@ -101,8 +102,32 @@ int lind_access (const char *file, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_access, cstr, file, int, mode);
 }
 
+int lind_truncate (const char *file, int length, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_truncate, cstr, file, off_t, length);
+}
+
+int lind_ftruncate (int fd, int length, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_ftruncate, int, fd, off_t, length);
+}
+
 int lind_chdir (const char *name, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_chdir, cstr, name);
+}
+
+int lind_fchdir (int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
+}
+
+int lind_fsync (int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fsync, int, fd);
+}
+
+int lind_fdatasync (int fd, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_fs_fdatasync, int, fd);
+}
+
+int lind_sync_file_range (int fd, off_t offset, off_t nbytes, unsigned int flags, int cageid) {
+    DISPATCH_SYSCALL_4(LIND_safe_fs_sync_file_range, int, fd, off_t, offset, off_t, nbytes, uint, flags);
 }
 
 int lind_mkdir (const char *path, int mode, int cageid) {
@@ -115,6 +140,10 @@ int lind_rmdir (const char *path, int cageid) {
 
 int lind_chmod (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_chmod, cstr, path, int, mode);
+}
+
+int lind_fchmod(int fd, int mode, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_fs_fchmod, int, fd, int, mode); 
 }
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {
@@ -217,7 +246,7 @@ int lind_setsockopt (int sockfd, int level, int optname, const void *optval, soc
     DISPATCH_SYSCALL_5(LIND_safe_net_setsockopt, int, sockfd, int, level, int, optname, cbuf, optval, socklen_t, optlen);
 }
 
-int lind_select (int nfds, char * readfds, char * writefds, char * exceptfds, struct timeval *timeout, int cageid) {
+int lind_select (int nfds, fd_set * readfds, fd_set * writefds, fd_set * exceptfds, struct timeval *timeout, int cageid) {
     DISPATCH_SYSCALL_5(LIND_safe_net_select, int, nfds, cbuf, readfds, cbuf, writefds, cbuf, exceptfds, timevalstruct, timeout);
 }
 
@@ -237,6 +266,79 @@ int lind_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int tim
 
 int lind_socketpair (int domain, int type, int protocol, int* sv, int cageid) {
     DISPATCH_SYSCALL_4(LIND_safe_net_socketpair, int, domain, int, type, int, protocol, pipearray, sv);
+}
+
+int lind_mutex_create (int cageid) {
+    DISPATCH_SYSCALL_0(LIND_safe_mutex_create);
+}
+
+int lind_mutex_destroy (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_destroy, int, mutex_handle);
+}
+
+int lind_mutex_lock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_lock, int, mutex_handle);
+}
+
+int lind_mutex_trylock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_trylock, int, mutex_handle);
+}
+
+int lind_mutex_unlock (int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_mutex_unlock, int, mutex_handle);
+}
+
+int lind_cond_create (int cageid) {
+    DISPATCH_SYSCALL_0(LIND_safe_cond_create);
+}
+
+int lind_cond_destroy (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_destroy, int, cond_handle);
+}
+
+int lind_cond_wait (int cond_handle, int mutex_handle, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_cond_wait, int, cond_handle, int, mutex_handle);
+}
+
+int lind_cond_broadcast (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_broadcast, int, cond_handle);
+}
+
+int lind_cond_signal (int cond_handle, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_cond_signal, int, cond_handle);
+}
+
+int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_cond_timedwait, int, cond_handle, 
+                       timespecstruct, ts, int, mutex_handle);
+}
+
+int lind_sem_init (unsigned int sem, int pshared, int value, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sem_init, uint, sem, int, pshared, int, value);
+}
+
+int lind_sem_wait (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_wait, uint, sem);
+}
+
+int lind_sem_trywait (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_trywait, uint, sem);
+}
+
+int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_sem_timedwait, uint, sem, timespecstruct, abs);
+}
+
+int lind_sem_post (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_post, uint, sem);
+}
+
+int lind_sem_destroy (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_destroy, uint, sem);
+}
+
+int lind_sem_getvalue (unsigned int sem, int cageid) {
+    DISPATCH_SYSCALL_1(LIND_safe_sem_getvalue, uint, sem);
 }
 
 int lind_getcwd (char *buf, size_t size, int cageid) {
@@ -284,9 +386,7 @@ int lind_getegid (int cageid) {
 }
 
 int lind_flock (int fd, int operation, int cageid) {
-    (void) fd;
-    (void) operation;
-    DISPATCH_SYSCALL_0(LIND_safe_fs_flock);
+    DISPATCH_SYSCALL_2(LIND_safe_fs_flock, int, fd, int, operation);
 }
 
 int lind_pipe(int* pipefds, int cageid) {
@@ -341,3 +441,18 @@ int lind_exit(int status, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_sys_exit, int, status);
 }
 
+int lind_sigaction(int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sys_sigaction, int, sig, constnaclabisigactionstruct, act, naclabisigactionstruct, ocat);
+}
+
+int lind_kill(int targetcageid, int sig, int cageid) {
+    DISPATCH_SYSCALL_2(LIND_safe_sys_kill, int, targetcageid, int, sig);
+}
+
+int lind_sigprocmask(int how, const uint64_t *nacl_set, uint64_t *nacl_oldset, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sys_sigprocmask, int, how, constnaclsigset, nacl_set, naclsigset, nacl_oldset);
+}
+
+int lind_lindsetitimer(int which, const struct itimerval *new_value, struct itimerval *old_value, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_sys_lindsetitimer, int, which, conststructitimerval, new_value, structitimerval, old_value);
+}

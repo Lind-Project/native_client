@@ -12,6 +12,7 @@
 #define NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ 1
 
 #include "native_client/src/include/portability.h"
+#include "native_client/src/shared/platform/lind_stat.h"
 
 #include "native_client/src/include/nacl_base.h"
 #include "native_client/src/shared/platform/nacl_host_desc.h"
@@ -19,6 +20,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <sys/shm.h>
+#include <signal.h>
 
 EXTERN_C_BEGIN
 
@@ -29,6 +31,7 @@ struct NaClSocketAddress;
 struct NaClDesc;
 struct NaClImcMsgHdr;
 struct nacl_abi_stat;
+struct nacl_abi_sigaction;
 struct rusage;
 struct sockaddr;
 
@@ -161,7 +164,28 @@ int32_t NaClSysChdir(struct NaClAppThread *natp,
 int32_t NaClSysChmod(struct NaClAppThread *natp,
                      uint32_t             pathname,
                      int                  mode);
-                     
+
+int32_t NaClSysFchmod(struct NaClAppThread *natp,
+                     int                    fd,
+                     int                  mode);
+
+int32_t NaClSysFchdir(struct NaClAppThread *natp,
+		     int 	           fd);
+
+int32_t NaClSysFsync(struct NaClAppThread *natp,
+		     int 	           fd);
+
+int32_t NaClSysFdatasync(struct NaClAppThread *natp,
+		     int 	           fd);
+
+
+int32_t NaClSysSyncFileRange(struct NaClAppThread *natp,
+		     int 	           fd,
+		     off_t 		   offset,
+		     off_t 		   nbytes,
+                     uint32_t		   flags);
+
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size);
@@ -255,9 +279,6 @@ int32_t NaClSysClockGetTime(struct NaClAppThread  *natp,
                             int                   clk_id,
                             uint32_t              tsp);
 
-int32_t NaClSysImcMakeBoundSock(struct NaClAppThread *natp,
-                                int32_t              *sap);
-
 int32_t NaClSysAccept(struct NaClAppThread *natp,
                       int sockfd, 
                       struct sockaddr *addr, 
@@ -266,19 +287,6 @@ int32_t NaClSysConnect(struct NaClAppThread *natp,
                        int sockfd, 
                        const struct sockaddr *addr, 
                        socklen_t addrlen);
-
-int32_t NaClSysImcSendmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
-int32_t NaClSysImcRecvmsg(struct NaClAppThread         *natp,
-                          int                          d,
-                          struct NaClAbiNaClImcMsgHdr  *nanimhp,
-                          int                          flags);
-
-int32_t NaClSysImcMemObjCreate(struct NaClAppThread  *natp,
-                               size_t                size);
 
 int32_t NaClSysTlsInit(struct NaClAppThread  *natp,
                        uint32_t              thread_ptr);
@@ -312,6 +320,9 @@ int32_t NaClSysMutexUnlock(struct NaClAppThread *natp,
 int32_t NaClSysMutexTrylock(struct NaClAppThread *natp,
                             int32_t              mutex_handle);
 
+int32_t NaClSysMutexDestroy(struct NaClAppThread *natp,
+                            int32_t              mutex_handle);
+
 /* condition variable */
 
 int32_t NaClSysCondCreate(struct NaClAppThread *natp);
@@ -336,10 +347,10 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts);
 
-int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
+int32_t NaClSysCondDestroy(struct NaClAppThread *natp,
+                           int32_t              cond_handle);
 
-int32_t NaClSysImcSocketPair(struct NaClAppThread *natp,
-                             uint32_t             descs_out);
+int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
 
 int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  domain,
@@ -347,17 +358,30 @@ int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  protocol,
                           int                  *fds);              
 /* Semaphores */
-int32_t NaClSysSemCreate(struct NaClAppThread *natp,
-                         int32_t              init_value);
+int32_t NaClSysSemInit(struct NaClAppThread *natp,
+                         uint32_t             sem,
+                         int32_t              pshared,
+                         int32_t              value);
 
 int32_t NaClSysSemWait(struct NaClAppThread *natp,
-                       int32_t              sem_handle);
+                       uint32_t              sem);
+
+int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
+                            uint32_t              sem);
+
+int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
+                            uint32_t              sem,
+                            struct nacl_abi_timespec *abs);
 
 int32_t NaClSysSemPost(struct NaClAppThread *natp,
-                       int32_t              sem_handle);
+                       uint32_t              sem);
+
+int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
+                          uint32_t              sem);
 
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
-                           int32_t              sem_handle);
+                           uint32_t              sem,
+                           int32_t              *sval);
 
 int32_t NaClSysNanosleep(struct NaClAppThread     *natp,
                          struct nacl_abi_timespec *req,
@@ -414,6 +438,8 @@ int32_t NaClSysGetsockname(struct NaClAppThread *natp, int sockfd,  struct socka
 int32_t NaClSysGetpeername(struct NaClAppThread *natp, int sockfd,  struct sockaddr * addr, socklen_t * addrlen);
 
 int32_t NaClSysAccess(struct NaClAppThread *natp, const char *file, int mode);
+int32_t NaClSysTruncate(struct NaClAppThread *natp, uint32_t file, int length);
+int32_t NaClSysFtruncate(struct NaClAppThread *natp, int fd, int length);
 int32_t NaClSysBind(struct NaClAppThread *natp, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int32_t NaClSysListen(struct NaClAppThread *natp, int sockfd, int backlog);
 int32_t NaClSysPoll(struct NaClAppThread *natp, struct pollfd *fds, nfds_t nfds, int timeout);
@@ -422,6 +448,13 @@ int32_t NaClSysEpollCtl(struct NaClAppThread  *natp, int epfd, int op, int fd, s
 int32_t NaClSysEpollWait(struct NaClAppThread  *natp, int epfd, struct epoll_event *events, int maxevents, int timeout);
 int32_t NaClSysSelect (struct NaClAppThread *natp, int nfds, fd_set * readfds, 
                        fd_set * writefds, fd_set * exceptfds, struct timeval *timeout);
+int32_t NaClSysSigaction (struct NaClAppThread *natp, int sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *ocat);
+int32_t NaClSysKill (struct NaClAppThread *natp, int targetcageid, int sig);
+int32_t NaClSysSigprocmask (struct NaClAppThread *natp, int how, const uint64_t *nacl_set, uint64_t *nacl_oldset);
+int32_t NaClSysLindsetitimer (struct NaClAppThread *natp, int which, const struct itimerval *new_value, struct itimerval *old_value);
+int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp);
+void printFinalSyscallStats();
+long long gettimens();
 EXTERN_C_END
 
 #endif  /* NATIVE_CLIENT_SERVICE_RUNTIME_NACL_SYSCALL_COMMON_H__ */

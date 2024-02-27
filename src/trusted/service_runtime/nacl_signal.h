@@ -75,6 +75,7 @@ enum PosixSignals {
 # define NACL_THREAD_SUSPEND_SIGNAL SIGUSR1
 #endif
 
+void print_sigset(void);
 
 /*
  * Prototype for a signal handler.  The handler will receive the POSIX
@@ -174,6 +175,9 @@ void NaClSignalHandleUntrusted(struct NaClAppThread *natp,
 
 void NaClSignalSetUpExceptionFrame(volatile struct NaClExceptionFrame *frame,
                                    const struct NaClSignalContext *regs,
+                                   uint32_t context_user_addr);
+void NaClSignalSetUpExceptionFrameTrusted(volatile struct NaClExceptionFrame *frame,
+                                   const struct NaClAppThread *natp,
                                    uint32_t context_user_addr);
 
 #if NACL_OSX

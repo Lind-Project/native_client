@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2012 The Native Client Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
@@ -33,12 +32,14 @@
 # define MACROENTRY     DEFINE_GLOBAL_HIDDEN_IDENTIFIER($0):
 # define MACROARG1      $0
 # define MACROARG2      $1
+# define MACROARG3      $2
 #else
 # define MACRO(name)    .macro name arg1, arg2=0
 # define ENDMACRO       .endm
 # define MACROENTRY     DEFINE_GLOBAL_HIDDEN_IDENTIFIER(\arg1):
 # define MACROARG1      \arg1
 # define MACROARG2      \arg2
+# define MACROARG3      \arg3
 #endif
 
 

@@ -25,6 +25,7 @@
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
 #include "native_client/src/trusted/service_runtime/sel_mem.h"
 #include "native_client/src/trusted/service_runtime/sel_util.h"
+#include "native_client/src/trusted/service_runtime/sel_ldr.h"
 #include "native_client/src/trusted/service_runtime/nacl_config.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
@@ -46,7 +47,9 @@
 struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
                                           size_t            npages,
                                           int               prot,
+                                          int               maxprot,
                                           int               flags,
+                                          int               shmid,
                                           struct NaClDesc   *desc,
                                           nacl_off64_t      offset,
                                           nacl_off64_t      file_size) {
@@ -64,7 +67,9 @@ struct NaClVmmapEntry *NaClVmmapEntryMake(uintptr_t         page_num,
   entry->page_num = page_num;
   entry->npages = npages;
   entry->prot = prot;
+  entry->maxprot = maxprot;
   entry->flags = flags;
+  entry->shmid = shmid;
   entry->removed = 0;
   entry->desc = desc;
   if (desc != NULL) {
@@ -87,7 +92,21 @@ void  NaClVmmapEntryFree(struct NaClVmmapEntry *entry) {
 
   if (entry->desc != NULL) {
     NaClDescSafeUnref(entry->desc);
+  } else if (entry->flags & NACL_ABI_MAP_SHARED && entry->shmid != -1) {
+    //If it's a mapping for a shmid entry, then we need to decrement the shm refcount
+    //This might happen on an explicit shmdt, or on a munmap or exit/exec
+    int shmid = entry->shmid;
+
+    if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+      NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+
+    shmtable[shmid].count -= 1;
+
+    if(shmtable[shmid].rmid && shmtable[shmid].count == 0) {
+      clear_shmentry(shmid);
+    }
   }
+
   free(entry);
 }
 
@@ -266,21 +285,23 @@ void NaClVmmapMakeSorted(struct NaClVmmap  *self) {
 #endif
 }
 
-void NaClVmmapAdd(struct NaClVmmap  *self,
-                  uintptr_t         page_num,
-                  size_t            npages,
-                  int               prot,
-                  int               flags,
-                  struct NaClDesc   *desc,
-                  nacl_off64_t      offset,
-                  nacl_off64_t      file_size) {
+static void NaClVmmapAddShmid(struct NaClVmmap  *self,
+                              uintptr_t         page_num,
+                              size_t            npages,
+                              int               prot,
+                              int               maxprot,
+                              int               flags,
+                              int               shmid,
+                              struct NaClDesc   *desc,
+                              nacl_off64_t      offset,
+                              nacl_off64_t      file_size) {
   struct NaClVmmapEntry *entry;
 
   NaClLog(2,
-          ("NaClVmmapAdd(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
-           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
+          ("NaClVmmapAddShmid(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR", "
+           "0x%"NACL_PRIxS", 0x%x, 0x%x, 0x%x, 0x%"NACL_PRIxPTR", "
            "0x%"NACL_PRIx64")\n"),
-          (uintptr_t) self, page_num, npages, prot, flags,
+          (uintptr_t) self, page_num, npages, prot, maxprot, flags,
           (uintptr_t) desc, offset);
   if (self->nvalid == self->size) {
     size_t                    new_size = 2 * self->size;
@@ -288,19 +309,31 @@ void NaClVmmapAdd(struct NaClVmmap  *self,
 
     new_map = realloc(self->vmentry, new_size * sizeof *new_map);
     if (NULL == new_map) {
-      NaClLog(LOG_FATAL, "NaClVmmapAdd: could not allocate memory\n");
+      NaClLog(LOG_FATAL, "NaClVmmapAddShmid: could not allocate memory\n");
       return;
     }
     self->vmentry = new_map;
     self->size = new_size;
   }
   /* self->nvalid < self->size */
-  entry = NaClVmmapEntryMake(page_num, npages, prot, flags,
+  entry = NaClVmmapEntryMake(page_num, npages, prot, maxprot, flags, shmid,
       desc, offset, file_size);
 
   self->vmentry[self->nvalid] = entry;
   self->is_sorted = 0;
   ++self->nvalid;
+}
+
+void NaClVmmapAdd(struct NaClVmmap  *self,
+                  uintptr_t         page_num,
+                  size_t            npages,
+                  int               prot,
+                  int               maxprot,
+                  int               flags,
+                  struct NaClDesc   *desc,
+                  nacl_off64_t      offset,
+                  nacl_off64_t      file_size) {
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, /*shmid=*/ -1, desc, offset, file_size);
 }
 
 /*
@@ -312,7 +345,9 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
                             uintptr_t         page_num,
                             size_t            npages,
                             int               prot,
+                            int               maxprot,
                             int               flags,
+                            int               shmid,
                             int               remove,
                             struct NaClDesc   *desc,
                             nacl_off64_t      offset,
@@ -343,14 +378,16 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
        * Split existing mapping into two parts, with new mapping in
        * the middle.
        */
-      NaClVmmapAdd(self,
-                   new_region_end_page,
-                   ent_end_page - new_region_end_page,
-                   ent->prot,
-                   ent->flags,
-                   ent->desc,
-                   ent->offset + additional_offset,
-                   ent->file_size);
+      NaClVmmapAddShmid(self,
+                        new_region_end_page,
+                        ent_end_page - new_region_end_page,
+                        ent->prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + additional_offset,
+                        ent->file_size);
       ent->npages = page_num - ent->page_num;
       break;
     } else if (ent->page_num < page_num && page_num < ent_end_page) {
@@ -375,7 +412,7 @@ static void NaClVmmapUpdate(struct NaClVmmap  *self,
   }
 
   if (!remove) {
-    NaClVmmapAdd(self, page_num, npages, prot, flags, desc, offset, file_size);
+    NaClVmmapAddShmid(self, page_num, npages, prot, maxprot, flags, shmid, desc, offset, file_size);
   }
 
   NaClVmmapRemoveMarked(self);
@@ -385,6 +422,7 @@ void NaClVmmapAddWithOverwrite(struct NaClVmmap   *self,
                                uintptr_t          page_num,
                                size_t             npages,
                                int                prot,
+                               int                maxprot,
                                int                flags,
                                struct NaClDesc    *desc,
                                nacl_off64_t       offset,
@@ -393,7 +431,32 @@ void NaClVmmapAddWithOverwrite(struct NaClVmmap   *self,
                   page_num,
                   npages,
                   prot,
+                  maxprot,
                   flags,
+                  /* shmid= */ -1,
+                  /* remove= */ 0,
+                  desc,
+                  offset,
+                  file_size);
+}
+
+void NaClVmmapAddWithOverwriteAndShmid(struct NaClVmmap   *self,
+                                       uintptr_t          page_num,
+                                       size_t             npages,
+                                       int                prot,
+                                       int                maxprot,
+                                       int                flags,
+                                       int                shmid,
+                                       struct NaClDesc    *desc,
+                                       nacl_off64_t       offset,
+                                       nacl_off64_t       file_size) {
+  NaClVmmapUpdate(self,
+                  page_num,
+                  npages,
+                  prot,
+                  maxprot,
+                  flags,
+                  shmid,
                   /* remove= */ 0,
                   desc,
                   offset,
@@ -407,7 +470,9 @@ void NaClVmmapRemove(struct NaClVmmap   *self,
                   page_num,
                   npages,
                   /* prot= */ 0,
+                  /* maxprot= */0,
                   /* flags= */ 0,
+                  /* shmid= */ -1,
                   /* remove= */ 1,
                   /* desc= */NULL,
                   /* offset= */0,
@@ -452,51 +517,59 @@ int NaClVmmapChangeProt(struct NaClVmmap   *self,
 
     if (ent->page_num < page_num && new_region_end_page < ent_end_page) {
       /* Split existing mapping into two parts */
-      NaClVmmapAdd(self,
-                   new_region_end_page,
-                   ent_end_page - new_region_end_page,
-                   ent->prot,
-                   ent->flags,
-                   ent->desc,
-                   ent->offset + additional_offset,
-                   ent->file_size);
+      NaClVmmapAddShmid(self,
+                        new_region_end_page,
+                        ent_end_page - new_region_end_page,
+                        ent->prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + additional_offset,
+                        ent->file_size);
       ent->npages = page_num - ent->page_num;
       /* Add the new mapping into the middle. */
-      NaClVmmapAdd(self,
-                   page_num,
-                   npages,
-                   prot,
-                   ent->flags,
-                   ent->desc,
-                   ent->offset + (page_num - ent->page_num),
-                   ent->file_size);
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        npages,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + (page_num - ent->page_num),
+                        ent->file_size);
       break;
     } else if (ent->page_num < page_num && page_num < ent_end_page) {
       /* New mapping overlaps end of existing mapping. */
       ent->npages = page_num - ent->page_num;
       /* Add the overlapping part of the mapping. */
-      NaClVmmapAdd(self,
-                   page_num,
-                   ent_end_page - page_num,
-                   prot,
-                   ent->flags,
-                   ent->desc,
-                   ent->offset + (page_num - ent->page_num),
-                   ent->file_size);
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        ent_end_page - page_num,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset + (page_num - ent->page_num),
+                        ent->file_size);
       /* The remaining part (if any) will be added in other iteration. */
       page_num = ent_end_page;
       npages = new_region_end_page - ent_end_page;
     } else if (ent->page_num < new_region_end_page &&
                new_region_end_page < ent_end_page) {
       /* New mapping overlaps start of existing mapping, split it. */
-      NaClVmmapAdd(self,
-                   page_num,
-                   npages,
-                   prot,
-                   ent->flags,
-                   ent->desc,
-                   ent->offset,
-                   ent->file_size);
+      NaClVmmapAddShmid(self,
+                        page_num,
+                        npages,
+                        prot,
+                        ent->maxprot,
+                        ent->flags,
+                        ent->shmid,
+                        ent->desc,
+                        ent->offset,
+                        ent->file_size);
       ent->page_num = new_region_end_page;
       ent->npages = ent_end_page - new_region_end_page;
       ent->offset += additional_offset;
@@ -561,7 +634,7 @@ int NaClVmmapCheckExistingMapping(struct NaClVmmap  *self,
   for (i = 0; i < self->nvalid; ++i) {
     struct NaClVmmapEntry   *ent = self->vmentry[i];
     uintptr_t               ent_end_page = ent->page_num + ent->npages;
-    int                     flags = NaClVmmapEntryMaxProt(ent);
+    int                     flags = ent->maxprot;
 
     if (ent->page_num <= page_num && region_end_page <= ent_end_page) {
       /* The mapping is inside existing entry. */
@@ -587,11 +660,6 @@ int NaClVmmapCheckAddrMapping(struct NaClVmmap  *self,
                               int               prot) {
   size_t      i;
   uintptr_t   region_end_page = page_num + npages;
-
-  NaClLog(2,
-          ("NaClVmmapCheckExistingMapping(0x%08"NACL_PRIxPTR", 0x%"NACL_PRIxPTR
-           ", 0x%"NACL_PRIxS", 0x%x)\n"),
-          (uintptr_t) self, page_num, npages, prot);
 
   if (0 == self->nvalid) {
     return 0;

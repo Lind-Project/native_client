@@ -63,14 +63,11 @@
 #include "native_client/src/trusted/threading/nacl_thread_interface.h"
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 
-extern bool use_lkm;
-
 double time_counter = 0.0;
 double time_start = 0.0;
 double time_end = 0.0;
 
 volatile sig_atomic_t fork_num;
-int fd_cage_table[CAGE_MAX][FILE_DESC_MAX]; // fd_cage_table[cage_id][userfd] = nacl fd/desc idx
 struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 static int IsEnvironmentVariableSet(char const *env_name) {
@@ -85,26 +82,15 @@ static int ShouldEnableDynamicLoading(void) {
   return !IsEnvironmentVariableSet("NACL_DISABLE_DYNAMIC_LOADING");
 }
 
-void CheckForLkm(void) {
-  const struct iovec local_iov, remote_iov; //dummy unused memory for checking the lkm
-  errno = 0;
-  //if this succeeds, it will copy 0 data, and then we know the LKM is loaded if this if check fails
-  if(process_vm_writev(getpid(), &local_iov, 0, &remote_iov, 0, 32)) {
-    if(errno =! -EINVAL) {
-      NaClLog(LOG_FATAL, "LKM loaded but in corrupted state, failed on call guaranteed to succeed.");
-    }
-    use_lkm = false;
-  }
-}
-
 void InitializeShmtable(void) {
   for (int i = 0; i < FILE_DESC_MAX; i++) clear_shmentry(i);
 }
 
 void clear_shmentry(int shmid) {
-  shmtable[shmid].size = -1;
+  shmtable[shmid].size = 0;
   shmtable[shmid].count = 0;
   shmtable[shmid].rmid = false;
+  shmtable[shmid].extant = false;
 }
 
 int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
@@ -293,6 +279,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->running = 0;
   nap->exit_status = -1;
+  nap->tearing_down = false;
 
 #if NACL_ARCH(NACL_BUILD_ARCH) == NACL_x86 && NACL_BUILD_SUBARCH == 32
   nap->code_seg_sel = 0;
@@ -382,6 +369,7 @@ void NaClAppDtor(struct NaClApp *nap) {
 
   NaClLog(3, "Deconstructing nap\n");
   NaClLog(3, "Freeing Address Space\n");
+  NaClVmmapDtor(&nap->mem_map);
   NaClAddrSpaceFree(nap);
 
   NaClDescUnref(nap->name_service_conn_cap);
@@ -606,6 +594,10 @@ void  NaClLoadTrampoline(struct NaClApp *nap) {
                              nap->mem_start + NACL_SYSCALL_START_ADDR
                              + (NACL_SYSCALL_BLOCK_SIZE *
                                 NACL_sys_second_tls_get));
+  NaClPatchOneTrampoline(nap, nap->mem_start + NACL_SYSCALL_START_ADDR + NACL_SYSCALL_BLOCK_SIZE * NACL_sys_sigmask_sigreturn);
+  NaClPatchRegTrampolineCall(nap->mem_start + NACL_SYSCALL_START_ADDR
+                             + (NACL_SYSCALL_BLOCK_SIZE *
+                                NACL_sys_reg_restore));
 #endif
 
   NACL_TEST_INJECTION(ChangeTrampolines, (nap));
@@ -933,31 +925,6 @@ void NaClAppInitialDescriptorHookup(struct NaClApp  *nap) {
   NaClProcessRedirControl(nap);
   NaClLog(4, "... done.\n");
 
-
-  /* Set up cage-id's for initial descriptors */
-  for (int fd = 0; fd < 3; fd++) {
-
-    /* Retrieve NaCl Descriptor based on fd */
-    int host_fd = fd_cage_table[nap->cage_id][fd];
-
-    struct NaClDesc *nd;
-    struct NaClDescIoDesc *self;
-    struct NaClHostDesc *hd;
-    nd = NaClGetDesc(nap, host_fd);
-    if (!nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    self = (struct NaClDescIoDesc *) &nd->base;
-    hd = self->hd;
-
-    hd->cageid = nap->cage_id;
-    hd->d = fd;
-    hd->userfd = fd;
-
-    NaClDescUnref(nd);
-  }
 }
 
 void NaClCreateServiceSocket(struct NaClApp *nap) {
@@ -1575,11 +1542,12 @@ static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicR
                             start >> NACL_PAGESHIFT,
                             region->size >> NACL_PAGESHIFT,
                             PROT_RX,
+                            PROT_RX,
                             NACL_ABI_MAP_PRIVATE,
                             nap_child->text_shm,
                             (region->start & UNTRUSTED_ADDR_MASK) - nap_child->dynamic_text_start,
                             region->size);
-  if (!use_lkm && NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
+  if (NaClMprotect(dyncode_addr, region->size, PROT_RW) == -1) {
     NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
   }
   NaClLog(1, "copying dynamic code from (%p) to (%p)\n", dyncode_addr, (void *)region->start);
@@ -1587,20 +1555,20 @@ static void NaClCopyDynamicRegion(struct NaClApp *nap_child, struct NaClDynamicR
     NaClLog(LOG_FATAL, "%s\n", "cbild dynamic text NaClTextDyncodeCreate failed!");
   }
 
-  if(!use_lkm) {
-    struct iovec inaddr;
-    struct iovec outaddr;
-    inaddr.iov_base = (void *) region->start;
-    outaddr.iov_base = dyncode_addr;
-    inaddr.iov_len = outaddr.iov_len = region->size;
-    //Copy each mapping by copy-on-write. Unrolling could grant more performance in the future
-    if(-1 == process_vm_writev(getpid(), &inaddr, 1, &outaddr, 1, 0)) {
-      NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
-    }
-    if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
-    }
+
+  struct iovec inaddr;
+  struct iovec outaddr;
+  inaddr.iov_base = (void *) region->start;
+  outaddr.iov_base = dyncode_addr;
+  inaddr.iov_len = outaddr.iov_len = region->size;
+  //Copy each mapping by copy-on-write. Unrolling could grant more performance in the future
+  if(-1 == process_vm_writev(getpid(), &inaddr, 1, &outaddr, 1, 0)) {
+    NaClLog(LOG_FATAL, "%s\n", "process_vm_writev for dyncode to child's memory failed!");
   }
+  if (NaClMprotect(dyncode_addr, region->size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child dynamic text NaClMprotect failed!");
+  }
+  
 }
 
 /*
@@ -1639,82 +1607,95 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
    * are more (highly unlikely) iterate over them */
   for (size_t i = 0, nentries = parentmap->nvalid; i < nentries;) {
     short iters = nentries - i < IOV_MAX ? nentries - i : IOV_MAX;
-    if(use_lkm) {
-      struct iovec invec[1] = {{(void*) parent_offset, 1L << 32}};
-      struct iovec outvec[1] = {{(void*) offset, 1L << 32}};
-      pid_t pid = getpid();
-      size_t st = process_vm_writev(pid, invec, 1, outvec, 1, 0x20);
-      if(-1 == (long int) st) {
-        NaClLog(LOG_FATAL, "%s\n", "process_vm_writev to child's memory failed!");
-      }
-      NaClLog(1, "copied %lx characters\n", st);
-    } else {
-      unsigned int veccount = 0;
-      struct iovec inputvector[IOV_MAX];
-      struct iovec outputvector[IOV_MAX];
+    unsigned int veccount = 0;
+    struct iovec inputvector[IOV_MAX];
+    struct iovec outputvector[IOV_MAX];
 
-      /* iterate over the vmmap entries, changing their prot if necessary, and copy 
-       * them into the iovec. We ignore the text_shm entry in this whole function. */
-      for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
-        struct NaClVmmapEntry *entry = parentmap->vmentry[i];
-        uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
-        uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
-        size_t copy_size = entry->npages << NACL_PAGESHIFT;
+    /* iterate over the vmmap entries, changing their prot if necessary, and copy 
+      * them into the iovec. We ignore the text_shm entry in this whole function. */
+    for(int iters1 = 0; iters1 < iters; ++iters1, ++i) {
+      struct NaClVmmapEntry *entry = parentmap->vmentry[i];
+      uintptr_t page_addr_child = (entry->page_num << NACL_PAGESHIFT) | offset;
+      uintptr_t page_addr_parent = (entry->page_num << NACL_PAGESHIFT) | parent_offset;
+      size_t copy_size = entry->npages << NACL_PAGESHIFT;
+      size_t endaddr = page_addr_parent + copy_size;
 
-        NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
-                entry->npages,
-                entry->page_num,
-                copy_size,
-                (void *)page_addr_parent,
-                (void *)page_addr_child);
+      NaClLog(2, "copying %zu page(s) at %zu [%#lx] from (%p) to (%p)\n",
+              entry->npages,
+              entry->page_num,
+              copy_size,
+              (void *)page_addr_parent,
+              (void *)page_addr_child);
 
-        if(entry->prot && (entry->desc != nap_parent->text_shm)) {
-          size_t endaddr = page_addr_parent + copy_size;
-          if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-          }
-          if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
-            NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-          }
-          if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
-            //if the mapping corresponds to the stack, only copy up to the stack pointer
-            copy_size = endaddr - parent_stack_addr;
-            inputvector[veccount].iov_base = (void*) parent_stack_addr;
-            (uintptr_t) (outputvector[veccount].iov_base =
-                (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
-          } else {
-            inputvector[veccount].iov_base = (void*) page_addr_parent;
-            outputvector[veccount].iov_base = (void*) page_addr_child;
-          }
-          inputvector[veccount].iov_len = copy_size;
-          outputvector[veccount].iov_len = copy_size;
-          ++veccount;
+      //these are either PROT_NONE mappings or the special text_shm mapping which we don't copy
+      if(!entry->prot || entry->desc == nap_parent->text_shm)
+        continue;
+
+      if(entry->flags & NACL_ABI_MAP_SHARED) {
+        //See "man 2 mremap" for description of what MREMAP_MAYMOVE does with old_size=0
+        //when old_address points to a shared mapping...
+        int result = NaClMremap((void*) page_addr_parent, 0, copy_size, NACL_ABI_MREMAP_MAYMOVE | 
+                                NACL_ABI_MREMAP_FIXED, (void*) page_addr_child);
+
+        if(result)
+          NaClLog(LOG_FATAL, "%s\n", "Attempting to copy known good shared mapping on fork failed!");
+
+        //if it's a shared shmid mapping
+        if(!entry->desc && entry->shmid != -1) {
+          int shmid = entry->shmid;
+          if(shmid >= FILE_DESC_MAX || !shmtable[shmid].extant)
+            NaClLog(LOG_FATAL, "%s\n", "Invalid shmid associated with vmmap entry!");
+          shmtable[shmid].count++;
         }
-      }
-      // Reset iteration counter for copying into child later (in the loop with iters2)
 
-      {
-        struct iovec* invec = inputvector;
-        struct iovec* outvec = outputvector;
-        /* process_vm_writev may not do a full copy each time and thus may need
-         * to be run multiple times, so iterate until it's done. */
-        while(veccount) {
-          ssize_t st = process_vm_writev(getpid(), invec, veccount, outvec, veccount, 0);
-          if(-1 == st) {
-            NaClLog(LOG_FATAL, "%s\n", "process_vm_writev to child's memory failed!");
-          }
-          // Update what's left to be processed by checking what's already written
-          do {
-              st -= invec->iov_len;
-              --veccount;
-              ++invec;
-              ++outvec;
-          } while(st > 0);
-          //partial writes may not split up iovec elements
-        }
+        //in this case, because of the mremap, we've already copied the mapping, so we don't
+        //need to copy it using process_vm_writev
+        continue;
       }
-      i -= iters;
+
+      if (NaClMprotect((void *)page_addr_parent, copy_size, entry->prot) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+      }
+      if (NaClMprotect((void *)page_addr_child, copy_size, PROT_RW) == -1) {
+        NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+      }
+      if(endaddr > parent_stack_addr && parent_stack_addr > page_addr_parent) {
+        //if the mapping corresponds to the stack, only copy up to the stack pointer
+        copy_size = endaddr - parent_stack_addr;
+        inputvector[veccount].iov_base = (void*) parent_stack_addr;
+        (uintptr_t) (outputvector[veccount].iov_base =
+            (void*) (page_addr_child + (entry->npages << NACL_PAGESHIFT) - copy_size));
+      } else {
+        inputvector[veccount].iov_base = (void*) page_addr_parent;
+        outputvector[veccount].iov_base = (void*) page_addr_child;
+      }
+      inputvector[veccount].iov_len = copy_size;
+      outputvector[veccount].iov_len = copy_size;
+      ++veccount;
     }
+    // Reset iteration counter for copying into child later (in the loop with iters2)
+
+    {
+      struct iovec* invec = inputvector;
+      struct iovec* outvec = outputvector;
+      /* process_vm_writev may not do a full copy each time and thus may need
+        * to be run multiple times, so iterate until it's done. */
+      while(veccount) {
+        ssize_t st = process_vm_writev(getpid(), invec, veccount, outvec, veccount, 0);
+        if(-1 == st) {
+          NaClLog(LOG_FATAL, "%s\n", "process_vm_writev to child's memory failed!");
+        }
+        // Update what's left to be processed by checking what's already written
+        do {
+            st -= invec->iov_len;
+            --veccount;
+            ++invec;
+            ++outvec;
+        } while(st > 0);
+        //partial writes may not split up iovec elements
+      }
+    }
+    i -= iters;
 
     /* iterate over the vmmap entries, reverting their prot if necessary, and insert 
      * them into the child vmmap. The memory is already populated from the vm_writev.*/
@@ -1722,20 +1703,17 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
-        if(entry->desc) {
-          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
-          struct NaClHostDesc *hd = self->hd;
-          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
-        }
-        NaClVmmapAddWithOverwrite(&nap_child->mem_map,
-                                  entry->page_num,
-                                  entry->npages,
-                                  entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
-                                  desc,
-                                  entry->offset,
-                                  entry->file_size);
-        if(!use_lkm && entry->prot) {
+        NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
+                                          entry->page_num,
+                                          entry->npages,
+                                          entry->prot,
+                                          entry->maxprot,
+                                          entry->flags,
+                                          entry->shmid,
+                                          desc,
+                                          entry->offset,
+                                          entry->file_size);
+        if(entry->prot) {
           if (NaClMprotect((void *)((entry->page_num << NACL_PAGESHIFT) | offset), entry->npages << NACL_PAGESHIFT, entry->prot) == -1) {
             NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
           }
@@ -1746,7 +1724,8 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
-                                  (entry->flags | MAP_ANON_PRIV) & ~NACL_ABI_MAP_SHARED,
+                                  entry->maxprot,
+                                  entry->flags,
                                   entry->desc,
                                   entry->offset,
                                   entry->file_size);
@@ -1788,6 +1767,7 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             0,
                             NACL_SYSCALL_START_ADDR >> NACL_PAGESHIFT,
                             NACL_ABI_PROT_NONE,
+                            NACL_ABI_PROT_NONE,
                             NACL_ABI_MAP_PRIVATE,
                             NULL,
                             0,
@@ -1804,15 +1784,13 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
           child_start_addr,
           tramp_size,
           child_start_addr + tramp_size);
-  if(!use_lkm) {
-    if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW)) {
-      NaClLog(LOG_FATAL, "NaClMemoryProtection: "
-              "NaClMprotect(0x%08"NACL_PRIxPTR", "
-              "0x%08"NACL_PRIxS", 0x%x) failed\n",
-              child_start_addr,
-              tramp_size,
-              PROT_RW);
-    }
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW)) {
+    NaClLog(LOG_FATAL, "NaClMemoryProtection: "
+            "NaClMprotect(0x%08"NACL_PRIxPTR", "
+            "0x%08"NACL_PRIxS", 0x%x) failed\n",
+            child_start_addr,
+            tramp_size,
+            PROT_RW);
   }
 
   /* map child trampoline pages */
@@ -1820,130 +1798,65 @@ void NaClCopyExecutionContext(struct NaClApp *nap_parent, struct NaClApp *nap_ch
                             tramp_pnum,
                             tramp_npages,
                             PROT_RW,
+                            PROT_RW,
                             MAP_ANON_PRIV,
                             NULL,
                             0,
                             0);
-  if(!use_lkm) {
-    if (!NaClPageAllocFlags((void **)&child_start_addr, tramp_size, 0)) {
-      NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
-    }
 
-    /* temporarily set RW page permissions for copy */
-    NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RW);
-    NaClVmmapChangeProt(&nap_parent->mem_map, tramp_pnum, tramp_npages, PROT_RW);
-    if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-    }
-    if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RW) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-    }
+  if (!NaClPageAllocFlags((void **)&child_start_addr, tramp_size, 0)) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap NaClPageAllocAtAddr failed!");
   }
+
+  /* temporarily set RW page permissions for copy */
+  NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RW);
+  NaClVmmapChangeProt(&nap_parent->mem_map, tramp_pnum, tramp_npages, PROT_RW);
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  }
+  if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RW) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
+  }
+
 
   /* setup trampolines */
   nap_child->nacl_syscall_addr = 0;
   NaClLog(2, "Initializing arch switcher\n");
   NaClInitSwitchToApp(nap_child);
 
-  if(!use_lkm) {
-    NaClLog(2, "Installing trampoline\n");
-    NaClLoadTrampoline(nap_child); //handled in NaClLoadFileAslr
-    NaClLog(2, "Installing springboard\n");
-    NaClLoadSpringboard(nap_child);
-    /* copy the trampolines from parent */
-    memcpy((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
+  NaClLog(2, "Installing trampoline\n");
+  NaClLoadTrampoline(nap_child); //handled in NaClLoadFileAslr
+  NaClLog(2, "Installing springboard\n");
+  NaClLoadSpringboard(nap_child);
+  /* copy the trampolines from parent */
+  memcpy((void *)child_start_addr, (void *)parent_start_addr, tramp_size);
+
+  /*
+    * NaClMemoryProtection also initializes the mem_map w/ information
+    * about the memory pages and their current protection value.
+    *
+    * The contents of the dynamic text region will get remapped as
+    * non-writable.
+    */
+  NaClLog(2, "Applying memory protection\n");
+  if (NaClMemoryProtection(nap_child) != LOAD_OK) {
+    NaClLog(LOG_FATAL, "%s\n", "child NaClMemoryProtection failed!");
   }
 
-  if(!use_lkm) {
-    /*
-     * NaClMemoryProtection also initializes the mem_map w/ information
-     * about the memory pages and their current protection value.
-     *
-     * The contents of the dynamic text region will get remapped as
-     * non-writable.
-     */
-    NaClLog(2, "Applying memory protection\n");
-    if (NaClMemoryProtection(nap_child) != LOAD_OK) {
-      NaClLog(LOG_FATAL, "%s\n", "child NaClMemoryProtection failed!");
-    }
-
-    /* reset permissions to executable */
-    NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
-    NaClVmmapChangeProt(&nap_parent->mem_map, tramp_pnum, tramp_npages, PROT_RX);
-    if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
-    }
-    if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
-      NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
-    }
+  /* reset permissions to executable */
+  NaClVmmapChangeProt(&nap_child->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  NaClVmmapChangeProt(&nap_parent->mem_map, tramp_pnum, tramp_npages, PROT_RX);
+  if (NaClMprotect((void *)child_start_addr, tramp_size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "child vmmap page NaClMprotect failed!");
+  }
+  if (NaClMprotect((void *)parent_start_addr, tramp_size, PROT_RX) == -1) {
+    NaClLog(LOG_FATAL, "%s\n", "parent vmmap page NaClMprotect failed!");
   }
 }
 
-/* set up the fd table for each cage */
 void InitializeCage(struct NaClApp *nap, int cage_id) {
-  fd_cage_table[cage_id][0] = 0;
-  fd_cage_table[cage_id][1] = 1;
-  fd_cage_table[cage_id][2] = 2;
-
-  /* Initialize unused fd's to -1 */
-  for (int fd = 3; fd < FILE_DESC_MAX; fd++) fd_cage_table[cage_id][fd] = -1;
-
-  /* set to the next unused (available for dup() etc.) file descriptor */
   nap->num_children = 0;
   nap->cage_id = cage_id;
-}
-
-/* Find next available fd in cagetable */
-
-void CancelFds(struct NaClApp *nap, int userfds[2], int iterations) {
-
-  for (int i = 0; i < iterations; i++) {
-    int naclfd = fd_cage_table[nap->cage_id][userfds[i]];
-    NaClSetDesc(nap, naclfd, NULL);
-    fd_cage_table[nap->cage_id][userfds[i]] = -1;
-  }
-
-}
-
-int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd) {
-
-  int userfd = -NACL_ABI_EBADF;
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for (int fd = 0; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) {
-      userfd = fd;
-      hd->userfd = userfd;
-      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      fd_cage_table[nap->cage_id][userfd] = naclfd;
-      break;
-    }
-  }
-
-  NaClFastMutexUnlock(&nap->desc_mu);
-
-  return userfd;
-}
-
-int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd) {
-
-  int userfd = -NACL_ABI_EBADF;
-
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for (int fd = lowerbound; fd < FILE_DESC_MAX; fd ++) {
-    if (fd_cage_table[nap->cage_id][fd] == -1) {
-      userfd = fd;
-      int naclfd = NaClSetAvailMu(nap, ((struct NaClDesc *) NaClDescIoDescMake(hd)));
-      fd_cage_table[nap->cage_id][userfd] = naclfd;
-      break;
-    }
-  }
-
-  NaClFastMutexUnlock(&nap->desc_mu);
-
-  return userfd;
 }
 
 /*
@@ -1955,10 +1868,19 @@ int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap) {
   NaClXMutexLock(&nap->zombie_mu);
   struct NaClZombie* zombie = NULL;
-  for(long unsigned int cage_id = 0; cage_id < nap->children.num_entries; cage_id++) {
+  for(long unsigned int cage_id = 0; cage_id < nap->zombies.num_entries; cage_id++) {
     zombie = DynArrayGet(&nap->zombies, cage_id);
     if (zombie != NULL) break;
   }
+  NaClXMutexUnlock(&nap->zombie_mu);
+
+  return zombie;
+}
+
+struct NaClZombie* NaClCheckZombieById(struct NaClApp *nap, int cage_id) {
+  NaClXMutexLock(&nap->zombie_mu);
+  struct NaClZombie* zombie;
+  zombie = DynArrayGet(&nap->zombies, cage_id);
   NaClXMutexUnlock(&nap->zombie_mu);
 
   return zombie;

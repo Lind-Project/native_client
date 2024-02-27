@@ -26,7 +26,6 @@
 
 #include "native_client/src/shared/platform/nacl_host_desc.h"
 #include "native_client/src/shared/platform/nacl_log.h"
-#include "native_client/src/shared/platform/lind_platform.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
@@ -50,8 +49,7 @@ static INLINE int NaClMapOpenFlags(int nacl_flags) {
   int host_os_flags;
 
   nacl_flags &= (NACL_ABI_O_ACCMODE | NACL_ABI_O_CREAT
-                 | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND 
-                 | NACL_ABI_O_CLOEXEC);
+                 | NACL_ABI_O_TRUNC | NACL_ABI_O_APPEND);
 
   host_os_flags = 0;
 #define C(H) case NACL_ABI_ ## H: \
@@ -71,7 +69,6 @@ static INLINE int NaClMapOpenFlags(int nacl_flags) {
   M(O_CREAT);
   M(O_TRUNC);
   M(O_APPEND);
-  M(O_CLOEXEC);
 #undef M
   return host_os_flags;
 }
@@ -125,9 +122,6 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
   int   tmp_prot;
   int   host_flags;
   int   need_exec;
-  int   whichcage;
-  unsigned long topbits;
-  unsigned int mapbottom;
   UNREFERENCED_PARAMETER(effp);
 
   NaClLog(4,
@@ -185,38 +179,7 @@ uintptr_t NaClHostDescMap(struct NaClHostDesc *d,
    */
   tmp_prot = host_prot & ~PROT_EXEC;
   need_exec = (0 != (PROT_EXEC & host_prot));
-  //By this point in execution, the mmap call is MAP_FIXED,
-  //so start_addr should and cannot be null, but we sanity check
-  if(!start_addr){
-    NaClLog(LOG_FATAL,
-            "NaClHostDescMap: start_addr cannot be NULL.\n");
-  }
-  //if no hostDesc is specified, let the cageid to be 0, the init cage
-  whichcage = d ? d->cageid : 0;
-  topbits = (long) start_addr & 0xffffffff00000000L;
-  /* The RPC interface can only return ints, not longs. This means  
-   * we can't get the top 32 bits of the address. Thankfully, the 
-   * top 32 bits of the address, a cage invariant, are already
-   * specified because MAP_FIXED is set, so we bitmask them from the 
-   * start address.
-   */
-  mapbottom = lind_mmap(start_addr, len, tmp_prot, host_flags, desc, offset, whichcage);
-
-  /* If we return a value higher than 0xffffffffu - 256
-   * we know that this is in fact a negative integer (an errno)
-   * since due to alignment mmap cannot return an address in that range 
-   */
-
-  if ((unsigned) mapbottom > (0xffffffffu - 256)) {
-    errno = mapbottom;
-    mapbottom = MAP_FAILED;
-  } 
-
-  /* MAP_FAILED is -1, so if we get that as our bottom 32 bits, we 
-   * return a long -1 as our return value. Otherwise, combine the 
-   * top bits and bottom bits into our full return value.
-   */
-  map_addr = (void*) (mapbottom == (unsigned int) -1 ? (unsigned long) -1L : topbits | (unsigned long) mapbottom);
+  map_addr = mmap(start_addr, len, tmp_prot, host_flags, desc, offset);
   if (need_exec && MAP_FAILED != map_addr) {
     if (0 != mprotect(map_addr, len, host_prot)) {
       /*
@@ -278,17 +241,12 @@ static int NaClHostDescCtor(struct NaClHostDesc  *d,
   return 0;
 }
 
-int NaClHostDescPipe(struct NaClHostDesc  *d,
-                            int fd,
-                            int flags) {
-  return NaClHostDescCtor(d, fd, flags);
-}
-
 int NaClHostDescOpen(struct NaClHostDesc  *d,
                      char const           *path,
                      int                  flags,
                      int                  mode) {
   int host_desc;
+  struct stat stbuf;
   int posix_flags;
 
   NaClLog(3, "NaClHostDescOpen(0x%08"NACL_PRIxPTR", %s, 0x%x, 0x%x)\n",
@@ -316,20 +274,29 @@ int NaClHostDescOpen(struct NaClHostDesc  *d,
   }
 
   posix_flags = NaClMapOpenFlags(flags);
-#if NACL_LINUX
-  posix_flags |= O_LARGEFILE;
-#endif
   mode = NaClMapOpenPerm(mode);
 
   NaClLog(3, "NaClHostDescOpen: invoking POSIX open(%s,0x%x,0%o)\n",
           path, posix_flags, mode);
-  host_desc = lind_open(path, posix_flags, mode, d->cageid);
+  host_desc = open(path, posix_flags, mode);
   NaClLog(3, "NaClHostDescOpen: got descriptor %d\n", host_desc);
-  if (host_desc < 0) {
-    NaClLog(2, "NaClHostDescOpen: open returned errno: %d\n", host_desc);
-    return host_desc;
+  if (-1 == host_desc) {
+    NaClLog(2, "NaClHostDescOpen: open returned -1, errno %d\n", errno);
+    return -NaClXlateErrno(errno);
   }
- 
+  if (-1 == fstat(host_desc, &stbuf)) {
+    NaClLog(LOG_ERROR,
+            "NaClHostDescOpen: fstat failed?!?  errno %d\n", errno);
+    (void) close(host_desc);
+    return -NaClXlateErrno(errno);
+  }
+  if (!S_ISREG(stbuf.st_mode)) {
+    NaClLog(LOG_INFO,
+            "NaClHostDescOpen: file type 0x%x, not regular\n", stbuf.st_mode);
+    (void) close(host_desc);
+    /* cannot access anything other than a real file */
+    return -NACL_ABI_EPERM;
+  }
   return NaClHostDescCtor(d, host_desc, flags);
 }
 
@@ -360,7 +327,7 @@ int NaClHostDescPosixDup(struct NaClHostDesc  *d,
       return -NACL_ABI_EINVAL;
   }
 
-  host_desc = lind_dup(posix_d, d->cageid);
+  host_desc = dup(posix_d);
   if (-1 == host_desc) {
     return -NACL_ABI_EINVAL;
   }
@@ -402,25 +369,29 @@ int NaClHostDescPosixTake(struct NaClHostDesc *d,
 ssize_t NaClHostDescRead(struct NaClHostDesc  *d,
                          void                 *buf,
                          size_t               len) {
+  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return lind_read(d->d, buf, len, d->cageid);
+  return ((-1 == (retval = read(d->d, buf, len)))
+          ? -NaClXlateErrno(errno) : retval);
 }
 
 ssize_t NaClHostDescWrite(struct NaClHostDesc *d,
                           void const          *buf,
                           size_t              len) {
+  ssize_t retval;
 
   NaClHostDescCheckValidity("NaClHostDescWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescWrite: RDONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return lind_write(d->d, buf, len, d->cageid);
+  return ((-1 == (retval = write(d->d, buf, len)))
+          ? -NaClXlateErrno(errno) : retval);
 }
 
 nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
@@ -430,10 +401,10 @@ nacl_off64_t NaClHostDescSeek(struct NaClHostDesc  *d,
 
   NaClHostDescCheckValidity("NaClHostDescSeek", d);
 #if NACL_LINUX
-  retval = lind_lseek(d->d, offset, whence, d->cageid);
-  return retval;
+  return ((-1 == (retval = lseek64(d->d, offset, whence)))
+          ? -NaClXlateErrno(errno) : retval);
 #elif NACL_OSX
-  return ((-1 == (retval = lind_lseek(d->d, offset, whence, d->cageid)))
+  return ((-1 == (retval = lseek(d->d, offset, whence)))
           ? -NaClXlateErrno(errno) : retval);
 #else
 # error "What Unix-like OS is this?"
@@ -444,25 +415,29 @@ ssize_t NaClHostDescPRead(struct NaClHostDesc *d,
                           void *buf,
                           size_t len,
                           nacl_off64_t offset) {
-  
+  ssize_t retval;
+
   NaClHostDescCheckValidity("NaClHostDescPRead", d);
   if (NACL_ABI_O_WRONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPRead: WRONLY file\n");
     return -NACL_ABI_EBADF;
   }
-  return lind_pread(d->d, buf, len, offset, d->cageid);
+  return ((-1 == (retval = PREAD(d->d, buf, len, offset)))
+          ? -NaClXlateErrno(errno) : retval);
 }
 
 ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
                            void const *buf,
                            size_t len,
-                           nacl_off64_t offset) { 
+                           nacl_off64_t offset) {
+  ssize_t retval;
+
   NaClHostDescCheckValidity("NaClHostDescPWrite", d);
   if (NACL_ABI_O_RDONLY == (d->flags & NACL_ABI_O_ACCMODE)) {
     NaClLog(3, "NaClHostDescPWrite: RDONLY file\n");
     return -NACL_ABI_EBADF;
   }
-
+#if NACL_OSX
   /*
    * OSX's interpretation of what the POSIX standard requires differs
    * from Linux.  On OSX, pwrite using a descriptor that was opened
@@ -473,9 +448,12 @@ ssize_t NaClHostDescPWrite(struct NaClHostDesc *d,
    * seek-to-end-before-write semantics apply.
    */
   if (0 != (d->flags & NACL_ABI_O_APPEND)) {
-    return lind_write(d->d, buf, len, d->cageid);
+    return ((-1 == (retval = write(d->d, buf, len)))
+            ? -NaClXlateErrno(errno) : retval);
   }
-  return lind_pwrite(d->d, buf, len, offset, d->cageid);
+#endif
+  return ((-1 == (retval = PWRITE(d->d, buf, len, offset)))
+          ? -NaClXlateErrno(errno) : retval);
 }
 
 
@@ -496,9 +474,11 @@ int NaClHostDescFstat(struct NaClHostDesc  *d,
                       nacl_host_stat_t     *nhsp) {
   NaClHostDescCheckValidity("NaClHostDescFstat", d);
 #if NACL_LINUX
-  return lind_fxstat(d->d, nhsp, d->cageid);
+  if (fstat64(d->d, nhsp) == -1) {
+    return -errno;
+  }
 #elif NACL_OSX
-  if (lind_fxstat(d->d, nhsp, d->cageid) == -1) {
+  if (fstat(d->d, nhsp) == -1) {
     return -errno;
   }
 #else
@@ -512,11 +492,11 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
   int retval;
 
   NaClHostDescCheckValidity("NaClHostDescClose", d);
-  retval = lind_close(d->d, d->cageid);
-  if (retval > 0) {
+  retval = close(d->d);
+  if (-1 != retval) {
     d->d = -1;
   }
-  return retval;
+  return (-1 == retval) ? -NaClXlateErrno(errno) : retval;
 }
 
 /*
@@ -524,48 +504,19 @@ int NaClHostDescClose(struct NaClHostDesc *d) {
  * fstat and should behave similarly.
  */
 int NaClHostDescStat(char const       *host_os_pathname,
-                     nacl_host_stat_t *nhsp,
-		     int cageid) {
+                     nacl_host_stat_t *nhsp) {
 
 #if NACL_LINUX
-  return lind_xstat(host_os_pathname, nhsp, cageid);
+  if (stat64(host_os_pathname, nhsp) == -1) {
+    return -errno;
+  }
 #elif NACL_OSX
-  if (lind_xstat(host_os_pathname, nhsp, cageid) == -1) {
+  if (stat(host_os_pathname, nhsp) == -1) {
     return -errno;
   }
 #else
 # error "What OS?"
 #endif
 
-  return 0;
-}
-
-int NaClHostDescMkdir(const char *path, int mode) {
-  if (mkdir(path, mode) != 0)
-    return -NaClXlateErrno(errno);
-  return 0;
-}
-
-int NaClHostDescRmdir(const char *path) {
-  if (rmdir(path) != 0)
-    return -NaClXlateErrno(errno);
-  return 0;
-}
-
-int NaClHostDescChdir(const char *path) {
-  if (chdir(path) != 0)
-    return -NaClXlateErrno(errno);
-  return 0;
-}
-
-int NaClHostDescGetcwd(char *path, size_t len) {
-  if (getcwd(path, len) == NULL)
-    return -NaClXlateErrno(errno);
-  return 0;
-}
-
-int NaClHostDescUnlink(const char *path) {
-  if (unlink(path) != 0)
-    return -errno;
   return 0;
 }

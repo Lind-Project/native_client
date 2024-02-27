@@ -165,6 +165,8 @@ SYSCALL_LIST = [
      ['int d', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_stat', 'NaClSysStat',
      ['const char *path', 'struct nacl_abi_stat *nasp']),
+    ('NACL_sys_truncate', 'NaClSysTruncate', ['uint32_t path', 'int mode']),
+    ('NACL_sys_ftruncate', 'NaClSysFtruncate', ['int fd', 'int mode']),
     ('NACL_sys_getdents', 'NaClSysGetdents',
      ['int d', 'void *buf', 'size_t count']),
     ('NACL_sys_brk', 'NaClSysBrk', ['uintptr_t new_break']),
@@ -195,22 +197,16 @@ SYSCALL_LIST = [
     ('NACL_sys_getcwd', 'NaClSysGetcwd', ['char *buf', 'size_t size']),
     ('NACL_sys_link', 'NaClSysLink', ['char *to' , 'char *from']),
     ('NACL_sys_unlink', 'NaClSysUnlink', ['char *path']),
-    ('NACL_sys_imc_makeboundsock', 'NaClSysImcMakeBoundSock',
-     ['int32_t *sap']),
     ('NACL_sys_accept', 'NaClSysAccept', ['int sockfd', 'struct sockaddr *addr', 'socklen_t *addrlen']),
     ('NACL_sys_connect', 'NaClSysConnect', ['int sockfd', 'const struct sockaddr *addr', 'socklen_t addrlen']),
-    ('NACL_sys_imc_sendmsg', 'NaClSysImcSendmsg',
-     ['int d', 'struct NaClAbiNaClImcMsgHdr *nanimhp', 'int flags']),
-    ('NACL_sys_imc_recvmsg', 'NaClSysImcRecvmsg',
-     ['int d', 'struct NaClAbiNaClImcMsgHdr *nanimhp', 'int flags']),
-    ('NACL_sys_imc_mem_obj_create', 'NaClSysImcMemObjCreate',
-     ['size_t size']),
     ('NACL_sys_tls_init', 'NaClSysTlsInit', ['uint32_t thread_ptr']),
     ('NACL_sys_thread_create', 'NaClSysThreadCreate',
      ['void *prog_ctr', 'uint32_t stack_ptr',
       'uint32_t thread_ptr', 'uint32_t second_thread_ptr']),
     ('NACL_sys_tls_get', 'NaClSysTlsGet', []),
     ('NACL_sys_thread_nice', 'NaClSysThreadNice', ['const int nice']),
+    ('NACL_sys_mutex_destroy', 'NaClSysMutexDestroy',
+     ['int32_t mutex_handle']),
     ('NACL_sys_mutex_create', 'NaClSysMutexCreate', []),
     ('NACL_sys_mutex_lock', 'NaClSysMutexLock',
      ['int32_t mutex_handle']),
@@ -225,17 +221,19 @@ SYSCALL_LIST = [
      ['int32_t cond_handle']),
     ('NACL_sys_cond_broadcast', 'NaClSysCondBroadcast',
      ['int32_t cond_handle']),
+    ('NACL_sys_cond_destroy', 'NaClSysCondDestroy',
+     ['int32_t cond_handle']),
     ('NACL_sys_cond_timed_wait_abs', 'NaClSysCondTimedWaitAbs',
      ['int32_t cond_handle', 'int32_t mutex_handle',
       'struct nacl_abi_timespec *ts']),
-    ('NACL_sys_imc_socketpair', 'NaClSysImcSocketPair',
-     ['uint32_t descs_out']),
     ('NACL_sys_socketpair', 'NaClSysSocketPair', ['int domain', 'int type', 'int protocol', 'int *fds']),
-    ('NACL_sys_sem_create', 'NaClSysSemCreate', ['int32_t init_value']),
-    ('NACL_sys_sem_wait', 'NaClSysSemWait', ['int32_t sem_handle']),
-    ('NACL_sys_sem_post', 'NaClSysSemPost', ['int32_t sem_handle']),
-    ('NACL_sys_sem_get_value', 'NaClSysSemGetValue',
-     ['int32_t sem_handle']),
+    ('NACL_sys_sem_init', 'NaClSysSemInit', ['uint32_t sem', 'int32_t pshared', 'int32_t value']),
+    ('NACL_sys_sem_wait', 'NaClSysSemWait', ['uint32_t sem']),
+    ('NACL_sys_sem_trywait', 'NaClSysSemTryWait', ['uint32_t sem']),
+    ('NACL_sys_sem_timedwait', 'NaClSysSemTimedWait', ['uint32_t sem', 'struct nacl_abi_timespec *ts']),
+    ('NACL_sys_sem_post', 'NaClSysSemPost', ['uint32_t sem']),
+    ('NACL_sys_sem_destroy', 'NaClSysSemDestroy', ['uint32_t sem']),
+    ('NACL_sys_sem_getvalue', 'NaClSysSemGetValue', ['uint32_t sem', 'int32_t *sval']),
     ('NACL_sys_sched_yield', 'NaClSysSchedYield', []),
     ('NACL_sys_sysconf', 'NaClSysSysconf', ['int32_t name', 'int32_t *result']),
     ('NACL_sys_dyncode_create', 'NaClSysDyncodeCreate',
@@ -263,7 +261,6 @@ SYSCALL_LIST = [
     ('NACL_sys_waitpid', 'NaClSysWaitpid', ['int pid', 'uint32_t *stat_loc', 'int options']),
     ('NACL_sys_wait', 'NaClSysWait', ['uint32_t *stat_loc']),
     ('NACL_sys_wait4', 'NaClSysWait4', ['int pid', 'uint32_t *stat_loc', 'int options', 'void *rusage']),
-    ('NACL_sys_sigprocmask', 'NaClSysSigProcMask', ['int how', 'const void *set', 'void *oldset']),
     ('NACL_sys_lstat', 'NaClSysLStat', ['const char *path', 'struct nacl_abi_stat *nasp']),
     ('NACL_sys_gethostname', 'NaClSysGethostname', ['char *name', 'size_t len']),
     ('NACL_sys_getifaddrs', 'NaClSysGetifaddrs', ['char *buf', 'size_t len']),
@@ -301,7 +298,17 @@ SYSCALL_LIST = [
     ('NACL_sys_shmdt', 'NaClSysShmdt', ['void *shmaddr']),
     ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct lind_shmid_ds *buf']),
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
-    ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath'])
+    ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
+    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
+    ('NACL_sys_sigaction', 'NaClSysSigaction', ['int sig', 'const struct nacl_abi_sigaction *act', 'struct nacl_abi_sigaction *ocat']),
+    ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig']),
+    ('NACL_sys_sigprocmask', 'NaClSysSigprocmask', ['int how', 'const uint64_t *nacl_set', 'uint64_t *nacl_oldset']),
+    ('NACL_sys_lindsetitimer', 'NaClSysLindsetitimer', ['int which', 'const struct itimerval *new_value', 'struct itimerval *old_value']),
+    ('NACL_sys_sigmask_sigreturn', 'NaClSysSigmaskSigreturn', []),
+    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int fd']),
+    ('NACL_sys_fsync', 'NaClSysFsync', ['int fd']),
+    ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd']),
+    ('NACL_sys_sync_file_range', 'NaClSysSyncFileRange', ['int fd', 'off_t offset', 'off_t nbytes', 'uint32_t flags'])
     ]
 
 
@@ -356,7 +363,7 @@ def ArgList(architecture, alist):
 
 def MemoryArgStruct(architecture, name, alist):
   if not alist:
-    return '  NaClCopyDropLock(natp->nap);'
+    return '  '
 
   # Note: although this return value might be computed more
   # concisely with a list comprehension, we instead use a

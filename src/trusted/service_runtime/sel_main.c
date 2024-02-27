@@ -60,6 +60,7 @@
 #include "native_client/src/trusted/service_runtime/win/exception_patch/ntdll_patch.h"
 #include "native_client/src/trusted/service_runtime/win/debug_exception_handler.h"
 #include "native_client/src/shared/platform/aligned_malloc.h"
+#include "native_client/src/trusted/service_runtime/nacl_syscall_strace.h"
 
 
 #include "native_client/src/trusted/service_runtime/sel_ldr.h"
@@ -76,7 +77,6 @@
 extern struct NaClMutex ccmut;
 extern struct NaClCondVar cccv;
 extern int cagecount;
-extern bool use_lkm;
 static void (*g_enable_outer_sandbox_func)(void) = NaClEnableOuterSandbox;
 
 void NaClSetEnableOuterSandboxFunc(void (*func)(void)) {
@@ -164,6 +164,7 @@ static void PrintUsage(void) {
           " -E <name=value>|<name> set an environment variable\n"
           " -Z use fixed feature x86 CPU mode\n"
           " -t toggle runtime statistics\n"
+          " -p [s/c], s for per-call tracing, c minics strace's -c functionality"
           );  /* easier to add new flags/lines */
 }
 
@@ -179,7 +180,7 @@ static int my_getopt(int argc, char *const *argv, const char *shortopts) {
 
 #if NACL_LINUX
 # define getopt my_getopt
-  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Z";
+  static const char *const optstring = "+D:z:aB:ceE:f:Fgh:i:kl:Qr:RsStvw:X:Zp";
 #else
 # define NaClHandleRDebug(A, B) do { /* no-op */ } while (0)
 # define NaClHandleReservedAtZero(A) do { /* no-op */ } while (0)
@@ -298,6 +299,10 @@ int NaClSelLdrMain(int argc, char **argv) {
     NaClLog(1, "%s\n", "Failed to allocate env var array");
   }
 
+  #if defined(TRACING)
+  NaClStraceSetOutputFile("strace_output.txt");
+  #endif
+
   /*
    * On platforms with glibc getopt, require POSIXLY_CORRECT behavior,
    * viz, no reordering of the arglist -- stop argument processing as
@@ -386,9 +391,6 @@ int NaClSelLdrMain(int argc, char **argv) {
         *redir_qend = entry;
         redir_qend = &entry->next;
         break;
-      case 'k':
-        use_lkm = false;
-        break;
       case 'l':
         log_file = optarg;
         break;
@@ -438,6 +440,9 @@ int NaClSelLdrMain(int argc, char **argv) {
            NaClLog(1, "%s\n", "fixed_feature_cpu_mode is not supported");
            exit(EXIT_FAILURE);
         }
+        break;
+      case 'p':
+          NaClStraceEnableDashc();
         break;
 
       default:
@@ -585,12 +590,6 @@ int NaClSelLdrMain(int argc, char **argv) {
   }
 
 #if NACL_LINUX
-
-  if(use_lkm) //in case we haven't forced not using the lkm with -k
-    CheckForLkm();
-  if(!use_lkm) {
-    fprintf(stderr, "Not using the CoW Loadable kernel module!\n");
-  }
   NaClSignalHandlerInit();
 #endif
   /*
@@ -610,7 +609,7 @@ int NaClSelLdrMain(int argc, char **argv) {
   if (blob_library_file) {
     NaClFileNameForValgrind(blob_library_file);
     blob_file = (struct NaClDesc *) NaClDescIoDescOpen(blob_library_file,
-                                                       NACL_ABI_O_RDONLY, 0, 0);
+                                                       NACL_ABI_O_RDONLY, 0);
     if (!blob_file) {
       perror("sel_main");
       NaClLog(1, "Cannot open \"%s\".\n", blob_library_file);
@@ -966,6 +965,7 @@ int NaClSelLdrMain(int argc, char **argv) {
 #endif
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();
@@ -1001,6 +1001,7 @@ done:
   NaClAllModulesFini();
 
   lindrustfinalize();
+  NaClStraceCloseFile();
   NaClCondVarDtor(&cccv);
   NaClMutexDtor(&ccmut);
   DestroyReaper();

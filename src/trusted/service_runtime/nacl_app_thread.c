@@ -31,15 +31,14 @@
 #include "native_client/src/trusted/service_runtime/sel_memory.h"
 
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
-#include "native_client/src/shared/platform/lind_platform.h"
 #include "native_client/src/trusted/service_runtime/include/bits/mman.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
+#include "native_client/src/trusted/service_runtime/thread_suspension.h"
 
 
 struct NaClMutex ccmut;
 struct NaClCondVar cccv;
 int cagecount;
-extern bool use_lkm;
 
 struct NaClThread reaper;
 
@@ -115,29 +114,13 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
   NaClXMutexUnlock(&nap_parent->children_mu);
 
   NaClLog(1, "fork_num = %d, cage_id = %d\n", fork_num, nap_child->cage_id);
-  if(!use_lkm || tl_type != THREAD_LAUNCH_FORK) {
-    //exec not prevalidated
-    if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
-      NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
-      NaClLog(LOG_FATAL, "%s\n%s\n",
-                         "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
-                         "or a corrupt nexe file may be responsible for this error.");
-    }
-  } else {
-    //we already know the fork child has an ok nexe, and we don't even need to load it
-    nap_child->stack_size = nap_parent->stack_size;
-    nap_child->static_text_end = nap_parent->static_text_end;
-    nap_child->rodata_start = nap_parent->rodata_start;
-    nap_child->data_start = nap_parent->data_start;
-    nap_child->break_addr = nap_parent->break_addr;
-    nap_child->data_end = nap_parent->data_end;
-    nap_child->bundle_size = NACL_INSTR_BLOCK_SIZE;
-    nap_child->initial_entry_pt = nap_parent->initial_entry_pt;
-    nap_child->dynamic_text_start = nap_parent->dynamic_text_start;
-    nap_child->text_shm = nap_parent->text_shm;
-    NaClErrorCode err = NaClAllocAddrSpaceAslr(nap_child, NACL_ENABLE_ASLR);
-    if (err != LOAD_OK) NaClLog(LOG_FATAL, "%s\n", "NaClAllocAddrSpaceAslr failed. Terminating.");
-    NaClInitSwitchToApp(nap_child); 
+
+  //exec not prevalidated
+  if ((*mod_status = NaClAppLoadFileFromFilename(nap_child, nap_child->nacl_file)) != LOAD_OK) {
+    NaClLog(1, "Error while loading \"%s\": %s\n", nap_child->nacl_file, NaClErrorString(*mod_status));
+    NaClLog(LOG_FATAL, "%s\n%s\n",
+                        "Using the wrong type of nexe (nacl-x86-32 on an x86-64 or vice versa) ",
+                        "or a corrupt nexe file may be responsible for this error.");
   }
 
   if ((*mod_status = NaClAppPrepareToLaunch(nap_child)) != LOAD_OK) {
@@ -154,83 +137,7 @@ struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum Na
     NaClLog(LOG_FATAL, "This CPU lacks features required by fixed-function CPU mode.\n");
   }
   
-  /* duplicate file descriptor table starting at child_fd = 3 (0-2 setup previously)*/
-  for (int fd = 0; fd < FILE_DESC_MAX; fd++) {
-
-    /* Retrive the host fd we had stored in the Cage Table for the parent */
-    int parent_host_fd = fd_cage_table[nap_parent->cage_id][fd];
-    if (parent_host_fd == NACL_BAD_FD) {
-      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
-      continue;
-    }
-    /* Retrieve Parent NaCl Descriptor based on current child fd in the parent */
-    struct NaClDesc *parent_nd;
-    parent_nd = NaClGetDesc(nap_parent, parent_host_fd);
-    if (!parent_nd) {
-      continue;
-    }
-
-    /* Translate from NaCl Desc to Host Desc */
-    struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &parent_nd->base;
-    struct NaClHostDesc *parent_hd = self->hd;
-
-    /* If we're creating an exec cage and we have CLOEXEC set, dont pass these on */
-    if ((tl_type == THREAD_LAUNCH_EXEC) && (parent_hd->flags & NACL_ABI_O_CLOEXEC)) {
-      fd_cage_table[nap_child->cage_id][fd] = NACL_BAD_FD;
-      continue;
-    }
-
-    /* Create and set vars for child hd */
-    struct NaClHostDesc *child_hd;
-    child_hd = malloc(sizeof(*child_hd));
-    if (!child_hd) {
-        NaClLog(LOG_FATAL, "NaClChildNapCtor: Error initializing child descriptor\n");
-    }
-
-    child_hd->d = parent_hd->d;
-    child_hd->flags = parent_hd->flags;
-    child_hd->cageid = nap_child->cage_id;
-    child_hd->userfd = parent_hd->userfd;
-
-    /* Create and set new NaClDesc from Child HD in Child nap */
-    int child_host_fd = NaClSetAvail(nap_child, ((struct NaClDesc *) NaClDescIoDescMake(child_hd)));
-
-    NaClDescUnref(parent_nd);
-
-    /* Set childs cage table with the current fd to the old parent host fd */
-    fd_cage_table[nap_child->cage_id][fd] = child_host_fd;
-
-
-    NaClLog(1, "NaClGetDesc() copied parent fd [%d] to child fd [%d]\n", fd, child_host_fd);
-  }
-
   return nap_child;
-}
-
-void NaClAppCloseFDs(struct NaClApp *nap) {
-  
-  NaClFastMutexLock(&nap->desc_mu);
-
-  for (int i = 0; i < FILE_DESC_MAX; i++) {
-    /* Let's find the fd from the cagetable, and then get the NaCl descriptor based on that fd */
-    int fd = fd_cage_table[nap->cage_id][i];
-
-    /* If we have an fd and nacl descriptor, lets close it */
-    if (fd >= 0) {
-      struct NaClDesc *ndp = NULL;
-      ndp = NaClGetDescMu(nap, fd);
-      if (ndp) {
-        NaClLog(1, "Invoking Close virtual function of object 0x%08"NACL_PRIxPTR"\n", (uintptr_t) ndp);
-        NaClSetDescMu(nap, fd, NULL);
-        NaClDescUnref(ndp);
-      }
-    }
-
-    /* mark file descriptor d as invalid (stdin is not a valid file descriptor) */
-    fd_cage_table[nap->cage_id][i] = NACL_BAD_FD;
-  }
-
-  NaClFastMutexUnlock(&nap->desc_mu);
 }
 
 void WINAPI NaClAppThreadLauncher(void *state) {
@@ -244,7 +151,16 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   NaClLog(1, "%s\n", "NaClAppForkThreadLauncher: entered");
 
+  // Lind: we need to enable pthread cancellation to deal with untrusted teardowns 
+  // this is basically the earliest in a threads lifetime where we can enable these
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
   NaClSignalStackRegister(natp->signal_stack);
+
+  sigset_t s; // clear the sigmask in case of fork/jmp out of a signal handler
+  sigemptyset(&s);
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
 
   NaClLog(1, "     natp  = 0x%016"NACL_PRIxPTR"\n", (uintptr_t)natp);
   NaClLog(1, " prog_ctr  = 0x%016"NACL_PRIxNACL_REG"\n", natp->user.prog_ctr);
@@ -269,8 +185,8 @@ void WINAPI NaClAppThreadLauncher(void *state) {
     */
     NaClXMutexLock(&nap->threads_mu);
     NaClXMutexLock(&nap->children_mu);
-    nap->num_threads = thread_idx + 1;
     natp->thread_num = thread_idx + 1;
+    nap->num_threads = 1;
     if (!DynArraySet(&nap->threads, natp->thread_num, natp)) {
       NaClLog(LOG_FATAL, "NaClAddThreadMu: DynArraySet at position %d failed\n", natp->thread_num);
     }
@@ -341,11 +257,15 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   }
 
-    /*
-    * After this NaClAppThreadSetSuspendState() call, we should not
-    * claim any mutexes, otherwise we risk deadlock.
-    */
-    NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
+  rustposix_thread_init(natp->nap->cage_id, (uint64_t)&natp->pendingsignal);
+
+  lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
+
+  /*
+  * After this NaClAppThreadSetSuspendState() call, we should not
+  * claim any mutexes, otherwise we risk deadlock.
+  */
+  NaClAppThreadSetSuspendState(natp, NACL_APP_THREAD_TRUSTED, NACL_APP_THREAD_UNTRUSTED);
 
   /* Not exactly sure what hole exec falls into */
   if (tl_type == THREAD_LAUNCH_FORK) {
@@ -446,23 +366,22 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
    */
   thread_idx = NaClGetThreadIdx(natp);
 
+  bool last_thread = (nap->num_threads == 1);
 
-  if (natp->is_cage_mainthread) {
-    // handle children upon exit
-    NaClAppThreadTeardownChildren(natp);
+  if (last_thread) NaClAppThreadTeardownChildren(natp);     // handle children upon exit
 
-    /*
-    * On x86-64 and ARM, clearing nacl_user entry ensures that we will
-    * fault if another syscall is made with this thread_idx.  In
-    * particular, thread_idx 0 is never used.
-    */
-    nacl_user[thread_idx] = NULL;
-  #if NACL_WINDOWS
-    nacl_thread_ids[thread_idx] = 0;
-  #elif NACL_OSX
-    NaClClearMachThreadForThreadIndex(thread_idx);
-  #endif
-  }
+  /*
+  * On x86-64 and ARM, clearing nacl_user entry ensures that we will
+  * fault if another syscall is made with this thread_idx.  In
+  * particular, thread_idx 0 is never used.
+  */
+  nacl_user[thread_idx] = NULL;
+#if NACL_WINDOWS
+  nacl_thread_ids[thread_idx] = 0;
+#elif NACL_OSX
+  NaClClearMachThreadForThreadIndex(thread_idx);
+#endif
+
   /*
    * Unset the TLS variable so that if a crash occurs during thread
    * teardown, the signal handler does not dereference a dangling
@@ -485,7 +404,7 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
     NaClSignalStackUnregister();
   }
 
-  if (natp->is_cage_mainthread) {
+  if (last_thread) {
     // we have to wait for NaClWaitForThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
     NaClAppDtor(nap);
@@ -531,6 +450,10 @@ struct NaClAppThread *NaClAppThreadMake(struct NaClApp *nap,
    * Set these early, in case NaClTlsAllocate() wants to examine them.
    */
   natp->nap = nap;
+
+  natp->signatpflag = false;
+  natp->pendingsignal = false;
+  natp->single_stepping_signum = 0;
 
   natp->thread_num = -1;  /* illegal index */
   natp->host_thread_is_defined = 0;
@@ -728,17 +651,6 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
     NaClTlsSetTlsValue2(natp_child, user_tls2);
   }
 
-
-  if (!cage_thread) {
-    natp_child->is_cage_mainthread = true;
-    natp_child->cage_mainthread = natp_child;
-    natp_child->tearing_down = false;
-  } 
-  else {
-    natp_child->is_cage_mainthread = false;
-    natp_child->cage_mainthread = natp_parent->cage_mainthread;
-  }
-
   /*
    * We set host_thread_is_defined assuming, for now, that
    * NaClThreadCtor() will succeed.
@@ -797,6 +709,43 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
 }
 
 
+void NaClExitThreadGroup(struct NaClAppThread *natp_main) {
+  struct NaClApp *nap = natp_main->nap;
+  
+  lindcancelinit(nap->cage_id); // start RustPOSIX cancel, signal cvs
+
+  NaClXMutexLock(&nap->threads_mu);
+  int num_threads = NaClGetNumThreads(nap);
+
+
+  // we loop through each thread in the cage and shut them down via our cancellation mechanisms
+  for(int i = 0; i < num_threads; i++) {
+
+    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
+    if (natp_child && natp_child != natp_main) {
+      struct NaClThread *child_thread;
+      child_thread = &natp_child->host_thread;
+
+      lindsetthreadkill(nap->cage_id, child_thread->tid, true);
+      NaClThreadTrapUntrusted(natp_child); // trap the thread in either trusted or untrusted space
+      if (natp_child->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING)) {
+        NaClThreadCancel(child_thread); // we use pthread cancel async since we know were in untrusted code
+        lindsetthreadkill(nap->cage_id, child_thread->tid, false);
+      }
+
+      // at this point we wait for this thread to die, either in userspace via cancel above
+      // in NaCl via the transition cancel points, or in rustposix via cancelpoint/exit
+      // these each will set the thread table entry to false and we can proceed
+
+      while (lindcheckthread(natp_child->nap->cage_id, child_thread->tid));
+      lindthreadremove(natp_child->nap->cage_id, child_thread->tid); // remove from rustposix kill map
+      NaClAppThreadTeardownInner(natp_child, false);
+    }
+  }
+  NaClXMutexUnlock(&nap->threads_mu);
+}
+
+
 /**
  * The following functions are used to reap any cages which have received a fatal signal.
  * On launch, sel_main creates the Reaper thread which calls the fault teardown functions when
@@ -814,7 +763,6 @@ void NaClAppThreadDelete(struct NaClAppThread *natp) {
  * 2. We need to not only teardown the faulting thread itself, but any other threads that have been
  *    launched wtihin that cage.
  */
-
 
 void InitFatalThreadTeardown(void) {
   if (!NaClMutexCtor(&teardown_mutex)) {
@@ -852,7 +800,7 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 
     NaClXMutexLock(&reapermut);
     natp_to_teardown = natp;
-    natp->tearing_down = true;
+    natp->nap->tearing_down = true;
     NaClXCondVarSignal(&reapercv);
     NaClXMutexUnlock(&reapermut);
 
@@ -860,32 +808,16 @@ void AddToFatalThreadTeardown(struct NaClAppThread *natp) {
 }
 
 void FatalThreadTeardown(void) {
-  struct NaClThread *thread;
   int status = 137; // Fatal error signal SIGKILL
-
   struct NaClApp *nap = natp_to_teardown->nap;
 
-  NaClXMutexLock(&nap->threads_mu);
-  int num_threads = NaClGetNumThreads(nap);
+  NaClExitThreadGroup(natp_to_teardown);
 
-  for(int i = 0; i < num_threads; i++) {
-
-    struct NaClAppThread *natp_child = NaClGetThreadMu(nap, i);
-    if (natp_child && natp_child != natp_to_teardown) {
-      struct NaClThread *child_thread;
-      child_thread = &natp_child->host_thread;
-      NaClAppThreadTeardownInner(natp_child, false);
-      NaClThreadCancel(child_thread);
-    }
-  }
-  
   lind_exit(status, nap->cage_id);
+  
   (void) NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-  thread = &natp_to_teardown->host_thread;
-  NaClXMutexUnlock(&nap->threads_mu);
 
   NaClAppThreadTeardownInner(natp_to_teardown, false);
-  NaClThreadCancel(thread);
   natp_to_teardown = NULL;
   NaClXCondVarSignal(&teardown_cv);
 }
@@ -898,6 +830,7 @@ void ThreadReaper(void* arg) {
     if (reap) FatalThreadTeardown();
   }
   NaClXMutexUnlock(&reapermut);
+  NaClThreadExit();
 }
 
 void LaunchThreadReaper(void) {
@@ -911,7 +844,6 @@ void DestroyReaper(void) {
   reap = false;
   NaClXCondVarSignal(&reapercv);
   DestroyFatalThreadTeardown();
-  NaClThreadCancel(&reaper);
 }
 
 

@@ -89,6 +89,7 @@ struct NaClShmInfo {
   int size;
   int count;
   bool rmid;
+  bool extant;
 };
 
 struct NaClZombie {
@@ -97,7 +98,6 @@ struct NaClZombie {
 };
 
 extern volatile sig_atomic_t fork_num;
-extern int fd_cage_table[CAGE_MAX][FILE_DESC_MAX];
 extern struct NaClShmInfo shmtable[FILE_DESC_MAX];
 
 struct NaClDebugCallbacks {
@@ -158,6 +158,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
+  bool                      tearing_down;
 
   /*
    * public, user settable prior to app start.
@@ -486,9 +487,6 @@ struct NaClApp {
   const struct NaClValidatorInterface *validator;
 };
 
-
-void CheckForLkm(void);
-
 void InitializeShmtable(void);
 void clear_shmentry(int shmid);
 
@@ -792,6 +790,7 @@ int NaClMakeDispatchAddrs(struct NaClApp *nap);
 
 void NaClPatchOneTrampolineCall(uintptr_t call_target_addr,
                                 uintptr_t target_addr);
+void NaClPatchRegTrampolineCall(uintptr_t target_addr);
 
 #endif
 
@@ -959,6 +958,7 @@ int AllocNextFd(struct NaClApp *nap, struct NaClHostDesc *hd);
 int AllocNextFdBounded(struct NaClApp *nap, int lowerbound, struct NaClHostDesc *hd);
 
 struct NaClZombie* NaClCheckZombies(struct NaClApp *nap);
+struct NaClZombie* NaClCheckZombieById(struct NaClApp *nap, int cage_id);
 void NaClRemoveZombie(struct NaClApp *nap, int cage_id);
 void NaClAddZombie(struct NaClApp *nap);
 

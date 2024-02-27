@@ -20,12 +20,14 @@
 #include "native_client/src/trusted/service_runtime/nacl_signal.h"
 #include "native_client/src/trusted/service_runtime/sel_rt.h"
 #include "native_client/src/trusted/service_runtime/dyn_array.h"
-
+#include "native_client/src/shared/platform/lind_platform.h"
 
 EXTERN_C_BEGIN
 
 struct NaClApp;
 struct NaClAppThreadSuspendedRegisters;
+
+void rustposix_thread_init(uint64_t cageid, uint64_t signalflag);
 
 enum NaClThreadLaunchType {
   THREAD_LAUNCH_MAIN,
@@ -81,6 +83,9 @@ struct NaClAppThread {
    * TODO(mseaborn): Rename it to a more descriptive name.
    */
   struct NaClThreadContext  user;
+
+  bool                      signatpflag; //is the natp set up to receive signals?
+  bool                      pendingsignal; 
 
   struct NaClMutex          mu;
 
@@ -158,14 +163,10 @@ struct NaClAppThread {
    */
   int                       dynamic_delete_generation;
 
-  // We use these for the fault handler
-  bool                              is_cage_mainthread;
-  bool                              tearing_down;
-  struct NaClAppThread              *cage_mainthread;
+  int                       single_stepping_signum; //0 to indicate none
 };
 
 struct NaClApp *NaClChildNapCtor(struct NaClApp *nap, int child_cage_id, enum NaClThreadLaunchType tl_type);
-void NaClAppCloseFDs(struct NaClApp *nap);
 
 void WINAPI NaClAppThreadLauncher(void *state);
 
@@ -226,6 +227,7 @@ static INLINE struct NaClAppThread *NaClAppThreadFromThreadContext(
   return (struct NaClAppThread *) ntcp;
 }
 
+void NaClExitThreadGroup(struct NaClAppThread *natp_main);
 
 void InitFatalThreadTeardown(void);
 
