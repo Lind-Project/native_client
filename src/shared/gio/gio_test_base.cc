@@ -96,7 +96,6 @@ void GioWriteTest(struct Gio* my_file,
   // Free the previously allocated memory for in_buffer
   free(in_buffer);
 
-
   // mf_curpos = 44, 20 left, write 10
   ret_code = my_file->vtbl->Write(my_file, in_buffer, 10);
   EXPECT_RETCODE(10, ret_code);

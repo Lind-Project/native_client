@@ -1092,7 +1092,7 @@ static void NaClLoadModuleRpc(struct NaClSrpcRpc      *rpc,
   /*
    * TODO(bsy): consider doing the processing below after sending the
    * RPC reply to increase parallelism.
-   */ 
+   */
 
   NaClXMutexLock(&nap->mu);
 

@@ -77,7 +77,6 @@ int DynArrayCtor(struct DynArray *dap, size_t initial_size) {
 }
 
 
-
 void DynArrayDtor(struct DynArray *dap) {
   dap->num_entries = 0;  /* assume user has freed entries */
   free(dap->ptr_array);
