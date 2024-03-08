@@ -158,6 +158,7 @@ struct NaClApp {
   char                      *nacl_file;
   char const *const         *clean_environ;
   volatile int              in_fork;
+  volatile int              parent_forking;
   bool                      tearing_down;
 
   /*

@@ -261,6 +261,7 @@ void WINAPI NaClAppThreadLauncher(void *state) {
 
   lindsetthreadkill(natp->nap->cage_id, natp->host_thread.tid, false); //set up kill table in rustposix
 
+  natp->nap->parent->parent_forking = 0; //reset parent fork
   /*
   * After this NaClAppThreadSetSuspendState() call, we should not
   * claim any mutexes, otherwise we risk deadlock.
@@ -407,6 +408,8 @@ void NaClAppThreadTeardownInner(struct NaClAppThread *natp, bool active_thread) 
   if (last_thread) {
     // we have to wait for NaClWaitForThreadToExit on Main/Exec
     if (nap->tl_type!=THREAD_LAUNCH_FORK) NaClXCondVarWait(&nap->exit_cv, &nap->exit_mu);
+    while(nap->parent_forking); //wait until we escape fork    while(forking);
+
     NaClAppDtor(nap);
     natp->nap = NULL;
   }
@@ -604,6 +607,8 @@ int NaClAppThreadSpawn(struct NaClAppThread     *natp_parent,
   if (tl_type == THREAD_LAUNCH_FORK) {
     nap_parent = natp_parent->nap;
     if (!nap_parent->running) return 0;
+
+    nap_parent->parent_forking = 1;
 
     NaClXMutexLock(&nap_parent->mu);
     NaClXMutexLock(&nap_child->mu);
