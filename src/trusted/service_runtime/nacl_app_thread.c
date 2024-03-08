@@ -545,6 +545,8 @@ void NaClForkThreadContextSetup(struct NaClAppThread     *natp_parent,
     natp_child->user.r15 = nap_child->mem_start;
     natp_child->user.rsp = (uintptr_t)stack_ptr_child + stack_ptr_offset;
     natp_child->user.rbp = (uintptr_t)stack_ptr_child + base_ptr_offset;
+    natp_child->user.prog_ctr = (natp_child->user.prog_ctr & 0xffffffff) + nap_child->mem_start;
+    natp_child->user.new_prog_ctr = (natp_child->user.prog_ctr & 0xffffffff) + nap_child->mem_start;
     natp_child->user.sysret = 0;
 
   /* examine arbitrary stack values */
