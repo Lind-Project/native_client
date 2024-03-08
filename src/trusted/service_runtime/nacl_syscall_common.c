@@ -3482,7 +3482,7 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
 
   UNREFERENCED_PARAMETER(tz);
 
-  NaClLog(3,
+  NaClLog(4,
           ("Entered NaClSysGetTimeOfDay(%08"NACL_PRIxPTR
            ", 0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR")\n"),
           (uintptr_t) natp, (uintptr_t) tv, (uintptr_t) tz);
