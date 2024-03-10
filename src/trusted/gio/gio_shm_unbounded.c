@@ -246,6 +246,11 @@ static ssize_t NaClGioShmUnboundedWrite(struct Gio  *vself,
           self->io_offset, self->shm_written);
 
   return retval;
+  cleanup:
+  if (ngsp != NULL) {
+    free(ngsp);
+  }
+  return -1; // or appropriate error handling
 }
 
 static off_t NaClGioShmUnboundedSeek(struct Gio *vself,
