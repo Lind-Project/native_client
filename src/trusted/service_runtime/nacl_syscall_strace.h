@@ -78,7 +78,6 @@ void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long to
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long totaltime) ;
 void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t ret, long long totaltime) ;
 void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long totaltime) ;
-void stracec_increment_fcntl(int syscallnum, long long totaltime, int retval) ;
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltime) ;
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) ;
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) ;

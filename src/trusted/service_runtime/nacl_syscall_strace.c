@@ -721,17 +721,6 @@ void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long total
   }
 }
 
-void stracec_increment_fcntl(int syscallnum, long long totaltime, int retval) {
-    if (syscallnum == NACL_sys_fcntl_set) {
-        syscallnum = NACL_sys_fcntl_get; 
-    syscallStats[syscallnum].count++;
-    syscallStats[syscallnum].totalTime += totaltime;
-    if (retval < 0) {
-        syscallStats[syscallnum].errorCount++;
-    }
-  }
-}
-
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_fcntl_get, totaltime, ret);
@@ -742,12 +731,12 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltim
 
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment_fcntl(NACL_sys_fcntl_get, totaltime, ret);
+    stracec_increment(NACL_sys_fcntl_get, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
   }
 }
-
+//both NACL_sys_fcntl_get and NACL_sys_fcntl_set are combined
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment_fcntl(NACL_sys_fcntl_set, totaltime, ret);
