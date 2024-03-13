@@ -137,22 +137,6 @@ void NaClStraceExit(int cageid, int status, long long totaltime) {
 }
 }
 
-void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_gettimeofday, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d gettimeofday(0x%08"NACL_PRIxPTR ", 0x%08"NACL_PRIxPTR ") = %d\n", cageid, tv, tz, ret);
-  }
-}
-
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t * time_func, int ret, long long totaltime) {
-  if (strace_C) {
-    stracec_increment(NACL_sys_clock, totaltime, ret);
-  } else {
-    fprintf(tracingOutputFile, "%d clockgetcommon(%d, %u, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, clk_id, ts_addr, time_func, ret);
-  }
-}
-
 void NaClStraceFork(int cageid, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_fork, totaltime, ret);
@@ -721,6 +705,33 @@ void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int ret
   }
 }
 
+void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_mprotect, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d mprotect(%u, %zu, %d) = %d\n", cageid, start, length, prot, ret);
+  }
+}
+
+void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_brk, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d brk(0x%08"NACL_PRIxPTR") = %d\n", cageid, new_break, ret);
+  }
+}
+
+void stracec_increment_fcntl(int syscallnum, long long totaltime, int retval) {
+    if (syscallnum == NACL_sys_fcntl_set) {
+        syscallnum = NACL_sys_fcntl_get; 
+    syscallStats[syscallnum].count++;
+    syscallStats[syscallnum].totalTime += totaltime;
+    if (retval < 0) {
+        syscallStats[syscallnum].errorCount++;
+    }
+  }
+}
+
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_fcntl_get, totaltime, ret);
@@ -731,7 +742,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltim
 
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_fcntl_set, totaltime, ret);
+    stracec_increment_fcntl(NACL_sys_fcntl_get, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
   }
@@ -739,7 +750,7 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
 
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_epoll_create, totaltime, ret);
+    stracec_increment_fcntl(NACL_sys_fcntl_set, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
   }
@@ -791,13 +802,13 @@ void printFinalSyscallStats() {
 
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
-        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls    errors   syscall\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
 
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
-            fprintf(tracingOutputFile, "%05.2f  %0.9f   %7lld   %6lld  %6lld     %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %7.4f   %7lld   %6lld  %6lld     %s\n",
                    syscallTimes[i].percentTime,
                    (double)syscallStats[idx].totalTime / 1000000000.0,
                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
@@ -808,7 +819,7 @@ void printFinalSyscallStats() {
 
         // Print the total summary line to the tracing output file
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %0.9f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %7.4f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
 
@@ -858,7 +869,7 @@ const char * getSyscallName(int syscallIndex) {
   case NACL_sys_poll:
     return "poll";
   case NACL_sys_fcntl_get:
-    return "fcntl_get";
+    return "fcntl";
   case NACL_sys_truncate:
     return "truncate";
   case NACL_sys_ftruncate:
@@ -903,8 +914,6 @@ const char * getSyscallName(int syscallIndex) {
     return "socketpair";
   case NACL_sys_nanosleep:
     return "nanosleep";
-  case NACL_sys_gettimeofday:
-    return "gettimeofday";
   case NACL_sys_link:
     return "link";
   case NACL_sys_unlink:
@@ -953,10 +962,8 @@ const char * getSyscallName(int syscallIndex) {
     return "getpid";
   case NACL_sys_getppid:
     return "getppid";
-  case NACL_sys_clock:
-    return "clock";
   case NACL_sys_fork:
-    return "fork";
+    return "clone";
   case NACL_sys_execve:
     return "execve";
   case NACL_sys_waitpid:
@@ -967,8 +974,6 @@ const char * getSyscallName(int syscallIndex) {
     return "getifaddrs";
   case NACL_sys_execv:
     return "execv";
-  case NACL_sys_fcntl_set:
-    return "fcntl_set";
   default:
     return "unknown";
   }

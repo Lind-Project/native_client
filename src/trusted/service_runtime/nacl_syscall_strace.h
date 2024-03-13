@@ -45,8 +45,6 @@ void NaClStraceShmget(int cageid, int key, size_t size, int shmflg, int retval, 
 void NaClStraceShmdt(int cageid, void *shmaddr, int retval, long long totaltime) ;
 void NaClStraceShmctl(int cageid, int shmid, int cmd, uintptr_t bufsysaddr, int retval, long long totaltime) ;
 void NaClStraceSocketPair(int cageid, int domain, int type, int protocol, int *lindfds, int retval, long long totaltime) ;
-void NaClStraceGetTimeOfDay(int cageid, uintptr_t tv, uintptr_t tz, int ret, long long totaltime) ;
-void NaClStraceClockGetCommon(int cageid, int clk_id, uint32_t ts_addr, uintptr_t *time_func, int ret, long long totaltime) ;
 void NaClStraceFork(int cageid, int ret, long long totaltime) ;
 void NaClStraceExecve(int cageid, char const *path, char *const *argv, int ret, long long totaltime) ;
 void NaClStraceExecv(int cageid, char const *path, char *const *argv, int ret, long long totaltime) ;
@@ -78,6 +76,9 @@ void NaClStraceAccept(int cageid, int sockfd, uintptr_t addr, socklen_t *addrlen
 void NaClStraceBind(int cageid, int sockfd, uintptr_t addr, socklen_t addrlen, int ret, long long totaltime) ;
 void NaClStraceListen(int cageid, int sockfd, int backlog, int ret, long long totaltime) ;
 void NaClStracePoll(int cageid, uintptr_t fds, nfds_t nfds, int timeout, int retval, long long totaltime) ;
+void NaClStraceMprotect(int cageid, uint32_t start, size_t length, int prot, int32_t ret, long long totaltime) ;
+void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long totaltime) ;
+void stracec_increment_fcntl(int syscallnum, long long totaltime, int retval) ;
 void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltime) ;
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) ;
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) ;
