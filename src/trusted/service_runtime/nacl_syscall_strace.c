@@ -728,7 +728,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltim
     fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
   }
 }
-
+//both NACL_sys_fcntl_get and NACL_sys_fcntl_set are combined
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_fcntl_get, totaltime, ret);
@@ -736,10 +736,10 @@ void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long 
     fprintf(tracingOutputFile, "%d fcntlset(%d, %d, %ld) = %d\n", cageid, fd, cmd, set_op, ret);
   }
 }
-//both NACL_sys_fcntl_get and NACL_sys_fcntl_set are combined
+
 void NaClStraceEpollCreate(int cageid, int size, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment_fcntl(NACL_sys_fcntl_set, totaltime, ret);
+    stracec_increment(NACL_sys_epoll_create, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d epollcreate(%d) = %d\n", cageid, size, ret);
   }
