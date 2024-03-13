@@ -539,7 +539,7 @@ void NaClStraceSend(int cageid, int sockfd,
   if (strace_C) {
     stracec_increment(NACL_sys_sendto, totaltime, ret);
   } else {
-    fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
+    fprintf(tracingOutputFile, "%d sendto(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
 }
 
@@ -556,7 +556,7 @@ void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, i
   if (strace_C) {
     stracec_increment(NACL_sys_recvfrom, totaltime, ret);
   } else {
-    fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
+    fprintf(tracingOutputFile, "%d recvfrom(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
 }
 
@@ -808,7 +808,7 @@ void printFinalSyscallStats() {
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
-            fprintf(tracingOutputFile, "%05.2f  %7.4f   %7lld   %6lld  %6lld     %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %0.9f   %7lld   %6lld  %6lld     %s\n",
                    syscallTimes[i].percentTime,
                    (double)syscallStats[idx].totalTime / 1000000000.0,
                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
@@ -819,7 +819,7 @@ void printFinalSyscallStats() {
 
         // Print the total summary line to the tracing output file
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %7.4f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %0.9f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
 
