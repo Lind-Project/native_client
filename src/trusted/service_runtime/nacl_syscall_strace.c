@@ -537,7 +537,7 @@ void NaClStraceSocket(int cageid, int domain, int type, int protocol, int ret, l
 void NaClStraceSend(int cageid, int sockfd,
   const void * buf, size_t len, int flags, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_send, totaltime, ret);
+    stracec_increment(NACL_sys_sendto, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d send(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
@@ -554,7 +554,7 @@ void NaClStraceSendto(int cageid, int sockfd,
 
 void NaClStraceRecv(int cageid, int sockfd, void * buf, size_t len, int flags, int ret, long long totaltime) {
   if (strace_C) {
-    stracec_increment(NACL_sys_recv, totaltime, ret);
+    stracec_increment(NACL_sys_recvfrom, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d recv(%d, 0x%08"NACL_PRIxPTR ", %ld, %d) = %d\n", cageid, sockfd, (uintptr_t) buf, len, flags, ret);
   }
@@ -895,11 +895,11 @@ const char * getSyscallName(int syscallIndex) {
   case NACL_sys_socket:
     return "socket";
   case NACL_sys_send:
-    return "send";
+    return "sendto";
   case NACL_sys_sendto:
     return "sendto";
   case NACL_sys_recv:
-    return "recv";
+    return "recvfrom";
   case NACL_sys_recvfrom:
     return "recvfrom";
   case NACL_sys_shmat:
