@@ -808,22 +808,17 @@ void printFinalSyscallStats() {
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
-            double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
-            int beforeDecimal = seconds > 0 ? (int)log10(seconds) + 1 : 1;
-            int afterDecimal = 6 - beforeDecimal; // Ensure total of 7 places
-            if (afterDecimal < 0) afterDecimal = 0; // Cannot have negative precision
-
-            fprintf(tracingOutputFile, "%05.2f  %*.*f   %7lld   %6lld  %6lld     %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %7.4f   %7lld   %6lld  %6lld     %s\n",
                    syscallTimes[i].percentTime,
-                   7, afterDecimal,seconds,
-                   syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
+                   (double)syscallStats[idx].totalTime / 1000000000.0,
+                   syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0, // Calculate usecs/call
                    syscallStats[idx].count,
                    syscallStats[idx].errorCount,
                    getSyscallName(idx));
         }
 
         // Print the total summary line to the tracing output file
-        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
         fprintf(tracingOutputFile, "100.00  %7.4f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
