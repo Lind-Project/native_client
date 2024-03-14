@@ -802,9 +802,11 @@ void printFinalSyscallStats() {
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
             double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
+            // Calculate the length of the integer part and the required decimal precision
             int intPart = (int)seconds;
             int intLength = snprintf(NULL, 0, "%d", intPart);
-            int decimalPrecision = 6 - intLength; // Adjust based on the integer part's length
+            int decimalPrecision = 7 - intLength; // Ensure up to 7 characters in total, adjusting for the decimal point
+            if (decimalPrecision > 0) decimalPrecision -= 1; // Subtract one for the decimal point itself
             if (decimalPrecision < 0) decimalPrecision = 0; // Ensure non-negative precision
 
             snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
@@ -822,7 +824,8 @@ void printFinalSyscallStats() {
         double totalSecondsFormatted = totalSeconds;
         int totalIntPart = (int)totalSecondsFormatted;
         int totalIntLength = snprintf(NULL, 0, "%d", totalIntPart);
-        int totalDecimalPrecision = 6 - totalIntLength;
+        int totalDecimalPrecision = 7 - totalIntLength;
+        if (totalDecimalPrecision > 0) totalDecimalPrecision -= 1; // Adjust for the decimal point
         if (totalDecimalPrecision < 0) totalDecimalPrecision = 0;
 
         snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
