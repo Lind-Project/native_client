@@ -793,7 +793,7 @@ void printFinalSyscallStats() {
 
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls    errors   syscall\n");
+        fprintf(tracingOutputFile, "%% time  seconds     usecs/call  calls    errors   syscall\n");
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
 
         char formattedSeconds[17]; // Temporary string to hold the formatted seconds value
