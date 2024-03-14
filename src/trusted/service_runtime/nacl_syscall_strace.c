@@ -795,16 +795,17 @@ void printFinalSyscallStats() {
         fprintf(tracingOutputFile, "%% time     seconds  usecs/call   calls errors syscall\n");
         fprintf(tracingOutputFile, "------ ----------- ------------ ------- ------ --------\n");
 
+        // Declare totalWidth at the beginning of the function so it's accessible throughout
+        int totalWidth = 12; // Total width for the seconds column, adjust based on your data
+
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
             double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
             int beforeDecimal = seconds > 0 ? (int)log10(seconds) + 1 : 1;
             int afterDecimalPrecision = 7 - beforeDecimal; // Adjust precision to maintain 7 significant digits
-            afterDecimalPrecision = afterDecimalPrecision < 0 ? 0 : afterDecimalPrecision; // Ensure non-negative precision
+            afterDecimalPrecision = afterDecimalPrecision < 0 ? 0 : afterDecimalPrecision;
 
-            // Ensure the total width for seconds remains constant
-            int totalWidth = 12; // Total width for the seconds column, adjust based on your data
             fprintf(tracingOutputFile, "%05.2f %*.*f %7lld %6lld %6lld %s\n",
                     syscallTimes[i].percentTime,
                     totalWidth, afterDecimalPrecision, seconds,
@@ -819,7 +820,6 @@ void printFinalSyscallStats() {
         int afterDecimalTotal = 7 - beforeDecimalTotal;
         afterDecimalTotal = afterDecimalTotal < 0 ? 0 : afterDecimalTotal;
 
-        // Ensure the total width for the totalSeconds remains constant, similar to above
         fprintf(tracingOutputFile, "------ ----------- ------------ ------- ------ --------\n");
         fprintf(tracingOutputFile, "100.00 %*.*f %11s %6lld %6lld total\n",
                 totalWidth, afterDecimalTotal, totalSeconds, "", totalCalls, totalErrors);
