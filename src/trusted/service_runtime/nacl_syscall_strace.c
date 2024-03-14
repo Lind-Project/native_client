@@ -820,9 +820,8 @@ void printFinalSyscallStats() {
         int afterDecimalTotal = 7 - beforeDecimalTotal;
         afterDecimalTotal = afterDecimalTotal < 0 ? 0 : afterDecimalTotal;
 
-        fprintf(tracingOutputFile, "------ ----------- ------------ ------- ------ --------\n");
-        fprintf(tracingOutputFile, "100.00 %*.*f %11s %6lld %6lld total\n",
-                totalWidth, afterDecimalTotal, totalSeconds, "", totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "100.00  %*.*f      0   %6lld  %6lld            total\n",totalWidth, afterDecimalTotal, totalSeconds, "", totalCalls, totalErrors);
     }
 }
 
