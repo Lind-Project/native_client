@@ -793,8 +793,8 @@ void printFinalSyscallStats() {
 
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
-        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls    errors   syscall\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
 
         char formattedSeconds[17]; // Temporary string to hold the formatted seconds value
 
@@ -827,8 +827,8 @@ void printFinalSyscallStats() {
 
         snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
 
-        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %s      0   %6lld  %6lld            total\n", formattedSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "100.00  %s         0   %6lld  %6lld            total\n", formattedSeconds, totalCalls, totalErrors);
     }
 }
 
