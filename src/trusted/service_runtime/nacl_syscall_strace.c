@@ -804,7 +804,7 @@ void printFinalSyscallStats() {
             double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
             int intPart = (int)seconds;
             int intLength = snprintf(NULL, 0, "%d", intPart);
-            int decimalPrecision = 6 - intLength; // Adjust based on the integer part's length
+            int decimalPrecision = 7 - intLength; // Adjust based on the integer part's length
             if (decimalPrecision < 0) decimalPrecision = 0; // Ensure non-negative precision
 
             snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
