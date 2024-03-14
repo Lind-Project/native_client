@@ -770,6 +770,7 @@ void NaClStraceSelect(int cageid, int nfds, uintptr_t readfds, uintptr_t writefd
   }
 }
 
+
 void printFinalSyscallStats() {
     if (strace_C && tracingOutputFile != NULL) {
         long long totalCalls = 0, totalErrors = 0;
@@ -792,36 +793,42 @@ void printFinalSyscallStats() {
 
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call   calls errors syscall\n");
-        fprintf(tracingOutputFile, "------ ----------- ------------ ------- ------ --------\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
 
-        // Declare totalWidth at the beginning of the function so it's accessible throughout
-        int totalWidth = 12; // Total width for the seconds column, adjust based on your data
+        char formattedSeconds[16]; // Temporary string to hold the formatted seconds value
 
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
             double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
-            int beforeDecimal = seconds > 0 ? (int)log10(seconds) + 1 : 1;
-            int afterDecimalPrecision = 7 - beforeDecimal; // Adjust precision to maintain 7 significant digits
-            afterDecimalPrecision = afterDecimalPrecision < 0 ? 0 : afterDecimalPrecision;
+            int intPart = (int)seconds;
+            int intLength = snprintf(NULL, 0, "%d", intPart);
+            int decimalPrecision = 6 - intLength; // Adjust based on the integer part's length
+            if (decimalPrecision < 0) decimalPrecision = 0; // Ensure non-negative precision
 
-            fprintf(tracingOutputFile, "%05.2f %*.*f %7lld %6lld %6lld %s\n",
-                    syscallTimes[i].percentTime,
-                    totalWidth, afterDecimalPrecision, seconds,
-                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
-                    syscallStats[idx].count,
-                    syscallStats[idx].errorCount,
-                    getSyscallName(idx));
+            snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
+
+            fprintf(tracingOutputFile, "%05.2f  %s   %7lld   %6lld  %6lld     %s\n",
+                   syscallTimes[i].percentTime,
+                   formattedSeconds,
+                   syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
+                   syscallStats[idx].count,
+                   syscallStats[idx].errorCount,
+                   getSyscallName(idx));
         }
 
-        // Adjusting for totalSeconds in the summary line similarly
-        int beforeDecimalTotal = totalSeconds > 0 ? (int)log10(totalSeconds) + 1 : 1;
-        int afterDecimalTotal = 7 - beforeDecimalTotal;
-        afterDecimalTotal = afterDecimalTotal < 0 ? 0 : afterDecimalTotal;
+        // Print the total summary line to the tracing output file
+        double totalSecondsFormatted = totalSeconds;
+        int totalIntPart = (int)totalSecondsFormatted;
+        int totalIntLength = snprintf(NULL, 0, "%d", totalIntPart);
+        int totalDecimalPrecision = 6 - totalIntLength;
+        if (totalDecimalPrecision < 0) totalDecimalPrecision = 0;
+
+        snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
 
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %*.*f      0   %6lld  %6lld            total\n",totalWidth, afterDecimalTotal, totalSeconds, "", totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %s      0   %6lld  %6lld            total\n", formattedSeconds, totalCalls, totalErrors);
     }
 }
 
