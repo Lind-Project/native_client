@@ -796,7 +796,7 @@ void printFinalSyscallStats() {
         fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
         fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
 
-        char formattedSeconds[16]; // Temporary string to hold the formatted seconds value
+        char formattedSeconds[17]; // Temporary string to hold the formatted seconds value
 
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
