@@ -791,8 +791,8 @@ void printFinalSyscallStats() {
 
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls    errors   syscall\n");
-        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "%% time     seconds  usecs/call  calls  errors   syscall\n");
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
 
         // Print each syscall's stats to the tracing output file
         for (int i = 0; i < validCount; i++) {
