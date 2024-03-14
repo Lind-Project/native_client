@@ -798,10 +798,8 @@ void printFinalSyscallStats() {
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
             int beforeDecimal = (int)log10((double)syscallStats[idx].totalTime / 1000000000.0) + 1;
-            //int afterDecimal = max(0, 6 - beforeDecimal); // Ensure at least one digit is printed after the decimal
             int afterDecimal = (6 - beforeDecimal) > 0 ? (6 - beforeDecimal) : 0;
 
-            
             fprintf(tracingOutputFile, "%05.2f  %*.*f   %7lld   %6lld  %6lld     %s\n",
                    syscallTimes[i].percentTime,
                    afterDecimal + beforeDecimal + (afterDecimal > 0 ? 1 : 0), afterDecimal, // Width includes decimal point if afterDecimal > 0
@@ -815,12 +813,10 @@ void printFinalSyscallStats() {
         // Adjusting for totalSeconds in the summary line similarly
         int beforeDecimalTotal = (int)log10(totalSeconds) + 1;
         int afterDecimalTotal = (6 - beforeDecimalTotal) > 0 ? (6 - beforeDecimalTotal) : 0;
-        
 
-        fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %*.*f      0   %6lld  %6lld            total\n", 
-                afterDecimalTotal + beforeDecimalTotal + (afterDecimalTotal > 0 ? 1 : 0), afterDecimalTotal,
-                totalSeconds, totalCalls, totalErrors);
+        // Print the total summary line to the tracing output file
+        fprintf(tracingOutputFile, "------ ----------- ----------- ------- -------   ----------------\n");
+        fprintf(tracingOutputFile, "100.00  %0.9f      0   %6lld  %6lld            total\n", totalSeconds, totalCalls, totalErrors);
     }
 }
 
