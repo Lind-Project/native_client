@@ -805,7 +805,7 @@ void printFinalSyscallStats() {
             // Calculate the length of the integer part and the required decimal precision
             int intPart = (int)seconds;
             int intLength = snprintf(NULL, 0, "%d", intPart);
-            int decimalPrecision = 7 - intLength; // Ensure up to 7 characters in total, adjusting for the decimal point
+            int decimalPrecision = 8 - intLength; // Ensure up to 7 characters in total, adjusting for the decimal point
             if (decimalPrecision > 0) decimalPrecision -= 1; // Subtract one for the decimal point itself
             if (decimalPrecision < 0) decimalPrecision = 0; // Ensure non-negative precision
 
