@@ -440,7 +440,7 @@ int NaClGioShmAllocCtor(struct NaClGioShm *self,
     return 0;
   }
   if (!NaClDescImcShmAllocCtor(shmp, shm_size, /* executable= */ 0)) {
-    free(shmp);
+    free(shmp);// Free allocated memory on failure
     return 0;
   }
 
@@ -448,7 +448,7 @@ int NaClGioShmAllocCtor(struct NaClGioShm *self,
   NaClDescUnref((struct NaClDesc *) shmp);
 
   if (!rv) {
-    free(shmp);
+    free(shmp);// Free allocated memory on failure
   }
   return rv;
 }

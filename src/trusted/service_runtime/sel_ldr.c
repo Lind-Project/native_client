@@ -103,7 +103,7 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->validator = NaClCreateValidator();
   /* Get the set of features that the CPU we're running on supports. */
   /* These may be adjusted later in sel_main.c for fixed-feature CPU mode. */
-  nap->cpu_features = malloc(nap->validator->CPUFeatureSize);
+  nap->cpu_features = malloc(nap->validator->CPUFeatureSize); // Memory leak!!
   if (!nap->cpu_features) {
     goto cleanup_none;
   }
@@ -151,6 +151,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   nap->mem_io_regions = malloc(sizeof(*nap->mem_io_regions) + 8);
   if (!nap->mem_io_regions) {
+    // Mem-leak fix: Freeing nap->mem_io_regions if allocation failed
+    free(nap->mem_io_regions);
     goto cleanup_mem_map;
   }
 
@@ -162,6 +164,10 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
 
   effp = malloc(sizeof *effp);
   if (!effp) {
+    // Mem-leak fix: this actually frees nap->effp,
+    // but we didn't assign nap->effp = effp here,
+    // so we explicitly free effp here
+    free(effp);
     goto cleanup_mem_io_regions;
   }
   if (!NaClDescEffectorLdrCtor(effp, nap)) {
@@ -236,6 +242,8 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   nap->name_service = (struct NaClNameService *) malloc(
       sizeof *nap->name_service);
   if (!nap->name_service) {
+    // Memleak fix
+    free(nap->name_service);
     goto cleanup_cv;
   }
   if (!NaClNameServiceCtor(nap->name_service,
@@ -343,7 +351,9 @@ int NaClAppWithSyscallTableCtor(struct NaClApp               *nap,
   cleanup_effp_free:
   free(nap->effp);
   cleanup_mem_io_regions:
-  NaClIntervalMultisetDelete(nap->mem_io_regions);
+  // Mem-leak fix attempt, maybe we should use the IntervalRangeTreeDtor instead of MultisetDelete
+  // NaClIntervalMultisetDelete(nap->mem_io_regions);
+  NaClIntervalRangeTreeDtor((struct NaClIntervalRangeTree *)nap->mem_io_regions);
   nap->mem_io_regions = NULL;
   cleanup_mem_map:
   NaClVmmapDtor(&nap->mem_map);

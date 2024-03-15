@@ -177,6 +177,7 @@ struct NaClDescIoDesc *NaClDescIoDescOpen(char const *path,
     NaClLog(4,
             "NaClDescIoDescOpen: NaClHostDescOpen failed for %s\n",
             path);
+    free(nhdp); // Free allocated memory in case of failure
     return NULL;
   }
   return NaClDescIoDescMake(nhdp);
