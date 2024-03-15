@@ -981,9 +981,9 @@ const char * getSyscallName(int syscallIndex) {
   case NACL_sys_execv:
     return "execv";
   case NACL_sys_mprotect:
-    return "mprotect"
+    return "mprotect";
   case NACL_sys_brk:
-    return "brk"
+    return "brk";
   default:
     return "unknown";
   }
