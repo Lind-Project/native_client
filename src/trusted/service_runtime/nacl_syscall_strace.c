@@ -809,7 +809,7 @@ void printFinalSyscallStats() {
 
             snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
 
-            fprintf(tracingOutputFile, "%05.2f  %s       %7lld    %6lld   %6lld         %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %s       %7lld    %6lld   %6lld     %s\n",
                    syscallTimes[i].percentTime,
                    formattedSeconds,
                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
@@ -828,7 +828,7 @@ void printFinalSyscallStats() {
         snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
 
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %s         0   %6lld  %6lld            total\n", formattedSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %s         0       %6lld  %6lld          total\n", formattedSeconds, totalCalls, totalErrors);
     }
 }
 
