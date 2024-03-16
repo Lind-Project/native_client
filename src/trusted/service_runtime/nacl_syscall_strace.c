@@ -828,7 +828,7 @@ void printFinalSyscallStats() {
         snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
 
         fprintf(tracingOutputFile, "------ ----------- ----------- --------- -------   ----------------\n");
-        fprintf(tracingOutputFile, "100.00  %s         0       %6lld  %6lld      total\n", formattedSeconds, totalCalls, totalErrors);
+        fprintf(tracingOutputFile, "100.00  %s         0       %6lld   %6lld   total\n", formattedSeconds, totalCalls, totalErrors);
     }
 }
 
