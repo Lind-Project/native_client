@@ -820,7 +820,7 @@ void printFinalSyscallStats() {
 
             snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
 
-            fprintf(tracingOutputFile, "%05.2f  %s        %7lld    %*lld  %*lld   %s\n",
+            fprintf(tracingOutputFile, "%05.2f  %s        %7lld      %*lld  %*lld   %s\n",
                    syscallTimes[i].percentTime,
                    formattedSeconds,
                    syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
