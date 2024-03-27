@@ -776,8 +776,11 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
+
+  #ifdef TRACING
   // Get the start time
   long long starttime = gettimens();
+  #endif
   
   // NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
   //          "%d, 0x%08"NACL_PRIxPTR", "
@@ -808,11 +811,12 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
 
 /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
+
+  #ifdef TRACING
   // Get the end time
   long long endtime = gettimens();
   long long totaltime = endtime - starttime;
   
-  #ifdef TRACING
   NaClStraceRead(nap->cage_id, d, (void *)sysaddr, count, retval, totaltime);
   #endif
 
@@ -837,48 +841,48 @@ int32_t NaClSysPread(struct NaClAppThread *natp,
 
     if (d < 0) return -NACL_ABI_EBADF;
 
-    sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
-    if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
+  sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
+  if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
 
-    /*
-     * The maximum length for read and write is INT32_MAX--anything larger and
-     * the return value would overflow. Passing larger values isn't an error--
-     * we'll just clamp the request size if it's too large.
-     */
-    if (count > INT32_MAX) {
-        count = INT32_MAX;
-    }
-    #ifdef TRACING
-    long long starttime = gettimens();
-    #endif
+  /*
+    * The maximum length for read and write is INT32_MAX--anything larger and
+    * the return value would overflow. Passing larger values isn't an error--
+    * we'll just clamp the request size if it's too large.
+    */
+  if (count > INT32_MAX) {
+      count = INT32_MAX;
+  }
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
-    read_result = lind_pread(d, (void *)sysaddr, count, offset, nap->cage_id);
+  read_result = lind_pread(d, (void *)sysaddr, count, offset, nap->cage_id);
 
-    if (read_result > 0) {
-        NaClLog(4, "pread returned %"NACL_PRIdS" bytes\n", read_result);
-        log_bytes = (size_t) read_result;
-        if (log_bytes > INT32_MAX) {
-            log_bytes = INT32_MAX;
-            ellipsis = "...";
-        }
-        if (log_bytes > kdefault_io_buffer_bytes_to_log) {
-            log_bytes = kdefault_io_buffer_bytes_to_log;
-            ellipsis = "...";
-        }
-        NaClLog(8, "pread result: %.*s%s\n",
-                (int) log_bytes, (char *) sysaddr, ellipsis);
-    } else {
-        NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
-    }
+  if (read_result > 0) {
+      NaClLog(4, "pread returned %"NACL_PRIdS" bytes\n", read_result);
+      log_bytes = (size_t) read_result;
+      if (log_bytes > INT32_MAX) {
+          log_bytes = INT32_MAX;
+          ellipsis = "...";
+      }
+      if (log_bytes > kdefault_io_buffer_bytes_to_log) {
+          log_bytes = kdefault_io_buffer_bytes_to_log;
+          ellipsis = "...";
+      }
+      NaClLog(8, "pread result: %.*s%s\n",
+              (int) log_bytes, (char *) sysaddr, ellipsis);
+  } else {
+      NaClLog(4, "pread returned %"NACL_PRIdS"\n", read_result);
+  }
 
 /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
 
-    #ifdef TRACING
-    long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStracePread(nap->cage_id, d, (void *)sysaddr, count, offset, retval, totaltime);
-    #endif
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStracePread(nap->cage_id, d, (void *)sysaddr, count, offset, retval, totaltime);
+  #endif
 
   return retval;
 }
