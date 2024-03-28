@@ -5035,13 +5035,10 @@ int32_t NaClSysEpollCtl(struct NaClAppThread *natp, int epfd, int op, int fd, st
   #endif
 
   ret = lind_epoll_ctl(epfd, op, fd, eventsysaddr, nap->cage_id);
-
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceEpollCtl(nap->cage_id, epfd, op, fd, (uintptr_t) eventsysaddr, ret, totaltime);
-  #endif
-
+  //Inside the epoll_event struct, there is a fd that is being left as an untranslated userfd so it does not have to be translated back after the lind call.
+cleanup:
+  NaClDescUnref(ndpe);
+  NaClDescUnref(ndp);
   return ret;
 }
 
@@ -5049,10 +5046,21 @@ int32_t NaClSysEpollWait(struct NaClAppThread *natp, int epfd, struct epoll_even
   struct NaClApp *nap = natp->nap;
   struct epoll_event *eventsysaddr;
   int retval = 0;
+  int nfds;
+  int lindepfd;
   struct epoll_event *sys_event_array;
+  struct NaClDesc * epndp;
 
   NaClLog(2, "Cage %d Entered NaClSysEpollWait(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %d, %d)\n",
           nap->cage_id, (uintptr_t) natp, epfd, (uintptr_t) events, maxevents, timeout);
+
+  epndp = GetDescFromCagetable(nap, epfd);
+  if (!epndp) {
+      NaClLog(2, "NaClSysEpollWait was passed an unrecognized file descriptor, returning %d\n", epfd);
+      return -NACL_ABI_EBADF;
+  }
+
+  lindepfd = NaClDesc2Lindfd(epndp);
 
   sys_event_array = (struct epoll_event*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) events, sizeof(eventsysaddr), NACL_ABI_PROT_WRITE);
 
@@ -5061,18 +5069,13 @@ int32_t NaClSysEpollWait(struct NaClAppThread *natp, int epfd, struct epoll_even
     return -NACL_ABI_EFAULT;
   }
 
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+  nfds = lind_epoll_wait(lindepfd, sys_event_array, maxevents, timeout, nap->cage_id);
+  //There is a fd inside the epoll_event struct which is being left as an untranslated userfd since it isnt needed as lind_fd.  This saves time since it does not have to 
+  //translated back after the lind call.
+  retval = nfds;
 
-  retval = lind_epoll_wait(epfd, sys_event_array, maxevents, timeout, nap->cage_id);
-
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceEpollWait(nap->cage_id, epfd, (uintptr_t) sys_event_array, maxevents, timeout, retval, totaltime);
-  #endif
-
+cleanup:
+  NaClDescUnref(epndp);
   return retval;
 }
 
