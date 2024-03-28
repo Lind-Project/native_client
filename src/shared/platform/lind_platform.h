@@ -113,16 +113,6 @@
 
 #define LIND_safe_net_gethostname       125
 
-#define LIND_safe_sem_init               91
-#define LIND_safe_sem_wait               92
-#define LIND_safe_sem_trywait            93
-#define LIND_safe_sem_timedwait          94
-#define LIND_safe_sem_post               95
-#define LIND_safe_sem_destroy            96
-#define LIND_safe_sem_getvalue           97
-
-#define LIND_safe_net_gethostname       125
-
 #define LIND_safe_fs_pread              126
 #define LIND_safe_fs_pwrite             127
 #define LIND_safe_fs_chdir              130
@@ -130,6 +120,9 @@
 #define LIND_safe_fs_rmdir              132
 #define LIND_safe_fs_chmod              133
 #define LIND_safe_fs_fchmod             134
+
+#define LIND_safe_net_socket            136
+
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
