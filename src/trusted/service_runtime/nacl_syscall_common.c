@@ -2447,7 +2447,7 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
 
   NaClLog(2, "Entered NaClSysShmget(0x%08"NACL_PRIxPTR" , %d, %lu, %d)\n",
            (uintptr_t)natp, key, size, shmflg);
-
+  
   alloc_rounded_size = NaClRoundAllocPage(size);
   if (alloc_rounded_size != size) {
     NaClLog(1, "NaClSysShmget: rounded size to 0x%"NACL_PRIxS"\n",
@@ -2458,12 +2458,6 @@ int32_t NaClSysShmget(struct NaClAppThread  *natp,
   #endif
 
   retval = lind_shmget(key, alloc_rounded_size, shmflg, nap->cage_id);
-
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceShmget(nap->cage_id, key, alloc_rounded_size, shmflg, retval, totaltime);
-  #endif
 
   if (retval > 0) {
     if(retval >= FILE_DESC_MAX)
@@ -2666,7 +2660,6 @@ int32_t NaClSysShmat(struct NaClAppThread  *natp,
                                       NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                                       length >> NACL_PAGESHIFT,
                                       prot,
-                                      PROT_RW,
                                       NACL_ABI_MAP_SHARED | NACL_ABI_MAP_FIXED,
                                       shmid,
                                       NULL,
@@ -2757,7 +2750,7 @@ int32_t NaClSysShmdt(struct NaClAppThread  *natp,
 
   length = shmtable[shmid].size;
 
-  // When the shmid entry is freed, we decrement the shm refcount
+  //When the shmid entry is freed, we decrement the shm refcount
   NaClVmmapRemove(&nap->mem_map,
                   NaClSysToUser(nap, sysaddr) >> NACL_PAGESHIFT,
                   length >> NACL_PAGESHIFT);
@@ -2785,8 +2778,6 @@ int32_t NaClSysShmctl(struct NaClAppThread        *natp,
 
   NaClLog(2, "Entered NaClSysShmctl(0x%08"NACL_PRIxPTR" , %d, %d ,""%p"NACL_PRIxPTR")\n",
            (uintptr_t)natp, shmid, cmd, (void *) buf);
-
-  
 
   if((unsigned) shmid >= FILE_DESC_MAX || !shmtable[shmid].extant) {
     NaClLog(2, "NaClSysShmat: shmid invalid\n");
