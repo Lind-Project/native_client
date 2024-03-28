@@ -34,6 +34,12 @@ env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
 
+if os.environ.get('DEBUG_NACL_SIGNAL') == '1':
+    env.Append(CCFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CPPFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CXXFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+
 # TODO GENERATED CODE
 GENERATED='${TARGET_ROOT}/gen/native_client/src/trusted/service_runtime'
 env.Command(target=env.File(GENERATED + '/nacl_syscall_handlers.c'),
@@ -401,13 +407,18 @@ if (env.Bit('linux') and not env.Bit('android')
     bootstrap_env.Append(CPPFLAGS=['-DTRACING=1'])
     bootstrap_env.Append(CXXFLAGS=['-DTRACING=1'])
   
-  
   STRACE_DEFAULT_PATH = ""
   path_string = os.environ.get('STRACE_OUTPUT_PATH', STRACE_DEFAULT_PATH)
   bootstrap_env.Append(CCFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
   bootstrap_env.Append(CFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
   bootstrap_env.Append(CPPFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
   bootstrap_env.Append(CXXFLAGS=['-DSTRACE_OUTPUT_PATH=\\"{}\\"'.format(path_string)])
+
+  if os.environ.get('DEBUG_NACL_SIGNAL') == '1':
+    env.Append(CCFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CPPFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
+    env.Append(CXXFLAGS=['-DDEBUG_NACL_SIGNAL=1'])
 
   bootstrap_env.Replace(CLANG_OPTS='')
   bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',

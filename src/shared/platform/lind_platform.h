@@ -145,11 +145,6 @@
 #define LIND_safe_fs_fdatasync          163
 #define LIND_safe_fs_sync_file_range    164
 
-#define LIND_safe_fs_fchdir		161
-#define LIND_safe_fs_fsync		162
-#define LIND_safe_fs_fdatasync		163
-#define LIND_safe_fs_sync_file_range	164
-
 
 union RustArg {
     int dispatch_int;

@@ -5138,3 +5138,104 @@ int32_t NaClSysSelect(struct NaClAppThread *natp, int nfds, fd_set *readfds,
 
   return retval;
 }
+
+int32_t NaClSysSigaction(struct NaClAppThread *natp, int32_t sig, const struct nacl_abi_sigaction *act, struct nacl_abi_sigaction *oact) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const struct nacl_abi_sigaction *sysact = NULL;
+  struct nacl_abi_sigaction *sysoact = NULL;
+
+  if (act) {
+    sysact = (const struct nacl_abi_sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) act, sizeof(struct nacl_abi_sigaction), NACL_ABI_PROT_READ);
+
+    if ((void*) kNaClBadAddress == sysact) {
+        NaClLog(2, "NaClSysSigaction could not translate act, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (oact) {
+    sysoact = (struct nacl_abi_sigaction*) NaClUserToSysAddrRangeProt(nap, (uintptr_t) oact, sizeof(struct nacl_abi_sigaction), NACL_ABI_PROT_WRITE);
+
+    if ((void*) kNaClBadAddress == sysoact) {
+        NaClLog(2, "NaClSysSigaction could not translate oact, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  ret = lind_sigaction(sig, sysact, sysoact, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysKill(struct NaClAppThread *natp, int32_t targetcageid, int32_t sig) {
+  struct NaClApp *nap = natp->nap;
+  return lind_kill(targetcageid, sig, nap->cage_id);
+}
+
+int32_t NaClSysSigprocmask(struct NaClAppThread *natp, int32_t how, const uint64_t *nacl_set, uint64_t *nacl_oldset) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const uint64_t *sysset = NULL;
+  uint64_t *sysoldset = NULL;
+
+  if (nacl_set) {
+    sysset = (const uint64_t *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) nacl_set, sizeof(uint64_t), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sysset) {
+        NaClLog(2, "NaClSysSigprocmask could not translate set, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (nacl_oldset) {
+    sysoldset = (uint64_t *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) nacl_oldset, sizeof(uint64_t), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sysoldset) {
+        NaClLog(2, "NaClSysSigprocmask could not translate oldset, returning %d\n", -NACL_ABI_EFAULT);
+        return -NACL_ABI_EFAULT;
+    }
+  }
+
+  ret = lind_sigprocmask(how, sysset, sysoldset, nap->cage_id);
+  return ret;
+}
+
+int32_t NaClSysLindsetitimer(struct NaClAppThread *natp, int32_t which, const struct itimerval *new_value, struct itimerval *old_value) {
+  int32_t ret;
+  struct NaClApp *nap = natp->nap;
+  const struct itimerval *sys_new_value = NULL;
+  struct itimerval *sys_old_value = NULL;
+
+  if (new_value) {
+    sys_new_value = (const struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) new_value, sizeof(struct itimerval), NACL_ABI_PROT_READ);
+
+    if ((void *) kNaClBadAddress == sys_new_value) {
+      NaClLog(2, "NaclSysLindsetitimer could not translate new_value, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+  }
+
+  if (old_value) {
+    sys_old_value = (struct itimerval *) NaClUserToSysAddrRangeProt(nap, (uintptr_t) old_value, sizeof(struct itimerval), NACL_ABI_PROT_WRITE);
+
+    if ((void *) kNaClBadAddress == sys_old_value) {
+      NaClLog(2, "NaclSysLindsetitimer could not translate old_value, returning %d\n", -NACL_ABI_EFAULT);
+      return -NACL_ABI_EFAULT;
+    }
+  }
+
+  ret = lind_lindsetitimer(which, sys_new_value, sys_old_value, nap->cage_id);
+  return ret;
+}
+
+/*
+ * For what happens on return from an untrusted signal handler see the comment above the function
+ * NaClTrampolineRegRestore in arch/x86_64/nacl_syscall_64.S
+ */
+int32_t NaClSysSigmaskSigreturn(struct NaClAppThread *natp) {
+  sigset_t s;
+  sigemptyset(&s);
+  natp->exception_flag = 0;
+  pthread_sigmask(SIG_SETMASK, &s, NULL);
+  return 0;
+}
