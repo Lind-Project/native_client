@@ -335,8 +335,6 @@ int32_t NaClSysCondDestroy(struct NaClAppThread *natp,
 
 int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
 
-int32_t NaClCommonDescSocketPair(struct NaClDesc *pair[2]);
-
 int32_t NaClSysSocketPair(struct NaClAppThread *natp,
                           int                  domain,
                           int                  type,

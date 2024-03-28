@@ -1730,15 +1730,11 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
       struct NaClVmmapEntry *entry = parentmap->vmentry[i];
       if(entry->desc != nap_parent->text_shm) {
         struct NaClDesc* desc = entry->desc;
-        if(entry->desc) {
-          struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &desc->base;
-          struct NaClHostDesc *hd = self->hd;
-          desc = NaClGetDesc(nap_child, fd_cage_table[nap_child->cage_id][hd->userfd]);
-        }
         NaClVmmapAddWithOverwriteAndShmid(&nap_child->mem_map,
                                           entry->page_num,
                                           entry->npages,
                                           entry->prot,
+                                          entry->maxprot,
                                           entry->flags,
                                           entry->shmid,
                                           desc,
@@ -1755,6 +1751,7 @@ void NaClCopyDynamicTextAndVmmap(struct NaClApp *nap_parent, struct NaClApp *nap
                                   entry->page_num,
                                   entry->npages,
                                   entry->prot,
+                                  entry->maxprot,
                                   entry->flags,
                                   entry->desc,
                                   entry->offset,
