@@ -2884,7 +2884,6 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
                                 int32_t                  mutex_handle,
                                 struct nacl_abi_timespec *ts) {
   struct NaClApp           *nap = natp->nap;
-  int32_t                  retval = -NACL_ABI_EINVAL;
   struct nacl_abi_timespec trusted_ts;
 
   NaClLog(2, "Entered NaClSysCondTimedWaitAbs(0x%08"NACL_PRIxPTR
@@ -2893,23 +2892,21 @@ int32_t NaClSysCondTimedWaitAbs(struct NaClAppThread     *natp,
 
   if (!NaClCopyInFromUser(nap, &trusted_ts, (uintptr_t) ts, sizeof(trusted_ts))) { return -NACL_ABI_EFAULT; }
 
-  retval = lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
+  return lind_cond_timedwait(cond_handle, mutex_handle, (struct timespec*) &trusted_ts, nap->cage_id);
 
-cleanup:
-  return retval;
 }
 
-//TODO: semaphores currently do not have a proper implementation as the desc numbers cannot be
-//cloned on fork and thus we can't really implement them in lind as is. We must do a proper
-//implementation of semaphores as not desc associated in order for this to work properly.
-//However, this is irrelevant for now, as semaphores are not hooked in through glibc
-int32_t NaClSysSemCreate(struct NaClAppThread *natp,
-                         int32_t              init_value) {
-  struct NaClApp           *nap = natp->nap;
-  int32_t                  retval = -NACL_ABI_EINVAL;
-  struct NaClDescSemaphore *desc;
+int32_t NaClSysSemInit(struct NaClAppThread *natp,
+                         uint32_t             sem,
+                         int32_t              pshared,
+                         int32_t              value) {
+  struct NaClApp  *nap = natp->nap;
+  NaClLog(2, "Entered NaClSysSemInit(0x%08"NACL_PRIxPTR
+           ", %d, %d, %d\n",
+           (uintptr_t)natp, sem, pshared, value);
 
-  return retval;
+  return lind_sem_init(sem, pshared, value, nap->cage_id);
+
 }
 
 int32_t NaClSysSemWait(struct NaClAppThread *natp,
@@ -2918,10 +2915,9 @@ int32_t NaClSysSemWait(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemWait(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-  int retval = lind_sem_wait(sem, nap->cage_id);
 
-  return retval;
-}
+  return lind_sem_wait(sem, nap->cage_id);
+ }
 
 int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
                             uint32_t              sem) {
@@ -2929,9 +2925,8 @@ int32_t NaClSysSemTryWait(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemTryWait(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-  int retval = lind_sem_trywait(sem, nap->cage_id);
 
-  return retval;
+  return lind_sem_trywait(sem, nap->cage_id);
 }
 
 int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
@@ -2946,9 +2941,7 @@ int32_t NaClSysSemTimedWait(struct NaClAppThread *natp,
 
   if (!NaClCopyInFromUser(nap, &trusted_abs, (uintptr_t) abs, sizeof(trusted_abs))) { return -NACL_ABI_EFAULT; }
 
-  int retval = lind_sem_timedwait(sem, (struct timespec*) &trusted_abs, nap->cage_id);
-
-  return retval;
+  return lind_sem_timedwait(sem, (struct timespec*) &trusted_abs, nap->cage_id); 
 }
 
 int32_t NaClSysSemPost(struct NaClAppThread *natp,
@@ -2958,9 +2951,7 @@ int32_t NaClSysSemPost(struct NaClAppThread *natp,
            ", %d\n",
            (uintptr_t)natp, sem);
 
-  int retval = lind_sem_post(sem, nap->cage_id);
-
-  return retval;
+  return lind_sem_post(sem, nap->cage_id);
 }
 
 int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
@@ -2969,9 +2960,8 @@ int32_t NaClSysSemDestroy(struct NaClAppThread *natp,
   NaClLog(2, "Entered NaClSysSemDestroy(0x%08"NACL_PRIxPTR
            ", %d\n",
            (uintptr_t)natp, sem);
-  int retval = lind_sem_destroy(sem, nap->cage_id);
 
-  return retval;
+  return lind_sem_destroy(sem, nap->cage_id);
 }
 
 int32_t NaClSysSemGetValue(struct NaClAppThread *natp,
