@@ -387,9 +387,8 @@ int32_t NaClSysGetppid(struct NaClAppThread *natp) {
 int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
     struct NaClApp *nap = natp->nap;
 
-  /* to close a cage we need to unref the vmmap before officially
-   * closing all the fds in the cage. Then we can exit in rustposix
-   */
+  // first signal any other threads in group to exit
+  if (nap->num_threads > 1) NaClExitThreadGroup(natp);
 
   lind_exit(status, nap->cage_id);
 
@@ -423,55 +422,11 @@ int32_t NaClSysThreadExit(struct NaClAppThread  *natp,
                (uintptr_t)stack_flag);
     }
 
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
-
-    lind_exit(status, nap->cage_id);
-
-    #ifdef TRACING
-    long long endtime = gettimens();
-    long long totaltime = endtime - starttime;
-    NaClStraceExit(nap->cage_id, status, totaltime);
-    #endif
-
-    NaClLog(1, "Exit syscall handler: %d\n", status);
-    (void)NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
-    NaClAppThreadTeardown(natp);
-
-    /* NOTREACHED */
-    return -NACL_ABI_EINVAL;
-}
-
-int32_t NaClSysThreadExit(struct NaClAppThread *natp, int32_t *stack_flag) {
-    uint32_t zero = 0;
-
-    
-    NaClLog(4, "NaClSysThreadExit(0x%08"NACL_PRIxPTR", 0x%08"NACL_PRIxPTR"\n",
-            (uintptr_t)natp,
-            (uintptr_t)stack_flag);
-
-    /*
-     * NB: NaClThreads are never joinable, but the abstraction for NaClApps
-     * are.
-     */
-
-    if (stack_flag) {
-        NaClLog(2, "NaClSysThreadExit: stack_flag is %"NACL_PRIxPTR"\n", (uintptr_t)stack_flag);
-        if (!NaClCopyOutToUser(natp->nap, (uintptr_t)stack_flag, &zero, sizeof(zero))) {
-            NaClLog(2, "NaClSysThreadExit: ignoring invalid"
-                    " stack_flag 0x%"NACL_PRIxPTR"\n",
-                    (uintptr_t)stack_flag);
-        }
-    }
-
   struct NaClThread *host_thread;
   host_thread = &natp->host_thread;
   lindthreadremove(natp->nap->cage_id, host_thread->tid); // remove from rustposix kill map
 
-    
-    NaClAppThreadTeardown(natp);
-
+  NaClAppThreadTeardown(natp);
   /* NOTREACHED */
   return -NACL_ABI_EINVAL;
 }
@@ -911,6 +866,9 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
 
 /* This cast is safe because we clamped count above.*/
   retval = (int32_t)write_result;
+
+  if (retval == -NACL_ABI_EPIPE) NaClSysExit(natp, 141); // if we return EPIPE we exit the cage with status SIGPIPE
+  
   return retval;
 }
 

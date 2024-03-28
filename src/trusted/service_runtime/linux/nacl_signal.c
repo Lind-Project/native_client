@@ -634,14 +634,19 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   }
 #endif
 
-
   // we've called thread suspend from the fatal handler, we can safely exit the thread here
   struct NaClThread *host_thread;
-  if (natp != NULL) {
-    host_thread = &natp->host_thread;
-    if (sig == NACL_THREAD_SUSPEND_SIGNAL && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
-      lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
-      NaClThreadExit();
+  host_thread = &natp->host_thread;
+  if (sig == SIGUSR1 && natp->suspend_state == (NACL_APP_THREAD_UNTRUSTED | NACL_APP_THREAD_SUSPENDING) && lindcheckthread(natp->nap->cage_id, host_thread->tid)) {
+    lindsetthreadkill(natp->nap->cage_id, host_thread->tid, false);
+    NaClThreadExit();
+  }
+
+  if (sig != SIGINT && sig != SIGQUIT) {
+    if (NaClThreadSuspensionSignalHandler(sig, &sig_ctx, is_untrusted, natp)) {
+      NaClSignalContextToHandler(uc, &sig_ctx);
+      /* Resume untrusted code using possibly modified register state. */
+      return;
     }
   }
 
@@ -702,9 +707,6 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
 
   // Lind: If we segfault on a user address (presumably because it was unmapped between check and use), we can call that an untrusted fault
   if ((sig == SIGSEGV) && ((uintptr_t)info->si_addr & ~(natp->nap->addr_bits))) is_untrusted = true;
-
-  // Lind: if we get SIGPIPE set to one of the cage threads its interal and we can shutdown gracefully
-  if ((sig == SIGPIPE) && (natp != NULL)) is_untrusted = true;
 
   NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
