@@ -776,8 +776,51 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   int32_t         retval = -NACL_ABI_EINVAL;
   ssize_t         read_result = -NACL_ABI_EINVAL;
   uintptr_t       sysaddr;
-  // Get the start time
-  long long starttime = gettimens();
+  struct NaClDesc *ndp;
+  size_t          log_bytes;
+  char const      *ellipsis = "";
+  int             lindfd;
+  
+  NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
+           "%d, 0x%08"NACL_PRIxPTR", "
+           "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  fd = fd_cage_table[nap->cage_id][d];
+  /* check for closed fds */
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+  if (!ndp) {
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;  
+    goto out;
+  }
+
+  /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+  struct NaClHostDesc *hd = self->hd;
+
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysRead NULL or closed desc\n");
+  }
+
+  if (NACL_ABI_O_WRONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysRead: WRONLY file\n");
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
   
   // NaClLog(2, "Cage %d Entered NaClSysRead(0x%08"NACL_PRIxPTR", "
   //          "%d, 0x%08"NACL_PRIxPTR", "
@@ -806,7 +849,7 @@ int32_t NaClSysRead(struct NaClAppThread  *natp,
   
   read_result = quick_read(d, (void *)sysaddr, count, nap->cage_id);
 
-/* This cast is safe because we clamped count above.*/
+  /* This cast is safe because we clamped count above.*/
   retval = (int32_t) read_result;
   // Get the end time
   long long endtime = gettimens();
@@ -892,10 +935,48 @@ int32_t NaClSysWrite(struct NaClAppThread *natp,
   ssize_t write_result = -NACL_ABI_EINVAL;
   uintptr_t sysaddr;
 
-  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
-          nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
+  NaClLog(2, "Cage %d Entered NaClSysWrite(0x%08"NACL_PRIxPTR", "
+        "%d, 0x%08"NACL_PRIxPTR", "
+        "%"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+        nap->cage_id, (uintptr_t) natp, d, (uintptr_t) buf, count, count);
 
-  if (d < 0) return -NACL_ABI_EBADF;
+  if ((d >= FILE_DESC_MAX)  || (d < 0)) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  fd = fd_cage_table[nap->cage_id][d];
+  if (fd < 0) {
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  NaClFastMutexLock(&nap->desc_mu);
+  /* It's fine to not do a ref here because the mutex will assure that a close() can't be called in between */
+  ndp = NaClGetDescMuNoRef(nap, fd);
+  if (!ndp) {
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+   /* Translate from NaCl Desc to Host Desc */
+  struct NaClDescIoDesc *self = (struct NaClDescIoDesc *) &ndp->base;
+  struct NaClHostDesc *hd = self->hd;
+
+  if ((hd == NULL) || (hd->d == -1)) {
+    NaClLog(LOG_FATAL, "%s", "NaClSysWrite NULL or closed desc\n");
+  }
+
+  if (NACL_ABI_O_RDONLY == (hd->flags & NACL_ABI_O_ACCMODE)) {
+    NaClLog(3, "NaClSysWrite: RDONLY file\n");
+    NaClFastMutexUnlock(&nap->desc_mu);
+    retval = -NACL_ABI_EBADF;
+    goto out;
+  }
+
+  lindfd = hd->d; // extract fd from HostDesc, we can unlock now safely
+  NaClFastMutexUnlock(&nap->desc_mu);
 
   sysaddr = NaClUserToSysAddrRangeProt(nap, (uintptr_t) buf, count, NACL_ABI_PROT_READ);
   if (kNaClBadAddress == sysaddr) return -NACL_ABI_EFAULT;
