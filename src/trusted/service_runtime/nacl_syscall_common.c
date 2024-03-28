@@ -4123,9 +4123,6 @@ int32_t NaClSysWaitpid(struct NaClAppThread *natp,
   int pid_max = fork_num + 1;
   int ret = 0;
   struct NaClZombie* zombie;
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
 
   NaClLog(1, "%s\n", "[NaClSysWaitpid] entered waitpid!");
 
