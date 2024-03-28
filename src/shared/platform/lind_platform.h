@@ -111,6 +111,8 @@
 #define LIND_safe_cond_signal           79
 #define LIND_safe_cond_timedwait        80
 
+#define LIND_safe_net_gethostname       125
+
 #define LIND_safe_sem_init               91
 #define LIND_safe_sem_wait               92
 #define LIND_safe_sem_trywait            93
@@ -251,13 +253,6 @@ int lind_cond_wait (int cond_handle, int mutex_handle, int cageid);
 int lind_cond_broadcast (int cond_handle, int cageid);
 int lind_cond_signal (int cond_handle, int cageid);
 int lind_cond_timedwait (int cond_handle, int mutex_handle, struct timespec *ts, int cageid);
-int lind_sem_init (unsigned int sem, int pshared, int value, int cageid);
-int lind_sem_wait (unsigned int sem, int cageid);
-int lind_sem_trywait (unsigned int sem, int cageid);
-int lind_sem_timedwait (unsigned int sem, struct timespec *abs, int cageid);
-int lind_sem_post (unsigned int sem, int cageid);
-int lind_sem_destroy (unsigned int sem, int cageid);
-int lind_sem_getvalue (unsigned int sem, int cageid);
 int lind_getuid (int cageid);
 int lind_geteuid (int cageid);
 int lind_getgid (int cageid);
