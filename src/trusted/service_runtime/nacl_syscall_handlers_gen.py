@@ -299,16 +299,7 @@ SYSCALL_LIST = [
     ('NACL_sys_shmctl', 'NaClSysShmctl', ['int shmid', 'int cmd', 'struct lind_shmid_ds *buf']),
     ('NACL_sys_chmod', 'NaClSysChmod', ['uint32_t path', 'int mode']),
     ('NACL_sys_rename', 'NaClSysRename', ['const char *oldpath', 'const char *newpath']),
-    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode']),
-    ('NACL_sys_sigaction', 'NaClSysSigaction', ['int sig', 'const struct nacl_abi_sigaction *act', 'struct nacl_abi_sigaction *ocat']),
-    ('NACL_sys_kill', 'NaClSysKill', ['int targetcageid', 'int sig']),
-    ('NACL_sys_sigprocmask', 'NaClSysSigprocmask', ['int how', 'const uint64_t *nacl_set', 'uint64_t *nacl_oldset']),
-    ('NACL_sys_lindsetitimer', 'NaClSysLindsetitimer', ['int which', 'const struct itimerval *new_value', 'struct itimerval *old_value']),
-    ('NACL_sys_sigmask_sigreturn', 'NaClSysSigmaskSigreturn', []),
-    ('NACL_sys_fchdir', 'NaClSysFchdir', ['int fd']),
-    ('NACL_sys_fsync', 'NaClSysFsync', ['int fd']),
-    ('NACL_sys_fdatasync', 'NaClSysFdatasync', ['int fd']),
-    ('NACL_sys_sync_file_range', 'NaClSysSyncFileRange', ['int fd', 'off_t offset', 'off_t nbytes', 'uint32_t flags'])
+    ('NACL_sys_fchmod', 'NaClSysFchmod', ['int fd', 'int mode'])
     ]
 
 

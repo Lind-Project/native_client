@@ -128,9 +128,6 @@
 #define LIND_safe_fs_rmdir              132
 #define LIND_safe_fs_chmod              133
 #define LIND_safe_fs_fchmod             134
-
-#define LIND_safe_net_socket            136
-
 #define LIND_safe_net_getsockname       144
 #define LIND_safe_net_getpeername       145
 #define LIND_safe_net_getifaddrs        146
@@ -205,13 +202,6 @@ int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
 int lind_chmod (const char *path, int mode, int cageid);
 int lind_fchmod (int fd, int mode, int cageid);
-
-int lind_fchdir(int fd, int cageid);
-int lind_fsync(int fd, int cageid);
-int lind_fdatasync(int fd, int cageid);
-int lind_sync_file_range(int fd, off_t offset, off_t nbytes, unsigned int flags, int cageid);
-
-
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
