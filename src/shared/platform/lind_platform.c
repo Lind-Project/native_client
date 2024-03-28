@@ -23,7 +23,7 @@
     union RustArg arg1, arg2, arg3, arg4, arg5, arg6; \
     arg1.dispatch_ulong = 0; \
     arg2.dispatch_ulong = 0; \
-    arg3.dispatch_ulong = 0; \
+    arg3.dispatch_ulong_long = 0; \
     arg4.dispatch_ulong = 0; \
     arg5.dispatch_ulong = 0; \
     arg6.dispatch_ulong = 0 //no semicolon here to force macro caller to place one for neatness
@@ -118,18 +118,6 @@ int lind_fchdir (int fd, int cageid) {
     DISPATCH_SYSCALL_1(LIND_safe_fs_fchdir, int, fd);
 }
 
-int lind_fsync (int fd, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_fs_fsync, int, fd);
-}
-
-int lind_fdatasync (int fd, int cageid) {
-    DISPATCH_SYSCALL_1(LIND_safe_fs_fdatasync, int, fd);
-}
-
-int lind_sync_file_range (int fd, off_t offset, off_t nbytes, unsigned int flags, int cageid) {
-    DISPATCH_SYSCALL_4(LIND_safe_fs_sync_file_range, int, fd, off_t, offset, off_t, nbytes, uint, flags);
-}
-
 int lind_mkdir (const char *path, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_mkdir, cstr, path, int, mode);
 }
@@ -144,6 +132,10 @@ int lind_chmod (const char *path, int mode, int cageid) {
 
 int lind_fchmod(int fd, int mode, int cageid) {
     DISPATCH_SYSCALL_2(LIND_safe_fs_fchmod, int, fd, int, mode); 
+}
+
+int lind_mknod(const char *path, int mode, unsigned long long dev, int cageid) {
+    DISPATCH_SYSCALL_3(LIND_safe_fs_mknod, cstr, path, int, mode, ulong_long, dev);
 }
 
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid) {

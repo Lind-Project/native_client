@@ -180,18 +180,8 @@
 #define NACL_sys_epoll_create           157
 #define NACL_sys_epoll_ctl              158
 #define NACL_sys_epoll_wait             159
+#define NACL_sys_mknod                  160
 #define NACL_sys_fchdir                 161
-#define NACL_sys_fsync                  162
-#define NACL_sys_fdatasync              163
-#define NACL_sys_sync_file_range        164
-
-
-#define NACL_sys_reg_restore            250
-//We need to reserve more slots as the reg restoration takes more than 32 bytes
-#define __reg_restore_reserved_slot2    251
-#define __reg_restore_reserved_slot3    252
-#define __reg_restore_reserved_slot4    253
-#define NACL_sys_sigmask_sigreturn      255
 
 #define NACL_MAX_SYSCALLS               256
 

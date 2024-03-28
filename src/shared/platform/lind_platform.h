@@ -137,6 +137,8 @@
 #define LIND_safe_fs_fdatasync          163
 #define LIND_safe_fs_sync_file_range    164
 
+#define LIND_safe_fs_mknod              160
+#define LIND_safe_fs_fchdir		161
 
 union RustArg {
     int dispatch_int;
@@ -197,6 +199,10 @@ int lind_mkdir (const char *path, int mode, int cageid);
 int lind_rmdir (const char *path, int cageid);
 int lind_chmod (const char *path, int mode, int cageid);
 int lind_fchmod (int fd, int mode, int cageid);
+
+int lind_fchdir(int fd, int cageid);
+int lind_mknod (const char *path, int mode, unsigned long long dev, int cageid);
+
 int lind_xstat (const char *path, struct lind_stat *buf, int cageid);
 int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);

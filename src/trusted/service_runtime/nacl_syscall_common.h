@@ -169,6 +169,14 @@ int32_t NaClSysFchmod(struct NaClAppThread *natp,
                      int                    fd,
                      int                  mode);
 
+int32_t NaClSysFchdir(struct NaClAppThread *natp,
+		     int 	           fd);
+
+int32_t NaClSysMknod(struct NaClAppThread *natp,
+                     uint32_t		  pathname,
+                     int	          mode,
+		     unsigned long long   dev);
+
 int32_t NaClSysGetcwd(struct NaClAppThread *natp,
                       char                 *buf,
                       size_t               size);
