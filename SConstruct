@@ -1066,13 +1066,13 @@ def DualLibrary(env, lib_name, *args, **kwargs):
   # Build a static library using -fPIC for the .o's.
   if env.Bit('linux'):
     env_shared = env.Clone(OBJSUFFIX='.os')
-    env_shared.Append(CCFLAGS=['-fPIC'])
+    env_shared.Append(CCFLAGS=['-fPIC', '-fsanitize=address', '-g'])
     # -fPIE overrides -fPIC, and shared libraries should not be linked
     # as executables.
     env_shared.FilterOut(CCFLAGS=['-fPIE'])
     env_shared.ComponentLibrary(lib_name + '_shared', shared_objs, **kwargs)
     # for arm trusted we usually build -static
-    env_shared.FilterOut(LINKFLAGS=['-static'])
+    env_shared.FilterOut(LINKFLAGS=['-static', '-fsanitize=address', '-g'])
 
 def DualObject(env, *args, **kwargs):
   """Builder to build both .o and .os in one step.
@@ -2704,7 +2704,8 @@ nacl_env = MakeArchSpecificEnv().Clone(
 
     # always optimize binaries
     CCFLAGS = ['-O2',
-               '-g',
+               '-fsanitize=address',
+               '-g',  
                '-fomit-frame-pointer',
                '-Wall',
                '-Wundef',
@@ -2714,8 +2715,12 @@ nacl_env = MakeArchSpecificEnv().Clone(
               werror_flags,
 
     CFLAGS = ['-std=gnu99',
+              '-fsanitize=address',
+              '-g',
               ],
     CXXFLAGS = ['-std=gnu++98',
+                '-fsanitize=address',
+                '-g',
                 '-Wno-long-long',
                 ],
 
@@ -2729,7 +2734,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
     RPATHLINKSUFFIX = '',
 
     LIBS = [],
-    LINKFLAGS = ['${RPATH_LINK_FLAGS}'],
+    LINKFLAGS = ['${RPATH_LINK_FLAGS}', '-fsanitize=address', '-g'],
 
     # These are settings for in-tree, non-browser tests to use.
     # They use libraries that circumvent the IRT-based implementations
