@@ -2709,9 +2709,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
                '-Wundef',
                '-fdiagnostics-show-option',
                '-pedantic',
-               -fsanitize=address,
-               -g,
-              ] + 
+              ] + -fsanitize=address,
               werror_flags,
 
     CFLAGS = ['-std=gnu99',
