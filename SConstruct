@@ -2709,20 +2709,20 @@ nacl_env = MakeArchSpecificEnv().Clone(
                '-Wundef',
                '-fdiagnostics-show-option',
                '-pedantic',
-               '-fsanitize=address',
-               '-g',
+               -fsanitize=address,
+               -g,
               ] + 
               werror_flags,
 
     CFLAGS = ['-std=gnu99',
-              '-fsanitize=address',
-              '-g',
+              -fsanitize=address,
+              -g,
               ],
     CXXFLAGS = ['-std=gnu++98',
                 '-g',
                 '-Wno-long-long',
-                '-fsanitize=address',
-                '-g',
+                -fsanitize=address,
+                -g,
                 ],
 
     # This magic is copied from scons-2.0.1/engine/SCons/Defaults.py
