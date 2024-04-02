@@ -2715,13 +2715,15 @@ nacl_env = MakeArchSpecificEnv().Clone(
               werror_flags,
 
     CFLAGS = ['-std=gnu99',
-              ]+
-              -fsanitize=address -g,
+              '-fsanitize=address',
+              '-g',
+              ],
     CXXFLAGS = ['-std=gnu++98',
                 '-g',
                 '-Wno-long-long',
-                ]+
-                -fsanitize=address -g,
+                '-fsanitize=address',
+                '-g',
+                ],
 
     # This magic is copied from scons-2.0.1/engine/SCons/Defaults.py
     # where this pattern is used for _LIBDIRFLAGS, which produces -L
