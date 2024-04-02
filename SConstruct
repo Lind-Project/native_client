@@ -2735,7 +2735,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
     RPATHLINKSUFFIX = '',
 
     LIBS = [],
-    LINKFLAGS = ['${RPATH_LINK_FLAGS}']+ -fsanitize=address -g.
+    LINKFLAGS = ['${RPATH_LINK_FLAGS}']
 
     # These are settings for in-tree, non-browser tests to use.
     # They use libraries that circumvent the IRT-based implementations
