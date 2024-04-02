@@ -1066,13 +1066,13 @@ def DualLibrary(env, lib_name, *args, **kwargs):
   # Build a static library using -fPIC for the .o's.
   if env.Bit('linux'):
     env_shared = env.Clone(OBJSUFFIX='.os')
-    env_shared.Append(CCFLAGS=['-fPIC', -fsanitize=address -g])
+    env_shared.Append(CCFLAGS=['-fPIC']) #add asan
     # -fPIE overrides -fPIC, and shared libraries should not be linked
     # as executables.
     env_shared.FilterOut(CCFLAGS=['-fPIE'])
     env_shared.ComponentLibrary(lib_name + '_shared', shared_objs, **kwargs)
     # for arm trusted we usually build -static
-    env_shared.FilterOut(LINKFLAGS=['-static', -fsanitize=address -g])
+    env_shared.FilterOut(LINKFLAGS=['-static']) #add asan
 
 def DualObject(env, *args, **kwargs):
   """Builder to build both .o and .os in one step.
@@ -2704,24 +2704,23 @@ nacl_env = MakeArchSpecificEnv().Clone(
 
     # always optimize binaries
     CCFLAGS = ['-O2',
-               -fsanitize=address -g,
-               '-g',  
                '-fomit-frame-pointer',
                '-Wall',
                '-Wundef',
                '-fdiagnostics-show-option',
                '-pedantic',
                ] +
+              -fsanitize=address -g, 
               werror_flags,
 
     CFLAGS = ['-std=gnu99',
+              ]+
               -fsanitize=address -g,
-              ],
     CXXFLAGS = ['-std=gnu++98',
-                -fsanitize=address -g,
                 '-g',
                 '-Wno-long-long',
-                ],
+                ]+
+                -fsanitize=address -g,
 
     # This magic is copied from scons-2.0.1/engine/SCons/Defaults.py
     # where this pattern is used for _LIBDIRFLAGS, which produces -L
@@ -2733,7 +2732,7 @@ nacl_env = MakeArchSpecificEnv().Clone(
     RPATHLINKSUFFIX = '',
 
     LIBS = [],
-    LINKFLAGS = ['${RPATH_LINK_FLAGS}', -fsanitize=address -g],
+    LINKFLAGS = ['${RPATH_LINK_FLAGS}']+ -fsanitize=address -g.
 
     # These are settings for in-tree, non-browser tests to use.
     # They use libraries that circumvent the IRT-based implementations
