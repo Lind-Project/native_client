@@ -65,10 +65,11 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
                                   enum NaClSuspendState old_state,
                                   enum NaClSuspendState new_state) {
   while (1) {
-    Atomic32 state = CompareAndSwap(&natp->suspend_state, old_state, new_state);
-    if (NACL_LIKELY(state == (Atomic32) old_state)) {
-      break;
-    }
+    if (old_state == new_state) break;
+    natp->suspend_state =  new_state;
+
+    state = natp->suspend_state;
+
     if ((state & NACL_APP_THREAD_SUSPENDING) != 0) {
       struct NaClThread *host_thread;
       host_thread = &natp->host_thread;
