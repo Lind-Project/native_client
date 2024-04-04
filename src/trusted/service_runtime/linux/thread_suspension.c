@@ -65,10 +65,15 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
                                   enum NaClSuspendState old_state,
                                   enum NaClSuspendState new_state) {
   while (1) {
-    if (old_state == new_state) break;
-    natp->suspend_state =  new_state;
+    if (new_state == old_state) break;
+    int state = natp->suspend_state;
+    natp->suspend_state = new_state;
 
-    state = natp->suspend_state;
+    /*
+    * Lind - we've removed a CAS instruction here, instead directly setting suspend state
+    * the previous CAS was due to Windows VMHole issues. This is far more performant and safe,
+    * since we're only compiling for Linux and these transitions are always contained within a single thread
+    */
 
     if ((state & NACL_APP_THREAD_SUSPENDING) != 0) {
       struct NaClThread *host_thread;
