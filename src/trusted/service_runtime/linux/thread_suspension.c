@@ -65,9 +65,9 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
                                   enum NaClSuspendState old_state,
                                   enum NaClSuspendState new_state) {
   while (1) {
-    if (new_state == old_state) break;
     int state = natp->suspend_state;
     natp->suspend_state = new_state;
+    if (state == old_state) break;
 
     /*
     * Lind - we've removed a CAS instruction here, instead directly setting suspend state
