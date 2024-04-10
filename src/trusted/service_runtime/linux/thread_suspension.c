@@ -65,7 +65,7 @@ void NaClAppThreadSetSuspendState(struct NaClAppThread *natp,
                                   enum NaClSuspendState old_state,
                                   enum NaClSuspendState new_state) {
   while (1) {
-    int state = natp->suspend_state;
+    Atomic32 state = natp->suspend_state;
     natp->suspend_state = new_state;
     if (state == old_state) break;
 
