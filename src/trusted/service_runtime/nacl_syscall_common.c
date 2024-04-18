@@ -3496,18 +3496,9 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
    * TODO(bsy) Do we make the zoneinfo directory available to
    * applications?
    */
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
 
   retval = NaClGetTimeOfDay(&now);
-  if (retval) {
-      #ifdef TRACING
-      long long endtime = gettimens();
-      long long totaltime = endtime - starttime;
-      NaClStraceGetTimeOfDay(natp->nap->cage_id, (uintptr_t) tv, (uintptr_t) tz, retval, totaltime);
-      #endif
-  }
+
 #if !NACL_WINDOWS
   /*
    * Coarsen the time to the same level we get on Windows -
@@ -3548,10 +3539,6 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
   int                       retval = -NACL_ABI_EINVAL;
   struct nacl_abi_timespec  out_buf;
 
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
-
   if (!NaClIsValidClockId(clk_id)) {
     goto done;
   }
@@ -3561,12 +3548,6 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
   }
 
  done:
-
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr,time_func, retval, totaltime);
-  #endif
 
   return retval;
 }
