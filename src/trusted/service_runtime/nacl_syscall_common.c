@@ -3749,9 +3749,12 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   uintptr_t parent_start_addr;
   uintptr_t child_start_addr;
   uintptr_t tramp_pnum;
+  long long           starttime = 0;
+  long long           endtime = 0;
+  long long           totaltime = 0;
 
   #ifdef TRACING
-  long long starttime = gettimens();
+  starttime = gettimens();
   #endif
 
   /* Convert pathname from user path, set binary */
@@ -3821,7 +3824,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   NaClXMutexLock(&nap->mu);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
   #ifdef TRACING
-  long long starttime = gettimens();
+  long long starttime2 = gettimens();
   #endif
   lind_exec(child_cage_id, nap->cage_id);
 
@@ -3975,8 +3978,8 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   }
 
   #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
+  endtime = gettimens();
+  totaltime = endtime - starttime;
   NaClStraceExecve(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
   #endif
 
@@ -3997,8 +4000,8 @@ fail:
   free(binary);
 
   #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
+  endtime = gettimens();
+  totaltime = endtime - starttime2;
   NaClStraceExecv(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
   #endif
 
