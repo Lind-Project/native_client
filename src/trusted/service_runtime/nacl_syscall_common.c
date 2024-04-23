@@ -149,6 +149,9 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   if (kNaClBadAddress == sys_new_break) {
     goto cleanup_no_lock;
   }
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
   if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
     NaClLog(LOG_ERROR, "Could not get app lock for 0x%08"NACL_PRIxPTR"\n",
             (uintptr_t) nap);
@@ -256,6 +259,11 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
 cleanup:
   NaClXMutexUnlock(&nap->mu);
 cleanup_no_lock:
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceBrk(nap->cage_id, new_break, rv, totaltime); 
+  #endif
 
   /*
    * This cast is safe because the incoming value (new_break) cannot
@@ -2408,8 +2416,17 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+  int32_t retval = NaClSysMprotectInternal(nap, start, length, prot);
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMprotect(nap->cage_id, start, length, prot, retval, totaltime);
+  #endif
 
-  return NaClSysMprotectInternal(nap, start, length, prot);
+  return retval;
 }
 
 int32_t NaClSysShmget(struct NaClAppThread  *natp,
