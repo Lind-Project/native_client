@@ -3716,9 +3716,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+
   ret = NaClSysExecv(natp, path, argv);
 
 fail:
@@ -3727,12 +3725,7 @@ fail:
   }
   free(new_envp);
 
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceExecve(nap->cage_id, path, argv, ret, totaltime);
-
-  #endif
+ 
 
   return ret; 
 }
@@ -3756,6 +3749,10 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   uintptr_t parent_start_addr;
   uintptr_t child_start_addr;
   uintptr_t tramp_pnum;
+
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   /* Convert pathname from user path, set binary */
   sys_pathname = (char *)  NaClUserToSysAddrProt(nap, (uintptr_t) path, NACL_ABI_PROT_READ);
@@ -3977,6 +3974,12 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     goto fail;
   }
 
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceExecve(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
+  #endif
+
   /* wait for child to finish before cleaning up */
   NaClWaitForThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
@@ -3996,7 +3999,7 @@ fail:
   #ifdef TRACING
   long long endtime = gettimens();
   long long totaltime = endtime - starttime;
-  NaClStraceExecv(nap->cage_id, path, argv, ret, totaltime);
+  NaClStraceExecv(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
   #endif
 
   return ret;
