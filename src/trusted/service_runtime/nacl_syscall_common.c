@@ -139,7 +139,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   uintptr_t             region_size;
   #ifdef TRACING
   long long starttime = gettimens();
-  printf("%lld", starttime);
+  printf("the start time is %lld", starttime);
   #endif
   //add print start
 
@@ -272,7 +272,7 @@ cleanup_no_lock:
    #ifdef TRACING
   long long endtime = gettimens();
   long long totaltime = endtime - starttime;
-  printf("%lld", totaltime);
+  printf("the total time is %lld", totaltime);
   NaClStraceBrk(nap->cage_id, new_break, rv, totaltime); 
   #endif
 

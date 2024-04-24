@@ -717,7 +717,7 @@ void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long total
   if (strace_C) {
     stracec_increment(NACL_sys_brk, totaltime, ret);
     //print out total time
-    printf("%lld", totaltime);
+    printf("the total time is %lld", totaltime);
   } else {
     fprintf(tracingOutputFile, "%d brk(0x%08"NACL_PRIxPTR") = %d\n", cageid, new_break, ret);
   }
