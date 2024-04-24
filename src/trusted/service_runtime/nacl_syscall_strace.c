@@ -524,6 +524,7 @@ void NaClStraceExecv(int cageid, char
     stracec_increment(NACL_sys_execv, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execv(%s, 0x%08"NACL_PRIxPTR ") = %d\n", cageid, path, (uintptr_t) argv, ret);
+    printf("the ret is %lld", ret);
   }
 }
 
