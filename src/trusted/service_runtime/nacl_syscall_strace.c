@@ -152,7 +152,6 @@ void NaClStraceExecve(int cageid, char
     stracec_increment(NACL_sys_execve, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
-    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t)argv, ret);
   }
 }
 
@@ -859,6 +858,13 @@ void printFinalSyscallStats() {
                 maxCallDigits, totalCalls, 
                 maxErrorDigits, totalErrors, 
                 maxSyscallWidth, "total");
+        int execveIndex = NACL_sys_execve;
+        if (syscallStats[execveIndex].count > 0) {
+        fprintf(tracingOutputFile, "execve:\n");
+        fprintf(tracingOutputFile, "  calls: %lld\n", syscallStats[execveIndex].count);
+        fprintf(tracingOutputFile, "  total time: %lld ns\n", syscallStats[execveIndex].totalTime);
+        fprintf(tracingOutputFile, "  errors: %lld\n", syscallStats[execveIndex].errorCount);
+    }
     }
 }
 // Helper function to get syscall name from its index
