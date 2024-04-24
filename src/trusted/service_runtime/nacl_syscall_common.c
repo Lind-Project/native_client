@@ -137,6 +137,9 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   uintptr_t             last_internal_page;
   uintptr_t             start_new_region;
   uintptr_t             region_size;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
 
   break_addr = nap->break_addr;
 
@@ -149,6 +152,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   if (kNaClBadAddress == sys_new_break) {
     goto cleanup_no_lock;
   }
+
   if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
     NaClLog(LOG_ERROR, "Could not get app lock for 0x%08"NACL_PRIxPTR"\n",
             (uintptr_t) nap);
@@ -263,6 +267,11 @@ cleanup_no_lock:
    * theoretically allows larger values.
    */
   rv = (int32_t) break_addr;
+   #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceBrk(nap->cage_id, new_break, rv, totaltime); 
+  #endif
 
   NaClLog(3, "NaClSysBrk: returning 0x%08"NACL_PRIx32"\n", rv);
   return rv;
@@ -2409,7 +2418,19 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
     return -NACL_ABI_EACCES;
   }
 
-  return NaClSysMprotectInternal(nap, start, length, prot);
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+
+  int32_t retval = NaClSysMprotectInternal(nap, start, length, prot);
+
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceMprotect(nap->cage_id, start, length, prot, retval, totaltime);
+  #endif
+
+  return retval;
 }
 
 int32_t NaClSysShmget(struct NaClAppThread  *natp,
@@ -3496,18 +3517,9 @@ int32_t NaClSysGetTimeOfDay(struct NaClAppThread      *natp,
    * TODO(bsy) Do we make the zoneinfo directory available to
    * applications?
    */
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
 
   retval = NaClGetTimeOfDay(&now);
-  if (retval) {
-      #ifdef TRACING
-      long long endtime = gettimens();
-      long long totaltime = endtime - starttime;
-      NaClStraceGetTimeOfDay(natp->nap->cage_id, (uintptr_t) tv, (uintptr_t) tz, retval, totaltime);
-      #endif
-  }
+
 #if !NACL_WINDOWS
   /*
    * Coarsen the time to the same level we get on Windows -
@@ -3548,10 +3560,6 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
   int                       retval = -NACL_ABI_EINVAL;
   struct nacl_abi_timespec  out_buf;
 
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
-
   if (!NaClIsValidClockId(clk_id)) {
     goto done;
   }
@@ -3561,12 +3569,6 @@ int32_t NaClSysClockGetCommon(struct NaClAppThread  *natp,
   }
 
  done:
-
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceClockGetCommon(nap->cage_id, clk_id, ts_addr,time_func, retval, totaltime);
-  #endif
 
   return retval;
 }
@@ -3718,9 +3720,7 @@ int32_t NaClSysExecve(struct NaClAppThread *natp, char const *path, char *const 
   }
 
   nap->clean_environ = NaClEnvCleanserEnvironment(&env_cleanser);
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+
   ret = NaClSysExecv(natp, path, argv);
 
 fail:
@@ -3729,12 +3729,7 @@ fail:
   }
   free(new_envp);
 
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceExecve(nap->cage_id, path, argv, ret, totaltime);
-
-  #endif
+ 
 
   return ret; 
 }
@@ -3758,6 +3753,13 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   uintptr_t parent_start_addr;
   uintptr_t child_start_addr;
   uintptr_t tramp_pnum;
+  long long           starttime = 0;
+  long long           endtime = 0;
+  long long           totaltime = 0;
+
+  #ifdef TRACING
+  starttime = gettimens();
+  #endif
 
   /* Convert pathname from user path, set binary */
   sys_pathname = (char *)  NaClUserToSysAddrProt(nap, (uintptr_t) path, NACL_ABI_PROT_READ);
@@ -3825,9 +3827,7 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+
   lind_exec(child_cage_id, nap->cage_id);
 
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
@@ -3979,6 +3979,12 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
     goto fail;
   }
 
+  #ifdef TRACING
+  endtime = gettimens();
+  totaltime = endtime - starttime;
+  NaClStraceExecve(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
+  #endif
+
   /* wait for child to finish before cleaning up */
   NaClWaitForThreadToExit(nap_child);
   NaClReportExitStatus(nap, nap_child->exit_status);
@@ -3996,9 +4002,9 @@ fail:
   free(binary);
 
   #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceExecv(nap->cage_id, path, argv, ret, totaltime);
+  endtime = gettimens();
+  totaltime = endtime - starttime;
+  NaClStraceExecve(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
   #endif
 
   return ret;
