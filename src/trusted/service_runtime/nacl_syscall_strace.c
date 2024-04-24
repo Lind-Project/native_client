@@ -152,7 +152,8 @@ void NaClStraceExecve(int cageid, char
     stracec_increment(NACL_sys_execve, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
-}
+    fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid, path, (uintptr_t)argv, ret);
+  }
 }
 
 void NaClStraceWaitpid(int cageid, int pid, uintptr_t sysaddr, int options, int ret, long long totaltime) {
