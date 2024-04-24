@@ -260,7 +260,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
 cleanup:
   NaClXMutexUnlock(&nap->mu);
 cleanup_no_lock:
- 
+
   /*
    * This cast is safe because the incoming value (new_break) cannot
    * exceed the user address space--even though its type (uintptr_t)
@@ -2417,10 +2417,13 @@ int32_t NaClSysMprotect(struct NaClAppThread  *natp,
   if (!NaClAclBypassChecks) {
     return -NACL_ABI_EACCES;
   }
+
   #ifdef TRACING
   long long starttime = gettimens();
   #endif
+
   int32_t retval = NaClSysMprotectInternal(nap, start, length, prot);
+
   #ifdef TRACING
   long long endtime = gettimens();
   long long totaltime = endtime - starttime;
@@ -3824,9 +3827,11 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
+  
   #ifdef TRACING
-  long long starttime2 = gettimens();
+  starttime = gettimens();
   #endif
+
   lind_exec(child_cage_id, nap->cage_id);
 
   nap_child = NaClChildNapCtor(nap, child_cage_id, THREAD_LAUNCH_EXEC);
@@ -4002,8 +4007,8 @@ fail:
 
   #ifdef TRACING
   endtime = gettimens();
-  totaltime = endtime - starttime2;
-  NaClStraceExecv(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
+  totaltime = endtime - starttime;
+  NaClStraceExecve(nap->cage_id, sys_pathname, sys_argv_ptr, ret, totaltime);
   #endif
 
   return ret;

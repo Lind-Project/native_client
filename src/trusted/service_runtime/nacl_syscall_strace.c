@@ -728,6 +728,7 @@ void NaClStraceFcntlGet(int cageid, int fd, int cmd, int ret, long long totaltim
     fprintf(tracingOutputFile, "%d fcntlget(%d, %d) = %d\n", cageid, fd, cmd, ret);
   }
 }
+
 //both NACL_sys_fcntl_get and NACL_sys_fcntl_set are combined
 void NaClStraceFcntlSet(int cageid, int fd, int cmd, long set_op, int ret, long long totaltime) {
   if (strace_C) {
