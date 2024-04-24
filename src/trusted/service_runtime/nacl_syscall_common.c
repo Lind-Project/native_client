@@ -137,6 +137,11 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   uintptr_t             last_internal_page;
   uintptr_t             start_new_region;
   uintptr_t             region_size;
+  #ifdef TRACING
+  long long starttime = gettimens();
+  printf("%lld", starttime);
+  #endif
+  //add print start
 
   break_addr = nap->break_addr;
 
@@ -149,9 +154,7 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
   if (kNaClBadAddress == sys_new_break) {
     goto cleanup_no_lock;
   }
-  #ifdef TRACING
-  long long starttime = gettimens();
-  #endif
+ 
   if (NACL_SYNC_OK != NaClMutexLock(&nap->mu)) {
     NaClLog(LOG_ERROR, "Could not get app lock for 0x%08"NACL_PRIxPTR"\n",
             (uintptr_t) nap);
@@ -259,18 +262,19 @@ int32_t NaClSysBrk(struct NaClAppThread *natp,
 cleanup:
   NaClXMutexUnlock(&nap->mu);
 cleanup_no_lock:
-  #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
-  NaClStraceBrk(nap->cage_id, new_break, rv, totaltime); 
-  #endif
-
+ 
   /*
    * This cast is safe because the incoming value (new_break) cannot
    * exceed the user address space--even though its type (uintptr_t)
    * theoretically allows larger values.
    */
   rv = (int32_t) break_addr;
+   #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  printf("%lld", totaltime);
+  NaClStraceBrk(nap->cage_id, new_break, rv, totaltime); 
+  #endif
 
   NaClLog(3, "NaClSysBrk: returning 0x%08"NACL_PRIx32"\n", rv);
   return rv;
