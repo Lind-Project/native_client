@@ -3827,10 +3827,6 @@ int32_t NaClSysExecv(struct NaClAppThread *natp, char const *path, char *const *
   /* Copy fd table in SafePOSIX */
   NaClXMutexLock(&nap->mu);
   NaClLog(2, "Copying fd table in SafePOSIX\n");
-  
-  #ifdef TRACING
-  starttime = gettimens();
-  #endif
 
   lind_exec(child_cage_id, nap->cage_id);
 
