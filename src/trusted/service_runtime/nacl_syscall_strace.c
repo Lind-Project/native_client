@@ -152,6 +152,7 @@ void NaClStraceExecve(int cageid, char
     stracec_increment(NACL_sys_execve, totaltime, ret);
   } else {
     fprintf(tracingOutputFile, "%d execve(%s, 0x%08"NACL_PRIxPTR") = %d\n", cageid,path,(uintptr_t) argv,ret);
+    printf("the ret is %lld", ret);
   }
 }
 
@@ -720,6 +721,7 @@ void NaClStraceBrk(int cageid, uintptr_t new_break, int32_t ret, long long total
     printf("the total time is %lld", totaltime);
   } else {
     fprintf(tracingOutputFile, "%d brk(0x%08"NACL_PRIxPTR") = %d\n", cageid, new_break, ret);
+    printf("the total time is %lld", totaltime);
   }
 }
 
@@ -860,7 +862,6 @@ void printFinalSyscallStats() {
                 maxCallDigits, totalCalls, 
                 maxErrorDigits, totalErrors, 
                 maxSyscallWidth, "total");
-        int execveIndex = NACL_sys_execve;
     }
 }
 // Helper function to get syscall name from its index
