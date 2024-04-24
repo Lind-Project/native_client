@@ -796,6 +796,10 @@ void printFinalSyscallStats() {
             }
         }
 
+        // Calculate column widths from digit counts (assuming fixed-width font)
+        int maxCallWidth = maxCallDigits + 1; // +1 for potential '-' sign
+        int maxErrorWidth = maxErrorDigits + 1; // +1 for potential '-' sign
+
         // Prepare SyscallTime array and calculate percentage of time
         SyscallTime syscallTimes[NUM_SYSCALLS];
         int validCount = 0;
