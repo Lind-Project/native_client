@@ -859,12 +859,6 @@ void printFinalSyscallStats() {
                 maxErrorDigits, totalErrors, 
                 maxSyscallWidth, "total");
         int execveIndex = NACL_sys_execve;
-        if (syscallStats[execveIndex].count > 0) {
-        fprintf(tracingOutputFile, "execve:\n");
-        fprintf(tracingOutputFile, "  calls: %lld\n", syscallStats[execveIndex].count);
-        fprintf(tracingOutputFile, "  total time: %lld ns\n", syscallStats[execveIndex].totalTime);
-        fprintf(tracingOutputFile, "  errors: %lld\n", syscallStats[execveIndex].errorCount);
-    }
     }
 }
 // Helper function to get syscall name from its index
