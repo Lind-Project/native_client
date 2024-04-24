@@ -773,8 +773,9 @@ void printFinalSyscallStats() {
     if (strace_C && tracingOutputFile != NULL) {
         long long totalCalls = 0, totalErrors = 0;
         double totalSeconds = 0.0;
-        int maxCallDigits = 0, maxErrorDigits = 0;
 
+        // Calculate totals, find maximum digits, and maximum column widths
+        int maxCallDigits = 0, maxErrorDigits = 0, maxSyscallWidth = 0;
         for (int i = 0; i < NUM_SYSCALLS; i++) {
             totalSeconds += (double)syscallStats[i].totalTime / 1000000000.0;
             totalCalls += syscallStats[i].count;
@@ -782,15 +783,20 @@ void printFinalSyscallStats() {
 
             int callDigits = snprintf(NULL, 0, "%lld", syscallStats[i].count);
             int errorDigits = snprintf(NULL, 0, "%lld", syscallStats[i].errorCount);
-
             if (callDigits > maxCallDigits) {
                 maxCallDigits = callDigits;
             }
             if (errorDigits > maxErrorDigits) {
                 maxErrorDigits = errorDigits;
             }
+
+            int syscallNameLen = strlen(getSyscallName(i));
+            if (syscallNameLen > maxSyscallWidth) {
+                maxSyscallWidth = syscallNameLen;
+            }
         }
 
+        // Prepare SyscallTime array and calculate percentage of time
         SyscallTime syscallTimes[NUM_SYSCALLS];
         int validCount = 0;
         for (int i = 0; i < NUM_SYSCALLS; i++) {
@@ -801,46 +807,53 @@ void printFinalSyscallStats() {
             }
         }
 
+        // Sort by percentage of time
         qsort(syscallTimes, validCount, sizeof(SyscallTime), compareSyscallTime);
 
-        fprintf(tracingOutputFile, "%% time  seconds       usecs/call  %-*s %-*s syscall\n",
-                maxCallDigits, "calls", maxErrorDigits, "   errors  ");
-        fprintf(tracingOutputFile, "------ -------------- ----------- %-*s %-*s ----------------\n",
-                maxCallDigits, "---------", maxErrorDigits, "-------");
+        // Print header with dynamic widths
+        fprintf(tracingOutputFile, "%% time  seconds       usecs/call  %*s %*s %-*s\n", 
+                maxCallWidth, "calls", maxErrorWidth, "errors", maxSyscallWidth, "syscall");
+        fprintf(tracingOutputFile, "------ -------------- ----------- %*s %*s %-*s\n", 
+                maxCallWidth, "---------", maxErrorWidth, "-------", maxSyscallWidth, "----------------");
 
+        // Print syscall statistics
         char formattedSeconds[17];
-
         for (int i = 0; i < validCount; i++) {
             int idx = syscallTimes[i].index;
             double seconds = (double)syscallStats[idx].totalTime / 1000000000.0;
+
+            // Format seconds with appropriate precision
             int intPart = (int)seconds;
             int intLength = snprintf(NULL, 0, "%d", intPart);
             int decimalPrecision = 7 - intLength;
             if (decimalPrecision < 0) decimalPrecision = 0;
-
             snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", decimalPrecision, seconds);
 
-            fprintf(tracingOutputFile, "%05.2f  %s        %7lld      %*lld %*lld   %s\n",
-                   syscallTimes[i].percentTime,
-                   formattedSeconds,
-                   syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,
-                   maxCallDigits, syscallStats[idx].count,
-                   maxErrorDigits, syscallStats[idx].errorCount,
-                   getSyscallName(idx));
+            // Print the row with dynamic width formatting
+            fprintf(tracingOutputFile, "%05.2f  %s        %*lld      %*lld %*lld %-*s\n",                   
+                    syscallTimes[i].percentTime,                   
+                    formattedSeconds,                   
+                    maxCallDigits + 6, syscallStats[idx].count > 0 ? syscallStats[idx].totalTime / syscallStats[idx].count / 1000 : 0,                   
+                    maxCallDigits, syscallStats[idx].count,                   
+                    maxErrorDigits, syscallStats[idx].errorCount,
+                    maxSyscallWidth, getSyscallName(idx));
         }
 
+        // Print total statistics
         double totalSecondsFormatted = totalSeconds;
         int totalIntPart = (int)totalSecondsFormatted;
         int totalIntLength = snprintf(NULL, 0, "%d", totalIntPart);
         int totalDecimalPrecision = 7 - totalIntLength;
         if (totalDecimalPrecision < 0) totalDecimalPrecision = 0;
-
         snprintf(formattedSeconds, sizeof(formattedSeconds), "%.*f", totalDecimalPrecision, totalSecondsFormatted);
 
-        fprintf(tracingOutputFile, "------ -------------- ----------- %-*s %-*s ----------------\n",
-                maxCallDigits, "---------", maxErrorDigits, "---------");
-        fprintf(tracingOutputFile, "100.00 %s          0           %*lld  %*lld   total\n",
-                formattedSeconds, maxCallDigits, totalCalls, maxErrorDigits, totalErrors);
+        fprintf(tracingOutputFile, "------ -------------- ----------- %*s %*s %-*s\n", 
+                maxCallWidth, "---------", maxErrorWidth, "---------", maxSyscallWidth, "----------------");
+        fprintf(tracingOutputFile, "100.00 %s          0           %*lld  %*lld %-*s\n", 
+                formattedSeconds, 
+                maxCallDigits, totalCalls, 
+                maxErrorDigits, totalErrors, 
+                maxSyscallWidth, "total");
     }
 }
 // Helper function to get syscall name from its index
