@@ -189,7 +189,7 @@ void lindcancelinit(unsigned long int cageid);
 void lindsetthreadkill(unsigned long int cageid, unsigned long int pthreadid, bool kill);   
 bool lindcheckthread(unsigned long int cageid, unsigned long int pthreadid);
 void lindthreadremove(unsigned long int cageid, unsigned long int pthreadid);
-void lindrustinit(int verbosity);
+void lindrustinit(int verbosity, bool flag);
 void lindrustfinalize(void);
 
 int lind_pread(int fd, void *buf, size_t count, off_t offset, int cageid);

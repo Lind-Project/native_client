@@ -452,7 +452,11 @@ int NaClSelLdrMain(int argc, char **argv) {
     }
   }
 
-  lindrustinit(verbosity);
+  /* A.W.:
+  *   [Need to do]
+  *     check if only init once
+  */
+  lindrustinit(verbosity, true);
 
   if (debug_mode_ignore_validator == 1) {
     NaClLog(1, "%s\n", "DEBUG MODE ENABLED (ignore validator)");
