@@ -410,7 +410,6 @@ int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
   long long starttime = gettimens();
   #endif
 
-    lind_exit(status, nap->cage_id);
 
     #ifdef TRACING
     long long endtime = gettimens();
@@ -420,6 +419,8 @@ int32_t NaClSysExit(struct NaClAppThread *natp, int status) {
 
     NaClLog(1, "Exit syscall handler: %d\n", status);
     (void)NaClReportExitStatus(nap, NACL_ABI_W_EXITCODE(status, 0));
+    lind_exit(status, nap->cage_id);
+
     NaClAppThreadTeardown(natp);
 
     /* NOTREACHED */
