@@ -1003,6 +1003,54 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   return retval;
 }
 
+int32_t NaClSysWritev(struct NaClAppThread *natp,
+                     int fd,
+                     void *iovec,
+                     int iovcnt) {
+  struct NaClApp *nap = natp->nap;
+  int32_t retval = -NACL_ABI_EINVAL;
+  ssize_t write_result = -NACL_ABI_EINVAL;
+  uintptr_t sysaddr;
+
+
+  NaClLog(2, "Cage %d Entered NaClSysWritev(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n",
+          nap->cage_id, (uintptr_t) natp, fd, (uintptr_t) iovec, iovcnt);
+
+  if (fd < 0) return -NACL_ABI_EBADF;
+
+  struct iovec* sysiovec = (struct iovec*)malloc(iovcnt * sizeof(struct iovec));
+
+  for (int i = 0; i < iovcnt; i++) {
+    sysiovec[i].iov_base = NaClUserToSysAddrRangeProt(nap, (uintptr_t) iovec[i].iov_base, iovec[i].iov_len, NACL_ABI_PROT_READ);
+    if (kNaClBadAddress == sysiovec[i].iov_base) return -NACL_ABI_EFAULT;
+
+    int clamped_iovlen = iovec[i].iov_len > INT32_MAX ? INT32_MAX : iovec[i].iov_len;
+    sysiovec[i].iov_len = clamped_iovlen;
+  }
+  /*
+    * The maximum length for read and write is INT32_MAX--anything larger and
+    * the return value would overflow. Passing larger values isn't an error--
+    * we'll just clamp the request size if it's too large.
+    */
+
+
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+  // write_result = lind_writev(fd, (void *)sysiovec, iovcnt, nap->cage_id);
+
+/* This cast is safe because we clamped count above.*/
+  retval = (int32_t)write_result;
+
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceWritev(nap->cage_id, fd, (void *) sysiovec, iovcnt, retval, totaltime);
+  #endif
+
+  return retval;
+}
+
 /*
  * This implements 64-bit offsets, so we use |offp| as an in/out
  * address so we can have a 64 bit return value.

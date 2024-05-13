@@ -312,6 +312,14 @@ void NaClStracePWrite(int cageid, int d,
   }
 }
 
+void NaClStraceWritev(int cageid, int fd, void * sysiovec, int iovcnt, int ret, long long totaltime) {
+  if (strace_C) {
+    stracec_increment(NACL_sys_writev, totaltime, ret);
+  } else {
+    fprintf(tracingOutputFile, "%d write(%d, \"%s\", %d) = %d\n", cageid, fd, "NULL", iovcnt, ret);
+  }
+}
+
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long totaltime) {
   if (strace_C) {
     stracec_increment(NACL_sys_lseek, totaltime, ret);

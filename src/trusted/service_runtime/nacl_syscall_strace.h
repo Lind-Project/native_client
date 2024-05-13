@@ -20,6 +20,7 @@ void NaClStraceGetdents(int cageid, int d, void *drip, size_t count, int ret, lo
 void NaClStracePread(int cageid, int d, void *buf, int count, off_t offset, int ret, long long totaltime) ;
 void NaClStraceWrite(int cageid, int d, void *buf, int count, int ret, long long totaltime) ;
 void NaClStracePWrite(int cageid, int d, const void *buf, int count, off_t offset, int retval, long long totaltime) ;
+void NaClStraceWritev(int cageid, int fd, void *sysiovec, int iovcnt, int ret, long long totaltime) ;
 void NaClStraceLseek(int cageid, int d, uintptr_t offset, int whence, int ret, long long totaltime) ;
 void NaClStraceIoctl(int cageid, int d, unsigned long request, void *arg_ptr, int ret, long long totaltime) ;
 void NaClStraceFstat(int cageid, int d, uintptr_t result, int32_t retval, long long totaltime) ;
