@@ -145,6 +145,7 @@
 #define LIND_safe_fs_fdatasync          163
 #define LIND_safe_fs_sync_file_range    164
 
+#define LIND_safe_fs_writev             170
 
 union RustArg {
     int dispatch_int;
@@ -178,6 +179,7 @@ union RustArg {
     const uint64_t *dispatch_constnaclsigset;
     struct itimerval *dispatch_structitimerval;
     const struct itimerval *dispatch_conststructitimerval;
+    const struct iovec *dispatch_constiovecstruct;
 };
 
 int dispatcher(unsigned long int cageid, int callnum, union RustArg arg1, union RustArg arg2,
@@ -217,6 +219,7 @@ int lind_open (const char *path, int flags, int mode, int cageid);
 int lind_close (int fd, int cageid);
 int lind_read (int fd, void *buf, int size, int cageid);
 int lind_write (int fd, const void *buf, size_t count, int cageid);
+int lind_writev (int fd, const struct iovec *iov, int iovcnt, int cageid);
 int lind_lseek (int fd, off_t offset, int whence, int cageid);
 int lind_fxstat (int fd, struct lind_stat *buf, int cageid);
 int lind_fstatfs (int fd, struct statfs *buf, int cageid);

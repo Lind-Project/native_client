@@ -166,6 +166,10 @@ int lind_write (int fd, const void *buf, size_t count, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_write, int, fd, cbuf, buf, int, count);
 }
 
+int lind_writev (int fd, const struct iovec *iov, int iovcnt, int cageid) { 
+    DISPATCH_SYSCALL_3(LIND_safe_fs_write, int, fd, constiovecstruct, iov, int, iovcnt);
+}
+
 int lind_lseek (int fd, off_t offset, int whence, int cageid) {
     DISPATCH_SYSCALL_3(LIND_safe_fs_lseek, int, fd, off_t, offset, int, whence);
 }
