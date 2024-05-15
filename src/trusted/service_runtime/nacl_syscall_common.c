@@ -1097,7 +1097,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceLseek(nap->cage_id, d, whence, (uintptr_t) &offset, (int) retval, totaltime);
+    NaClStraceLseek(nap->cage_id, d, (uintptr_t) &offset, whence, (int) retval, totaltime);
     #endif
 
   return retval;
