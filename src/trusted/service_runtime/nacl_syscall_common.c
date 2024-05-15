@@ -1021,7 +1021,7 @@ int32_t NaClSysWritev(struct NaClAppThread *natp,
   struct iovec* sysiovec = (struct iovec*)malloc(iovcnt * sizeof(struct iovec));
 
   for (int i = 0; i < iovcnt; i++) {
-    sysiovec[i].iov_base = NaClUserToSysAddrRangeProt(nap, (uintptr_t) useriovec[i].iov_base, useriovec[i].iov_len, NACL_ABI_PROT_READ);
+    sysiovec[i].iov_base = (void *)NaClUserToSysAddrRangeProt(nap, (uintptr_t) useriovec[i].iov_base, useriovec[i].iov_len, NACL_ABI_PROT_READ);
     if (kNaClBadAddress == sysiovec[i].iov_base) return -NACL_ABI_EFAULT;
 
   /*
