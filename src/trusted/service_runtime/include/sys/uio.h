@@ -5,7 +5,7 @@
 
 struct nacl_abi_iovec {
 	uint32_t *iov_base;
-	unsigned int iov_len;
+	size_t iov_len;
 };
 
 #endif
