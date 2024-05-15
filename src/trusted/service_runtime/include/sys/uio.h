@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 struct nacl_abi_iovec {
-	uint32_t *iov_base;
+	uint32_t iov_base;
 	uint32_t iov_len;
 };
 
