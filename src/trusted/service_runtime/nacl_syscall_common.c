@@ -1016,10 +1016,13 @@ int32_t NaClSysWritev(struct NaClAppThread *natp,
 
   if (fd < 0) return -NACL_ABI_EBADF;
 
+  // Convert 32-bit iovec to custom struct for translation
+
   struct nacl_abi_iovec* useriovec = (struct nacl_abi_iovec*)NaClUserToSysAddrRangeProt(nap, (uintptr_t) iovec, iovcnt, NACL_ABI_PROT_READ);
 
   struct iovec* sysiovec = (struct iovec*)malloc(iovcnt * sizeof(struct iovec));
 
+  // loop throught custom user iovecs and translate inner iov_base ptrs to newly allocated sys iovec
   for (int i = 0; i < iovcnt; i++) {
     sysiovec[i].iov_base = (void *)NaClUserToSysAddrRangeProt(nap, (uintptr_t) useriovec[i].iov_base, useriovec[i].iov_len, NACL_ABI_PROT_READ);
     if (kNaClBadAddress == sysiovec[i].iov_base) return -NACL_ABI_EFAULT;
