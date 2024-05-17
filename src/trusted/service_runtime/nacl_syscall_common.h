@@ -121,6 +121,11 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
                      size_t               count,
                      off_t                offset);
 
+int32_t NaClSysWritev(struct NaClAppThread *natp,
+                     int fd,
+                     void *iovec,
+                     int iovcnt);
+
 int32_t NaClSysLseek(struct NaClAppThread *natp,
                      int                  d,
                      nacl_abi_off_t       *offp,

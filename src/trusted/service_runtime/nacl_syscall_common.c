@@ -59,6 +59,7 @@
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
 #include "native_client/src/trusted/service_runtime/include/sys/stat.h"
+#include "native_client/src/trusted/service_runtime/include/sys/uio.h"
 #include "native_client/src/trusted/service_runtime/include/sys/sigaction.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/nacl_test_crash.h"
@@ -1003,6 +1004,59 @@ int32_t NaClSysPwrite(struct NaClAppThread *natp,
   return retval;
 }
 
+int32_t NaClSysWritev(struct NaClAppThread *natp,
+                     int fd,
+                     void *iovec,
+                     int iovcnt) {
+  struct NaClApp *nap = natp->nap;
+  int32_t retval = -NACL_ABI_EINVAL;
+  ssize_t write_result = -NACL_ABI_EINVAL;
+
+  NaClLog(2, "Cage %d Entered NaClSysWritev(0x%08"NACL_PRIxPTR", %d, 0x%08"NACL_PRIxPTR", %"NACL_PRIdS"[0x%"NACL_PRIxS"])\n", nap->cage_id, (uintptr_t) natp, fd, (uintptr_t) iovec, iovcnt);
+
+  if (fd < 0) return -NACL_ABI_EBADF;
+
+  // Convert 32-bit iovec to custom struct for translation
+
+  struct nacl_abi_iovec* useriovec = (struct nacl_abi_iovec*)NaClUserToSysAddrRangeProt(nap, (uintptr_t) iovec, iovcnt, NACL_ABI_PROT_READ);
+
+  struct iovec* sysiovec = (struct iovec*)malloc(iovcnt * sizeof(struct iovec));
+
+  // loop throught custom user iovecs and translate inner iov_base ptrs to newly allocated sys iovec
+  for (int i = 0; i < iovcnt; i++) {
+    sysiovec[i].iov_base = (void *)NaClUserToSysAddrRangeProt(nap, (uintptr_t) useriovec[i].iov_base, useriovec[i].iov_len, NACL_ABI_PROT_READ);
+    if (kNaClBadAddress == sysiovec[i].iov_base) return -NACL_ABI_EFAULT;
+
+  /*
+    * The maximum length for read and write is INT32_MAX--anything larger and
+    * the return value would overflow. Passing larger values isn't an error--
+    * we'll just clamp the request size if it's too large.
+    */
+
+    int clamped_iovlen = useriovec[i].iov_len > INT32_MAX ? INT32_MAX : useriovec[i].iov_len;
+    sysiovec[i].iov_len = clamped_iovlen;
+  }
+
+
+  #ifdef TRACING
+  long long starttime = gettimens();
+  #endif
+  write_result = lind_writev(fd, sysiovec, iovcnt, nap->cage_id);
+
+/* This cast is safe because we clamped count above.*/
+  retval = (int32_t)write_result;
+
+  free(sysiovec);
+
+  #ifdef TRACING
+  long long endtime = gettimens();
+  long long totaltime = endtime - starttime;
+  NaClStraceWritev(nap->cage_id, fd, (void *) sysiovec, iovcnt, retval, totaltime);
+  #endif
+
+  return retval;
+}
+
 /*
  * This implements 64-bit offsets, so we use |offp| as an in/out
  * address so we can have a 64 bit return value.
@@ -1046,7 +1100,7 @@ int32_t NaClSysLseek(struct NaClAppThread *natp,
     #ifdef TRACING
     long long endtime = gettimens();
     long long totaltime = endtime - starttime;
-    NaClStraceLseek(nap->cage_id, d, whence, (uintptr_t) &offset, (int) retval, totaltime);
+    NaClStraceLseek(nap->cage_id, d, (uintptr_t) &offset, whence, (int) retval, totaltime);
     #endif
 
   return retval;
