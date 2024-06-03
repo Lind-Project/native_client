@@ -105,7 +105,7 @@ int NaClGetLastErrorString(char* buffer, size_t length) {
 static Atomic32 memory_object_count = 0;
 
 static int TryShmOrTempOpen(size_t length, const char* prefix, bool use_temp) {
-  char name[PATH_MAX] = {0};;
+  char name[PATH_MAX] = {0};
   if (0 == length) {
     return -1;
   }
