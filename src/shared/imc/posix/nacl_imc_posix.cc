@@ -105,7 +105,7 @@ int NaClGetLastErrorString(char* buffer, size_t length) {
 static Atomic32 memory_object_count = 0;
 
 static int TryShmOrTempOpen(size_t length, const char* prefix, bool use_temp) {
-  char name[PATH_MAX];
+  char name[PATH_MAX] = {0};;
   if (0 == length) {
     return -1;
   }
@@ -114,7 +114,7 @@ static int TryShmOrTempOpen(size_t length, const char* prefix, bool use_temp) {
     int m;
 
     uint32_t count = static_cast<uint32_t>(AtomicIncrement(&memory_object_count, 1));
-    
+
     snprintf(name, sizeof name, "%s-%u.%u", prefix,
              getpid(),
              count);
