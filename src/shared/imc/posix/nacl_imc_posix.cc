@@ -112,8 +112,9 @@ static int TryShmOrTempOpen(size_t length, const char* prefix, bool use_temp) {
 
   for (;;) {
     int m;
+
+    uint32_t count = static_cast<uint32_t>(AtomicIncrement(&memory_object_count, 1));
     
-    uint32_t count = static_cast<uint32_t>(AtomicIncrement(&memory_object_count, 1))
     snprintf(name, sizeof name, "%s-%u.%u", prefix,
              getpid(),
              count);
