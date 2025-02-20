@@ -703,8 +703,12 @@ static void SignalCatch(int sig, siginfo_t *info, void *uc) {
   // Lind: If we segfault on a user address (presumably because it was unmapped between check and use), we can call that an untrusted fault
   if ((sig == SIGSEGV) && ((uintptr_t)info->si_addr & ~(natp->nap->addr_bits))) is_untrusted = true;
 
-  // Lind: if we get SIGPIPE set to one of the cage threads its interal and we can shutdown gracefully
+  // Lind: if we get any of the following signals sent to one of the cage threads its internal and we can shutdown gracefully
   if ((sig == SIGPIPE) && (natp != NULL)) is_untrusted = true;
+  if ((sig == SIGALRM) && (natp != NULL)) is_untrusted = true;
+  if ((sig == SIGUSR1) && (natp != NULL)) is_untrusted = true;
+  if ((sig == SIGUSR2) && (natp != NULL)) is_untrusted = true;
+
 
   NaClSignalHandleUntrusted(natp, sig, &sig_ctx, is_untrusted);
 
