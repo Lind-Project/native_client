@@ -2149,6 +2149,7 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
   offset = *(nacl_abi_off_t *)sysaddr;
   NaClLog(2, " offset = 0x%08"NACL_PRIxNACL_OFF"\n", offset);
   #ifdef TRACING
+  long long endtime, totaltime;
   long long starttime = gettimens();
   #endif
   retval = NaClSysMmapIntern(nap, start, length, prot, flags, d, offset);
@@ -2156,8 +2157,8 @@ int32_t NaClSysMmap(struct NaClAppThread  *natp,
 cleanup:
 
   #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
+  endtime = gettimens();
+  totaltime = endtime - starttime;
   NaClStraceMmap(nap->cage_id, start, length, prot, flags, d, offset, retval, totaltime);
   #endif
 
@@ -3669,6 +3670,7 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
   /* set up new "child" NaClApp */
   NaClLogThreadContext(natp);
   #ifdef TRACING
+  long long endtime, totaltime;
   long long starttime = gettimens();
   #endif
   /* get new id and setup new cage in safeposix */
@@ -3706,8 +3708,8 @@ int32_t NaClSysFork(struct NaClAppThread *natp) {
 fail:
 
   #ifdef TRACING
-  long long endtime = gettimens();
-  long long totaltime = endtime - starttime;
+  endtime = gettimens();
+  totaltime = endtime - starttime;
   NaClStraceFork(nap->cage_id, ret, totaltime);
   #endif
 
